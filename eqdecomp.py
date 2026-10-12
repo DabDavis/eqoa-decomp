@@ -116,6 +116,10 @@ MODULES = {
 # did swallow another function.
 # ---------------------------------------------------------------------------
 SPAN_CAP = {
+    # Phase 61.  VIESFParse::AdpcmToPcm is 129 instructions; the TU's own
+    # copies of the VIMap<int,int> members follow it with no names in the map
+    # (the named ones live at 0x00415E08), so it derived 3,032 bytes.
+    "AdpcmToPcm__10VIESFParsePviT1":            516,
     # Phase 48.  connection.cpp opens with state_channel_init and is followed
     # immediately by the TU-local static that zeroes a connection_t -- the
     # symbol map has no name for it -- so state_channel_init acquires both.
