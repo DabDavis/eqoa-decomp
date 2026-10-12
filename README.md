@@ -54,6 +54,14 @@ the tools, the reconstructed source and the notes. It grants no rights in
 *EverQuest Online Adventures* itself: the game, its binaries and its data belong to
 their owners, and none of them are distributed here.
 
+**For the rights holder.** This is a preservation project. The game's original
+source is understood to be lost, and this repository is an attempt to recover it —
+function by function, each one verified byte-for-byte against the shipped module,
+with the notes recording how. It carries no disc data, no binaries and no SDK
+code. If you would like it taken down, or would find it useful, please
+[open an issue](https://github.com/DabDavis/eqoa-decomp/issues); a takedown request
+will be honoured promptly.
+
 **One paragraph per phase, all 56 of them, is
 [`claude-notes/decomp-phase-log.md`](../claude-notes/decomp-phase-log.md)** — the roll-up
 that used to sit inline in the root `CLAUDE.md`. Use it to find *which* phase settled a
