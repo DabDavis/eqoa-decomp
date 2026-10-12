@@ -49,6 +49,11 @@ compiler** — the inputs it is scored against are supplied by whoever runs it:
 thing to run: it fails loudly if the image is not the one these results were
 measured against.
 
+**License scope.** The MIT license (`LICENSE`) covers this repository's own work —
+the tools, the reconstructed source and the notes. It grants no rights in
+*EverQuest Online Adventures* itself: the game, its binaries and its data belong to
+their owners, and none of them are distributed here.
+
 **One paragraph per phase, all 56 of them, is
 [`claude-notes/decomp-phase-log.md`](../claude-notes/decomp-phase-log.md)** — the roll-up
 that used to sit inline in the root `CLAUDE.md`. Use it to find *which* phase settled a
