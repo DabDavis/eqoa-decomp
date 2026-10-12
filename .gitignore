@@ -1,0 +1,7 @@
+# Inputs that are not in this repository -- see README.md, "Running it outside
+# this project tree".
+toolchains/
+build/
+tools/
+__pycache__/
+*.pyc
