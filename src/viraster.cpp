@@ -57,6 +57,33 @@ extern "C" long VIBbRender[];
 
 int VIEERasterDMACHandlerID;
 
+// A DMA tag written through a helper: its int `qwc` parameter is what lets
+// cse share one `li 1` between a tag's halfword count and a later int store.
+static inline void RasterTag(_sceDmaTag **tag, int id, unsigned int addr,
+                             int qwc)
+{
+    (*tag)->m_id = id;
+    (*tag)->m_addr = addr;
+    (*tag)->m_qwc = qwc;
+}
+
+
+// A DMA tag written through a helper: its int `qwc` parameter is what lets
+// cse share one `li 1` between a tag's halfword count and a later int store.
+
+// A float colour quantised into a VIColor32 through REFERENCES: stores through
+// the inlined `c` pointer cannot be told apart from the loads off `f`, so the
+// four conversions come out strictly one after another -- and the default
+// constructor's stores to g, b and a survive with them.
+static inline void RasterColor32(VIColor32 &c, const VIColor32F &f)
+{
+    c.r = (int)(f.r * 255.0f + 0.5f);
+    c.g = (int)(f.g * 255.0f + 0.5f);
+    c.b = (int)(f.b * 255.0f + 0.5f);
+    c.a = (int)(f.a * 255.0f + 0.5f);
+}
+
+
 
 int VIRaster::RInitOffset;
 int VIRaster::RMaterialOffset;
@@ -138,7 +165,7 @@ int VIRaster::MaterialPal(int pal)
 int VIRaster::ShareMaterialPal(int pal)
 {
     VIMaterialPal *p = m_materialPals.Value(pal);
-    p->m_refCount++;
+    p->m_userData++;
     return 0;
 }
 
@@ -151,7 +178,9 @@ int VIRaster::GetMaterialPalSize(int pal)
 VIMaterial *VIRaster::GetMaterialPalEntry(int pal, int i)
 {
     VIMaterialPal *p = m_materialPals.Value(pal);
-    return Material(p->m_mats.m_data[i]);
+    // Byte arithmetic on the data pointer: base-first `addu`, where every
+    // int-typed subscript spelling canonicalises offset-first.
+    return Material(*(int *)((char *)p->m_mats.m_data + (i << 2)));
 }
 
 VIRFont *VIRaster::Font(int i)
@@ -776,14 +805,14 @@ void VIRaster::Orthographic(VIMatrix44 &m, float l, float r, float b, float t,
 
 int VIRaster::Viewport(int x1, int y1, int x2, int y2)
 {
-    int w = x2 - x1 + 1;
-    int h = y2 - y1 + 1;
-    float hw = (float)w * 0.5f;
-    float hh = (float)h * 0.5f;
     m_viewportX = x1;
     m_viewportY = y1;
-    m_viewportW = w;
-    m_viewportH = h;
+    // The sizes go to the members FIRST and the halves are read back off
+    // them -- no `int w` local, which is what reordered the stores.
+    m_viewportW = x2 - x1 + 1;
+    m_viewportH = y2 - y1 + 1;
+    float hw = (float)m_viewportW * 0.5f;
+    float hh = (float)m_viewportH * 0.5f;
     m_viewportWF = hw;
     m_viewportHF = hh;
     m_invViewportW = 1.0f / hw;
@@ -978,10 +1007,12 @@ int VIRaster::InitMaterialLRU(int n)
     m_p4C14 = new char[q * 16];
     if (m_p4C14 == 0)
         return -1;
-    for (int off = 0, i = 0; i < n; i++, off += 848)
+    // A multiply, not a running offset: the strength-reduced giv is what puts
+    // its `move s1,zero` in the loop preheader.
+    for (int i = 0; i < n; i++)
     {
         VIRasterMaterialLRU e;
-        e.m_a = (int)(m_p4C14 + off);
+        e.m_a = (int)(m_p4C14 + i * 848);
         e.m_b = 0;
         e.m_c = -1;
         e.m_d = 0;
@@ -1114,15 +1145,15 @@ int VIRaster::DebugEEMicro()
 int VIRaster::ReleaseMaterialPal(int pal, VIDictionary &d)
 {
     VIMaterialPal *p = m_materialPals.Value(pal);
-    p->m_refCount--;
-    if (p->m_refCount <= 0)
+    p->m_userData--;
+    if (p->m_userData <= 0)
     {
         for (int i = 0; i < p->m_mats.m_size; i++)
         {
             if (ReleaseMaterial(p->m_mats[i], d) < 0)
                 return -1;
         }
-        if (p->m_p00 != 0)
+        if (p->m_id != 0)
         {
             if (d.Remove(*(VIResource *)p) < 0)
                 return -1;
@@ -1149,11 +1180,13 @@ int VIRaster::CreateMaterialPal(int n, int share)
     {
         int *e = &p->m_mats.m_data[i];
         *e = CreateMaterial(0);
-        if (p->m_mats.m_data[i] < 0)
+        // Re-read through byte arithmetic: base-first `addu`, as in
+        // GetMaterialPalEntry.
+        if (*(int *)((char *)p->m_mats.m_data + (i << 2)) < 0)
             return -1;
     }
     if (share)
-        p->m_refCount++;
+        p->m_userData++;
     return idx;
 }
 
@@ -1171,12 +1204,12 @@ int VIRaster::CopyMaterialPal(int pal, int share)
     for (int i = 0; i < GetMaterialPalSize(pal); i++)
     {
         int *e = &p->m_mats.m_data[i];
-        *e = CopyMaterial(sm.m_data[i], share);
-        if (p->m_mats.m_data[i] < 0)
+        *e = CopyMaterial(*(int *)((char *)sm.m_data + (i << 2)), share);
+        if (*(int *)((char *)p->m_mats.m_data + (i << 2)) < 0)
             return -1;
     }
     if (share)
-        p->m_refCount++;
+        p->m_userData++;
     return idx;
 }
 
@@ -1305,7 +1338,8 @@ int VIRaster::ReleaseDeferred()
 {
     // Both free lists hold objects whose owner has let go but whose GS packets
     // may still be in flight: nothing is destroyed until the frame counter has
-    // passed the stamp Release* wrote by three.
+    // passed the stamp Release* wrote by three.  ONE iterator for both walks:
+    // a second variable swaps the first loop's list and iterator registers.
     int i = m_surfaceFree.Begin();
     while (i != m_surfaceFree.End())
     {
@@ -1319,18 +1353,18 @@ int VIRaster::ReleaseDeferred()
         }
         i = next;
     }
-    int j = m_primBufferFree.Begin();
-    while (j != m_primBufferFree.End())
+    i = m_primBufferFree.Begin();
+    while (i != m_primBufferFree.End())
     {
-        int next = m_primBufferFree.Next(j);
-        VIPrimBuffer *pb = *(VIPrimBuffer **)j;
+        int next = m_primBufferFree.Next(i);
+        VIPrimBuffer *pb = *(VIPrimBuffer **)i;
         if (m_frame >= pb->m_userFlags + 3)
         {
             delete pb;
-            if (m_primBufferFree.Erase(j) < 0)
+            if (m_primBufferFree.Erase(i) < 0)
                 return -1;
         }
-        j = next;
+        i = next;
     }
     return 0;
 }
@@ -1446,19 +1480,21 @@ int VIRaster::EndBillboards()
 {
     if (m_numBillboards <= 0)
         return -1;
+    // ONE pointer walks the last billboard's word, the closing quadword and
+    // the end of the packet -- all three land in the same register.
     char *p = (char *)m_dmaTag;
-    unsigned int *last = (unsigned int *)(p + m_numBillboards * 48);
-    last[3] |= 0x100;
+    unsigned int *q = (unsigned int *)(m_numBillboards * 48 + (int)p);
+    q[3] |= 0x100;
     unsigned int mscalf = (VIBbRender - VIBbInit) | 0x15000000;
     p += 16;
-    unsigned int *e = (unsigned int *)(p + m_numBillboards * 48);
-    e[8] = 0;
-    unsigned int *q = e + 8;
+    char *e = p + m_numBillboards * 48;
+    ((unsigned int *)e)[8] = 0;
+    q = (unsigned int *)(e + 32);
     q[3] = mscalf;
     q[2] = 0;
     q[1] = 0;
-    char *end = (char *)(e + 12);
-    int qwc = (end - p) >> 4;
+    q = (unsigned int *)(e + 48);
+    int qwc = ((char *)q - p) >> 4;
     m_dmaTag->m_id = 16;
     int bytes = (qwc << 4) + 16;
     m_dmaTag->m_addr = 0;
@@ -1480,24 +1516,30 @@ int VIRaster::SetObjectBlends(int n, VIMatrix44 *m)
     int qwc = (n << 2) + blocks + 1;
     m_dmaTag->m_id = 16;
     m_dmaTag->m_addr = 0;
+    int bytes = (qwc << 4) + 16;
     m_dmaTag->m_qwc = qwc;
     char *p = (char *)m_dmaTag + 16;
-    m_dmaTag = (_sceDmaTag *)((char *)m_dmaTag + (qwc << 4) + 16);
+    m_dmaTag = (_sceDmaTag *)((char *)m_dmaTag + bytes);
     int i = 0;
-    char *src = (char *)m;
     while (blocks)
     {
+        // The unpack address is read BEFORE the VIFcode stores, and the
+        // source is a multiply of the block index: loop.c's giv for it is
+        // what initialises the source pointer in the preheader.
+        // FLUSHE named first: loop.c hoists the invariants in the order the
+        // loop body first mentions them.
+        unsigned int flushe = 0x10000000;
+        unsigned int unpack = (ObjectBlendsBuffer + i * 4) | 0x6C800000;
         ((unsigned int *)p)[0] = 0;
         ((unsigned int *)p)[1] = 0;
-        ((unsigned int *)p)[2] = 0x10000000;
-        ((unsigned int *)p)[3] = (ObjectBlendsBuffer + i * 4) | 0x6C800000;
+        ((unsigned int *)p)[2] = flushe;
+        ((unsigned int *)p)[3] = unpack;
         p += 16;
         // A `void *` VARIABLE is what makes this a CALL: handed a char* or an
         // inline (void *) cast, gcc expands a constant-size memcpy into a
         // block-move loop, and the target has `li a2,2048` and a `jal`.
         void *dst = p;
-        memcpy(dst, src, 2048);
-        src += 2048;
+        memcpy(dst, (char *)m + i * 64, 2048);
         i += 32;
         blocks--;
         p += 2048;
@@ -1505,13 +1547,14 @@ int VIRaster::SetObjectBlends(int n, VIMatrix44 *m)
     int rem = n - i;
     if (rem != 0)
     {
+        unsigned int unpack =
+            (ObjectBlendsBuffer + i * 4) | (rem << 18) | 0x6C000000;
         ((unsigned int *)p)[0] = 0;
         ((unsigned int *)p)[1] = 0;
         ((unsigned int *)p)[2] = 0x10000000;
-        ((unsigned int *)p)[3] =
-            (ObjectBlendsBuffer + i * 4) | (rem << 18) | 0x6C000000;
+        ((unsigned int *)p)[3] = unpack;
         void *dst = p + 16;
-        memcpy(dst, (char *)m + i * 64, rem * 64);
+        memcpy(dst, (void *)(i * 64 + (int)m), rem * 64);
     }
     return 0;
 }
@@ -1526,20 +1569,11 @@ int VIRaster::SetFogRegisters()
     m_dmaTag->m_id = 16;
     m_dmaTag->m_addr = 0;
     m_dmaTag->m_qwc = 3;
-    // ONE reused float temp, not four independent expressions: spelled out,
-    // gcc hoists all four loads of m_fogColor to the top of the block where
-    // the target converts one component at a time.
-    float t;
-    t = m_fogColor.r * 255.0f + 0.5f;
-    c.r = (int)t;
-    t = m_fogColor.g * 255.0f + 0.5f;
-    c.g = (int)t;
-    t = m_fogColor.b * 255.0f + 0.5f;
-    c.b = (int)t;
-    t = m_fogColor.a * 255.0f + 0.5f;
-    c.a = (int)t;
     char *base = (char *)m_dmaTag;
     m_dmaTag = (_sceDmaTag *)(base + 64);
+    // Through RasterColor32's references: the conversions serialise and the
+    // constructor's {0,0,0,255} survives.
+    RasterColor32(c, m_fogColor);
     ((unsigned int *)base)[4] = 0;
     char *p = base + 16;
     ((unsigned int *)p)[1] = 0;
@@ -1602,64 +1636,56 @@ int VIRaster::UploadPreTrans(_sceDmaTag **tag)
 // second packet that names the two double-buffered prim-buffer bases.
 int VIRaster::UploadRasterMicro(_sceDmaTag **tag)
 {
-    (*tag)->m_id = 16;
-    (*tag)->m_addr = 0;
-    (*tag)->m_qwc = 1;
+    RasterTag(tag, 16, 0, 1);
     char *base = (char *)*tag;
     *tag = (_sceDmaTag *)(base + 32);
     ((unsigned int *)base)[4] = 0;
     char *p = base + 16;
-    ((unsigned int *)p)[1] = 0;
-    ((unsigned int *)p)[2] = 0;
     ((unsigned int *)p)[3] = 0x13000000;
-    (*tag)->m_id = 80;
-    (*tag)->m_addr = (unsigned int)VIDMARasterMicrocode;
-    (*tag)->m_qwc = 0;
-    *tag = *tag + 1;
-    (*tag)->m_id = 16;
-    (*tag)->m_addr = 0;
-    (*tag)->m_qwc = 1;
-    base = (char *)*tag;
-    *tag = (_sceDmaTag *)(base + 32);
-    ((unsigned int *)base)[4] = 0;
-    p = base + 16;
-    ((unsigned int *)p)[2] = PrimBuffer1 | 0x03000000;
+    ((unsigned int *)p)[2] = 0;
     ((unsigned int *)p)[1] = 0;
-    ((unsigned int *)p)[3] = (PrimBuffer2 - PrimBuffer1) | 0x02000000;
+    RasterTag(tag, 80, (unsigned int)VIDMARasterMicrocode, 0);
+    *tag = *tag + 1;
+    RasterTag(tag, 16, 0, 1);
+    char *base2 = (char *)*tag;
+    *tag = (_sceDmaTag *)(base2 + 32);
+    ((unsigned int *)base2)[4] = 0;
+    // Both buffer bases read ONCE, ahead of the stores: PrimBuffer1 is a
+    // single load feeding both VIFcodes.
+    int pb1 = PrimBuffer1;
+    int pb2 = PrimBuffer2;
+    char *p2 = base2 + 16;
+    ((unsigned int *)p2)[1] = 0;
+    ((unsigned int *)p2)[2] = pb1 | 0x03000000;
+    ((unsigned int *)p2)[3] = (pb2 - pb1) | 0x02000000;
     m_p4C4C = 1;
-    m_dirtyPreTrans = 1;
     m_dirtyLights = 1;
+    m_dirtyPreTrans = 1;
     return 0;
 }
 
 int VIRaster::UploadBillboardMicro(_sceDmaTag **tag)
 {
-    (*tag)->m_id = 16;
-    (*tag)->m_addr = 0;
-    (*tag)->m_qwc = 1;
+    RasterTag(tag, 16, 0, 1);
     char *base = (char *)*tag;
     *tag = (_sceDmaTag *)(base + 32);
     ((unsigned int *)base)[4] = 0;
     char *p = base + 16;
-    ((unsigned int *)p)[1] = 0;
-    ((unsigned int *)p)[2] = 0;
     ((unsigned int *)p)[3] = 0x13000000;
-    (*tag)->m_id = 80;
-    (*tag)->m_addr = (unsigned int)VIDMABillboardMicrocode;
-    (*tag)->m_qwc = 0;
-    *tag = *tag + 1;
-    (*tag)->m_id = 16;
-    (*tag)->m_addr = 0;
-    (*tag)->m_qwc = 1;
-    base = (char *)*tag;
-    *tag = (_sceDmaTag *)(base + 32);
-    ((unsigned int *)base)[4] = 0;
-    p = base + 16;
-    ((unsigned int *)p)[2] = 0x0300021A;
+    ((unsigned int *)p)[2] = 0;
     ((unsigned int *)p)[1] = 0;
-    ((unsigned int *)p)[3] = 0x020000F0;
-    m_dirtyMatrices = 1;
+    RasterTag(tag, 80, (unsigned int)VIDMABillboardMicrocode, 0);
+    *tag = *tag + 1;
+    RasterTag(tag, 16, 0, 1);
+    char *base2 = (char *)*tag;
+    *tag = (_sceDmaTag *)(base2 + 32);
+    ((unsigned int *)base2)[4] = 0;
+    char *p2 = base2 + 16;
+    ((unsigned int *)p2)[1] = 0;
+    ((unsigned int *)p2)[2] = 0x0300021A;
+    ((unsigned int *)p2)[3] = 0x020000F0;
     m_p4C4C = 2;
+    m_dirtyMatrices = 1;
     return 0;
 }
 
@@ -1755,35 +1781,2210 @@ int VIRaster::UploadPerMaterial(_sceDmaTag **tag)
     *tag = (_sceDmaTag *)(base + 64);
     ((unsigned int *)base)[4] = 0;
     char *p = base + 16;
+    // ONE pointer for the colour quadword and the MSCAL quadword after it:
+    // the second `addiu a1,a2,48` reuses the first's register.
+    char *q = base + 32;
+    unsigned int unpack = (ColorMatrix + 2) | 0x6C010000;
     ((unsigned int *)p)[1] = 0;
     ((unsigned int *)p)[2] = 0;
-    ((unsigned int *)p)[3] = (ColorMatrix + 2) | 0x6C010000;
-    *(float *)(base + 32) = c.r + *(float *)0x700001E0;
-    float *d = (float *)(base + 32);
-    d[1] = c.g + *(float *)0x700001E4;
-    d[2] = c.b + *(float *)0x700001E8;
-    d[3] = c.a + *(float *)0x700001EC;
+    ((unsigned int *)p)[3] = unpack;
+    ((float *)q)[0] = c.r + *(float *)0x700001E0;
+    ((float *)q)[1] = c.g + *(float *)0x700001E4;
+    ((float *)q)[2] = c.b + *(float *)0x700001E8;
+    unsigned int mscal = RMaterialOffset | 0x14000000;
+    ((float *)q)[3] = c.a + *(float *)0x700001EC;
+    q = base + 48;
     ((unsigned int *)base)[12] = 0;
-    char *r = base + 48;
-    ((unsigned int *)r)[3] = RMaterialOffset | 0x14000000;
-    ((unsigned int *)r)[1] = 0;
-    ((unsigned int *)r)[2] = 0;
+    ((unsigned int *)q)[3] = mscal;
+    ((unsigned int *)q)[2] = 0;
+    ((unsigned int *)q)[1] = 0;
     return 0;
 }
 
-int VIRaster::DrawPrimBuffer(int prim, int lod, int pal, unsigned int flags)
+// The baked-colour dispatcher: the second argument is a COLOUR BUFFER (phase
+// 61, off DrawPrimBufferPackVUNC's own body).  The comparison tree is decided
+// by the whole case set -- {0, 2, 4..5}, with 4 and 5 sharing a label, which
+// is what leaves the range test's dead `slti v0,v1,4` in an annulled slot
+// once every -1 arm has cross-jumped into the default.
+int VIRaster::DrawPrimBuffer(int prim, int cbi, int pal, unsigned int flags)
 {
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
     if (m_p4C4C != 1)
         UploadRasterMicro(&m_dmaTag);
     switch (pb->m_type)
     {
+    case VIPrimBufferTypeVUNC:
+        return -1;
     case VIPrimBufferTypePackVUNC:
-        return DrawPrimBufferPackVUNC(prim, lod, pal, flags);
-    case VIPrimBufferTypeUnused3:
+        return DrawPrimBufferPackVUNC(prim, cbi, pal, flags);
     case VIPrimBufferTypePackVUNCG:
     case VIPrimBufferTypePackVUNBW:
         return -1;
     }
     return -1;
+}
+
+// ---------------------------------------------------------- phase 61 --------
+
+extern "C" int  FlushCache(int mode);
+extern "C" void sceGsSetDefDBuffDc(void *db, int psm, int w, int h, int ztest,
+                                   int zpsm, int clear);
+extern "C" int  sceGsSwapDBuffDc(void *db, int field);
+
+// The constructor is the member roll-call -- the vertex attributes, the
+// tessellator, the fog colour, the two saved matrices, the clear colour, the
+// pre-translation block and the nine pools -- and then the body.
+VIRaster::VIRaster()
+{
+    m_p00 = 0;
+    m_p04 = 0;
+    m_p08 = 0;
+    m_vtx = 0;
+    m_vtxBase = 0;
+    m_p4C14 = 0;
+    m_dmaBuffer0 = 0;
+    m_dmaBuffer1 = 0;
+    m_dmaTag = 0;
+    m_dmaStart = 0;
+    m_dmaFlushes = 1;
+    m_curMaterial = -1;
+    m_solidFillMaterial = -1;
+    m_solidFillUIMaterial = -1;
+    m_solidFillUIAVGMaterial = -1;
+    m_wireframeMaterial = -1;
+    m_portalMaterial = -1;
+    m_blitMaterial = -1;
+    m_p4C4C = 0;
+}
+
+VIRaster::~VIRaster()
+{
+    Close();
+}
+
+int VIRaster::Init(void *p)
+{
+    return Init(p, 640, 448, 0);
+}
+
+// The double-buffered GS environment: sceGsSetDefDBuffDc fills DBuffer, and
+// the frame, Z and display base pointers are then patched in place -- both
+// draw environments of buffer 0 at FBP 0, buffer 1 at 70, Z at 140 -- along
+// with the clear colour and DTHE.
+int VIRaster::Init(void *p, int w, int h, int first)
+{
+    VIColor32 c;
+    m_firstFrame = first;
+    RasterColor32(c, m_clearColor);
+    if (w != 640 || h != 448)
+        return -1;
+    m_frame = 0;
+    if (!m_firstFrame)
+        sceGsResetGraph(0, 1, 2, 0);
+    sceGsSetDefDBuffDc(DBuffer, 10, 640, 448, 3, 49, 1);
+    DBuffer[76] = (DBuffer[76] & ~0x1FFL) | 140;
+    DBuffer[48] = c.r | ((long)c.g << 8) | ((long)c.b << 16) |
+                  ((long)c.a << 24) | ((long)0x3F800000 << 32);
+    DBuffer[94] = c.r | ((long)c.g << 8) | ((long)c.b << 16) |
+                  ((long)c.a << 24) | ((long)0x3F800000 << 32);
+    ((int *)DBuffer)[4] = (((int *)DBuffer)[4] & ~0x1FF) | 70;
+    DBuffer[28] &= ~0x1FFL;
+    DBuffer[58] = (DBuffer[58] & ~0x1FFL) | 70;
+    DBuffer[74] = (DBuffer[74] & ~0x1FFL) | 70;
+    DBuffer[14] = (DBuffer[14] & ~0x1FFL) | 140;
+    DBuffer[30] = (DBuffer[30] & ~0x1FFL) | 140;
+    DBuffer[60] = (DBuffer[60] & ~0x1FFL) | 140;
+    DBuffer[86] = 1;
+    DBuffer[24] = 1;
+    DBuffer[40] = 1;
+    DBuffer[70] = 1;
+    DBuffer[12] &= ~0x1FFL;
+    FlushCache(0);
+    m_p456C = 16.0f;
+    m_p4570 = 8388608.0f;
+    InitSPRDoubleBuffer();
+    m_screenW = w;
+    m_screenH = h;
+    if (Init() < 0)
+        return -1;
+    return 0;
+}
+
+int VIRaster::SetClearColor(const VIColor32F &c)
+{
+    VIColor32 q;
+    m_clearColor = c;
+    // A named reference, which is what materialises &m_clearColor, and the
+    // RGBAQ patches as addresses taken: the second is then cse'd off the
+    // first, `addiu t4,DBuffer+384` + `sd 368(t4)`.
+    const VIColor32F &cc = m_clearColor;
+    q.r = (int)(cc.r * 255.0f + 0.5f);
+    q.g = (int)(cc.g * 255.0f + 0.5f);
+    q.b = (int)(cc.b * 255.0f + 0.5f);
+    q.a = (int)(cc.a * 255.0f + 0.5f);
+    *(long *)&DBuffer[48] = q.r | ((long)q.g << 8) | ((long)q.b << 16) |
+                  ((long)q.a << 24) | ((long)0x3F800000 << 32);
+    *(long *)&DBuffer[94] = q.r | ((long)q.g << 8) | ((long)q.b << 16) |
+                  ((long)q.a << 24) | ((long)0x3F800000 << 32);
+    FlushCache(0);
+    return 0;
+}
+
+int VIRaster::Init()
+{
+    VIMatrix44 m;
+    if (g_surfCache.Init(0x230000, 0x400000) < 0)
+        return -1;
+    m_sceneState = 0;
+    if (InitMaterialLRU(950) < 0)
+        return -1;
+    if (InitDMADoubleBuffer() < 0)
+        return -1;
+    UploadRasterMicro(&m_dmaTag);
+    InitGSRegisters(&m_dmaTag);
+    m.Identity();
+    SetDefaultLights(m);
+    VIColor32F fog(1.0f, 1.0f, 1.0f, 1.0f);
+    SetFog(1, 250.0f, 1000.0f, fog);
+    m_viewportX = 0;
+    m_viewportY = 0;
+    m_viewportW = m_screenW;
+    m_viewportH = m_screenH;
+    m_viewportWF = (float)m_viewportW * 0.5f;
+    m_viewportHF = (float)m_viewportH * 0.5f;
+    m_invViewportW = 1.0f / m_viewportWF;
+    m_invViewportH = 1.0f / m_viewportHF;
+    m_screenWF = m_viewportWF;
+    m_screenHF = m_viewportHF;
+    m_invScreenW = m_invViewportW;
+    m_invScreenH = m_invViewportH;
+    m_aspectX = 2048.0f;
+    m_aspectY = 2048.0f;
+    m_numBillboards = 0;
+    m_override = 0;
+    m_wireframe = 0;
+    m_solidFill = 0;
+    m_multiTexture = 1;
+    m_time = 0;
+    m_primType = 0;
+    m_dirtyLights = 1;
+    m_dirtyMatrices = 1;
+    m_dirtyPreTrans = 1;
+    *(float *)0x7000022C = 0.15f;
+    *(float *)0x70000228 = 1.0f;
+    *(int *)0x70000210 = 0;
+    *(int *)0x70000214 = 0;
+    *(int *)0x70000218 = 0;
+    *(int *)0x7000021C = 0;
+    ((VIMatrix44 *)0x70000000)->Identity();
+    ((VIMatrix44 *)0x70000040)->Identity();
+    CalcClipToScreen();
+    CalcMatrices();
+    UploadMatrices(&m_dmaTag);
+    if (m_primBuffers.Init(0) < 0)
+        return -1;
+    if (m_primBufferFree.Init() < 0)
+        return -1;
+    if (m_surfaces.Init(0) < 0)
+        return -1;
+    if (m_surfaceFree.Init() < 0)
+        return -1;
+    if (m_materials.Init() < 0)
+        return -1;
+    if (m_materialPals.Init(0) < 0)
+        return -1;
+    if (CreateDefaultResources() < 0)
+        return -1;
+    if (SetSolidFillMaterial() < 0)
+        return -1;
+    m_tessellate = 1;
+    m_tess.Init();
+    m_zBias = 0.0f;
+    SetClipAndLight(1);
+    Flush();
+    if (!m_firstFrame)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            sceGsSyncV(0);
+            sceGsSwapDBuffDc(DBuffer, m_frame++);
+            *(volatile long *)0x12000000 = 32544;
+        }
+    }
+    return 0;
+}
+
+int VIRaster::Clear()
+{
+    m_blitBlend = 0;
+    m_solidFillMaterial = -1;
+    m_solidFillUIMaterial = -1;
+    m_solidFillUIAVGMaterial = -1;
+    m_wireframeMaterial = -1;
+    m_portalMaterial = -1;
+    m_blitMaterial = -1;
+    m_blitSurface = -1;
+    if (ClearDMADoubleBuffer() < 0)
+        return -1;
+    if (ClearMaterialLRU() < 0)
+        return -1;
+    int i;
+    for (i = m_colorBuffers.Begin(); i != m_colorBuffers.End();
+         i = m_colorBuffers.Next(i))
+        delete m_colorBuffers.Value(i);
+    if (m_colorBuffers.Clear() < 0)
+        return -1;
+    for (i = m_primBuffers.Begin(); i != m_primBuffers.End();
+         i = m_primBuffers.Next(i))
+        delete m_primBuffers.Value(i);
+    if (m_primBuffers.Clear() < 0)
+        return -1;
+    for (i = m_primBufferFree.Begin(); i != m_primBufferFree.End();
+         i = m_primBufferFree.Next(i))
+        delete *(VIPrimBuffer **)i;
+    if (m_primBufferFree.Clear() < 0)
+        return -1;
+    for (i = m_surfaces.Begin(); i != m_surfaces.End();
+         i = m_surfaces.Next(i))
+        delete m_surfaces.Value(i);
+    if (m_surfaces.Clear() < 0)
+        return -1;
+    for (i = m_surfaceFree.Begin(); i != m_surfaceFree.End();
+         i = m_surfaceFree.Next(i))
+        delete *(VISurface **)i;
+    if (m_surfaceFree.Clear() < 0)
+        return -1;
+    if (m_materials.Clear() < 0)
+        return -1;
+    for (i = m_materialPals.Begin(); i != m_materialPals.End();
+         i = m_materialPals.Next(i))
+        delete m_materialPals.Value(i);
+    if (m_materialPals.Clear() < 0)
+        return -1;
+    for (i = m_fonts.Begin(); i != m_fonts.End(); i = m_fonts.Next(i))
+        delete m_fonts.Value(i);
+    if (m_fonts.Clear() < 0)
+        return -1;
+    if (g_surfCache.Clear() < 0)
+        return -1;
+    return 0;
+}
+
+int VIRaster::BeginScene()
+{
+    if (m_firstFrame)
+    {
+        m_firstFrame = 0;
+        sceGsResetGraph(0, 1, 2, 0);
+        for (int i = 0; i < 3; i++)
+        {
+            sceGsSyncV(0);
+            sceGsSwapDBuffDc(DBuffer, m_frame++);
+            *(volatile long *)0x12000000 = 32544;
+        }
+    }
+    g_surfCache.m_numDownloads = 0;
+    SetGSScissoring();
+    return 0;
+}
+
+int VIRaster::Flip()
+{
+    sceGsSyncV(0);
+    sceGsSwapDBuffDc(DBuffer, m_frame);
+    unsigned char odd = ~m_frame & 1;
+    long fb0 = (int)(DBuffer[12] & 0x1FF);
+    long fb1 = (int)(DBuffer[58] & 0x1FF);
+    *(volatile long *)0x12000000 = 32547;
+    *(volatile long *)0x12000090 = ((odd & 1) ? fb1 : fb0) | 0x51400;
+    *(volatile long *)0x120000A0 = 0x001BF9FF0183227CL;
+    *(volatile long *)0x12000070 = ((odd & 1) ? fb1 : fb0) | 0x51400;
+    *(volatile long *)0x12000080 = 0x001BF9FF0183327DL;
+    *(volatile long *)0x120000D0 = 0;
+    sceGsSyncPath(0, 0);
+    m_frame++;
+    return 0;
+}
+
+// VIMaterialPass as its implicit operator= sees it: the A+D block is an array
+// of FOUR quadwords, copied element by element with `lq`/`sq`, and +0x4C is
+// alignment padding that no copy touches.
+typedef unsigned int VIRasterQW __attribute__((mode(TI)));
+class VIRasterPassImage
+{
+public:
+    int          m_texture;
+    unsigned int m_flags;
+    VIColor32    m_color;
+    int          m_blendMode;
+    VIMatrix33   m_uvTransform;
+    float        m_lodBias;
+    VIVect2      m_uvRate;
+    VIVect2      m_uvOffset;
+    int          m_stamp;
+    VIRasterQW   m_reg[4];
+};
+
+int VIRaster::CopyMaterial(int i, int share)
+{
+    VIMaterial *s = (VIMaterial *)i;
+    VIMaterial *d = (VIMaterial *)m_materials.Add();
+    if ((int)d < 0)
+        return -1;
+    if (share)
+        d->m_userData++;
+    d->m_numLayers = s->m_numLayers;
+    d->m_flags = s->m_flags;
+    *(long *)&d->m_time = *(long *)&s->m_time;
+    d->m_dirty = s->m_dirty;
+    int k;
+    for (k = 0; k < d->m_numLayers; k++)
+        *(VIRasterPassImage *)&d->m_layers[k] =
+            *(VIRasterPassImage *)&s->m_layers[k];
+    for (k = 0; k < d->m_numLayers; k++)
+    {
+        if (d->m_layers[k].m_texture != -1)
+            ShareSurface(d->m_layers[k].m_texture);
+    }
+    return (int)d;
+}
+
+// The material's GS packet lives in an LRU slot: a dirty, animated or
+// never-built material takes the least recently used slot (evicting its owner)
+// and rebuilds; a resident one is only moved to the back.  Either way the
+// slot is then REFerenced from the chain, and the emissive colour, when it
+// changed, goes out with the per-material uniforms.
+int VIRaster::AddMaterial(int i, _sceDmaTag **tag)
+{
+    VIMaterial *m = (VIMaterial *)i;
+    int k;
+    if (m_override)
+        return 0;
+    for (k = 0; k < m->m_numLayers; k++)
+    {
+        if (m->m_layers[k].m_texture != -1)
+        {
+            VISurface &surf = *m_surfaces.Value(m->m_layers[k].m_texture);
+            if (g_surfCache.Cache(surf, *m, m->m_layers[k], *this, tag, 0) < 0)
+                return -1;
+        }
+    }
+    if (m->m_flags & 0x10)
+        SetGSDitherMatrix(1, tag);
+    else
+        SetGSDitherMatrix(0, tag);
+    if (m->m_dirty || (m->m_flags & 4) || m->m_handle == -1)
+    {
+        if (m->m_handle != -1)
+        {
+            m_materialLRU.Value(m->m_handle).m_c = -1;
+            m->m_handle = -1;
+        }
+        k = m_materialLRU.Begin();
+        if (m_materialLRU.Value(k).m_c != -1)
+        {
+            ((VIMaterial *)m_materialLRU.Value(k).m_c)->m_handle = -1;
+            m_materialLRU.Value(k).m_c = -1;
+        }
+        m->m_handle = m_materialLRU.MoveToLast(k);
+        m_materialLRU.Value(m->m_handle).m_c = (int)m;
+        VIRasterMaterialLRU &e = m_materialLRU.Value(m->m_handle);
+        e.m_b = m->ConstructDMAPacket(*this, (VIQWord *)e.m_a);
+        m_materialLRU.Value(m->m_handle).m_d = m_dmaFlushes;
+        m_p4C18++;
+    }
+    else
+    {
+        m->m_handle = m_materialLRU.MoveToLast(m->m_handle);
+        if (m_materialLRU.Value(m->m_handle).m_d != m_dmaFlushes)
+        {
+            m_materialLRU.Value(m->m_handle).m_d = m_dmaFlushes;
+            m_p4C18++;
+        }
+    }
+    k = m->m_handle;
+    int qwc = m_materialLRU.Value(k).m_b;
+    int addr = m_materialLRU.Value(k).m_a;
+    (*tag)->m_id = 48;
+    (*tag)->m_addr = addr;
+    (*tag)->m_qwc = qwc;
+    *tag = *tag + 1;
+    if (*(int *)0x70000224 != *(int *)&m->m_emissive)
+    {
+        *(VIColor32 *)0x70000224 = m->m_emissive;
+        UploadPerMaterial(tag);
+    }
+    m_curMaterial = (int)m;
+    return 0;
+}
+
+// ----------------------------------------------------------------- strings --
+
+// One triangle fan per glyph: VIRFont::Cache resolves the string into
+// m_glyphs (character indices, made resident), and each character's cell is
+// drawn as a quad with the slot's four precomputed UVs.
+int VIRaster::DrawString(int font, const VIVect2I &at, const VIColor32F &c,
+                         const char *s)
+{
+    VIVect2I p0;
+    VIVect2I p1;
+    VIRFont *f = m_fonts.Value(font);
+    int n = f->Cache(*this, s, 256, m_glyphs);
+    if (n < 0)
+        return -1;
+    if (AddMaterial(f->m_material, &m_dmaTag) < 0)
+        return -1;
+    p0.x = at.x;
+    p0.y = at.y;
+    p1.x = at.x;
+    p1.y = at.y;
+    p1.y += f->m_charHeight;
+    for (int i = 0; i < n; i++)
+    {
+        BeginTriFan();
+        int slot = f->Char(m_glyphs[i])->m_slot;
+        // Named in the loop, so loop.c hoists &p1 into a callee-saved
+        // register -- which is what spills `c` to the stack.
+        VIVect2I *pp1 = &p1;
+        Color(c);
+        int off = slot * (int)sizeof(VIRFontSlot);
+        p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
+        Vertex(p0);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
+        Vertex(VIVect2I(p1.x, p0.y));
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
+        Vertex(*pp1);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
+        Vertex(VIVect2I(p0.x, p1.y));
+        EndTriFan();
+        p0.x = p1.x + 1;
+    }
+    return 0;
+}
+
+int VIRaster::DrawString(int font, const VIVect2I &at, const VIColor32F &c,
+                         const unsigned short *s)
+{
+    VIVect2I p0;
+    VIVect2I p1;
+    VIRFont *f = m_fonts.Value(font);
+    int n = f->Cache(*this, s, 256, m_glyphs);
+    if (n < 0)
+        return -1;
+    if (AddMaterial(f->m_material, &m_dmaTag) < 0)
+        return -1;
+    p0.x = at.x;
+    p0.y = at.y;
+    p1.x = at.x;
+    p1.y = at.y;
+    p1.y += f->m_charHeight;
+    for (int i = 0; i < n; i++)
+    {
+        BeginTriFan();
+        int slot = f->Char(m_glyphs[i])->m_slot;
+        // Named in the loop, so loop.c hoists &p1 into a callee-saved
+        // register -- which is what spills `c` to the stack.
+        VIVect2I *pp1 = &p1;
+        Color(c);
+        int off = slot * (int)sizeof(VIRFontSlot);
+        p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
+        Vertex(p0);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
+        Vertex(VIVect2I(p1.x, p0.y));
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
+        Vertex(*pp1);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
+        Vertex(VIVect2I(p0.x, p1.y));
+        EndTriFan();
+        p0.x = p1.x + 1;
+    }
+    return 0;
+}
+
+// `mode` places `at` on the string: 0 and 3 centre it both ways, 1 only
+// vertically, 2 only horizontally.  The width is the glyph run's own, one
+// pixel of spacing per character.
+int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
+                                 const VIColor32F &c, const char *s,
+                                 unsigned int mode)
+{
+    VIVect2I p0;
+    VIVect2I p1;
+    int w;
+    int i;
+    VIRFont *f = m_fonts.Value(font);
+    int n = f->Cache(*this, s, 256, m_glyphs);
+    if (n < 0)
+        return -1;
+    if (AddMaterial(f->m_material, &m_dmaTag) < 0)
+        return -1;
+    w = 0;
+    for (i = 0; i < n; i++)
+        w += f->Char(m_glyphs[i])->m_width + 1;
+    p0.x = at.x;
+    p0.y = at.y;
+    switch (mode)
+    {
+    case 1:
+        p0.y -= f->m_charHeight >> 1;
+        break;
+    case 2:
+        p0.x -= w >> 1;
+        break;
+    case 0:
+    case 3:
+        p0.x -= w >> 1;
+        p0.y -= f->m_charHeight >> 1;
+        break;
+    default:
+        return -1;
+    }
+    p1.x = p0.x;
+    p1.y = p0.y;
+    p1.y += f->m_charHeight;
+    for (i = 0; i < n; i++)
+    {
+        BeginTriFan();
+        int slot = f->Char(m_glyphs[i])->m_slot;
+        // Named in the loop, so loop.c hoists &p1 into a callee-saved
+        // register -- which is what spills `c` to the stack.
+        VIVect2I *pp1 = &p1;
+        Color(c);
+        int off = slot * (int)sizeof(VIRFontSlot);
+        p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
+        Vertex(p0);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
+        Vertex(VIVect2I(p1.x, p0.y));
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
+        Vertex(*pp1);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
+        Vertex(VIVect2I(p0.x, p1.y));
+        EndTriFan();
+        p0.x = p1.x + 1;
+    }
+    return 0;
+}
+
+int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
+                                 const VIColor32F &c, const unsigned short *s,
+                                 unsigned int mode)
+{
+    VIVect2I p0;
+    VIVect2I p1;
+    VIRFont *f = m_fonts.Value(font);
+    int n = f->Cache(*this, s, 256, m_glyphs);
+    if (n < 0)
+        return -1;
+    if (AddMaterial(f->m_material, &m_dmaTag) < 0)
+        return -1;
+    int w = 0;
+    int i;
+    for (i = 0; i < n; i++)
+        w += f->Char(m_glyphs[i])->m_width + 1;
+    p0.x = at.x;
+    p0.y = at.y;
+    switch (mode)
+    {
+    case 1:
+        p0.y -= f->m_charHeight >> 1;
+        break;
+    case 2:
+        p0.x -= w >> 1;
+        break;
+    case 0:
+    case 3:
+        p0.x -= w >> 1;
+        p0.y -= f->m_charHeight >> 1;
+        break;
+    default:
+        return -1;
+    }
+    p1.x = p0.x;
+    p1.y = p0.y;
+    p1.y += f->m_charHeight;
+    for (i = 0; i < n; i++)
+    {
+        BeginTriFan();
+        int slot = f->Char(m_glyphs[i])->m_slot;
+        // Named in the loop, so loop.c hoists &p1 into a callee-saved
+        // register -- which is what spills `c` to the stack.
+        VIVect2I *pp1 = &p1;
+        Color(c);
+        int off = slot * (int)sizeof(VIRFontSlot);
+        p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
+        Vertex(p0);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
+        Vertex(VIVect2I(p1.x, p0.y));
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
+        Vertex(*pp1);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
+        Vertex(VIVect2I(p0.x, p1.y));
+        EndTriFan();
+        p0.x = p1.x + 1;
+    }
+    return 0;
+}
+
+// A name plate: the anchor goes through the SPR model-view and projection to
+// a screen point, and the string is drawn centred on it in 2D, at the
+// anchor's own clip-space depth.
+int VIRaster::DrawCenteredString(int font, const VIVect3 &at,
+                                 const VIColor32F &c, const char *s)
+{
+    VIVect2I p0;
+    VIVect2I p1;
+    VIVect2I q;
+    VIVect4 v;
+    VIRFont *f = m_fonts.Value(font);
+    int n = f->Cache(*this, s, 256, m_glyphs);
+    if (n < 0)
+        return -1;
+    if (AddMaterial(f->m_material, &m_dmaTag) < 0)
+        return -1;
+    v.Set(at * *(VIMatrix44 *)0x70000000);
+    v.Set(v * *(VIMatrix44 *)0x70000040);
+    float inv = 1.0f / v.w;
+    v.x *= inv;
+    v.y *= inv;
+    v.z *= inv;
+    v.w *= inv;
+    float hw = (float)(m_screenW >> 1);
+    float hh = (float)(m_screenH >> 1);
+    q.x = (int)(v.x * hw + hw);
+    q.y = (int)(-v.y * hh + hh);
+    Store2D();
+    ((VIMatrix44 *)0x70000000)->Identity();
+    ((VIMatrix44 *)0x70000040)->Identity();
+    m_dirtyLights = 1;
+    int w = 0;
+    int i;
+    for (i = 0; i < n; i++)
+        w += f->Char(m_glyphs[i])->m_width + 1;
+    p0.x = q.x;
+    p0.y = q.y;
+    p0.x -= w >> 1;
+    p1.x = p0.x;
+    p0.y -= f->m_charHeight >> 1;
+    p1.y = p0.y;
+    p1.y += f->m_charHeight;
+    for (i = 0; i < n; i++)
+    {
+        BeginTriFan();
+        int slot = f->Char(m_glyphs[i])->m_slot;
+        Color(c);
+        int off = slot * (int)sizeof(VIRFontSlot);
+        p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
+        Vertex(VIVect3(((float)p0.x - m_viewportWF + 0.5f) * m_invViewportW,
+                       ((float)p0.y - m_viewportHF + 0.5f) * -m_invViewportH,
+                       v.z));
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
+        Vertex(VIVect3(((float)p1.x - m_viewportWF + 0.5f) * m_invViewportW,
+                       ((float)p0.y - m_viewportHF + 0.5f) * -m_invViewportH,
+                       v.z));
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
+        Vertex(VIVect3(((float)p1.x - m_viewportWF + 0.5f) * m_invViewportW,
+                       ((float)p1.y - m_viewportHF + 0.5f) * -m_invViewportH,
+                       v.z));
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
+        Vertex(VIVect3(((float)p0.x - m_viewportWF + 0.5f) * m_invViewportW,
+                       ((float)p1.y - m_viewportHF + 0.5f) * -m_invViewportH,
+                       v.z));
+        EndTriFan();
+        p0.x = p1.x + 1;
+    }
+    Restore2D();
+    return 0;
+}
+
+int VIRaster::CalcCenteredStringScreenRect(int font, const VIVect3 &at,
+                                           const char *s, VIRect &r)
+{
+    VIVect4 v;
+    VIVect2I q;
+    VIRFont *f = m_fonts.Value(font);
+    v.Set(at * *(VIMatrix44 *)0x70000000);
+    v.Set(v * *(VIMatrix44 *)0x70000040);
+    float inv = 1.0f / v.w;
+    v.x *= inv;
+    v.y *= inv;
+    v.z *= inv;
+    v.w *= inv;
+    float hw = (float)(m_screenW >> 1);
+    float hh = (float)(m_screenH >> 1);
+    q.x = (int)(v.x * hw + hw);
+    q.y = (int)(-v.y * hh + hh);
+    int w = f->GetStringWidth(s, 1);
+    r.min.x = q.x;
+    r.min.y = q.y;
+    r.min.x -= w >> 1;
+    r.max.x = r.min.x + w;
+    r.min.y -= f->m_charHeight >> 1;
+    r.max.y = r.min.y;
+    r.max.y += f->m_charHeight;
+    return 0;
+}
+
+// --------------------------------------------------------- default state --
+
+int VIRaster::CreateDefaultResources()
+{
+    VIColor32 c;
+    m_solidFillMaterial = CreateMaterial(1);
+    if (m_solidFillMaterial < 0)
+        return -1;
+    Material(m_solidFillMaterial)->InitSolidFill();
+    m_solidFillUIMaterial = CreateMaterial(1);
+    if (m_solidFillUIMaterial < 0)
+        return -1;
+    Material(m_solidFillUIMaterial)->InitSolidFill();
+    m_solidFillUIAVGMaterial = CreateMaterial(1);
+    if (m_solidFillUIAVGMaterial < 0)
+        return -1;
+    VIMaterial *m = Material(m_solidFillUIAVGMaterial);
+    m->InitSolidFill();
+    m->SetLayerBlendMode(0, VIAlphaBlendMode3);
+    m_wireframeMaterial = CreateMaterial(1);
+    if (m_wireframeMaterial < 0)
+        return -1;
+    m = Material(m_wireframeMaterial);
+    m->InitSolidFill();
+    m->SetLayerFillType(0, VIMaterialFillTypeSolid);
+    m_portalMaterial = CreateMaterial(1);
+    if (m_portalMaterial < 0)
+        return -1;
+    c.Set(255, 255, 255, 200);
+    m = Material(m_portalMaterial);
+    m->InitSolidFill();
+    m->SetLayerBlendMode(0, VIAlphaBlendMode3);
+    m->SetLayerColor(0, c);
+    m_blitMaterial = CreateMaterial(1);
+    if (m_blitMaterial < 0)
+        return -1;
+    c.Set(255, 255, 255, 255);
+    m = Material(m_blitMaterial);
+    m->InitSolidFill();
+    m->SetLayerColor(0, c);
+    m->SetLayerMagFilter(0, 0);
+    m->SetZTest(0);
+    m->SetZWrite(0);
+    return 0;
+}
+
+// The per-frame uniform block VU1's raster microprogram reads: the three
+// matrices CalcMatrices left in SPR, then the lighting -- sun direction (with
+// y and z exchanged), point light and its reciprocal range, the clip flag
+// and the two SPR constants, sun, point and ambient colours each zeroed when
+// disabled, the fog and the static lighting -- and an MSCAL of the init
+// entry point to latch it.
+int VIRaster::UploadMatrices(_sceDmaTag **tag)
+{
+    char *p = (char *)*tag;
+    ((_sceDmaTag *)p)->m_id = 16;
+    (*tag)->m_addr = 0;
+    (*tag)->m_qwc = 23;
+    char *base = (char *)*tag;
+    *tag = (_sceDmaTag *)(base + 384);
+    ((unsigned int *)base)[4] = 0;
+    p = base + 16;
+    ((unsigned int *)p)[2] = 0x13000000;
+    ((unsigned int *)p)[1] = 0;
+    ((unsigned int *)p)[3] = 0x6C150000;
+    sceVu0CopyMatrix((VIMatrix44 *)(base + 32), *(VIMatrix44 *)0x70000140);
+    sceVu0CopyMatrix((VIMatrix44 *)(base + 96), *(VIMatrix44 *)0x70000080);
+    sceVu0CopyMatrix((VIMatrix44 *)(base + 160), *(VIMatrix44 *)0x700000C0);
+    p = base + 224;
+    ((float *)p)[0] = *(float *)0x70000180;
+    ((float *)p)[1] = -*(float *)0x70000188;
+    ((float *)p)[2] = *(float *)0x70000184;
+    ((float *)p)[3] = 0.0f;
+    p = base + 240;
+    ((float *)p)[0] = *(float *)0x70000190;
+    ((float *)p)[1] = *(float *)0x70000194;
+    ((float *)p)[2] = *(float *)0x70000198;
+    float range = 1.0f;
+    if (*(unsigned char *)0x70000222)
+        range = 1.0f / *(float *)0x700001CC;
+    ((float *)p)[3] = range;
+    p = base + 256;
+    ((int *)p)[0] = m_p45C8;
+    ((float *)p)[1] = *(float *)0x7000022C;
+    ((float *)p)[2] = 0.0f;
+    ((float *)p)[3] = *(float *)0x70000228;
+    p = base + 272;
+    if (*(unsigned char *)0x70000221)
+    {
+        ((float *)p)[0] = *(float *)0x700001AC;
+        ((float *)p)[1] = *(float *)0x700001B0;
+        ((float *)p)[2] = *(float *)0x700001B4;
+        ((float *)p)[3] = *(float *)0x700001B8;
+    }
+    else
+    {
+        ((float *)p)[0] = 0.0f;
+        ((float *)p)[1] = 0.0f;
+        ((float *)p)[2] = 0.0f;
+        ((float *)p)[3] = 0.0f;
+    }
+    p += 16;
+    if (*(unsigned char *)0x70000222)
+    {
+        VIRasterPointLight *l = (VIRasterPointLight *)0x700001C0;
+        ((float *)p)[0] = l->m_color.r;
+        ((float *)p)[1] = l->m_color.g;
+        ((float *)p)[2] = l->m_color.b;
+        ((float *)p)[3] = 0.0f;
+    }
+    else
+    {
+        ((float *)p)[0] = 0.0f;
+        ((float *)p)[1] = 0.0f;
+        ((float *)p)[2] = 0.0f;
+        ((float *)p)[3] = 0.0f;
+    }
+    p += 16;
+    if (*(unsigned char *)0x70000220)
+    {
+        ((float *)p)[0] = *(float *)0x700001E0;
+        ((float *)p)[1] = *(float *)0x700001E4;
+        ((float *)p)[2] = *(float *)0x700001E8;
+        ((float *)p)[3] = *(float *)0x700001EC;
+    }
+    else
+    {
+        ((float *)p)[0] = 0.0f;
+        ((float *)p)[1] = 0.0f;
+        ((float *)p)[2] = 0.0f;
+        ((float *)p)[3] = 0.0f;
+    }
+    p += 16;
+    ((float *)p)[0] = *(float *)0x70000210;
+    unsigned int mscal = RInitOffset | 0x14000000;
+    ((float *)p)[1] = *(float *)0x70000214;
+    ((float *)p)[2] = *(float *)0x70000218;
+    ((float *)p)[3] = *(float *)0x7000021C;
+    p += 16;
+    ((float *)p)[0] = *(float *)0x700001F0;
+    ((float *)p)[1] = *(float *)0x700001F4;
+    ((float *)p)[2] = *(float *)0x700001F8;
+    ((float *)p)[3] = *(float *)0x700001FC;
+    p += 16;
+    ((float *)p)[0] = *(float *)0x70000200;
+    ((float *)p)[1] = *(float *)0x70000204;
+    ((float *)p)[2] = *(float *)0x70000208;
+    ((float *)p)[3] = *(float *)0x7000020C;
+    p += 16;
+    ((unsigned int *)p)[3] = mscal;
+    ((unsigned int *)p)[1] = 0;
+    ((unsigned int *)p)[2] = 0;
+    ((unsigned int *)p)[0] = 0;
+    m_dirtyLights = 0;
+    *(unsigned char *)0x70000224 = 0;
+    *(unsigned char *)0x70000225 = 0;
+    *(unsigned char *)0x70000226 = 0;
+    *(unsigned char *)0x70000227 = 0;
+    return 0;
+}
+
+// DIMX, its own packet, and only when the dither state actually changes: the
+// standard 4x4 ordered matrix when on, a flat one when off.
+int VIRaster::SetGSDitherMatrix(int on, _sceDmaTag **tag)
+{
+    if (m_p459C != on)
+    {
+        (*tag)->m_id = 16;
+        (*tag)->m_addr = 0;
+        (*tag)->m_qwc = 3;
+        char *base = (char *)*tag;
+        *tag = (_sceDmaTag *)(base + 64);
+        ((unsigned int *)base)[4] = 0;
+        char *p = base + 16;
+        ((unsigned int *)p)[2] = 0x10000000;
+        ((unsigned int *)p)[1] = 0;
+        ((unsigned int *)p)[3] = 0x50000002;
+        ((long *)base)[4] = 0x1000000000008001;
+        ((long *)base)[5] = 14;
+        p = base + 48;
+        if (on == 1)
+            ((long *)p)[0] = 0x6071243571603524;
+        else
+            ((long *)p)[0] = 0x2031312020313120;
+        ((long *)p)[1] = 68;
+        m_p459C = on;
+    }
+    return 0;
+}
+
+// SCISSOR_1 and SCISSOR_2 to the viewport, one A+D packet.
+int VIRaster::SetGSScissoring()
+{
+    VIVect2I a;
+    VIVect2I b;
+    a.x = m_viewportX;
+    a.y = m_viewportY;
+    b.x = m_viewportX + m_viewportW - 1;
+    b.y = m_viewportY + m_viewportH - 1;
+    m_dmaTag->m_id = 16;
+    m_dmaTag->m_addr = 0;
+    m_dmaTag->m_qwc = 4;
+    char *base = (char *)m_dmaTag;
+    m_dmaTag = (_sceDmaTag *)(base + 80);
+    ((unsigned int *)base)[4] = 0;
+    char *p = base + 16;
+    ((unsigned int *)p)[2] = 0x10000000;
+    ((unsigned int *)p)[3] = 0x50000003;
+    ((unsigned int *)p)[1] = 0;
+    ((long *)base)[4] = 0x1000000000008002;
+    ((long *)base)[5] = 14;
+    ((long *)base)[6] = (long)a.x | ((long)b.x << 16) | ((long)a.y << 32) |
+                        ((long)b.y << 48);
+    ((long *)base)[7] = 64;
+    ((long *)base)[8] = (long)a.x | ((long)b.x << 16) | ((long)a.y << 32) |
+                        ((long)b.y << 48);
+    ((long *)base)[9] = 65;
+    return 0;
+}
+
+// ------------------------------------------------------------- billboards --
+
+// Opens a batch of at most 80 billboards and hands the caller the run of
+// VIBillboard slots to fill in place.  When the matrices are dirty the whole
+// billboard microprogram's constant block goes out first: the model-view, the
+// projection taken through to screen space, the model-view-projection, a GIF
+// tag template, the 28 corner UVs of the seven sprite-sheet layouts, a white
+// and the screen offset with the alpha scale.
+int VIRaster::BeginBillboards(VIBillboard **bb, int count)
+{
+    // A LOCAL, not the parameter clamped in place: only the copy gives the
+    // `move`, then `movz` on the clamp constant.
+    int n = count;
+    if (n > 80)
+        n = 80;
+    char *p;
+    VIMaterial *m = Material(m_curMaterial);
+    if (n > 0)
+    {
+        if (m_p4C4C != 2)
+            UploadBillboardMicro(&m_dmaTag);
+        if (m_dirtyMatrices)
+        {
+            CalcMatrices();
+            VIMatrix44 mat;
+            p = (char *)m_dmaTag;
+            p += 16;
+            ((unsigned int *)p)[2] = 0x13000000;
+            ((unsigned int *)p)[3] = 0x6C0C0000;
+            ((unsigned int *)p)[0] = 0;
+            ((unsigned int *)p)[1] = 0;
+            p += 16;
+            void *dst = p;
+            memcpy(dst, (void *)0x70000000, 64);
+            p += 64;
+            mat.Mul(*(VIMatrix44 *)0x70000040, *(VIMatrix44 *)0x700000C0);
+            ((VIRasterQW *)p)[0] = ((VIRasterQW *)&mat)[0];
+            ((VIRasterQW *)p)[1] = ((VIRasterQW *)&mat)[1];
+            ((VIRasterQW *)p)[2] = ((VIRasterQW *)&mat)[2];
+            ((VIRasterQW *)p)[3] = ((VIRasterQW *)&mat)[3];
+            p += 64;
+            dst = p;
+            memcpy(dst, (void *)0x70000080, 64);
+            p += 64;
+            ((unsigned int *)p)[0] = 0;
+            ((unsigned int *)p)[1] = 0;
+            ((unsigned int *)p)[3] = 0x6C040010;
+            ((unsigned int *)p)[2] = 0;
+            p += 16;
+            ((long *)p)[0] = 0xB000000000008000;
+            ((long *)p)[1] = 0x0000044242424421;
+            p += 16;
+            ((long *)p)[0] = 0x202A400000008001;
+            ((long *)p)[1] = 66;
+            p += 16;
+            ((unsigned int *)p)[2] = 0x3F800000;
+            ((unsigned int *)p)[0] = 0;
+            ((unsigned int *)p)[1] = 0;
+            ((unsigned int *)p)[3] = 0;
+            p += 16;
+            ((unsigned int *)p)[0] = 8192;
+            ((unsigned int *)p)[1] = 8192;
+            ((unsigned int *)p)[2] = 8192;
+            ((unsigned int *)p)[3] = 0;
+            p += 16;
+            ((unsigned int *)p)[0] = 0;
+            ((unsigned int *)p)[1] = 0;
+            ((unsigned int *)p)[3] = 0x6C1C0020;
+            ((unsigned int *)p)[2] = 0;
+            p += 16;
+    ((long *)p)[0] = 0x3F80000000000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F8000003F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F00000000000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F0000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F0000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F0000003F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F80000000000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F00000000000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F8000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F0000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F8000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F0000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F8000003F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F0000003F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F80000000000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F8000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F8000003F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F000000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F8000003F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+    ((long *)p)[0] = 0x3F800000;
+    ((long *)p)[1] = 0x3F800000;
+    p += 16;
+            ((unsigned int *)p)[3] = 0x6C02000C;
+            ((unsigned int *)p)[0] = 0;
+            ((unsigned int *)p)[1] = 0;
+            ((unsigned int *)p)[2] = 0;
+            p += 16;
+            ((float *)p)[0] = 1.0f;
+            ((float *)p)[1] = 1.0f;
+            ((float *)p)[2] = 1.0f;
+            ((float *)p)[3] = 1.0f;
+            p += 16;
+            if (m->m_layers[0].m_blendMode == 0)
+            {
+                ((float *)p)[0] = m_aspectX;
+                ((float *)p)[1] = m_aspectY;
+                ((float *)p)[2] = 128.0f;
+                ((float *)p)[3] = 128.0f;
+            }
+            else
+            {
+                ((float *)p)[0] = m_aspectX;
+                ((float *)p)[1] = m_aspectY;
+                ((float *)p)[2] = 128.0f;
+                ((float *)p)[3] = 64.0f;
+            }
+            p += 16;
+            ((unsigned int *)p)[0] = 0;
+            ((unsigned int *)p)[3] = 0x14000000;
+            ((unsigned int *)p)[1] = 0;
+            ((unsigned int *)p)[2] = 0;
+            int qwc = (p - (char *)m_dmaTag) >> 4;
+            m_dmaTag->m_id = 16;
+            m_dmaTag->m_addr = 0;
+            m_dmaTag->m_qwc = qwc;
+            int bytes = (qwc << 4) + 16;
+            m_dmaTag = (_sceDmaTag *)((char *)m_dmaTag + bytes);
+            FlushDMABufferIfFull();
+            m_dirtyMatrices = 0;
+        }
+        p = (char *)m_dmaTag;
+        p += 16;
+        ((unsigned int *)p)[3] = ((n * 3 + 1) << 16) | 0x6C008000;
+        ((unsigned int *)p)[2] = 0x13000000;
+        ((unsigned int *)p)[0] = 0;
+        ((unsigned int *)p)[1] = 0;
+        p += 16;
+        ((unsigned int *)p)[0] = n;
+        ((unsigned int *)p)[1] = 0;
+        ((unsigned int *)p)[2] = 0;
+        ((unsigned int *)p)[3] = 0;
+        p += 16;
+        *bb = (VIBillboard *)p;
+    }
+    else
+    {
+        *bb = 0;
+        n = 0;
+    }
+    m_numBillboards = n;
+    return n;
+}
+
+// -------------------------------------------------------- the tessellator --
+
+VIRasterTess::VIRasterTess()
+{
+}
+
+// ------------------------------------------------------ prim-buffer draws --
+
+// Each material run of the buffer is REFerenced straight out of the prim
+// buffer's own vertex block, behind its material's GS packet.  A material that
+// depth-sorts is drawn on pass bit 0 and one that does not on bit 1, and the
+// return value says whether any of the second kind was seen.
+int VIRaster::DrawPrimBufferVUNC(int prim, int pal, unsigned int flags)
+{
+    VIPrimBuffer *pb = m_primBuffers.Value(prim);
+    int r = 0;
+    FlushDMABufferIfFull();
+    if (m_dirtyLights)
+    {
+        CalcMatrices();
+        UploadMatrices(&m_dmaTag);
+    }
+    for (int i = 0; i < pb->m_numMaterials; i++)
+    {
+        int mat = pb->m_materials[i].m_matIdx;
+        mat = m_materialPals.Value(pal)->m_mats[mat];
+        int ds = MaterialHasDepthSort(mat);
+        if (!ds)
+            r = 1;
+        if (ds ? (flags & 1) : (flags & 2))
+        {
+            AddMaterial(mat, &m_dmaTag);
+            int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
+            int qwc = pb->m_materials[i].m_numVerts;
+            m_dmaTag->m_id = 48;
+            m_dmaTag->m_addr = addr;
+            m_dmaTag->m_qwc = qwc;
+            m_dmaTag++;
+        }
+    }
+    FlushDMABufferIfFull();
+    return r;
+}
+
+// The packed forms put the buffer's four unpack scales in SPR first.  With
+// the point light on, the raster's clip-and-light flag says whether the light
+// sphere -- taken into object space through the inverse model-view, whose
+// first row's length is the scale -- reaches the buffer's box at all.
+int VIRaster::DrawPrimBufferPackVUNC(int prim, int pal, unsigned int flags)
+{
+    VIPrimBuffer *pb = m_primBuffers.Value(prim);
+    int r = 0;
+    FlushDMABufferIfFull();
+    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    if (m_dirtyLights)
+        CalcMatrices();
+    m_p45C8 = 0;
+    if (*(unsigned char *)0x70000222)
+    {
+        VISphere s;
+        float x = *(float *)0x70000100;
+        float y = *(float *)0x70000104;
+        float z = *(float *)0x70000108;
+        float len = sqrtf(x * x + y * y + z * z);
+        s.r = *(float *)0x700001CC * (1.0f / len);
+        s.c.x = *(float *)0x70000190;
+        s.c.y = *(float *)0x70000194;
+        s.c.z = *(float *)0x70000198;
+        if (pb->m_bbox.Intersects(s))
+            m_p45C8 = 1;
+    }
+    UploadMatrices(&m_dmaTag);
+    for (int i = 0; i < pb->m_numMaterials; i++)
+    {
+        int mat = pb->m_materials[i].m_matIdx;
+        mat = m_materialPals.Value(pal)->m_mats[mat];
+        int ds = MaterialHasDepthSort(mat);
+        if (!ds)
+            r = 1;
+        if (ds ? (flags & 1) : (flags & 2))
+        {
+            AddMaterial(mat, &m_dmaTag);
+            int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
+            int qwc = pb->m_materials[i].m_numVerts;
+            m_dmaTag->m_id = 48;
+            m_dmaTag->m_addr = addr;
+            m_dmaTag->m_qwc = qwc;
+            m_dmaTag++;
+        }
+    }
+    FlushDMABufferIfFull();
+    return r;
+}
+
+int VIRaster::DrawPrimBufferPackVUNCG(int prim, int pal, unsigned int flags)
+{
+    VIPrimBuffer *pb = m_primBuffers.Value(prim);
+    int r = 0;
+    FlushDMABufferIfFull();
+    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    if (m_dirtyLights)
+        CalcMatrices();
+    UploadMatrices(&m_dmaTag);
+    if (m_dirtyPreTrans)
+        UploadPreTrans(&m_dmaTag);
+    for (int i = 0; i < pb->m_numMaterials; i++)
+    {
+        int mat = pb->m_materials[i].m_matIdx;
+        mat = m_materialPals.Value(pal)->m_mats[mat];
+        int ds = MaterialHasDepthSort(mat);
+        if (!ds)
+            r = 1;
+        if (ds ? (flags & 1) : (flags & 2))
+        {
+            AddMaterial(mat, &m_dmaTag);
+            int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
+            int qwc = pb->m_materials[i].m_numVerts;
+            m_dmaTag->m_id = 48;
+            m_dmaTag->m_addr = addr;
+            m_dmaTag->m_qwc = qwc;
+            m_dmaTag++;
+        }
+    }
+    FlushDMABufferIfFull();
+    if (DrawPrimBufferTessPackVUNCG(prim, pal, flags))
+        r = 1;
+    return r;
+}
+
+// The point light's second pass: every triangle of a tessellated material
+// that the light's box reaches is cut by VIRasterTess into pieces small
+// enough for per-vertex lighting to show the falloff, and each resulting
+// strip goes out as its own unpacked packet, all four attribute rows per
+// vertex, closed by an MSCAL of the strip program.
+int VIRaster::DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags)
+{
+    VIPrimBuffer *pb = m_primBuffers.Value(prim);
+    if (*(unsigned char *)0x70000222 == 0)
+        return 0;
+    if (m_tessellate == 0)
+        return 0;
+    VIBBox box;
+    VIVect3 v[3];
+    ((VIMatrix44 *)0x70000100)->Mul(*(VIVect3 *)0x700001C0, v[0]);
+    {
+        VIVect3 c(v[0]);
+        c += m_preTransAt;
+        VISphere s(c, *(float *)0x700001CC);
+        box.max = s.c;
+        box.min = s.c;
+        box.min -= s.r;
+        box.max += s.r;
+        if (!box.Intersects(pb->m_bbox))
+            return 0;
+    }
+    VIBBox lbox;
+    VIBBox tbox;
+    VISphere ls(v[0], *(float *)0x700001CC);
+    lbox.max = ls.c;
+    lbox.max += ls.r;
+    lbox.min = ls.c;
+    lbox.min -= ls.r;
+    char *verts = pb->m_verts;
+    int prims = 0;
+    int i = 0;
+    while (i < pb->m_numMaterials)
+    {
+        int mat = m_materialPals.Value(pal)->m_mats.m_data[pb->m_materials[i].m_matIdx];
+        int ds = MaterialHasDepthSort(mat);
+        if (!(((VIMaterial *)mat)->m_flags & 0x20) ||
+            !(ds ? (flags & 1) : (flags & 2)))
+        {
+            i++;
+            prims += pb->m_materials[i - 1].m_numPrims;
+            verts += pb->m_materials[i - 1].m_numVerts << 4;
+            continue;
+        }
+        i++;
+        AddMaterial(mat, &m_dmaTag);
+        for (int k = 0; k < pb->m_materials[i - 1].m_numPrims; k++, prims++)
+        {
+            VIPrimPrim *pp = &pb->m_prims[prims];
+            if (!box.Intersects(pp->m_bbox))
+            {
+                verts += (pp->m_numVerts << 5) + 48;
+                continue;
+            }
+            verts += 32;
+            VIPrimVertexPackVUNCG *a = (VIPrimVertexPackVUNCG *)verts;
+            verts += 32;
+            VIPrimVertexPackVUNCG *b = (VIPrimVertexPackVUNCG *)verts;
+            float sc = *(float *)0x70000210;
+            v[1].x = (float)a->m_pos.x * sc;
+            v[1].y = (float)a->m_pos.y * sc;
+            v[1].z = (float)a->m_pos.z * sc;
+            v[1] += m_preTrans[a->m_preTrans];
+            v[2].x = (float)b->m_pos.x * sc;
+            v[2].y = (float)b->m_pos.y * sc;
+            v[2].z = (float)b->m_pos.z * sc;
+            v[2] += m_preTrans[b->m_preTrans];
+            for (int j = 2; j < pp->m_numVerts; j++)
+            {
+                verts += 32;
+                VIPrimVertexPackVUNCG *c = (VIPrimVertexPackVUNCG *)verts;
+                v[0] = v[1];
+                v[1] = v[2];
+                v[2].x = (float)c->m_pos.x * *(float *)0x70000210;
+                v[2].y = (float)c->m_pos.y * *(float *)0x70000210;
+                v[2].z = (float)c->m_pos.z * *(float *)0x70000210;
+                v[2] += m_preTrans[c->m_preTrans];
+                tbox.Init(3, v);
+                if (lbox.Intersects(tbox))
+                {
+                    if (!(j & 1))
+                        TessTriangle(v[0], v[1], v[2], a, b, c);
+                    else
+                        TessTriangle(v[2], v[1], v[0], c, b, a);
+                    for (int n = 0; n < m_tess.m_numStrips; n++)
+                    {
+                        VIRasterTessStrip *st = &m_tess.m_strips[n];
+                        m_dmaTag->m_id = 16;
+                        int qwc = (st->m_count << 2) + 3;
+                        m_dmaTag->m_addr = 0;
+                        m_dmaTag->m_qwc = qwc;
+                        char *q = (char *)m_dmaTag;
+                        m_dmaTag = (_sceDmaTag *)(q + (qwc << 4) + 16);
+                        ((unsigned int *)q)[4] = 0;
+                        ((unsigned int *)(q + 16))[1] = 0;
+                        ((unsigned int *)(q + 16))[2] = 0;
+                        ((unsigned int *)(q + 16))[3] =
+                            (((st->m_count << 2) + 1) << 16) | 0x6C008000;
+                        ((unsigned int *)(q + 32))[0] = st->m_count;
+                        ((unsigned int *)(q + 32))[3] = 0;
+                        ((unsigned int *)(q + 32))[1] = 0;
+                        ((unsigned int *)(q + 32))[2] = 0;
+                        VIVect4 *o = (VIVect4 *)(q + 48);
+                        VITessVertex *t = &m_tess.m_out[st->m_start];
+                        for (int m = 0; m < st->m_count; m++)
+                        {
+                            o->x = t->m_pos.x;
+                            o->y = t->m_pos.y;
+                            o->z = t->m_pos.z;
+                            o->w = 1.0f;
+                            o++;
+                            o->x = t->m_uv.x;
+                            o->y = t->m_uv.y;
+                            o->z = 1.0f;
+                            o->w = 0.0f;
+                            o++;
+                            o->x = t->m_normal.x;
+                            o->y = t->m_normal.y;
+                            o->z = t->m_normal.z;
+                            o->w = 0.0f;
+                            o++;
+                            o->x = t->m_color.r;
+                            o->y = t->m_color.g;
+                            o->z = t->m_color.b;
+                            o->w = t->m_color.a;
+                            o++;
+                            t++;
+                        }
+                        ((unsigned int *)o)[0] = 0;
+                        ((unsigned int *)o)[1] = 0;
+                        ((unsigned int *)o)[3] = RStrip5Offset | 0x14000000;
+                        ((unsigned int *)o)[2] = 0;
+                        FlushDMABufferIfFull();
+                    }
+                }
+                a = b;
+                b = c;
+            }
+            verts += 16;
+        }
+    }
+    return 0;
+}
+
+static inline void TessNormal(VIVect3 &o, const VIVect3S8 &n, float s)
+{
+    o.x = (float)n.x * s;
+    o.y = (float)n.y * s;
+    o.z = (float)n.z * s;
+}
+
+static inline void TessColor(VIColor32F &o, const VIVect4S8 &c, float s)
+{
+    o.r = (float)c.x * s;
+    o.g = (float)c.y * s;
+    o.b = (float)c.z * s;
+    o.a = (float)c.w * s;
+}
+
+int VIRaster::TessTriangle(VIVect3 &a, VIVect3 &b, VIVect3 &c,
+                           VIPrimVertexPackVUNCG *va, VIPrimVertexPackVUNCG *vb,
+                           VIPrimVertexPackVUNCG *vc)
+{
+    VITessVertex t[3];
+    float *uvScale = (float *)0x70000214;
+    float *nScale = (float *)0x70000218;
+    float *cScale = (float *)0x7000021C;
+    t[0].m_pos = a;
+    t[0].m_uv.Set((float)va->m_uv.x * *uvScale, (float)va->m_uv.y * *uvScale);
+    TessNormal(t[0].m_normal, va->m_normal, *nScale);
+    TessColor(t[0].m_color, va->m_color, *cScale);
+    t[0].m_pos.x += t[0].m_normal.x * 0.01f;
+    t[0].m_pos.y += t[0].m_normal.y * 0.01f;
+    t[0].m_pos.z += t[0].m_normal.z * 0.01f;
+    t[1].m_pos = b;
+    t[1].m_uv.Set((float)vb->m_uv.x * *uvScale, (float)vb->m_uv.y * *uvScale);
+    TessNormal(t[1].m_normal, vb->m_normal, *nScale);
+    TessColor(t[1].m_color, vb->m_color, *cScale);
+    t[1].m_pos.x += t[1].m_normal.x * 0.01f;
+    t[1].m_pos.y += t[1].m_normal.y * 0.01f;
+    t[1].m_pos.z += t[1].m_normal.z * 0.01f;
+    t[2].m_pos = c;
+    t[2].m_uv.Set((float)vc->m_uv.x * *uvScale, (float)vc->m_uv.y * *uvScale);
+    TessNormal(t[2].m_normal, vc->m_normal, *nScale);
+    TessColor(t[2].m_color, vc->m_color, *cScale);
+    t[2].m_pos.x += t[2].m_normal.x * 0.01f;
+    t[2].m_pos.y += t[2].m_normal.y * 0.01f;
+    t[2].m_pos.z += t[2].m_normal.z * 0.01f;
+    return m_tess.Tessellate(3, t);
+}
+
+int VIRaster::DrawPrimBufferPackVUNBW(int prim, int pal, unsigned int flags)
+{
+    VIPrimBuffer *pb = m_primBuffers.Value(prim);
+    int r = 0;
+    FlushDMABufferIfFull();
+    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    if (m_dirtyLights)
+        CalcMatrices();
+    UploadMatrices(&m_dmaTag);
+    for (int i = 0; i < pb->m_numMaterials; i++)
+    {
+        int mat = pb->m_materials[i].m_matIdx;
+        mat = m_materialPals.Value(pal)->m_mats[mat];
+        int ds = MaterialHasDepthSort(mat);
+        if (!ds)
+            r = 1;
+        if (ds ? (flags & 1) : (flags & 2))
+        {
+            AddMaterial(mat, &m_dmaTag);
+            int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
+            int qwc = pb->m_materials[i].m_numVerts;
+            m_dmaTag->m_id = 48;
+            m_dmaTag->m_addr = addr;
+            m_dmaTag->m_qwc = qwc;
+            m_dmaTag++;
+        }
+    }
+    FlushDMABufferIfFull();
+    return r;
+}
+
+int VIRaster::DrawPrimBufferPackVU(int prim, int pal, float f, unsigned int flags)
+{
+    VIPrimBuffer *pb = m_primBuffers.Value(prim);
+    int r = 0;
+    FlushDMABufferIfFull();
+    *(float *)0x70000228 = f;
+    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    if (m_dirtyLights)
+        CalcMatrices();
+    UploadMatrices(&m_dmaTag);
+    for (int i = 0; i < pb->m_numMaterials; i++)
+    {
+        int mat = pb->m_materials[i].m_matIdx;
+        mat = m_materialPals.Value(pal)->m_mats[mat];
+        int ds = MaterialHasDepthSort(mat);
+        if (!ds)
+            r = 1;
+        if (ds ? (flags & 1) : (flags & 2))
+        {
+            AddMaterial(mat, &m_dmaTag);
+            int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
+            int qwc = pb->m_materials[i].m_numVerts;
+            m_dmaTag->m_id = 48;
+            m_dmaTag->m_addr = addr;
+            m_dmaTag->m_qwc = qwc;
+            m_dmaTag++;
+        }
+    }
+    FlushDMABufferIfFull();
+    return r;
+}
+
+// The baked-colour form: the colour buffer carries its own pre-built chain
+// per material, and each one is CALLed (DMAtag id 5) rather than REFerenced.
+int VIRaster::DrawPrimBufferPackVUNC(int prim, int cbi, int pal,
+                                     unsigned int flags)
+{
+    VIPrimBuffer *pb = m_primBuffers.Value(prim);
+    VIColorBuffer *cb = m_colorBuffers.Value(cbi);
+    int r = 0;
+    FlushDMABufferIfFull();
+    if (prim != cb->m_primBuffer)
+        return -1;
+    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    if (m_dirtyLights)
+        CalcMatrices();
+    m_p45C8 = 0;
+    if (*(unsigned char *)0x70000222)
+    {
+        VISphere s;
+        float x = *(float *)0x70000100;
+        float y = *(float *)0x70000104;
+        float z = *(float *)0x70000108;
+        float len = sqrtf(x * x + y * y + z * z);
+        s.r = *(float *)0x700001CC * (1.0f / len);
+        s.c.x = *(float *)0x70000190;
+        s.c.y = *(float *)0x70000194;
+        s.c.z = *(float *)0x70000198;
+        if (pb->m_bbox.Intersects(s))
+            m_p45C8 = 1;
+    }
+    UploadMatrices(&m_dmaTag);
+    for (int i = 0; i < cb->m_pad10; i++)
+    {
+        int mat = ((int *)(cb->m_headers + i * 8))[0];
+        mat = m_materialPals.Value(pal)->m_mats[mat];
+        int ds = MaterialHasDepthSort(mat);
+        if (!ds)
+            r = 1;
+        if (ds ? (flags & 1) : (flags & 2))
+        {
+            AddMaterial(mat, &m_dmaTag);
+            int addr = (((int *)(cb->m_headers + i * 8))[1] << 4) + (int)cb->m_verts;
+            m_dmaTag->m_id = 80;
+            m_dmaTag->m_addr = addr;
+            m_dmaTag->m_qwc = 0;
+            m_dmaTag++;
+        }
+    }
+    FlushDMABufferIfFull();
+    return r;
+}
+
+// ------------------------------------------------------------- statistics --
+
+extern "C" int printf(const char *f, ...);
+
+// Bytes held per resource pool -- each object's own data plus its fixed
+// size -- printed pool by pool, with the DMA double buffer's two 600 KB halves
+// and the grand total last.
+int VIRaster::DebugResources()
+{
+    int i;
+    int a = 0;
+    printf("Surfaces: %d\n", m_surfaces.Size());
+    for (i = m_surfaces.Begin(); i != m_surfaces.End(); i = m_surfaces.Next(i))
+        a += m_surfaces.Value(i)->m_dataSize;
+    a += m_surfaces.Size() * 316;
+    printf("Surfaces Allocations: %d\n", a);
+    int total = a;
+    printf("Materials: %d\n", m_materials.Size());
+    a = m_materials.Size() * 480;
+    printf("Material Allocations: %d\n", a);
+    total += a;
+    a = 0;
+    printf("Prim Buffers: %d\n", m_primBuffers.Size());
+    for (i = m_primBuffers.Begin(); i != m_primBuffers.End();
+         i = m_primBuffers.Next(i))
+        a += m_primBuffers.Value(i)->m_dataSize;
+    a += m_primBuffers.Size() * 112;
+    printf("Prim Buffer Allocations: %d\n", a);
+    total += a;
+    a = 0;
+    printf("Color Buffers: %d\n", m_colorBuffers.Size());
+    for (i = m_colorBuffers.Begin(); i != m_colorBuffers.End();
+         i = m_colorBuffers.Next(i))
+        a += m_colorBuffers.Value(i)->m_dataSize;
+    a += m_colorBuffers.Size() * 56;
+    printf("Color Buffer Allocations: %d\n", a);
+    total += a;
+    a = 0;
+    printf("Material Palettes: %d\n", m_materialPals.Size());
+    for (i = m_materialPals.Begin(); i != m_materialPals.End();
+         i = m_materialPals.Next(i))
+        a += m_materialPals.Value(i)->m_mats.m_size * 4;
+    a += m_materialPals.Size() * 16;
+    printf("Material Palette Allocations: %d\n", a);
+    total += a;
+    printf("Fonts: %d\n", m_fonts.Size());
+    i = m_fonts.Begin();
+    a = m_fonts.Size() * 88;
+    for (; i != m_fonts.End(); i = m_fonts.Next(i))
+        a += m_fonts.Value(i)->m_dataSize;
+    printf("Font Allocations: %d\n", a);
+    total += a;
+    printf("Material LRU Entries: %d\n", m_materialLRU.Size());
+    a = m_materialLRU.Size() * 24;
+    a += m_materialLRU.Size() * 848;
+    printf("Material LRU Allocations: %d\n", a);
+    total += a;
+    a = 0x12C000;
+    printf("DMA Double Buffer Allocations: %d\n", 0x12C000);
+    total += a;
+    printf("Total Raster Allocations: %d\n", total);
+    return total;
+}
+
+// --------------------------------------------------------------- the blits --
+
+// A surface drawn 1:1 at a screen position as a four-vertex fan through the
+// blit material: the material takes the surface and the blend mode (and is
+// marked dirty when either changed since the last blit), the quad is written
+// straight into the DMA chain one attribute row at a time, and the low two
+// flag bits mirror the UVs in x and/or y.  Bit 2 turns dithering off.
+int VIRaster::Blit(int id, unsigned int flags, const VIVect2I &at,
+                   VIAlphaBlendMode m, float alpha)
+{
+    VIMaterial *mat = (VIMaterial *)m_blitMaterial;
+    VISurface *s = m_surfaces.Value(id);
+    VIVect2I p;
+    VIColor32F c;
+    VIVect3 n;
+    if (m_p4C4C != 1)
+        UploadRasterMicro(&m_dmaTag);
+    mat->m_layers[0].m_texture = id;
+    mat->m_layers[0].m_blendMode = m;
+    if (flags & 4)
+        mat->SetDither(0);
+    else
+        mat->SetDither(1);
+    if (id != m_blitSurface || m != m_blitBlend)
+    {
+        mat->m_dirty = 1;
+        m_blitSurface = id;
+        m_blitBlend = m;
+    }
+    if (AddMaterial(m_blitMaterial, &m_dmaTag) < 0)
+        return -1;
+    if (BlitBegin(&m_dmaTag) < 0)
+        return -1;
+    c.Set(1.0f, 1.0f, 1.0f, alpha);
+    n.Set(0.0f, 0.0f, 0.0f);
+    p.x = at.x;
+    p.y = at.y;
+    m_vtx[0].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[0].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[0].z = 0.0f;
+    m_vtx[0].w = 1.0f;
+    m_vtx[2].x = n.x;
+    m_vtx[2].y = n.y;
+    m_vtx[2].z = n.z;
+    m_vtx[2].w = 0.0f;
+    m_vtx[3].x = c.r;
+    m_vtx[3].y = c.g;
+    m_vtx[3].z = c.b;
+    m_vtx[3].w = c.a;
+    m_numVerts++;
+    p.x += s->m_width;
+    m_vtx[4].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[4].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[4].z = 0.0f;
+    m_vtx[4].w = 1.0f;
+    m_vtx[6].x = n.x;
+    m_vtx[6].y = n.y;
+    m_vtx[6].z = n.z;
+    m_vtx[6].w = 0.0f;
+    m_vtx[7].x = c.r;
+    m_vtx[7].y = c.g;
+    m_vtx[7].z = c.b;
+    m_vtx[7].w = c.a;
+    m_numVerts++;
+    p.y += s->m_height;
+    m_vtx[8].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[8].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[8].z = 0.0f;
+    m_vtx[8].w = 1.0f;
+    m_vtx[10].x = n.x;
+    m_vtx[10].y = n.y;
+    m_vtx[10].z = n.z;
+    m_vtx[10].w = 0.0f;
+    m_vtx[11].x = c.r;
+    m_vtx[11].y = c.g;
+    m_vtx[11].z = c.b;
+    m_vtx[11].w = c.a;
+    m_numVerts++;
+    p.x = at.x;
+    m_vtx[12].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[12].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[12].z = 0.0f;
+    m_vtx[12].w = 1.0f;
+    m_vtx[14].x = n.x;
+    m_vtx[14].y = n.y;
+    m_vtx[14].z = n.z;
+    m_vtx[14].w = 0.0f;
+    m_vtx[15].x = c.r;
+    m_vtx[15].y = c.g;
+    m_vtx[15].z = c.b;
+    m_vtx[15].w = c.a;
+    m_numVerts++;
+    switch (flags & 3)
+    {
+    case 0:
+        m_vtx[1].x = 0.0f;
+        m_vtx[1].y = 0.0f;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = 1.0f;
+        m_vtx[5].y = 0.0f;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = 1.0f;
+        m_vtx[9].y = 1.0f;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = 0.0f;
+        m_vtx[13].y = 1.0f;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 1:
+        m_vtx[1].x = 1.0f;
+        m_vtx[1].y = 0.0f;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = 0.0f;
+        m_vtx[5].y = 0.0f;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = 0.0f;
+        m_vtx[9].y = 1.0f;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = 1.0f;
+        m_vtx[13].y = 1.0f;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 2:
+        m_vtx[1].x = 0.0f;
+        m_vtx[1].y = 1.0f;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = 1.0f;
+        m_vtx[5].y = 1.0f;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = 1.0f;
+        m_vtx[9].y = 0.0f;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = 0.0f;
+        m_vtx[13].y = 0.0f;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 3:
+        m_vtx[1].x = 1.0f;
+        m_vtx[1].y = 1.0f;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = 0.0f;
+        m_vtx[5].y = 1.0f;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = 0.0f;
+        m_vtx[9].y = 0.0f;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = 1.0f;
+        m_vtx[13].y = 0.0f;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    }
+    m_vtx += 16;
+    if (BlitEnd(&m_dmaTag) < 0)
+        return -1;
+    mat->m_layers[0].m_texture = -1;
+    FlushDMABufferIfFull();
+    return 0;
+}
+
+// A sub-rectangle of the surface: `a` is its texel origin and `b` its size,
+// the UVs are those texels over the surface's own size, and the quad is `b`
+// big on screen.
+int VIRaster::Blit(int id, unsigned int flags, const VIVect2I &at,
+                   const VIVect2I &a, const VIVect2I &b, VIAlphaBlendMode m,
+                   float alpha)
+{
+    VIMaterial *mat = (VIMaterial *)m_blitMaterial;
+    VISurface *s = m_surfaces.Value(id);
+    VIVect2I p;
+    VIColor32F c;
+    VIVect3 n;
+    VIVect2 inv;
+    if (m_p4C4C != 1)
+        UploadRasterMicro(&m_dmaTag);
+    mat->m_layers[0].m_texture = id;
+    mat->m_layers[0].m_blendMode = m;
+    if (flags & 4)
+        mat->SetDither(0);
+    else
+        mat->SetDither(1);
+    if (id != m_blitSurface || m != m_blitBlend)
+    {
+        mat->m_dirty = 1;
+        m_blitSurface = id;
+        m_blitBlend = m;
+    }
+    if (AddMaterial(m_blitMaterial, &m_dmaTag) < 0)
+        return -1;
+    if (BlitBegin(&m_dmaTag) < 0)
+        return -1;
+    c.Set(1.0f, 1.0f, 1.0f, alpha);
+    n.Set(0.0f, 0.0f, 0.0f);
+    inv.x = 1.0f / (float)s->m_width;
+    inv.y = 1.0f / (float)s->m_height;
+    p.x = at.x;
+    p.y = at.y;
+    m_vtx[0].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[0].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[0].z = 0.0f;
+    m_vtx[0].w = 1.0f;
+    m_vtx[2].x = n.x;
+    m_vtx[2].y = n.y;
+    m_vtx[2].z = n.z;
+    m_vtx[2].w = 0.0f;
+    m_vtx[3].x = c.r;
+    m_vtx[3].y = c.g;
+    m_vtx[3].z = c.b;
+    m_vtx[3].w = c.a;
+    m_numVerts++;
+    p.x += b.x;
+    m_vtx[4].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[4].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[4].z = 0.0f;
+    m_vtx[4].w = 1.0f;
+    m_vtx[6].x = n.x;
+    m_vtx[6].y = n.y;
+    m_vtx[6].z = n.z;
+    m_vtx[6].w = 0.0f;
+    m_vtx[7].x = c.r;
+    m_vtx[7].y = c.g;
+    m_vtx[7].z = c.b;
+    m_vtx[7].w = c.a;
+    m_numVerts++;
+    p.y += b.y;
+    m_vtx[8].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[8].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[8].z = 0.0f;
+    m_vtx[8].w = 1.0f;
+    m_vtx[10].x = n.x;
+    m_vtx[10].y = n.y;
+    m_vtx[10].z = n.z;
+    m_vtx[10].w = 0.0f;
+    m_vtx[11].x = c.r;
+    m_vtx[11].y = c.g;
+    m_vtx[11].z = c.b;
+    m_vtx[11].w = c.a;
+    m_numVerts++;
+    p.x = at.x;
+    m_vtx[12].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[12].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[12].z = 0.0f;
+    m_vtx[12].w = 1.0f;
+    m_vtx[14].x = n.x;
+    m_vtx[14].y = n.y;
+    m_vtx[14].z = n.z;
+    m_vtx[14].w = 0.0f;
+    m_vtx[15].x = c.r;
+    m_vtx[15].y = c.g;
+    m_vtx[15].z = c.b;
+    m_vtx[15].w = c.a;
+    m_numVerts++;
+    switch (flags & 3)
+    {
+    case 0:
+        m_vtx[1].x = (float)a.x * inv.x;
+        m_vtx[1].y = (float)a.y * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[5].y = (float)a.y * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[9].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)a.x * inv.x;
+        m_vtx[13].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 1:
+        m_vtx[1].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[1].y = (float)a.y * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)a.x * inv.x;
+        m_vtx[5].y = (float)a.y * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)a.x * inv.x;
+        m_vtx[9].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[13].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 2:
+        m_vtx[1].x = (float)a.x * inv.x;
+        m_vtx[1].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[5].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[9].y = (float)a.y * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)a.x * inv.x;
+        m_vtx[13].y = (float)a.y * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 3:
+        m_vtx[1].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[1].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)a.x * inv.x;
+        m_vtx[5].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)a.x * inv.x;
+        m_vtx[9].y = (float)a.y * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[13].y = (float)a.y * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    }
+    m_vtx += 16;
+    if (BlitEnd(&m_dmaTag) < 0)
+        return -1;
+    mat->m_layers[0].m_texture = -1;
+    FlushDMABufferIfFull();
+    return 0;
+}
+
+// The same, drawn `size` big on screen whatever the texel rectangle's size.
+int VIRaster::StretchBlit(int id, unsigned int flags, const VIVect2I &at,
+                          const VIVect2I &size, const VIVect2I &a,
+                          const VIVect2I &b, VIAlphaBlendMode m, float alpha)
+{
+    VIMaterial *mat = (VIMaterial *)m_blitMaterial;
+    VISurface *s = m_surfaces.Value(id);
+    VIVect2I p;
+    VIColor32F c;
+    VIVect3 n;
+    VIVect2 inv;
+    if (m_p4C4C != 1)
+        UploadRasterMicro(&m_dmaTag);
+    mat->m_layers[0].m_texture = id;
+    mat->m_layers[0].m_blendMode = m;
+    if (flags & 4)
+        mat->SetDither(0);
+    else
+        mat->SetDither(1);
+    if (id != m_blitSurface || m != m_blitBlend)
+    {
+        mat->m_dirty = 1;
+        m_blitSurface = id;
+        m_blitBlend = m;
+    }
+    if (AddMaterial(m_blitMaterial, &m_dmaTag) < 0)
+        return -1;
+    if (BlitBegin(&m_dmaTag) < 0)
+        return -1;
+    c.Set(1.0f, 1.0f, 1.0f, alpha);
+    n.Set(0.0f, 0.0f, 0.0f);
+    inv.x = 1.0f / (float)s->m_width;
+    inv.y = 1.0f / (float)s->m_height;
+    p.x = at.x;
+    p.y = at.y;
+    m_vtx[0].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[0].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[0].z = 0.0f;
+    m_vtx[0].w = 1.0f;
+    m_vtx[2].x = n.x;
+    m_vtx[2].y = n.y;
+    m_vtx[2].z = n.z;
+    m_vtx[2].w = 0.0f;
+    m_vtx[3].x = c.r;
+    m_vtx[3].y = c.g;
+    m_vtx[3].z = c.b;
+    m_vtx[3].w = c.a;
+    m_numVerts++;
+    p.x += size.x;
+    m_vtx[4].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[4].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[4].z = 0.0f;
+    m_vtx[4].w = 1.0f;
+    m_vtx[6].x = n.x;
+    m_vtx[6].y = n.y;
+    m_vtx[6].z = n.z;
+    m_vtx[6].w = 0.0f;
+    m_vtx[7].x = c.r;
+    m_vtx[7].y = c.g;
+    m_vtx[7].z = c.b;
+    m_vtx[7].w = c.a;
+    m_numVerts++;
+    p.y += size.y;
+    m_vtx[8].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[8].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[8].z = 0.0f;
+    m_vtx[8].w = 1.0f;
+    m_vtx[10].x = n.x;
+    m_vtx[10].y = n.y;
+    m_vtx[10].z = n.z;
+    m_vtx[10].w = 0.0f;
+    m_vtx[11].x = c.r;
+    m_vtx[11].y = c.g;
+    m_vtx[11].z = c.b;
+    m_vtx[11].w = c.a;
+    m_numVerts++;
+    p.x = at.x;
+    m_vtx[12].x = ((float)p.x - m_viewportWF + 0.5f) * m_invViewportW;
+    m_vtx[12].y = ((float)p.y - m_viewportHF + 0.5f) * -m_invViewportH;
+    m_vtx[12].z = 0.0f;
+    m_vtx[12].w = 1.0f;
+    m_vtx[14].x = n.x;
+    m_vtx[14].y = n.y;
+    m_vtx[14].z = n.z;
+    m_vtx[14].w = 0.0f;
+    m_vtx[15].x = c.r;
+    m_vtx[15].y = c.g;
+    m_vtx[15].z = c.b;
+    m_vtx[15].w = c.a;
+    m_numVerts++;
+    switch (flags & 3)
+    {
+    case 0:
+        m_vtx[1].x = (float)a.x * inv.x;
+        m_vtx[1].y = (float)a.y * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[5].y = (float)a.y * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[9].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)a.x * inv.x;
+        m_vtx[13].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 1:
+        m_vtx[1].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[1].y = (float)a.y * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)a.x * inv.x;
+        m_vtx[5].y = (float)a.y * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)a.x * inv.x;
+        m_vtx[9].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[13].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 2:
+        m_vtx[1].x = (float)a.x * inv.x;
+        m_vtx[1].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[5].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[9].y = (float)a.y * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)a.x * inv.x;
+        m_vtx[13].y = (float)a.y * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    case 3:
+        m_vtx[1].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[1].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[1].z = 1.0f;
+        m_vtx[1].w = 0.0f;
+        m_vtx[5].x = (float)a.x * inv.x;
+        m_vtx[5].y = (float)(a.y + b.y) * inv.y;
+        m_vtx[5].z = 1.0f;
+        m_vtx[5].w = 0.0f;
+        m_vtx[9].x = (float)a.x * inv.x;
+        m_vtx[9].y = (float)a.y * inv.y;
+        m_vtx[9].z = 1.0f;
+        m_vtx[9].w = 0.0f;
+        m_vtx[13].x = (float)(a.x + b.x) * inv.x;
+        m_vtx[13].y = (float)a.y * inv.y;
+        m_vtx[13].z = 1.0f;
+        m_vtx[13].w = 0.0f;
+        break;
+    }
+    m_vtx += 16;
+    if (BlitEnd(&m_dmaTag) < 0)
+        return -1;
+    mat->m_layers[0].m_texture = -1;
+    FlushDMABufferIfFull();
+    return 0;
 }

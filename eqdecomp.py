@@ -42,6 +42,9 @@ ROOT = Path(os.environ.get("EQOA_ROOT") or Path(__file__).resolve().parent.paren
 if (ROOT / ".wine").is_dir():
     os.environ.setdefault("WINEPREFIX", str(ROOT / ".wine"))
 os.environ.pop("DISPLAY", None)
+# No desktop integration and no debug chatter for a console assembler.
+os.environ.setdefault("WINEDLLOVERRIDES", "winemenubuilder.exe=d")
+os.environ.setdefault("WINEDEBUG", "-all")
 
 # --- opcode tables used by the normaliser -----------------------------------
 
@@ -120,6 +123,15 @@ SPAN_CAP = {
     # copies of the VIMap<int,int> members follow it with no names in the map
     # (the named ones live at 0x00415E08), so it derived 3,032 bytes.
     "AdpcmToPcm__10VIESFParsePviT1":            516,
+    # Phase 61, from the lanes.  Each is followed by unnamed TU-local code
+    # (VIMap<int,int> statics in viscene/vizone/viworld) the map does not name.
+    "StreamOutStaticActor__7VISceneiR17VISceneStreamVars": 200,
+    "QueryIntersectionRoom__6VIZoneiR20VISceneIntersectVars": 244,
+    "QueryIntersection__7VIWorldiR20VISceneIntersectVars": 524,
+    "PrepareBillboardTransform__14VIEffectVolumeRC10VIMatrix44T1P10VIMatrix44": 560,
+    "RenderFlock__14VIEffectVolumeR8VICameraR10VIMatrix44":     176,
+    "ProcessLavastorm__12VIAtmosphereR7VISceneR8VICamera":      1484,
+    "Release__16VIParticleSpriteR7VISceneR12VIDictionaryP8VIRasterP13VISoundDeviceR9VICollide": 128,
     # Phase 48.  connection.cpp opens with state_channel_init and is followed
     # immediately by the TU-local static that zeroes a connection_t -- the
     # symbol map has no name for it -- so state_channel_init acquires both.

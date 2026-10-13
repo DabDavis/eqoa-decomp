@@ -645,6 +645,9 @@ public:
     // bounding box: the member's own VIVect3() first, then this body inlined.
     // Without it only one pass is emitted.
     VISphere() { c.Zero(); r = 0.0f; }
+    // Phase 61, off VIRaster::DrawPrimBufferTessPackVUNCG: the light sphere
+    // is built whole, with none of the default constructor's zero stores.
+    VISphere(const VIVect3 &_c, float _r) : c(_c), r(_r) {}
 
     int Init(const VIBBox &b);
     int Init(const VIVect3 &a, const VIVect3 &b, const VIVect3 &v);
@@ -1043,6 +1046,10 @@ class VIVect3S16
 public:
     short x, y, z;
 
+    // Phase 61.  Zeroing: ParsePrimBuffer's packed locals are `sh zero` x3
+    // at block entry, and the VIPrimBuffer static initialiser zeroes the
+    // packed statics the same way -- so every packed vector has one.
+    VIVect3S16() { x = 0; y = 0; z = 0; }
     // VICollBuffer::Vertex copies one halfword at a time; the implicit
     // operator= is an unaligned lwl/lwr block move.  Same lever as VIVect3.
     VIVect3S16 &operator=(const VIVect3S16 &v) { x = v.x; y = v.y; z = v.z; return *this; }
@@ -1111,6 +1118,7 @@ class VIVect2S16
 public:
     short x, y;
 
+    VIVect2S16() { x = 0; y = 0; }
     VIVect2S16 &operator=(const VIVect2S16 &v) { x = v.x; y = v.y; return *this; }
 };
 
@@ -1119,6 +1127,7 @@ class VIVect3S8
 public:
     signed char x, y, z;
 
+    VIVect3S8() { x = 0; y = 0; z = 0; }
     VIVect3S8 &operator=(const VIVect3S8 &v) { x = v.x; y = v.y; z = v.z; return *this; }
 };
 
@@ -1127,6 +1136,7 @@ class VIVect4S8
 public:
     signed char x, y, z, w;
 
+    VIVect4S8() { x = 0; y = 0; z = 0; w = 0; }
     VIVect4S8 &operator=(const VIVect4S8 &v) { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
 };
 
@@ -1135,6 +1145,7 @@ class VIVect4U8
 public:
     unsigned char x, y, z, w;
 
+    VIVect4U8() { x = 0; y = 0; z = 0; w = 0; }
     VIVect4U8 &operator=(const VIVect4U8 &v) { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
 };
 
@@ -1197,6 +1208,7 @@ class VIDictionary;
 class VIPickSegment;
 class VIMaterial;
 class VISurface;
+class VIQWord;
 
 enum VIAlphaBlendMode
 {
@@ -1352,6 +1364,9 @@ public:
     int  SetLayerMagFilter(int i, int on);
     int  SetLayerUVSet(int i, int set);
     int  SetLayerTexture(int i, int tex, VIRaster &r, VIDictionary &d);
+    // Phase 61, off VIRaster::AddMaterial: builds the material's GS packet
+    // into its LRU slot and returns the quadword count.
+    int  ConstructDMAPacket(VIRaster &r, VIQWord *q);
 } __attribute__((aligned(16)));
 
 class VIPrimBuffer : public VIBuffer
@@ -4964,6 +4979,9 @@ class VIVect4S16
 public:
     short x, y, z, w;
 
+    // Phase 61: ParseHSpriteAnimObj's packed frame is `sh zero` x8 at entry.
+    VIVect4S16() { x = 0; y = 0; z = 0; w = 0; }
+
     VIVect4S16 &operator=(const VIVect4S16 &v)
     { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
 };
@@ -6235,6 +6253,10 @@ public:
     int ParseSkinPrimBuffer();
     int ParseCollBuffer();
     int ParseColorBuffer();
+
+    // ---- phase 61 -------------------------------------------------------
+    int ParsePrimBufferObjV0();
+    int ParseSkinPrimBufferObjV0();
 
     // ---- phase 60: the asset half ---------------------------------------
     int Convert32(VIPixelStore &ps, unsigned char *src, unsigned char *dst, int n);
@@ -8635,42 +8657,102 @@ public:
 
 #define VIRASTER_SPR ((VIRasterSPR *)0x70000000)
 
-// The tessellator, VIRaster's biggest member by far: 17,480 bytes at +0x40,
-// sized by the gap between the constructor call it takes and the fog block
-// that follows it.  Its own seven functions are NOT written in phase 56 -- the
-// body is a block so the enclosing layout is right and the constructor call
-// survives.
-class VITessVertex;
+// The tessellator, VIRaster's biggest member by far: 17,480 bytes at +0x40.
+// Phase 61 read the layout off its own seven functions: a fixed 16-node BSP of
+// splitting planes (InitTree), a recursion stack, three vertex scratch buffers
+// and the output -- up to 64 strips over 272 vertices, which
+// DrawPrimBufferTessPackVUNCG ships straight to VU1.
+
+// 48 bytes, and the member order is the copy's: VIVect3 / VIVect3 operator=
+// (lwc1/swc1), the colour as an unaligned 16-byte block move, the UV last.
+// Every member zeroes, so an array of them is a 12-store vec-init loop.
+class VITessVertex
+{
+public:
+    VIVect3    m_pos;      // +0x00
+    VIVect3    m_normal;   // +0x0C
+    VIColor32F m_color;    // +0x18
+    VIVect2    m_uv;       // +0x28
+};
+
+// 32 bytes: the packed vertex of a VIPrimBufferTypePackVUNCG buffer.  The
+// position is scaled by SPR m_scale.x and offset by the pre-translation it
+// names, the UV by .y, the normal by .z and the colour by .w.
+class VIPrimVertexPackVUNCG
+{
+public:
+    int        m_p00;        // +0x00
+    VIVect3S16 m_pos;        // +0x04
+    short      m_preTrans;   // +0x0A  index into VIRaster::m_preTrans
+    VIVect2S16 m_uv;         // +0x0C
+    int        m_p10;        // +0x10
+    int        m_p14;        // +0x14
+    VIVect3S8  m_normal;     // +0x18
+    char       m_p1B;        // +0x1B
+    VIVect4S8  m_color;      // +0x1C
+};
+
+// 24 bytes: the splitting plane and the two children, -1 for a leaf.
+class VIRasterTessNode
+{
+public:
+    VIPlane m_plane;   // +0x00
+    int     m_left;    // +0x10  the front half
+    int     m_right;   // +0x14  the back half
+};
+
+// One level of Tessellate's recursion: the back half's vertex run in m_work.
+class VIRasterTessStack
+{
+public:
+    int m_count;   // +0x00
+    int m_start;   // +0x04
+    int m_p08;
+    int m_p0C;
+};
+
+class VIRasterTessStrip
+{
+public:
+    int m_count;   // +0x00
+    int m_start;   // +0x04  into m_out
+};
 
 class VIRasterTess
 {
 public:
-    char m_data[17480];
+    VIRasterTessNode  m_nodes[32];   // +0x0000  InitTree builds 16
+    int               m_depth;       // +0x0300  -1 when idle
+    VIRasterTessStack m_stack[7];    // +0x0304
+    VITessVertex      m_work[49];    // +0x0374
+    VITessVertex      m_bufA[7];     // +0x0CA4  the front halves ping-pong
+    VITessVertex      m_bufB[7];     // +0x0DF4  between these two
+    int               m_numStrips;   // +0x0F44
+    VIRasterTessStrip m_strips[64];  // +0x0F48
+    VITessVertex      m_out[272];    // +0x1148
 
     VIRasterTess();
 
     int Init();
     int InitTree();
     int Tessellate(int n, VITessVertex *v);
-    int Tessellate(int n, int m, VITessVertex *v);
+    int Tessellate(int node, int n, VITessVertex *v);
+    int Split(int n, VITessVertex *v, VIPlane &p, int &nf, VITessVertex *front,
+              int &nb, VITessVertex *back);
     int StoreResult(int n, VITessVertex *v);
 };
 
-// A material PALETTE: a reference count and an array of material handles.
-// CreateMaterialPal hands __builtin_new sixteen bytes, constructs a
-// VIArray<int> at +8 and Init()s it to the requested entry count.
-class VIMaterialPal
+// A material PALETTE: a VIBuffer (dictionary id at +0, reference count at
+// +4) and an array of material handles.  CreateMaterialPal hands
+// __builtin_new sixteen bytes, constructs a VIArray<int> at +8 and Init()s it
+// to the requested entry count.  Phase 61: the BASE is what stores +4 before
+// +0 -- VIBuffer's chained `m_id = m_userData = 0` -- ahead of the VIArray
+// member's constructor call, which the phase-56 mem-initialiser list could
+// only get in the opposite order.
+class VIMaterialPal : public VIBuffer
 {
 public:
-    int          m_p00;      // +0x00  set when the pal is in the dictionary
-    int          m_refCount; // +0x04
     VIArray<int> m_mats;     // +0x08
-
-    // A MEM-INITIALISER list, not a body: gcc runs the list in DECLARATION
-    // order, so the two zero stores come out BEFORE the VIArray member's
-    // constructor call, which is what CreateMaterialPal and CopyMaterialPal
-    // both show.  Written as a body the member ctor would go first.
-    VIMaterialPal() : m_refCount(0), m_p00(0) {}
 };
 
 class VIRaster
@@ -8840,13 +8922,13 @@ public:
     int           m_solidFill;      // +0x4594
     int           m_multiTexture;   // +0x4598
     int           m_p459C;          // +0x459C
-    int           m_defaultMaterial;        // +0x45A0
+    int           m_curMaterial;    // +0x45A0  AddMaterial's last material
     int           m_solidFillMaterial;      // +0x45A4
     int           m_solidFillUIMaterial;    // +0x45A8
     int           m_solidFillUIAVGMaterial; // +0x45AC
     int           m_wireframeMaterial;      // +0x45B0
     int           m_portalMaterial;         // +0x45B4
-    int           m_curMaterial;    // +0x45B8
+    int           m_blitMaterial;   // +0x45B8  white, no Z: the blits' own
     int           m_blitSurface;    // +0x45BC
     int           m_blitBlend;      // +0x45C0
     int           m_numBillboards;  // +0x45C4
@@ -8858,7 +8940,7 @@ public:
     int           m_dirtyLights;    // +0x45E0
     int           m_dirtyMatrices;  // +0x45E4
     int           m_dirtyPreTrans;  // +0x45E8
-    char          m_pad45EC[0x49EC - 0x45EC];
+    int           m_glyphs[256];    // +0x45EC  DrawString's glyph run
     VIVect3       m_preTransAt;     // +0x49EC
     VIVect3       m_preTrans[32];   // +0x49F8
 
@@ -8995,4 +9077,27 @@ public:
     int UploadBillboardMicro(_sceDmaTag **tag);
     int InitGSRegisters(_sceDmaTag **tag);
     int SetGSDitherMatrix(int on, _sceDmaTag **tag);
+    // ------------------------------------------------------------ phase 61 --
+    int CreateDefaultResources();
+    int SetGSScissoring();
+    int DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags);
+    int TessTriangle(VIVect3 &a, VIVect3 &b, VIVect3 &c,
+                     VIPrimVertexPackVUNCG *va, VIPrimVertexPackVUNCG *vb,
+                     VIPrimVertexPackVUNCG *vc);
+    int PickPrimBufferVUNC(VIPickSegment &seg, VIPrimBuffer &pb,
+                           VIMaterialPal &pal);
+    int PickPrimBufferPackVUNC(VIPickSegment &seg, VIPrimBuffer &pb,
+                               VIMaterialPal &pal);
+    int PickPrimBufferPackVUNCG(VIPickSegment &seg, VIPrimBuffer &pb,
+                                VIMaterialPal &pal);
+    int PickPrimBufferPackVUNBW(VIPickSegment &seg, VIPrimBuffer &pb,
+                                VIMaterialPal &pal);
+    int PickPrimBufferPackVUNC(VIPickSegment &seg, VIPrimBuffer &pb,
+                               VIColorBuffer &cb, VIMaterialPal &pal);
+    int Cull(VIPickSegment &seg, VIBBox &b);
+    int Pick(VIPickSegment &seg, int mat, VIVect3 &a, VIVect3 &b, VIVect3 &c);
+    int PointInTriangle(VIVect3 &p, VIPlane &pl, VIVect3 &a, VIVect3 &b,
+                        VIVect3 &c);
+    int CalcHitColor(VIPickSegment &seg, VIVect3 &a, VIVect3 &b, VIVect3 &c,
+                     VIColor32 &ca, VIColor32 &cb, VIColor32 &cc);
 };

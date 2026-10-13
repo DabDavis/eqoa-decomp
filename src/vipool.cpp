@@ -37,8 +37,13 @@ class VISprite;
 class VISurface;
 
 
-// Placement new, as in viarray.cpp and vivector.cpp.
-inline void *operator new(unsigned int, void *p)
+// Placement new -- but unlike viarray.cpp and vivector.cpp, declared throw():
+// gcc 2.95 null-checks the result of a NOTHROW operator new, and Allocate's
+// copy loop is `new (&n[i]) Node(m_nodes[i])` WITH that check.  Written out
+// by hand as `if (d) *d = m_nodes[i]` the two induction pointers come out in
+// the other order (4 words in fifteen instantiations); declared throw() in
+// the other template TUs it regresses them.
+inline void *operator new(unsigned int, void *p) throw()
 {
     return p;
 }
@@ -138,6 +143,9 @@ template <class T> int VIPool<T>::Allocate()
     // spellings emit the same words, and worth 53 of 125 in
     // VIPool<VIHSpritePlayNode>, whose element carries a VIHSpriteFrame:
     // `new Node[n]` drags gcc's own vec-init loop in front of the copy.
+    // VIPool<VIHSpritePlayNode> is the one instantiation the placement copy
+    // does not close (44/89): its frame is copied with VIHSpriteFrame's
+    // operator= shape, which the implicit copy constructor is not.
     // The whole body is NESTED under the capacity test, with one `return 0` at
     // the bottom.  Written flat -- `if (m_capacity == 0) return 0; ...` with
     // the closing test its own statement -- gcc if-converts that test to
@@ -156,11 +164,7 @@ template <class T> int VIPool<T>::Allocate()
             if (n == 0)
                 return -1;
             for (int i = 0; i < m_size; i++)
-            {
-                Node *d = &n[i];
-                if (d)
-                    *d = m_nodes[i];
-            }
+                new (&n[i]) Node(m_nodes[i]);
             if (DestroyPool() < 0)
                 return -1;
             delete [] (char *)m_nodes;

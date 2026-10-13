@@ -126,16 +126,16 @@ int VIFile::CDSearchFile(sceCdlFILE *f, const char *name)
                 VIEEFileDelay(480);
             }
         }
-        return r;
     }
-    if (VICdSearchFile(name, &lsn, &size) >= 0)
+    else
     {
+        if (VICdSearchFile(name, &lsn, &size) < 0)
+            return 0;
         r = 1;
         f->lsn = lsn;
         f->size = size;
-        return r;
     }
-    return 0;
+    return r;
 }
 
 int VIFile::CDSync(int mode)
@@ -145,8 +145,8 @@ int VIFile::CDSync(int mode)
     if (sIopStream == 0)
     {
         r = sceCdSync(mode);
-        if (r)
-            return r;
+        if (r == 0)
+        {
         while (sceCdGetError() && m_cdPending)
         {
             printf("VIFile::CDSync error %d\n", sceCdGetError());
@@ -160,12 +160,13 @@ int VIFile::CDSync(int mode)
             r = sceCdSync(0);
         }
         m_cdPending = 0;
-        return r;
+        }
     }
+    else
     {
         r = VICdStreamSync(mode);
-        if (r)
-            return r;
+        if (r == 0)
+        {
         while (VICdStreamStatus() && m_cdPending)
         {
             printf("VIFile::CDSync error %d\n", VICdStreamStatus());
@@ -179,8 +180,9 @@ int VIFile::CDSync(int mode)
             r = VICdStreamSync(0);
         }
         m_cdPending = 0;
-        return r;
+        }
     }
+    return r;
 }
 
 int VIFile::CDRead(unsigned lsn, unsigned sectors, void *buf, sceCdRMode *mode)
@@ -201,11 +203,13 @@ int VIFile::CDRead(unsigned lsn, unsigned sectors, void *buf, sceCdRMode *mode)
                 VIEEFileDelay(480);
             }
         }
-        return 1;
     }
-    FlushCache(0);
-    while (VICdStreamRead(lsn, sectors, buf, 2) < 0)
-        VICdStreamSync(0);
+    else
+    {
+        FlushCache(0);
+        while (VICdStreamRead(lsn, sectors, buf, 2) < 0)
+            VICdStreamSync(0);
+    }
     return 1;
 }
 

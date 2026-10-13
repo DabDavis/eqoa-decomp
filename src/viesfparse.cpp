@@ -1144,12 +1144,14 @@ int VIESFParse::ParseCSpriteTSlotList(VICSprite &c)
 int VIESFParse::ParsePointSpriteObj()
 {
     unsigned int id;
-    int type;
+    int t;
+    VIPointType type;
     VIResourceType rt;
     int i;
 
     m_file->Read(id);
-    m_file->Read(type);
+    m_file->Read(t);
+    type = (VIPointType)t;
 
     if (id)
     {
@@ -1169,7 +1171,7 @@ int VIESFParse::ParsePointSpriteObj()
     if (id)
         if (m_dict->Add(*p, id, (VIResourceType)23, i) < 0) return -1;
 
-    ((VIPointSprite *)p)->Init((VIPointType)type);
+    ((VIPointSprite *)p)->Init(type);
 
     if (m_file->ReadEnd() < 0) return -1;
     return i;
@@ -1482,7 +1484,10 @@ int VIESFParse::ParseRefMap()
         int k, v;
         m_file->Read(k);
         m_file->Read(v);
-        if (p->m_map.Insert(k, v) < 0) return -1;
+        // Insert takes const int &, and it is handed COPIES, made value first:
+        // two more stack words and the loads in that order.
+        int b = v, a = k;
+        if (p->m_map.Insert(a, b) < 0) return -1;
     }
 
     if (m_file->ReadEnd() < 0) return -1;
@@ -2844,18 +2849,18 @@ int VIESFParse::ParseZoneResource()
         {
             i = ParseSurfaceArrayObj();
             if (i < 0) goto fail;
-            break;
         }
-        if (m_file->ReadEnd() < 0) goto fail;
+        else
+            m_file->ReadEnd();
         break;
     case 0x1110:
         if (m_raster)
         {
             i = ParseMaterialPalObj();
             if (i < 0) goto fail;
-            break;
         }
-        if (m_file->ReadEnd() < 0) goto fail;
+        else
+            m_file->ReadEnd();
         break;
     case 0x3200: if (ParseZoneBaseObj() < 0) goto fail; break;
     case 0x3270: if (ParseZoneRoomActorsObj() < 0) goto fail; break;
@@ -4385,4 +4390,1506 @@ int VIESFParse::ParseSpellEffectObj()
     if (m_file->ReadEnd() < 0) return -1;
     if (m_file->ReadEnd() < 0) return -1;
     return j;
+}
+
+// Version 0 of a prim buffer: no id, so never shared, and no packing -- every
+// vertex is eight floats and four colour bytes.  The material changes between
+// prims, so it is begun and ended around each run of prims that share one.
+int VIESFParse::ParsePrimBufferObjV0()
+{
+    VIVect3 v;
+    VIVect2 uv;
+    VIVect3 n;
+    VIColor32 c;
+    int numMats, numPrims, numVerts;
+    int nv, mat;
+    int curMat = -1;
+
+    m_file->Read(numMats);
+    m_file->Read(numPrims);
+    m_file->Read(numVerts);
+
+    int i = m_raster->CreatePrimBuffer(m_permResource);
+    if (i < 0) return -1;
+
+    VIPrimBuffer *p = m_raster->PrimBuffer(i);
+
+    if (p->Init(*m_raster, VIPrimBufferTypeVUNC, numMats, numPrims, numVerts) < 0) return -1;
+    if (p->Lock() < 0) return -1;
+
+    for (int j = 0; j < numPrims; j++)
+    {
+        m_file->Read(nv);
+        m_file->Read(mat);
+
+        if (curMat != mat)
+        {
+            if (curMat != -1) p->EndMaterial();
+            p->BeginMaterial(mat);
+            curMat = mat;
+        }
+
+        p->Begin(nv);
+
+        for (int k = 0; k < nv; k++)
+        {
+            m_file->Read(v.x);
+            m_file->Read(v.y);
+            m_file->Read(v.z);
+            m_file->Read(uv.x);
+            m_file->Read(uv.y);
+            m_file->Read(n.x);
+            m_file->Read(n.y);
+            m_file->Read(n.z);
+            m_file->Read(c.r);
+            m_file->Read(c.g);
+            m_file->Read(c.b);
+            m_file->Read(c.a);
+            p->UV0(uv);
+            p->Normal(n);
+            p->Color(c);
+            p->Vertex(v);
+        }
+
+        p->End();
+    }
+
+    if (numMats) p->EndMaterial();
+    if (p->Unlock() < 0) return -1;
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// A prim buffer.  Version 0 is the old float-only record with a parser of its
+// own; version 2 added the id that lets a buffer be shared.  On the wire the
+// packing is 0 (floats), 2 (16-bit position and UV, 8-bit normal) or 4 (the
+// same plus a vertex group), and a raster that cannot draw the packed form has
+// demoted the buffer by the time Init returns -- 2 to 0, 4 to 6 -- in which
+// case every vertex is scaled back up to floats here.
+//
+// Each arm's locals are its OWN block: they share stack slots arm to arm, and
+// the frame only fits that way (sixteen 16-byte slots, not thirty).
+int VIESFParse::ParsePrimBuffer()
+{
+    int curMat = -1;
+    unsigned short type, version;
+    unsigned int id = 0;
+    int t;
+    VIPrimBufferType packing;
+    int numMats, numPrims, numVerts;
+    int vbits, uvbits, nbits;
+    VIResourceType rt;
+    int i;
+    int nv, mat;
+    int k;
+
+    if (m_file->ReadBegin(type, version) < 0) return -1;
+    if (type != 0x1200) return -1;
+
+    if (version == 0)
+    {
+        i = ParsePrimBufferObjV0();
+        if (i < 0) return -1;
+        return i;
+    }
+
+    if (version >= 2) m_file->Read(id);
+    m_file->Read(t);
+    packing = (VIPrimBufferType)t;
+    m_file->Read(numMats);
+    m_file->Read(numPrims);
+    m_file->Read(numVerts);
+    m_file->Read(vbits);
+    m_file->Read(uvbits);
+    m_file->Read(nbits);
+
+    if (id)
+    {
+        if (m_dict->Find(id, rt, i))
+        {
+            if (rt != 11) return -1;
+            m_file->ReadEnd();
+            return i;
+        }
+    }
+
+    i = m_raster->CreatePrimBuffer(m_permResource);
+    if (i < 0) return -1;
+
+    VIPrimBuffer *p = m_raster->PrimBuffer(i);
+
+    if (id)
+        if (m_dict->Add((VIResource &)*p, id, (VIResourceType)11, i) < 0) return -1;
+
+    if (p->Init(*m_raster, packing, numMats, numPrims, numVerts) < 0) return -1;
+    if (p->Lock() < 0) return -1;
+
+    p->SetPacking(vbits, uvbits, nbits);
+
+    float vscale = 1.0f / powf(2.0f, vbits);
+    float uvscale = 1.0f / powf(2.0f, uvbits);
+    float nscale = 1.0f / 127.0f;
+
+    for (int j = 0; j < numPrims; j++)
+    {
+        m_file->Read(nv);
+        m_file->Read(mat);
+
+        if (curMat != mat)
+        {
+            if (curMat != -1) p->EndMaterial();
+            p->BeginMaterial(mat);
+            curMat = mat;
+        }
+
+        switch (packing)
+        {
+        case 0:
+        {
+            VIVect3 v;
+            VIVect2 uv;
+            VIVect3 n;
+            VIColor32 c;
+
+            p->Begin(nv);
+
+            for (k = 0; k < nv; k++)
+            {
+                m_file->Read(v.x);
+                m_file->Read(v.y);
+                m_file->Read(v.z);
+                m_file->Read(uv.x);
+                m_file->Read(uv.y);
+                m_file->Read(n.x);
+                m_file->Read(n.y);
+                m_file->Read(n.z);
+                m_file->Read(c.r);
+                m_file->Read(c.g);
+                m_file->Read(c.b);
+                m_file->Read(c.a);
+                p->UV0(uv);
+                p->Normal(n);
+                p->Color(c);
+                p->Vertex(v);
+            }
+            p->End();
+            break;
+        }
+
+        case 2:
+            switch (p->m_type)
+            {
+            case 2:
+            {
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+                VIVect3S8 sn;
+                VIColor32 c;
+
+                p->Begin(nv);
+
+                for (k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    m_file->Read(sn.x);
+                    m_file->Read(sn.y);
+                    m_file->Read(sn.z);
+                    m_file->Read(c.r);
+                    m_file->Read(c.g);
+                    m_file->Read(c.b);
+                    m_file->Read(c.a);
+                    p->UV0(suv);
+                    p->Normal(sn);
+                    p->Color(c);
+                    p->Vertex(sv);
+                }
+                p->End();
+                break;
+            }
+
+            case 0:
+            {
+                VIVect3 v;
+                VIVect2 uv;
+                VIVect3 n;
+                VIColor32 c;
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+                VIVect3S8 sn;
+                VIColor32 sc;
+
+                p->Begin(nv);
+
+                for (k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    m_file->Read(sn.x);
+                    m_file->Read(sn.y);
+                    m_file->Read(sn.z);
+                    m_file->Read(sc.r);
+                    m_file->Read(sc.g);
+                    m_file->Read(sc.b);
+                    m_file->Read(sc.a);
+                    v.x = sv.x * vscale;
+                    v.y = sv.y * vscale;
+                    v.z = sv.z * vscale;
+                    uv.x = suv.x * uvscale;
+                    uv.y = suv.y * uvscale;
+                    n.x = sn.x * nscale;
+                    n.y = sn.y * nscale;
+                    n.z = sn.z * nscale;
+                    c = sc;
+                    p->UV0(uv);
+                    p->Normal(n);
+                    p->Color(c);
+                    p->Vertex(v);
+                }
+                p->End();
+                break;
+            }
+
+            default:
+                return -1;
+            }
+            break;
+
+        case 4:
+            switch (p->m_type)
+            {
+            case 6:
+            {
+                VIVect3 v;
+                VIVect2 uv;
+                VIVect3 n;
+                VIColor32 c;
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+                VIVect3S8 sn;
+                VIColor32 sc;
+                short g;
+
+                p->Begin(nv);
+
+                for (k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    m_file->Read(sn.x);
+                    m_file->Read(sn.y);
+                    m_file->Read(sn.z);
+                    m_file->Read(sc.r);
+                    m_file->Read(sc.g);
+                    m_file->Read(sc.b);
+                    m_file->Read(sc.a);
+                    m_file->Read(g);
+                    v.x = sv.x * vscale;
+                    v.y = sv.y * vscale;
+                    v.z = sv.z * vscale;
+                    uv.x = suv.x * uvscale;
+                    uv.y = suv.y * uvscale;
+                    n.x = sn.x * nscale;
+                    n.y = sn.y * nscale;
+                    n.z = sn.z * nscale;
+                    c = sc;
+                    p->UV0(uv);
+                    p->Normal(n);
+                    p->Color(c);
+                    p->VertexGroup(g);
+                    p->Vertex(v);
+                }
+                p->End();
+                break;
+            }
+
+            case 4:
+            {
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+                VIVect3S8 sn;
+                VIColor32 c;
+                short g;
+
+                p->Begin(nv);
+
+                for (k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    m_file->Read(sn.x);
+                    m_file->Read(sn.y);
+                    m_file->Read(sn.z);
+                    m_file->Read(c.r);
+                    m_file->Read(c.g);
+                    m_file->Read(c.b);
+                    m_file->Read(c.a);
+                    m_file->Read(g);
+                    p->UV0(suv);
+                    p->Normal(sn);
+                    p->Color(c);
+                    p->VertexGroup(g);
+                    p->Vertex(sv);
+                }
+                p->End();
+                break;
+            }
+
+            default:
+                return -1;
+            }
+            break;
+
+        default:
+            return -1;
+        }
+    }
+
+    if (numMats) p->EndMaterial();
+
+    // The pointer is assigned INSIDE the test: declared outside, the address
+    // is formed before the null check; inside the arm, cse folds it away.
+    VIArray<VIVect3> *pt;
+
+    if (m_zone && (pt = &m_zone->m_pretrans)->m_size)
+    {
+        if (p->CalcBVolumes(pt->m_size, pt->Data()) < 0) return -1;
+    }
+    else
+    {
+        if (p->CalcBVolumes(0, 0) < 0) return -1;
+    }
+
+    if (p->Unlock() < 0) return -1;
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// Version 0 of a skinned prim buffer: floats throughout, four bone indices and
+// four float weights per vertex, and -- unlike the plain one -- the last
+// material is ended unconditionally.
+int VIESFParse::ParseSkinPrimBufferObjV0()
+{
+    VIVect3 v;
+    VIVect2 uv;
+    VIVect3 n;
+    VIColor32 c;
+    VIVect4U8 b;
+    VIVect4 w;
+    int numMats, numPrims, numVerts;
+    int nv, mat;
+    int i;
+    int curMat = -1;
+
+    m_file->Read(numMats);
+    m_file->Read(numPrims);
+    m_file->Read(numVerts);
+
+    i = m_raster->CreatePrimBuffer(m_permResource);
+    if (i < 0) return -1;
+
+    VIPrimBuffer *p = m_raster->PrimBuffer(i);
+
+    if (p->Init(*m_raster, VIPrimBufferTypeUnused1, numMats, numPrims, numVerts) < 0) return -1;
+    if (p->Lock() < 0) return -1;
+
+    for (int j = 0; j < numPrims; j++)
+    {
+        m_file->Read(nv);
+        m_file->Read(mat);
+
+        if (curMat != mat)
+        {
+            if (curMat != -1) p->EndMaterial();
+            p->BeginMaterial(mat);
+            curMat = mat;
+        }
+
+        p->Begin(nv);
+
+        for (int k = 0; k < nv; k++)
+        {
+            m_file->Read(v.x);
+            m_file->Read(v.y);
+            m_file->Read(v.z);
+            m_file->Read(uv.x);
+            m_file->Read(uv.y);
+            m_file->Read(n.x);
+            m_file->Read(n.y);
+            m_file->Read(n.z);
+            m_file->Read(c.r);
+            m_file->Read(c.g);
+            m_file->Read(c.b);
+            m_file->Read(c.a);
+            m_file->Read(b.x);
+            m_file->Read(b.y);
+            m_file->Read(b.z);
+            m_file->Read(b.w);
+            m_file->Read(w.x);
+            m_file->Read(w.y);
+            m_file->Read(w.z);
+            m_file->Read(w.w);
+            p->UV0(uv);
+            p->Normal(n);
+            p->Color(c);
+            p->Bones(b);
+            p->Weights(w);
+            p->Vertex(v);
+        }
+
+        p->End();
+    }
+
+    p->EndMaterial();
+    if (p->Unlock() < 0) return -1;
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// A skinned prim buffer.  The packings are 1 (floats with colour), 3 (floats,
+// no colour) and 5 (16-bit position and UV, 8-bit normal and weights, no
+// colour); a raster that cannot draw 5 has demoted the buffer to 1, and then
+// the packed weights are scaled by 1/127 like the normal and an opaque colour
+// is supplied.  Unlike the plain prim buffer, Begin() runs before the switch,
+// the progress callback fires as each material closes, and there is no
+// bounding-volume pass.
+int VIESFParse::ParseSkinPrimBuffer()
+{
+    int curMat = -1;
+    unsigned short type, version;
+    unsigned int id = 0;
+    int t;
+    VIPrimBufferType packing;
+    int numMats, numPrims, numVerts;
+    int vbits, uvbits, nbits;
+    VIResourceType rt;
+    int i;
+    int nv, mat;
+
+    if (m_file->ReadBegin(type, version) < 0) return -1;
+    if (type != 0x1210) return -1;
+
+    if (version == 0)
+    {
+        i = ParseSkinPrimBufferObjV0();
+        if (i < 0) return -1;
+        return i;
+    }
+
+    if (version >= 2) m_file->Read(id);
+    m_file->Read(t);
+    packing = (VIPrimBufferType)t;
+    m_file->Read(numMats);
+    m_file->Read(numPrims);
+    m_file->Read(numVerts);
+    m_file->Read(vbits);
+    m_file->Read(uvbits);
+    m_file->Read(nbits);
+
+    if (id)
+    {
+        if (m_dict->Find(id, rt, i))
+        {
+            if (rt != 11) return -1;
+            m_file->ReadEnd();
+            return i;
+        }
+    }
+
+    i = m_raster->CreatePrimBuffer(m_permResource);
+    if (i < 0) return -1;
+
+    VIPrimBuffer *p = m_raster->PrimBuffer(i);
+
+    if (id)
+        if (m_dict->Add((VIResource &)*p, id, (VIResourceType)11, i) < 0) return -1;
+
+    if (p->Init(*m_raster, packing, numMats, numPrims, numVerts) < 0) return -1;
+    if (p->Lock() < 0) return -1;
+
+    p->SetPacking(vbits, uvbits, nbits);
+
+    float vscale = 1.0f / powf(2.0f, vbits);
+    float uvscale = 1.0f / powf(2.0f, uvbits);
+    float nscale = 1.0f / 127.0f;
+
+    for (int j = 0; j < numPrims; j++)
+    {
+        m_file->Read(nv);
+        m_file->Read(mat);
+
+        if (curMat != mat)
+        {
+            if (curMat != -1)
+            {
+                if (m_progress) m_progress(m_progressArg);
+                p->EndMaterial();
+            }
+            p->BeginMaterial(mat);
+            curMat = mat;
+        }
+
+        p->Begin(nv);
+
+        switch (packing)
+        {
+        case 3:
+        {
+            VIVect3 v;
+            VIVect2 uv;
+            VIVect3 n;
+            VIVect4U8 b;
+            VIVect4 w;
+
+            for (int k = 0; k < nv; k++)
+            {
+                m_file->Read(v.x);
+                m_file->Read(v.y);
+                m_file->Read(v.z);
+                m_file->Read(uv.x);
+                m_file->Read(uv.y);
+                m_file->Read(n.x);
+                m_file->Read(n.y);
+                m_file->Read(n.z);
+                m_file->Read(b.x);
+                m_file->Read(b.y);
+                m_file->Read(b.z);
+                m_file->Read(b.w);
+                m_file->Read(w.x);
+                m_file->Read(w.y);
+                m_file->Read(w.z);
+                m_file->Read(w.w);
+                p->UV0(uv);
+                p->Normal(n);
+                p->Bones(b);
+                p->Weights(w);
+                p->Vertex(v);
+            }
+            break;
+        }
+
+        case 5:
+            switch (p->m_type)
+            {
+            case 5:
+            {
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+                VIVect3S8 sn;
+                VIVect4U8 b;
+                VIVect4S8 sw;
+
+                for (int k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    m_file->Read(sn.x);
+                    m_file->Read(sn.y);
+                    m_file->Read(sn.z);
+                    m_file->Read(b.x);
+                    m_file->Read(b.y);
+                    m_file->Read(b.z);
+                    m_file->Read(b.w);
+                    m_file->Read(sw.x);
+                    m_file->Read(sw.y);
+                    m_file->Read(sw.z);
+                    m_file->Read(sw.w);
+                    p->UV0(suv);
+                    p->Normal(sn);
+                    p->Bones(b);
+                    p->Weights(sw);
+                    p->Vertex(sv);
+                }
+                break;
+            }
+
+            case 1:
+            {
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+                VIVect3S8 sn;
+                VIVect4U8 b;
+                VIVect4S8 sw;
+                VIVect3 v;
+                VIVect2 uv;
+                VIVect3 n;
+                VIColor32 c(0, 0, 0, 255);
+                VIVect4 w;
+
+                for (int k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    m_file->Read(sn.x);
+                    m_file->Read(sn.y);
+                    m_file->Read(sn.z);
+                    m_file->Read(b.x);
+                    m_file->Read(b.y);
+                    m_file->Read(b.z);
+                    m_file->Read(b.w);
+                    m_file->Read(sw.x);
+                    m_file->Read(sw.y);
+                    m_file->Read(sw.z);
+                    m_file->Read(sw.w);
+                    v.x = sv.x * vscale;
+                    v.y = sv.y * vscale;
+                    v.z = sv.z * vscale;
+                    uv.x = suv.x * uvscale;
+                    uv.y = suv.y * uvscale;
+                    n.x = sn.x * nscale;
+                    n.y = sn.y * nscale;
+                    n.z = sn.z * nscale;
+                    w.x = sw.x * nscale;
+                    w.y = sw.y * nscale;
+                    w.z = sw.z * nscale;
+                    w.w = sw.w * nscale;
+                    p->UV0(uv);
+                    p->Normal(n);
+                    p->Color(c);
+                    p->Bones(b);
+                    p->Weights(w);
+                    p->Vertex(v);
+                }
+                break;
+            }
+
+            default:
+                return -1;
+            }
+            break;
+
+        case 1:
+        {
+            VIVect3 v;
+            VIVect2 uv;
+            VIVect3 n;
+            VIColor32 c;
+            VIVect4U8 b;
+            VIVect4 w;
+
+            for (int k = 0; k < nv; k++)
+            {
+                m_file->Read(v.x);
+                m_file->Read(v.y);
+                m_file->Read(v.z);
+                m_file->Read(uv.x);
+                m_file->Read(uv.y);
+                m_file->Read(n.x);
+                m_file->Read(n.y);
+                m_file->Read(n.z);
+                m_file->Read(c.r);
+                m_file->Read(c.g);
+                m_file->Read(c.b);
+                m_file->Read(c.a);
+                m_file->Read(b.x);
+                m_file->Read(b.y);
+                m_file->Read(b.z);
+                m_file->Read(b.w);
+                m_file->Read(w.x);
+                m_file->Read(w.y);
+                m_file->Read(w.z);
+                m_file->Read(w.w);
+                p->UV0(uv);
+                p->Normal(n);
+                p->Color(c);
+                p->Bones(b);
+                p->Weights(w);
+                p->Vertex(v);
+            }
+            break;
+        }
+
+        default:
+            return -1;
+        }
+
+        p->End();
+    }
+
+    if (numMats)
+    {
+        if (m_progress) m_progress(m_progressArg);
+        p->EndMaterial();
+    }
+
+    if (p->Unlock() < 0) return -1;
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// A flora prim buffer: position and UV only, packing 7 (floats) or 8 (16-bit),
+// always with an id, and never a version 0.  A raster that cannot draw 8 has
+// demoted it to 7.  The demoted arm declares a normal and a colour it never
+// uses -- the slots it is given only fit with both of them in the block.
+int VIESFParse::ParseFloraPrimBuffer()
+{
+    VIPrimBuffer *p;
+    int curMat = -1;
+    unsigned short type, version;
+    unsigned int id = 0;
+    int t;
+    VIPrimBufferType packing;
+    int numMats, numPrims, numVerts;
+    int vbits, uvbits;
+    VIResourceType rt;
+    int i;
+    int nv, mat;
+
+    if (m_file->ReadBegin(type, version) < 0) return -1;
+    if (type != 0x1230) return -1;
+
+    m_file->Read(id);
+    m_file->Read(t);
+    packing = (VIPrimBufferType)t;
+    m_file->Read(numMats);
+    m_file->Read(numPrims);
+    m_file->Read(numVerts);
+    m_file->Read(vbits);
+    m_file->Read(uvbits);
+
+    if (id)
+    {
+        if (m_dict->Find(id, rt, i))
+        {
+            if (rt != 11) return -1;
+            m_file->ReadEnd();
+            return i;
+        }
+    }
+
+    i = m_raster->CreatePrimBuffer(m_permResource);
+    if (i < 0) return -1;
+
+    p = m_raster->PrimBuffer(i);
+
+    if (id)
+        if (m_dict->Add((VIResource &)*p, id, (VIResourceType)11, i) < 0) return -1;
+
+    if (p->Init(*m_raster, packing, numMats, numPrims, numVerts) < 0) return -1;
+    if (p->Lock() < 0) return -1;
+
+    p->SetPacking(vbits, uvbits, 7);
+
+    float vscale = 1.0f / powf(2.0f, vbits);
+    float uvscale = 1.0f / powf(2.0f, uvbits);
+
+    for (int j = 0; j < numPrims; j++)
+    {
+        m_file->Read(nv);
+        m_file->Read(mat);
+
+        if (curMat != mat)
+        {
+            if (curMat != -1) p->EndMaterial();
+            p->BeginMaterial(mat);
+            curMat = mat;
+        }
+
+        switch (packing)
+        {
+        case 7:
+        {
+            VIVect3 v;
+            VIVect2 uv;
+
+            p->Begin(nv);
+
+            for (int k = 0; k < nv; k++)
+            {
+                m_file->Read(v.x);
+                m_file->Read(v.y);
+                m_file->Read(v.z);
+                m_file->Read(uv.x);
+                m_file->Read(uv.y);
+                p->UV0(uv);
+                p->Vertex(v);
+            }
+            p->End();
+            break;
+        }
+
+        case 8:
+            switch (p->m_type)
+            {
+            case 8:
+            {
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+
+                p->Begin(nv);
+
+                for (int k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    p->UV0(suv);
+                    p->Vertex(sv);
+                }
+                p->End();
+                break;
+            }
+
+            case 7:
+            {
+                VIVect3 v;
+                VIVect2 uv;
+                VIVect3 n;
+                VIColor32 c;
+                VIVect3S16 sv;
+                VIVect2S16 suv;
+
+                p->Begin(nv);
+
+                for (int k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(suv.x);
+                    m_file->Read(suv.y);
+                    v.x = sv.x * vscale;
+                    v.y = sv.y * vscale;
+                    v.z = sv.z * vscale;
+                    uv.x = suv.x * uvscale;
+                    uv.y = suv.y * uvscale;
+                    p->UV0(uv);
+                    p->Vertex(v);
+                }
+                p->End();
+                break;
+            }
+
+            default:
+                return -1;
+            }
+            break;
+
+        default:
+            return -1;
+        }
+    }
+
+    if (numMats) p->EndMaterial();
+
+    if (p->CalcBVolumes(0, 0) < 0) return -1;
+    if (p->Unlock() < 0) return -1;
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// A collision buffer.  Packing 0 is float positions, 1 is 16-bit positions,
+// 2 adds a vertex group (Init stores it as 3, which also carries a flora type,
+// so a 2 read back as 3 gets the "no flora" -1), and 3 adds the flora type on
+// the wire.  A collider that cannot hold the packed form has demoted a 2 to 0,
+// and then each vertex is scaled up and moved by its group's pre-translation,
+// since a float buffer has no group to carry it.
+int VIESFParse::ParseCollBuffer()
+{
+    int curGroup = -1;
+    unsigned short type, version;
+    int t;
+    VICollBufferType packing;
+    int numGroups, numPrims, numVerts;
+    int bits;
+    int nv, grp, mat;
+    int k;
+
+    if (m_file->ReadBegin(type, version) < 0) return -1;
+    if (type != 0x4200) return -1;
+
+    if (version >= 2) { m_file->Read(t); packing = (VICollBufferType)t; }
+    else packing = VICollBufferTypeV;
+    m_file->Read(numGroups);
+    m_file->Read(numPrims);
+    m_file->Read(numVerts);
+    if (version >= 2) m_file->Read(bits);
+    else bits = 0;
+
+    int i = m_collide->CreateCollBuffer(m_permResource);
+    if (i < 0) return -1;
+
+    VICollBuffer *p = m_collide->CollBuffer(i);
+
+    if (p->Init(packing, numGroups, numPrims, numVerts) < 0) return -1;
+    if (p->Lock() < 0) return -1;
+    if (p->SetPacking(bits) < 0) return -1;
+
+    float scale = 1.0f / powf(2.0f, bits);
+
+    for (int j = 0; j < numPrims; j++)
+    {
+        m_file->Read(nv);
+        m_file->Read(grp);
+        m_file->Read(mat);
+
+        if (curGroup != grp)
+        {
+            if (curGroup != -1) p->EndPrimGroup();
+            p->BeginPrimGroup();
+            curGroup = grp;
+        }
+
+        switch (packing)
+        {
+        case 0:
+        {
+            VIVect3 v;
+
+            p->Begin(mat);
+
+            for (k = 0; k < nv; k++)
+            {
+                m_file->Read(v.x);
+                m_file->Read(v.y);
+                m_file->Read(v.z);
+                p->Vertex(v);
+            }
+            p->End();
+            break;
+        }
+
+        case 1:
+        {
+            VIVect3S16 sv;
+
+            p->Begin(mat);
+
+            for (k = 0; k < nv; k++)
+            {
+                m_file->Read(sv.x);
+                m_file->Read(sv.y);
+                m_file->Read(sv.z);
+                p->Vertex(sv);
+            }
+            p->End();
+            break;
+        }
+
+        case 2:
+            switch (p->m_type)
+            {
+            case 2:
+            {
+                VIVect3S16 sv;
+                short g;
+
+                p->Begin(mat);
+
+                for (k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(g);
+                    p->VertexGroup(g);
+                    p->Vertex(sv);
+                }
+                p->End();
+                break;
+            }
+
+            case 3:
+            {
+                VIVect3S16 sv;
+                short g;
+
+                p->Begin(mat);
+
+                for (k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(g);
+                    p->VertexGroup(g);
+                    p->FloraType(-1);
+                    p->Vertex(sv);
+                }
+                p->End();
+                break;
+            }
+
+            case 0:
+            {
+                VIVect3 v;
+                VIVect3S16 sv;
+                short g;
+
+                p->Begin(mat);
+
+                for (k = 0; k < nv; k++)
+                {
+                    m_file->Read(sv.x);
+                    m_file->Read(sv.y);
+                    m_file->Read(sv.z);
+                    m_file->Read(g);
+                    v.x = sv.x * scale;
+                    v.y = sv.y * scale;
+                    v.z = sv.z * scale;
+                    VIVect3 *t = m_zone->m_pretrans.m_data + g;
+                    v += *t;
+                    p->Vertex(v);
+                }
+                p->End();
+                break;
+            }
+
+            default:
+                return -1;
+            }
+            break;
+
+        case 3:
+            switch (p->m_type)
+            {
+            case 3:
+            {
+            VIVect3S16 sv;
+            signed char g, f;
+
+            p->Begin(mat);
+
+            for (k = 0; k < nv; k++)
+            {
+                m_file->Read(sv.x);
+                m_file->Read(sv.y);
+                m_file->Read(sv.z);
+                m_file->Read(g);
+                m_file->Read(f);
+                p->VertexGroup(g);
+                p->FloraType(f);
+                p->Vertex(sv);
+            }
+            p->End();
+            break;
+            }
+
+            default:
+                return -1;
+            }
+            break;
+
+        default:
+            return -1;
+        }
+    }
+
+    if (numGroups) p->EndPrimGroup();
+
+    // The pointer is assigned INSIDE the test: declared outside, the address
+    // is formed before the null check; inside the arm, cse folds it away.
+    VIArray<VIVect3> *pt;
+
+    if (m_zone && (pt = &m_zone->m_pretrans)->m_size)
+    {
+        if (p->CalcBVolumes(pt->m_size, pt->Data()) < 0) return -1;
+    }
+    else
+    {
+        if (p->CalcBVolumes(0, 0) < 0) return -1;
+    }
+
+    if (p->Unlock() < 0) return -1;
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// A character sprite: a hierarchical sprite plus everything that makes it a
+// customisable character.  The header grew one field per version -- skeleton
+// (1), scale (2), race and sex (3), the NPC flag (4) -- read through ONE
+// scratch int, and the sub-objects grew the same way, so every one after the
+// hierarchy is gated on the object version.  Without a raster the surfaces, the
+// palette and the art ref map are opened and closed unread.
+int VIESFParse::ParseCSpriteObj()
+{
+    VIBBox            b;
+    unsigned short    type, version;
+    unsigned int      id;
+    int               t;
+    VICSpriteSkelType skel;
+    float             scale;
+    VICSpriteRace     race;
+    VICSpriteSex      sex;
+    int               npc;
+    VIResourceType    rt;
+    int               i;
+
+    if (m_file->ReadBegin(type, version) < 0) return -1;
+
+    m_file->Read(id);
+    m_file->Read(b.min.x);
+    m_file->Read(b.min.y);
+    m_file->Read(b.min.z);
+    m_file->Read(b.max.x);
+    m_file->Read(b.max.y);
+    m_file->Read(b.max.z);
+
+    if (version >= 1) { m_file->Read(t); skel = (VICSpriteSkelType)t; }
+    else skel = VICSpriteSkelType0;
+
+    if (version >= 2) m_file->Read(scale);
+    else scale = 1.0f;
+
+    if (version >= 3)
+    {
+        m_file->Read(t); race = (VICSpriteRace)t;
+        m_file->Read(t); sex = (VICSpriteSex)t;
+    }
+    else
+    {
+        race = VICSpriteRaceNone;
+        sex = VICSpriteSexMale;
+    }
+
+    if (version >= 4) m_file->Read(npc);
+    else npc = 1;
+
+    if (m_file->ReadEnd() < 0) return -1;
+
+    if (id)
+    {
+        if (m_dict->Find(id, rt, i))
+        {
+            if (rt != 9) return -1;
+            m_file->ReadEnd();
+            return i;
+        }
+    }
+
+    i = m_scene->CreateSprite(VISpriteTypeC, m_permResource);
+    if (i < 0) return -1;
+
+    VICSprite *p = (VICSprite *)m_scene->Sprite(i);
+
+    if (p->Init(skel, race, sex, scale, npc) < 0) return -1;
+
+    if (id)
+        if (m_dict->Add(*p, id, (VIResourceType)9, i) < 0) return -1;
+
+    p->m_bbox = b;
+    p->m_bsphere.Init(b);
+
+    if (m_raster)
+    {
+        if (m_file->ObjectVersion() < 3)
+            if (ParseSurfaceArray() < 0) return -1;
+
+        p->m_materialPal = ParseMaterialPal();
+        if (p->m_materialPal < 0) return -1;
+
+        p->m_refMap = ParseRefMap();
+        if (p->m_refMap < 0) return -1;
+    }
+    else
+    {
+        if (m_file->ObjectVersion() < 3)
+        {
+            m_file->ReadBegin(type, version);
+            m_file->ReadEnd();
+        }
+
+        m_file->ReadBegin(type, version);
+        m_file->ReadEnd();
+        m_file->ReadBegin(type, version);
+        m_file->ReadEnd();
+    }
+
+    if (m_file->ObjectVersion() >= 4)
+        if (ParseSoundArray() < 0) return -1;
+
+    if (ParseCSpriteSpriteArray() < 0) return -1;
+    if (ParseHSpriteAnimArray() < 0) return -1;
+    if (ParseHSpriteHierarchy(*p) < 0) return -1;
+
+    p->VIHSprite::m_refMap = ParseRefMap();
+    if (p->VIHSprite::m_refMap < 0) return -1;
+
+    if (m_file->ObjectVersion() >= 4)
+        if (ParseHSpriteTriggers(*p) < 0) return -1;
+
+    if (ParseCSpriteSkinList(*p) < 0) return -1;
+    if (ParseCSpritePlayList(*p) < 0) return -1;
+
+    if (m_file->ObjectVersion() >= 2)
+        if (ParseCSpriteNodeIDList(*p) < 0) return -1;
+
+    if (m_file->ObjectVersion() >= 1)
+        if (ParseCSpriteASlotList(*p) < 0) return -1;
+
+    if (m_file->ObjectVersion() >= 5)
+        if (ParseCSpriteTSlotList(*p) < 0) return -1;
+
+    if (m_file->ObjectVersion() >= 6)
+        if (ParseCSpriteContSound(*p) < 0) return -1;
+
+    if (m_file->ObjectVersion() >= 7)
+        if (ParseCSpritePartDefinitions() < 0) return -1;
+
+    if (m_file->ObjectVersion() >= 7)
+        if (ParseCSpritePartEmitters(*p) < 0) return -1;
+
+    if (p->SetDefaultEntries() < 0) return -1;
+    if (m_raster) p->InitTextSlots(*m_raster);
+    if (p->SetAnimPriorities() < 0) return -1;
+    if (p->SetAnimSoundChannels() < 0) return -1;
+    if (p->Share(*m_scene, m_raster) < 0) return -1;
+    if (p->SetDefaults(*m_scene) < 0) return -1;
+    if (p->CalcLODOffDist(*m_scene) < 0) return -1;
+    if (p->CreateParticleEmitters(*m_scene) < 0) return -1;
+
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// An animation clip.  The header grew a field per version -- the frame format
+// (2), the trigger count (3), the play speed and playback type (1) -- and the
+// frames are either whole float frames or packed ones: rotation in 1/32767ths,
+// scale and translation in 1/512ths.  An animation the engine keeps unpacked
+// has the packed frames expanded here.  One scratch int carries every node's
+// ref id, whichever arm reads it.
+int VIESFParse::ParseHSpriteAnimObj()
+{
+    unsigned int        id;
+    int                 t;
+    VIHSpriteAnimFormat format;
+    int                 numNodes, numFrames, numTriggers;
+    float               playRate, playSpeed;
+    VIPlaybackType      playType;
+    VIResourceType      rt;
+    int                 i;
+    int                 ref;
+    int                 trig;
+    float               frame;
+    int                 j, k;
+
+    if (m_progress) m_progress(m_progressArg);
+
+    m_file->Read(id);
+
+    if (m_file->ObjectVersion() >= 2) { m_file->Read(t); format = (VIHSpriteAnimFormat)t; }
+    else format = VIHSpriteAnimFormatFrame;
+
+    m_file->Read(numNodes);
+    m_file->Read(numFrames);
+
+    if (m_file->ObjectVersion() >= 3) m_file->Read(numTriggers);
+    else numTriggers = 0;
+
+    m_file->Read(playRate);
+
+    if (m_file->ObjectVersion() >= 1)
+    {
+        m_file->Read(playSpeed);
+        m_file->Read((int &)playType);
+    }
+    else
+    {
+        playSpeed = 1.0f;
+        playType = VIPlaybackTypeLoop;
+    }
+
+    if (id)
+    {
+        if (m_dict->Find(id, rt, i))
+        {
+            if (rt != 6) return -1;
+            m_file->ReadEnd();
+            return i;
+        }
+    }
+
+    i = m_scene->CreateAnimation(m_permResource);
+    if (i < 0) return -1;
+
+    VIHSpriteAnim *a = m_scene->Animation(i);
+
+    if (id)
+        if (m_dict->Add((VIResource &)*a, id, (VIResourceType)6, i) < 0) return -1;
+
+    if (a->Init(format, numNodes, numFrames, numTriggers, playRate, playSpeed, playType) < 0) return -1;
+
+    switch (format)
+    {
+    case VIHSpriteAnimFormatFrame:
+    {
+        if (a->m_format != VIHSpriteAnimFormatFrame) return -1;
+
+        VIHSpriteFrame f;
+
+        for (j = 0; j < numNodes; j++)
+        {
+            m_file->Read(ref);
+            if (a->SetNodeRefID(j, ref) < 0) return -1;
+
+            for (k = 0; k < numFrames; k++)
+            {
+                m_file->Read(f.m_rot.x);
+                m_file->Read(f.m_rot.y);
+                m_file->Read(f.m_rot.z);
+                m_file->Read(f.m_rot.w);
+                m_file->Read(f.m_scale);
+                m_file->Read(f.m_trans.x);
+                m_file->Read(f.m_trans.y);
+                m_file->Read(f.m_trans.z);
+                if (a->SetNodeFrame(j, k, f) < 0) return -1;
+            }
+        }
+        break;
+    }
+
+    case VIHSpriteAnimFormatPack:
+        switch (a->m_format)
+        {
+        case VIHSpriteAnimFormatPack:
+        {
+            VIHSpritePackFrame pf;
+
+            for (j = 0; j < numNodes; j++)
+            {
+                m_file->Read(ref);
+                if (a->SetNodeRefID(j, ref) < 0) return -1;
+
+                for (k = 0; k < numFrames; k++)
+                {
+                    m_file->Read(pf.m_rot.x);
+                    m_file->Read(pf.m_rot.y);
+                    m_file->Read(pf.m_rot.z);
+                    m_file->Read(pf.m_rot.w);
+                    m_file->Read(pf.m_scaleTrans.x);
+                    m_file->Read(pf.m_scaleTrans.y);
+                    m_file->Read(pf.m_scaleTrans.z);
+                    m_file->Read(pf.m_scaleTrans.w);
+                    if (a->SetNodeFrame(j, k, pf) < 0) return -1;
+                }
+            }
+            break;
+        }
+
+        case VIHSpriteAnimFormatFrame:
+        {
+            VIHSpritePackFrame pf;
+            VIHSpriteFrame f;
+            for (j = 0; j < numNodes; j++)
+            {
+                m_file->Read(ref);
+                if (a->SetNodeRefID(j, ref) < 0) return -1;
+
+                for (k = 0; k < numFrames; k++)
+                {
+                    m_file->Read(pf.m_rot.x);
+                    m_file->Read(pf.m_rot.y);
+                    m_file->Read(pf.m_rot.z);
+                    m_file->Read(pf.m_rot.w);
+                    m_file->Read(pf.m_scaleTrans.x);
+                    m_file->Read(pf.m_scaleTrans.y);
+                    m_file->Read(pf.m_scaleTrans.z);
+                    m_file->Read(pf.m_scaleTrans.w);
+                    // The scale and the translation share one 1/512, so the
+                    // four are READ as a run off a pointer (GetNodeFrame's
+                    // lever) -- but stored by member: a second pointer for the
+                    // destination costs a callee-saved register.
+                    short *sp = &pf.m_scaleTrans.x;
+                    f.m_rot.x = pf.m_rot.x * (1.0f / 32767.0f);
+                    f.m_rot.y = pf.m_rot.y * (1.0f / 32767.0f);
+                    f.m_rot.z = pf.m_rot.z * (1.0f / 32767.0f);
+                    f.m_rot.w = pf.m_rot.w * (1.0f / 32767.0f);
+                    f.m_scale = sp[0] * (1.0f / 512.0f);
+                    f.m_trans.x = sp[1] * (1.0f / 512.0f);
+                    f.m_trans.y = sp[2] * (1.0f / 512.0f);
+                    f.m_trans.z = sp[3] * (1.0f / 512.0f);
+                    if (a->SetNodeFrame(j, k, f) < 0) return -1;
+                }
+            }
+            break;
+        }
+
+        default:
+            return -1;
+        }
+        break;
+
+    default:
+        return -1;
+    }
+
+    for (j = 0; j < numTriggers; j++)
+    {
+        m_file->Read(trig);
+        m_file->Read(frame);
+        a->SetKeyframe(j, trig, frame);
+    }
+
+    if (m_file->ReadEnd() < 0) return -1;
+    return i;
+}
+
+// PlayStation ADPCM to 16-bit PCM, little-endian, in place of the SPU doing it:
+// the well-known VAG decoder, in DOUBLES.  Each 16-byte block is a shift/filter
+// byte, a flag byte that is skipped, and 28 four-bit deltas; the filter is the
+// standard five-pair table in 64ths.  Returns the bytes written.
+int VIESFParse::AdpcmToPcm(void *src, int n, void *dst)
+{
+    unsigned char *p = (unsigned char *)src;
+    unsigned char *q = (unsigned char *)dst;
+    double f[5][2] = { {   0.0 / 64.0,   0.0 / 64.0 },
+                       {  60.0 / 64.0,   0.0 / 64.0 },
+                       { 115.0 / 64.0, -52.0 / 64.0 },
+                       {  98.0 / 64.0, -55.0 / 64.0 },
+                       { 122.0 / 64.0, -60.0 / 64.0 } };
+    double samples[28];
+    double s_1 = 0.0, s_2 = 0.0;
+    int predict, shift, d, s, i;
+
+    do
+    {
+        predict = *p;
+        shift = predict & 0xf;
+        predict >>= 4;
+        p += 2;
+
+        for (i = 0; i < 28; i += 2)
+        {
+            d = *p++;
+            s = (d & 0xf) << 12;
+            if (s & 0x8000) s |= 0xffff0000;
+            samples[i] = (double)(s >> shift);
+            s = (d & 0xf0) << 8;
+            if (s & 0x8000) s |= 0xffff0000;
+            samples[i + 1] = (double)(s >> shift);
+        }
+
+        for (i = 0; i < 28; i++)
+        {
+            samples[i] = samples[i] + s_1 * f[predict][0] + s_2 * f[predict][1];
+            s_2 = s_1;
+            s_1 = samples[i];
+            d = (int)(samples[i] + 0.5);
+            *q++ = d & 0xff;
+            *q++ = d >> 8;
+        }
+    }
+    while (p - (unsigned char *)src < n);
+
+    return q - (unsigned char *)dst;
 }

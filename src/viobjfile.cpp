@@ -142,8 +142,8 @@ int VIObjFile::PostOpen()
         m_read = 0;
         m_write = 1;
     }
-    m_canWrite = 0;
     m_dirty = 0;
+    m_canWrite = 0;
     m_canRead = 0;
     return 0;
 }

@@ -28,7 +28,7 @@ class VIWnd;
 #define NODE(i) ((Node *)((i) * sizeof(Node) + (unsigned int)m_nodes))
 
 // Placement new, as in vipool.cpp.
-inline void *operator new(unsigned int, void *p)
+inline void *operator new(unsigned int, void *p) throw()
 {
     return p;
 }
@@ -161,9 +161,7 @@ template <class T> int VISet<T>::Allocate()
                 return -1;
             for (int i = 1; i < m_size; i++)
             {
-                Node *d = &n[i];
-                if (d)
-                    *d = m_nodes[i];
+                new (&n[i]) Node(m_nodes[i]);
             }
             if (DestroyPool() < 0)
                 return -1;

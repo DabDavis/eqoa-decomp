@@ -123,7 +123,9 @@ int VIRFont::Palette(int &count, VIPixelStore &ps, unsigned char **p)
 
 int VIRFont::BeginChar(unsigned short c, int &bytesPerRow, unsigned char **p)
 {
-    VIRFontChar *ch = Char(m_numCharsLoaded);
+    // Base FIRST, not Char()'s index-first form: the add's operand order is
+    // the only difference (7 of 14 words).
+    VIRFontChar *ch = (VIRFontChar *)(m_chars + m_numCharsLoaded * (int)sizeof(VIRFontChar));
 
     ch->m_code = c;
     bytesPerRow = ch->m_bytesPerRow;
