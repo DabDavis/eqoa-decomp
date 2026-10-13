@@ -13,6 +13,34 @@
 
 extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" int  rand();
+extern "C" unsigned int VIHashRefID(const char *s);
+extern "C" unsigned int VIHashResourceID(const char *s);
+
+// The node and resource names a character's sound and particle attachments are
+// looked up under, hashed once by the TU's static initialiser (phase 61), in
+// the order the .data holds them.
+int VICSprite::PrimSoundRefID    = VIHashRefID("Primary Sound");
+int VICSprite::PrimSoundBPURefID = VIHashRefID("Primary Sound_BPU");
+int VICSprite::PrimSoundBPLRefID = VIHashRefID("Primary Sound_BPL");
+int VICSprite::SecSoundRefID     = VIHashRefID("Secondary Sound");
+int VICSprite::SecSoundBPURefID  = VIHashRefID("Secondary Sound_BPU");
+int VICSprite::SecSoundBPLRefID  = VIHashRefID("Secondary Sound_BPL");
+int VICSprite::Particle1RefID    = VIHashRefID("Particle 1");
+int VICSprite::Particle1BPURefID = VIHashRefID("Particle 1_BPU");
+int VICSprite::Particle1BPLRefID = VIHashRefID("Particle 1_BPL");
+int VICSprite::Particle2RefID    = VIHashRefID("Particle 2");
+int VICSprite::Particle2BPURefID = VIHashRefID("Particle 2_BPU");
+int VICSprite::Particle2BPLRefID = VIHashRefID("Particle 2_BPL");
+int VICSprite::FontResourceID    = VIHashResourceID("Arial");
+
+// Three name-plate colours, built by VIColor32's four-byte constructor at
+// static-init time -- byte stores, not .data.
+VIColor32 VICSprite::NameColors[3] =
+{
+    VIColor32(212, 192, 111, 255),
+    VIColor32(100, 175, 220, 255),
+    VIColor32( 90, 255,  80, 255)
+};
 
 VICSprite::VICSprite()
 {

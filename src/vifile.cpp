@@ -213,6 +213,46 @@ int VIFile::CDRead(unsigned lsn, unsigned sectors, void *buf, sceCdRMode *mode)
     return 1;
 }
 
+// libkernel's alarm and semaphore calls.  Only the three SemaParam fields the
+// delay sets are named; the rest are the kernel's.
+struct SemaParam
+{
+    int      currentCount;
+    int      maxCount;
+    int      initCount;
+    int      numWaitThreads;
+    unsigned attr;
+    unsigned option;
+};
+extern "C" int CreateSema(SemaParam *p);
+extern "C" int DeleteSema(int sema);
+extern "C" int WaitSema(int sema);
+extern "C" int iSignalSema(int sema);
+extern "C" int SetAlarm(unsigned short time, void (*cb)(int, unsigned short, void *), void *arg);
+
+// The alarm fires in interrupt context: post the semaphore, then ExitHandler.
+static void FileDelayAlarm(int id, unsigned short time, void *sema)
+{
+    iSignalSema((int)sema);
+    __asm__ __volatile__ ("sync.l\n\tei\n");
+}
+
+// Sleep `n` horizontal blanks (480 is two fields): a one-shot alarm posts a
+// semaphore this thread waits on, so the wait yields the EE.
+int VIEEFileDelay(int n)
+{
+    SemaParam p;
+    int sema;
+
+    p.maxCount = 1;
+    p.initCount = 0;
+    p.option = 0;
+    sema = CreateSema(&p);
+    SetAlarm(n, FileDelayAlarm, (void *)sema);
+    WaitSema(sema);
+    return DeleteSema(sema);
+}
+
 int VIFile::Open(const void *p, long size, int flags, long len)
 {
     return MemoryOpen(p, size, flags, len);

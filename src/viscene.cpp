@@ -6,6 +6,13 @@
 // check, exactly the way a VIZone room's actor list does (phase 52).
 #include "vi.h"
 
+extern "C" unsigned int VIHashResourceID(const char *);
+extern "C" int printf(const char *, ...);
+int VIEEKBFree();
+extern "C" char *strcpy(char *, const char *);
+extern "C" char *strcat(char *, const char *);
+extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
+
 // ------------------------------------------------------------------- time --
 
 int VIScene::SetTime(long t)
@@ -368,14 +375,14 @@ int VIScene::Collide(VICollSphere &s, VISceneFilter &f)
     VISceneCollVars v;
     VIVect3        &end = s.m_end;
 
+    v.m_stamp = 0;
     v.m_scene = this;
     v.m_sphere = &s;
     v.m_filter = &f;
-    v.m_radius = s.m_radius;
     v.m_collide = m_collide;
     v.m_start = s.m_start;
     v.m_end = end;
-    v.m_stamp = 0;
+    v.m_radius = s.m_radius;
 
     int r = m_world.Collide(v);
     m_stamp++;
@@ -757,23 +764,25 @@ int VIScene::CalcOutdoorsIntensity(VICamera &cam)
 
     seg.Init(a, b);
 
-    if (Pick(seg, f) == 0)
-        return 0;
-
-    if (m_soundTrack.m_p28 != 0)
+    if (Pick(seg, f))
     {
-        float lim = (int)(GetTime() - m_soundTrack.m_p28) * 0.001f * 0.2f;
-        float d = seg.GetHitColor().a - m_soundTrack.m_p30;
+        if (m_soundTrack.m_p28 != 0)
+        {
+            float lim = (int)(GetTime() - m_soundTrack.m_p28) * 0.001f * 0.2f;
+            float d = seg.GetHitColor().a - m_soundTrack.m_p30;
 
-        float c = VIMIN(lim, VIMAX(-lim, d));
+            float c = VIMIN(lim, VIMAX(-lim, d));
 
-        m_soundTrack.m_p30 = m_soundTrack.m_p30 + c;
-        m_soundTrack.m_p28 = GetTime();
-        return 0;
+            m_soundTrack.m_p30 = m_soundTrack.m_p30 + c;
+            m_soundTrack.m_p28 = GetTime();
+        }
+        else
+        {
+            m_soundTrack.m_p30 = seg.GetHitColor().a;
+            m_soundTrack.m_p28 = GetTime();
+        }
     }
 
-    m_soundTrack.m_p30 = seg.GetHitColor().a;
-    m_soundTrack.m_p28 = GetTime();
     return 0;
 }
 
@@ -1458,10 +1467,11 @@ int VIScene::CollideActor(VICollSphere &s, VISceneFilter &f, int i)
         if (f.FilterActor(*this, i))
             goto done;
 
+        VISprite *sp = m_sprites.Value(((VIActor *)i)->m_p60);
+
         m_collide->SetWorld(((VIActor *)i)->m_objectToWorld);
 
-        hit = m_sprites.Value(((VIActor *)i)->m_p60)->Collide(s, f, *this,
-                                                              *m_collide);
+        hit = sp->Collide(s, f, *this, *m_collide);
         if (hit)
         {
             f.m_hitActor = i;
@@ -1631,16 +1641,7 @@ int VIScene::SetFarPlane(VICamera &cam)
 
 int VIScene::SetTimeOfDay(float t)
 {
-    float lo = 0.0f;
-
-    // Read off the branches: the upper clamp is GUARDED by the lower test and
-    // the tail re-tests it, so the two arms share one comparison result.
-    if (!(t < lo) && 23.99999f < t)
-        m_p1FE0 = 23.99999f;
-    else if (t < lo)
-        m_p1FE0 = lo;
-    else
-        m_p1FE0 = t;
+    m_p1FE0 = VIMIN(23.99999f, VIMAX(0.0f, t));
     return 0;
 }
 
@@ -1812,9 +1813,13 @@ int VIScene::RemoveActor(int i)
     while (occ != -1)
     {
         VISceneOccup *o = (VISceneOccup *)occ;
-        int           next = o->m_actorNext;
-        int           zone = o->m_zone;
-        int           room = o->m_room;
+        int           next;
+        int           room;
+        int           zone;
+
+        next = o->m_actorNext;
+        zone = o->m_zone;
+        room = o->m_room;
 
         if (o->m_next != -1)
             ((VISceneOccup *)o->m_next)->m_prev = o->m_prev;
@@ -1864,12 +1869,14 @@ int VIScene::UpdateProxyActor(int i)
 int VIScene::RemoveActorsFromZone(VIZone &z, VIArray<int> &a)
 {
     int n = 0;
+    int i;
+    int occ;
 
     m_stamp++;
 
-    for (int i = 0; i < z.m_rooms.m_size; i++)
+    for (i = 0; i < z.m_rooms.m_size; i++)
     {
-        int occ = z.m_rooms[i].m_p68;
+        occ = z.m_rooms[i].m_p68;
 
         while (occ != -1)
         {
@@ -1889,9 +1896,9 @@ int VIScene::RemoveActorsFromZone(VIZone &z, VIArray<int> &a)
 
     n = 0;
 
-    for (int j = 0; j < z.m_rooms.m_size; j++)
+    for (i = 0; i < z.m_rooms.m_size; i++)
     {
-        int occ = z.m_rooms[j].m_p68;
+        occ = z.m_rooms[i].m_p68;
 
         while (occ != -1)
         {
@@ -1899,11 +1906,11 @@ int VIScene::RemoveActorsFromZone(VIZone &z, VIArray<int> &a)
 
             if (actor->m_p80 == m_stamp)
             {
-                a.m_data[n] = (int)actor;
+                a[n] = (int)actor;
                 n++;
-                RemoveActor((int)actor);
+                RemoveActor((int)((VISceneOccup *)occ)->m_actor);
             }
-            occ = z.m_rooms[j].m_p68;
+            occ = z.m_rooms[i].m_p68;
         }
     }
     return 0;
@@ -2027,43 +2034,36 @@ done:
 
 int VIScene::QueryVisibleActor(int i, VISphere &s, VISceneQuery &q)
 {
-    if (((VIActor *)i)->m_p80 == m_stamp)
-        goto done;
-
-    if (((VIActor *)i)->m_p40 & 4)
-        goto done;
-
-    if (q.FilterActor(*this, i))
+    if (((VIActor *)i)->m_p80 != m_stamp && !(((VIActor *)i)->m_p40 & 4))
     {
-        ((VIActor *)i)->m_p80 = m_stamp;
-        goto done;
-    }
-
-    {
-        VIVect3 &at = ((VIActor *)i)->m_location;
-
-        float dx = at.x - s.c.x;
-        float dy = at.y - s.c.y;
-        float dz = at.z - s.c.z;
-        float d2 = dx * dx + dy * dy + dz * dz;
-
-        if (!(d2 < s.r * s.r))
+        if (!q.FilterActor(*this, i))
         {
-            ((VIActor *)i)->m_p80 = m_stamp;
-            goto done;
+            VIVect3 &at = ((VIActor *)i)->m_location;
+
+            float dx = at.x - s.c.x;
+            float dy = at.y - s.c.y;
+            float dz = at.z - s.c.z;
+            float d2 = dx * dx + dy * dy + dz * dz;
+
+            if (d2 < s.r * s.r)
+            {
+                if (!m_clipStack.CullByTop(((VIActor *)i)->m_bound))
+                {
+                    ((VIActor *)i)->m_p80 = m_stamp;
+
+                    q.m_sorted.Insert(d2, i);
+
+                    if (q.m_maxObjects < q.m_sorted.Size())
+                        q.m_sorted.Erase(q.m_sorted.Prev(q.m_sorted.End()));
+                }
+            }
+            else
+                ((VIActor *)i)->m_p80 = m_stamp;
         }
-
-        if (m_clipStack.CullByTop(((VIActor *)i)->m_bound))
-            goto done;
-
-        ((VIActor *)i)->m_p80 = m_stamp;
-
-        q.m_sorted.Insert(d2, i);
-
-        if (q.m_maxObjects < q.m_sorted.Size())
-            q.m_sorted.Erase(q.m_sorted.Prev(q.m_sorted.End()));
+        else
+            ((VIActor *)i)->m_p80 = m_stamp;
     }
-done:
+
     return 0;
 }
 
@@ -2076,6 +2076,11 @@ VIScene::VIScene()
     Clear();
 }
 
+VIScene::~VIScene()
+{
+    Clear();
+}
+
 int VIScene::Clear()
 {
     m_time = 0;
@@ -2085,7 +2090,6 @@ int VIScene::Clear()
     m_p2A38 = 0;
     m_p2A40 = 0;
     m_farPlane = 2500.0f;
-    m_p1884 = -1;
     m_nullSprite = -1;
     m_lightUISprite = -1;
     m_soundUISprite = -1;
@@ -2093,6 +2097,7 @@ int VIScene::Clear()
     m_pointUISprite = -1;
     m_streamAudioUISprite = -1;
     m_p1880 = -1;
+    m_p1884 = -1;
 
     VIEffectVolume::GlobalFree();
 
@@ -2197,12 +2202,8 @@ int VIScene::Init(long time, VIDictionary &d, VIRaster *r, VISoundDevice *sd,
 
     {
         VIVect3 origin;
-        VIBBox  bb;
-        VIVect3 mn(-1000.0f, -300.0f, -1000.0f);
-        VIVect3 mx(1000.0f, 300.0f, 1000.0f);
-
-        bb.min = mn;
-        bb.max = mx;
+        VIBBox  bb(VIVect3(-1000.0f, -300.0f, -1000.0f),
+                   VIVect3(1000.0f, 300.0f, 1000.0f));
 
         if (m_world.Init(1, 1, 1, 4, 2000.0f, origin, bb) < 0)
             return -1;
@@ -2235,7 +2236,8 @@ int VIScene::Init(long time, VIDictionary &d, VIRaster *r, VISoundDevice *sd,
         m_p5B8[i] = -1;
 
     m_p638 = 0;
-    m_p63C = m_particleSystem.Init(m_time, m_raster, 2000);
+    m_p63C = -1;
+    m_particleSystem.Init(m_time, m_raster, 2000);
 
     if (m_raster)
         m_atmosphere.Init(m_time, *m_raster, 600);
@@ -2262,16 +2264,16 @@ int VIScene::Init(long time, VIDictionary &d, VIRaster *r, VISoundDevice *sd,
     m_p2A70 = 0;
     m_bboxDrawStyle = VISCENEBBOX_NONE;
 
+    m_p2A48[0] = 950.0f;
+    m_p2A48[1] = 900.0f;
+    m_p2A48[2] = 550.0f;
+    m_p2A48[3] = 500.0f;
+
     m_p2A58[0] = 1050.0f;
     m_p2A58[1] = 950.0f;
     m_p2A58[2] = 900.0f;
     m_p2A58[3] = 550.0f;
     m_p2A58[4] = 500.0f;
-
-    m_p2A48[0] = 950.0f;
-    m_p2A48[1] = 900.0f;
-    m_p2A48[2] = 550.0f;
-    m_p2A48[3] = 500.0f;
 
     if (m_flora.Init(*this) < 0)
         return -1;
@@ -2355,9 +2357,1856 @@ int VIScene::InsertActor(int actor, int zone, int room)
     }
     ((VIActor *)actor)->m_p9C = occ;
 
-    ((VISceneOccup *)occ)->m_actor = (VIActor *)actor;
     ((VISceneOccup *)occ)->m_actorNext = -1;
     ((VISceneOccup *)occ)->m_zone = zone;
     ((VISceneOccup *)occ)->m_room = room;
+    ((VISceneOccup *)occ)->m_actor = (VIActor *)actor;
+    return 0;
+}
+
+// ================================================================ phase 61 --
+
+// ------------------------------------------------------ the const accessors --
+
+VIRadialFloraMode VIScene::GetRadialFloraMode() const
+{
+    return m_floraMode;
+}
+
+VISceneBBoxDrawStyle VIScene::GetActorBBoxDrawStyle() const
+{
+    return m_bboxDrawStyle;
+}
+
+const VIVect3 &VIScene::GetActorLocation(int i) const
+{
+    return ((VIActor *)i)->m_location;
+}
+
+const VIVect3 &VIScene::GetActorHPR(int i) const
+{
+    return ((VIActor *)i)->m_hpr;
+}
+
+float VIScene::GetActorScale(int i) const
+{
+    return ((VIActor *)i)->m_scale;
+}
+
+int VIScene::GetActorSprite(int i) const
+{
+    return ((VIActor *)i)->m_p60;
+}
+
+VISprite *VIScene::GetActorSpritePtr(int i) const
+{
+    return m_sprites.Value(((VIActor *)i)->m_p60);
+}
+
+int VIScene::GetActorSpriteType(int i) const
+{
+    return m_sprites.Value(((VIActor *)i)->m_p60)->m_type;
+}
+
+int VIScene::GetNumActors() const
+{
+    return m_actors.Size();
+}
+
+int VIScene::GetFirstActor() const
+{
+    return m_actors.Begin() == m_actors.End() ? -1 : m_actors.Begin();
+}
+
+int VIScene::GetNextActor(int i) const
+{
+    return m_actors.Next(i) == m_actors.End() ? -1 : m_actors.Next(i);
+}
+
+// ------------------------------------------------------- the terrain grid --
+
+int VIScene::GetTerrainGridNumRows() const
+{
+    return m_world.m_subdiv * m_world.m_numRows;
+}
+
+int VIScene::GetTerrainGridNumCols() const
+{
+    return m_world.m_subdiv * m_world.m_numCols;
+}
+
+float VIScene::GetTerrainGridSize() const
+{
+    return m_world.m_cellSize / (float)m_world.m_subdiv;
+}
+
+int VIScene::GetTerrainProfile(int row, int col) const
+{
+    return m_world.GetTerrainProfile(row, col);
+}
+
+int VIScene::GetTerrainProfile(const VIVect3 &at) const
+{
+    return m_world.CalcTerrainProfile(at);
+}
+
+int VIScene::GetTerrainGridCell(const VIVect3 &at, int &row, int &col) const
+{
+    return m_world.CalcTerrainCell(at, row, col);
+}
+
+int VIScene::GetTerrainGridCellBVolume(int row, int col, VIBBox &bb) const
+{
+    return m_world.CalcTerrainCellBVolume(row, col, bb);
+}
+
+// --------------------------------------------------------- the world grid --
+
+int VIScene::GetWorldGridOffset(int a, int b, VIVect3 &v) const
+{
+    if (m_world.m_numRows == 1 && m_world.m_numCols == 1)
+        v.Zero();
+    else
+    {
+        v.x = (float)a * m_world.m_cellSize;
+        v.y = 0.0f;
+        v.z = (float)b * m_world.m_cellSize;
+    }
+    return 0;
+}
+
+int VIScene::GetWorldGridCenter(int a, int b, VIVect3 &v) const
+{
+    if (m_world.m_numRows == 1 && m_world.m_numCols == 1)
+        v.Zero();
+    else
+    {
+        v.x = (float)a * m_world.m_cellSize;
+        v.y = 0.0f;
+        v.z = (float)b * m_world.m_cellSize;
+        v += m_world.m_origin;
+    }
+    return 0;
+}
+
+int VIScene::CalcWorldLocation(int a, int b, const VIVect3 &at, VIVect3 &out) const
+{
+    VIVect3 off;
+
+    if (m_world.m_numRows == 1 && m_world.m_numCols == 1)
+        off.Zero();
+    else
+    {
+        off.x = (float)a * m_world.m_cellSize;
+        off.y = 0.0f;
+        off.z = (float)b * m_world.m_cellSize;
+    }
+    out = off;
+    out += at;
+    return 0;
+}
+
+int VIScene::CalcWorldGridOffset(const VIVect3 &v, int &a, int &b, VIVect3 &out) const
+{
+    if (m_world.m_numRows == 1 && m_world.m_numCols == 1)
+    {
+        b = 0;
+        a = 0;
+        out = v;
+    }
+    else
+    {
+        a = (int)(v.x / m_world.m_cellSize);
+        b = (int)(v.z / m_world.m_cellSize);
+        out = v;
+        out.x -= (float)a * m_world.m_cellSize;
+        out.z -= (float)b * m_world.m_cellSize;
+        out -= m_world.m_origin;
+    }
+    return 0;
+}
+
+int VIScene::CalcActorBBox(int i, VIBBox &bb) const
+{
+    VIBBox  box;
+    VIVect3 corners[8];
+    VIActor *a = (VIActor *)i;
+
+    if (!(a->m_p40 & 4))
+    {
+        box = m_sprites.Value(a->m_p60)->m_bbox;
+        box.Transform(a->m_objectToWorld, corners);
+        for (int k = 0; k < 8; k++)
+            bb.Bound(k == 0, corners[k]);
+    }
+    else
+        bb.Bound(1, a->m_location);
+    return 0;
+}
+
+// The inverse of StreamInStaticActor and StreamInCompleteActor: retire the
+// load, the sprite and the static lighting, mark the actor a proxy again
+// (flag 4) and put it back where its proxy belongs.
+int VIScene::StreamOutStaticActor(int i, VISceneStreamVars &v)
+{
+    if (((VIActor *)i)->m_p68 != -1)
+    {
+        if (v.m_loader->Release(((VIActor *)i)->m_p68, *this) < 0)
+            return -1;
+        ((VIActor *)i)->m_p68 = -1;
+    }
+
+    if (((VIActor *)i)->m_p60 != -1)
+    {
+        if (ReleaseSprite(((VIActor *)i)->m_p60) < 0)
+            return -1;
+        ((VIActor *)i)->m_p60 = -1;
+    }
+
+    if (((VIActor *)i)->m_p6C != -1)
+    {
+        if (ReleaseStaticLighting(((VIActor *)i)->m_p6C) < 0)
+            return -1;
+        ((VIActor *)i)->m_p6C = -1;
+    }
+
+    ((VIActor *)i)->m_p40 |= 4;
+
+    if (UpdateProxyActor(i) < 0)
+        return -1;
+
+    return 0;
+}
+
+// ------------------------------------------------------------------ the sky --
+
+// The sky type of the terrain profile last applied.  A file static in the
+// image (it has no symbol, just an address in this TU's .bss), shared by
+// nothing else.
+static int s_skyType;
+
+// The sky follows the terrain profile with the heaviest blend weight at the
+// camera; the default sky is only re-set when that profile's sky type changes
+// (or when the caller asks for a fade).  Profile 20 is the one that puts the
+// sky's PLANE on.
+int VIScene::SetSky(VICamera &cam, int fade)
+{
+    VITerrainProfileBlend b;
+    float                 best;
+    int                   k;
+    int                   j;
+
+    m_world.CalcProfileBlend(cam.m_position, b);
+
+    for (j = 0; j < 4; j++)
+    {
+        if (j == 0 || best < b.m_weight[j])
+        {
+            best = b.m_weight[j];
+            k = j;
+        }
+    }
+
+    int sky = m_world.m_profiles[b.m_index[k]].m_p18;
+
+    if (sky != s_skyType || fade)
+        m_atmosphere.SetDefaultSky((VIAtmosphere::SKYTYPE)sky, fade != 0);
+
+    if (b.m_index[k] == 20)
+        m_atmosphere.SetPlaneOfSky(1);
+    else
+        m_atmosphere.SetPlaneOfSky(0);
+
+    s_skyType = sky;
+    return 0;
+}
+
+// The resources the sky and the shadows need, resolved once the dictionary is
+// loaded: the atmosphere's own, the shadow material (one additive-blended,
+// unlit layer of "shadow.tga") and the underwater ambient track.
+int VIScene::SetSky()
+{
+    VIResourceType type;
+
+    if (!m_raster)
+        return -1;
+
+    m_atmosphere.SetResources(*this);
+
+    if (m_dict->Find(VIHashResourceID("shadow.tga"), type, m_p1884))
+    {
+        m_p1880 = m_raster->CreateMaterial(0);
+
+        VIMaterial *m = m_raster->Material(m_p1880);
+
+        m->Init(1);
+        m->SetLayerFillType(0, (VIMaterialFillType)0);
+        m->SetLayerModulate(0, 1);
+        m->SetLayerBlendMode(0, (VIAlphaBlendMode)3);
+        m->SetLayerTextureLODBias(0, 1.0f);
+        m->SetZWrite(0);
+        m->SetZTest(1);
+        m->SetDither(0);
+        m->SetLayerTexture(0, m_p1884, *m_raster, *m_dict);
+        m->SetLayerWrapMode(0, (VIMaterialWrapMode)3);
+    }
+
+    if (!m_dict->Find(VIHashResourceID("amb_underwater"), type, m_soundTrack.m_p20))
+        m_soundTrack.m_p20 = -1;
+
+    return 0;
+}
+
+// --------------------------------------------------------------- streaming --
+
+// One streaming step around `at`.  The radii adapt to the EE heap: under
+// 2,560 KB free the two pairs shrink by 25 and 12.5 (and say so), over 4,096
+// KB they grow back by the same steps, at most once every two seconds and
+// never past the configured values in m_p2A48.
+int VIScene::Stream(const VIVect3 &at, VILoader &l, int i)
+{
+    VISceneStreamRadialVars v;
+
+    v.m_dict = m_dict;
+    v.m_raster = m_raster;
+    v.m_collide = m_collide;
+    v.m_file = i;
+    v.m_zone = -1;
+    v.m_at = at;
+    v.m_stamp = 0;
+    v.m_scene = this;
+    v.m_loader = &l;
+
+    if (VIEEKBFree() < 2560)
+    {
+        m_p2A58[2] -= 25.0f;
+        m_p2A58[1] -= 25.0f;
+        m_p2A58[4] -= 12.5f;
+        m_p2A58[3] -= 12.5f;
+        printf("Automatically bringing in stream dist: %f %f %f %f\n",
+               (double)m_p2A58[2], (double)m_p2A58[1], (double)m_p2A58[4],
+               (double)m_p2A58[3]);
+    }
+    else if (VIEEKBFree() > 4096)
+    {
+        if (m_p2A70 + 2000 < m_time)
+        {
+            m_p2A58[2] += 25.0f;
+            m_p2A58[1] += 25.0f;
+            m_p2A58[4] += 12.5f;
+            m_p2A58[3] += 12.5f;
+            m_p2A58[2] = VIMIN(m_p2A48[1], m_p2A58[2]);
+            m_p2A58[1] = VIMIN(m_p2A48[0], m_p2A58[1]);
+            m_p2A58[4] = VIMIN(m_p2A48[3], m_p2A58[4]);
+            m_p2A58[3] = VIMIN(m_p2A48[2], m_p2A58[3]);
+            m_p2A70 = m_time;
+        }
+    }
+
+    v.m_outer = m_p2A58[1];
+    v.m_inner = m_p2A58[2];
+    v.m_p30 = m_p2A58[3];
+    v.m_p2C = m_p2A58[4];
+    v.m_radius = m_p2A58[0];
+
+    m_p44C = 0;
+
+    if (m_world.Stream(v) < 0)
+        return -1;
+
+    if (l.Process(*this) < 0)
+        return -1;
+
+    m_stamp++;
+
+    if (UpdateActors() < 0)
+        return -1;
+
+    return 0;
+}
+
+// --------------------------------------------------------------- rendering --
+
+// The second pass over what RasterActor and VIZone::RenderRoom queued: each
+// element is a (zone, actor, sprite) triple, and an actor of -1 is a room's
+// own static sprite, drawn in the zone's world-space frame with no baked
+// lighting.  The zone's pre-translations are re-applied whenever the zone
+// changes along the list.  `actors` and `rooms` select which half is drawn.
+int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
+{
+    VIMatrix44 m;
+    int        zone = -1;
+    int        i;
+
+    for (i = 0; i < m_display.m_size; i++)
+    {
+        VIVector<VISceneDisplayElem> &list = m_display;
+        VISceneDisplayElem &e0 = list.m_data[i];
+        int z = e0.m_a;
+
+        if (z != zone && z != -1)
+            m_world.m_zones[z].SetPretranslations(*m_raster, cam);
+
+        zone = z;
+
+        VISceneDisplayElem &e1 = list.m_data[i];
+        int actor  = e1.m_b;
+        int sprite = e1.m_c;
+
+        if (actor == -1)
+        {
+            if (rooms)
+            {
+                sceVu0CopyMatrix(m, cam.m_view);
+                m.m[3].x = 0.0f;
+                m.m[3].y = 0.0f;
+                m.m[3].z = 0.0f;
+                m.m[3].w = 1.0f;
+                m_raster->SetModelView(m);
+                m_raster->SetStaticLighting(VIColor32F(0.0f, 0.0f, 0.0f, 1.0f));
+                m_sprites.Value(sprite)->Raster(cam, *this, *m_raster, 2);
+            }
+        }
+        else if (actors)
+        {
+            m.Mul(((VIActor *)actor)->m_objectToWorld, cam.m_view);
+            m_raster->SetModelView(m);
+
+            m_p444 = ((VIActor *)actor)->m_p6C;
+            m_p448 = -1;
+
+            m_raster->SetStaticLighting(((VIActor *)actor)->m_p70);
+            m_sprites.Value(sprite)->Raster(cam, *this, *m_raster, 2);
+
+            m_p444 = -1;
+            m_p448 = -1;
+        }
+    }
+
+    return 0;
+}
+
+// The frame.  Lights, atmosphere and the time-of-day blend first, then the
+// world through portals (or by frustum, when bit 0 of m_p00 says the scene has
+// no portals), the deferred room and actor passes either side of the radial
+// flora, and the overlays -- name plates, particles, shadows, spell effects,
+// trails and weather -- last.  `m` is dead: constructed and destroyed only.
+int VIScene::Render(VICamera &cam)
+{
+    VIMatrix44            m;
+    VISceneRendVars       v;
+    VITerrainProfileBlend b;
+
+    if (!m_raster)
+        return -1;
+
+    m_raster->SetTime(m_time);
+    ClearShadowQueue();
+    m_raster->SetProjection(cam.m_proj);
+    CalcOutdoorsIntensity(cam);
+    m_raster->SetStaticLighting(VIColor32F(0.0f, 0.0f, 0.0f, 1.0f));
+    m_atmosphere.Update(*this, cam, m_time, m_p1FE0, m_soundTrack.m_p30);
+
+    if (m_floraMode == 1)
+        if (m_flora.Update(cam.m_position) < 0)
+            return -1;
+
+    unsigned int flags = GetEnvFlags(cam.m_position);
+
+    m_world.CalcProfileBlend(cam.m_position, b);
+    SetupTimeOfDay(cam, b, flags);
+    m_atmosphere.RenderSky(*this, cam);
+    SetupTimeOfDayFog(b, flags);
+    m_raster->SetModelView(cam.m_view);
+    m_clipStack.Reset();
+    m_display.Init(1000);
+
+    v.m_scene = this;
+    v.m_world = 0;
+    v.m_camera = &cam;
+    v.m_raster = m_raster;
+    v.m_clip = &m_clipStack;
+    v.m_numVerts = 0;
+    v.m_verts = 0;
+    v.m_numPlanes = 0;
+    v.m_planes = 0;
+    v.m_p28 = 0;
+    v.m_p2C = !(m_p00 & 1);
+    v.m_zone = -1;
+    float d = cam.m_far;
+    if (500.0f < d)
+        d = 500.0f;
+    v.m_viewDist = d;
+
+    if (m_p00 & 1)
+    {
+        if (m_world.RenderByFrustum(v) < 0)
+            return -1;
+    }
+    else
+    {
+        if (m_world.RenderByPortals(v) < 0)
+            return -1;
+    }
+
+    RenderDeferredList(cam, 0, 1);
+
+    if (m_floraMode == 1)
+        m_flora.Render(cam);
+
+    RenderDeferredList(cam, 1, 0);
+
+    m_stamp++;
+
+    if (m_sound)
+    {
+        UpdateSoundEmitters(cam);
+        m_p638++;
+    }
+
+    VINameSprite::RasterDeferred(*m_raster);
+    m_raster->SetModelView(cam.m_view);
+    m_particleSystem.Render(m_time, *m_raster);
+    m_raster->SetModelView(cam.m_view);
+    RenderShadows();
+    m_spellEffects.Process();
+    m_raster->EnableAllLights(0);
+    VITrailFxRender(m_time, *m_raster, cam);
+    m_atmosphere.RenderWeather(*this, cam);
+    m_raster->SetStaticLighting(VIColor32F(0.0f, 0.0f, 0.0f, 1.0f));
+
+    return 0;
+}
+
+// ------------------------------------------------------------ time of day --
+
+// Colour arithmetic, in place.  Inline, so each operand is a REFERENCE: the
+// address of a table entry is materialised once per operation, which is what
+// the target's repeated base registers say.
+static inline VIColor32F &operator+=(VIColor32F &a, const VIColor32F &b)
+{
+    a.r += b.r; a.g += b.g; a.b += b.b; a.a += b.a;
+    return a;
+}
+
+static inline VIColor32F &operator-=(VIColor32F &a, const VIColor32F &b)
+{
+    a.r -= b.r; a.g -= b.g; a.b -= b.b; a.a -= b.a;
+    return a;
+}
+
+static inline VIColor32F &operator*=(VIColor32F &a, float f)
+{
+    a.r *= f; a.g *= f; a.b *= f; a.a *= f;
+    return a;
+}
+
+static inline VIColor32F &operator*=(VIColor32F &a, const VIColor32F &b)
+{
+    a.r *= b.r; a.g *= b.g; a.b *= b.b; a.a *= b.a;
+    return a;
+}
+
+static inline void ColorScale(VIColor32F &d, const VIColor32F &c, float f)
+{
+    d.r = c.r * f; d.g = c.g * f; d.b = c.b * f; d.a = c.a * f;
+}
+
+static inline void ColorAddScaled(VIColor32F &d, const VIColor32F &c, float f)
+{
+    d.r += c.r * f; d.g += c.g * f; d.b += c.b * f; d.a += c.a * f;
+}
+
+// The sky colour: the hour's two sky keys (m_d) interpolated between this
+// hour and the next, then between clear and overcast, then tinted by the
+// blended terrain profiles' own colour.  The profiles' Lavastorm weights are
+// blended the same way and handed to the atmosphere.
+int VIScene::SetupTimeOfDaySky(VITerrainProfileBlend &b)
+{
+    VIColor32F a;
+    VIColor32  c;
+    VIColor32F p;
+    VIColor32  unused;
+    VIColor32F x[2];
+
+    float o = m_atmosphere.GetOvercastInterp();
+
+    int   h    = (int)m_p1FE0;
+    float f    = m_p1FE0 - (float)h;
+    int   next = h + 1;
+
+    if (next == 24)
+        next = 0;
+
+    ColorScale(p, m_world.m_profiles[b.m_index[0]].m_color, b.m_weight[0]);
+    ColorAddScaled(p, m_world.m_profiles[b.m_index[1]].m_color, b.m_weight[1]);
+    ColorAddScaled(p, m_world.m_profiles[b.m_index[2]].m_color, b.m_weight[2]);
+    ColorAddScaled(p, m_world.m_profiles[b.m_index[3]].m_color, b.m_weight[3]);
+
+    x[0] = m_tod[next].m_d[0];
+    x[0] -= m_tod[h].m_d[0];
+    x[0] *= f;
+    x[0] += m_tod[h].m_d[0];
+
+    x[1] = m_tod[next].m_d[1];
+    x[1] -= m_tod[h].m_d[1];
+    x[1] *= f;
+    x[1] += m_tod[h].m_d[1];
+
+    a = x[1];
+    a -= x[0];
+    a *= o;
+    a += x[0];
+    a *= p;
+
+    c.r = (int)(a.r * 255.0f + 0.5f);
+    c.g = (int)(a.g * 255.0f + 0.5f);
+    c.b = (int)(a.b * 255.0f + 0.5f);
+    c.a = (int)(a.a * 255.0f + 0.5f);
+
+    m_atmosphere.SetSkyColor(*this, c);
+    m_atmosphere.SetLavastormIntensity(
+        m_world.m_profiles[b.m_index[0]].m_p24 * b.m_weight[0]
+        + m_world.m_profiles[b.m_index[1]].m_p24 * b.m_weight[1]
+        + m_world.m_profiles[b.m_index[2]].m_p24 * b.m_weight[2]
+        + m_world.m_profiles[b.m_index[3]].m_p24 * b.m_weight[3]);
+
+    return 0;
+}
+
+// The fog.  Four special cases on the environment flags GetEnvFlags returned,
+// each a fixed tint over the current light colour (m_p1FE4, floored at 0.4)
+// pulled in to 20 units, or to 5 -- bit 0 blue, bit 2 red, bit 1 a murky
+// green-brown and bit 3 a fixed (70, 65, 50) brown -- and otherwise the sky
+// colour SetupTimeOfDaySky computes, at the profiles' own distances.  The far
+// plane never exceeds the current streaming radius.
+int VIScene::SetupTimeOfDayFog(VITerrainProfileBlend &b, unsigned int f)
+{
+    VIColor32F fog;
+    VIColor32F x[2];
+    VIColor32F p;
+    float      nearZ;
+    float      farZ;
+
+    float o    = m_atmosphere.GetOvercastInterp();
+    int   h    = (int)m_p1FE0;
+    float t    = m_p1FE0 - (float)h;
+    int   next = h + 1;
+
+    if (next == 24)
+        next = 0;
+
+    CalcTimeOfDayClipPlanes(b, nearZ, farZ);
+
+    if (f & 1)
+    {
+        p = m_p1FE4;
+        p.r = VIMAX(p.r, 0.4f);
+        p.g = VIMAX(p.g, 0.4f);
+        p.b = VIMAX(p.b, 0.4f);
+        p.a = VIMAX(p.a, 0.4f);
+        fog.Set(0.0f, 0.5f, 1.0f, 1.0f);
+        fog.r = p.r * fog.r;
+        fog.g = p.g * fog.g;
+        fog.b = p.b * fog.b;
+        fog.a = p.a * fog.a;
+        nearZ = 0.0f;
+        farZ = VIMIN(20.0f, farZ);
+    }
+    else if (f & 4)
+    {
+        fog.Set(1.0f, 0.0f, 0.0f, 1.0f);
+        nearZ = 0.0f;
+        farZ = VIMIN(20.0f, farZ);
+    }
+    else if (f & 2)
+    {
+        p = m_p1FE4;
+        p.r = VIMAX(p.r, 0.4f);
+        p.g = VIMAX(p.g, 0.4f);
+        p.b = VIMAX(p.b, 0.4f);
+        p.a = VIMAX(p.a, 0.4f);
+        fog.r = p.r * 0.18f;
+        fog.g = p.g * 0.56f;
+        fog.b = p.b * 0.313f;
+        fog.a = p.a;
+        nearZ = 0.0f;
+        farZ = VIMIN(20.0f, farZ);
+    }
+    else if (f & 8)
+    {
+        p = m_p1FE4;
+        p.r = VIMAX(p.r, 0.4f);
+        p.g = VIMAX(p.g, 0.4f);
+        p.b = VIMAX(p.b, 0.4f);
+        p.a = VIMAX(p.a, 0.4f);
+
+        VIColor32 c(70, 65, 50, 255);
+
+        fog.r = p.r * (c.r * (1.0f / 255.0f));
+        fog.g = p.g * (c.g * (1.0f / 255.0f));
+        fog.b = p.b * (c.b * (1.0f / 255.0f));
+        fog.a = p.a * (c.a * (1.0f / 255.0f));
+        nearZ = 0.0f;
+        farZ = VIMIN(5.0f, farZ);
+    }
+    else
+    {
+        ColorScale(p, m_world.m_profiles[b.m_index[0]].m_color, b.m_weight[0]);
+        ColorAddScaled(p, m_world.m_profiles[b.m_index[1]].m_color, b.m_weight[1]);
+        ColorAddScaled(p, m_world.m_profiles[b.m_index[2]].m_color, b.m_weight[2]);
+        ColorAddScaled(p, m_world.m_profiles[b.m_index[3]].m_color, b.m_weight[3]);
+
+        x[0] = m_tod[next].m_d[0];
+        x[0] -= m_tod[h].m_d[0];
+        x[0] *= t;
+        x[0] += m_tod[h].m_d[0];
+
+        x[1] = m_tod[next].m_d[1];
+        x[1] -= m_tod[h].m_d[1];
+        x[1] *= t;
+        x[1] += m_tod[h].m_d[1];
+
+        fog = x[1];
+        fog -= x[0];
+        fog *= o;
+        fog += x[0];
+        fog *= p;
+    }
+
+    farZ = VIMIN(m_p2A58[2], farZ);
+
+    m_raster->SetFog(1, nearZ, farZ, fog);
+    return 0;
+}
+
+// The lights.  Ambient and sun colour are each the hour's two keys blended
+// between this hour and the next and then between clear and overcast, the
+// overcast weight being the atmosphere's overcast scaled by the terrain
+// profiles' own; the sun's direction is the hour's, and a lightning flash
+// whitens the sun (red and green by 0.9 of the flash, blue by all of it) and
+// pins it overhead.  Then the personal light, fading in and out at
+// 0.002/tick, and up to MaxPointLights() - 1 point-light sprites around the
+// camera.
+int VIScene::SetupTimeOfDayLights(VICamera &cam, VITerrainProfileBlend &b)
+{
+    VIColor32F              amb;
+    VIEmitterQuery          q;
+    VIColor32F              unused;
+    VISceneEmitterQueryVars v;
+    VIRasterPointLight      pl;
+    VIRasterDirLight        sun;
+    VIColor32F              x[2];
+    float                   flash;
+    int                     i;
+
+    float o    = m_atmosphere.GetOvercastInterp();
+    int   h    = (int)m_p1FE0;
+    float t    = m_p1FE0 - (float)h;
+    int   next = h + 1;
+
+    if (next == 24)
+        next = 0;
+
+    float k = o * (m_world.m_profiles[b.m_index[0]].m_p1C * b.m_weight[0]
+                   + m_world.m_profiles[b.m_index[1]].m_p1C * b.m_weight[1]
+                   + m_world.m_profiles[b.m_index[2]].m_p1C * b.m_weight[2]
+                   + m_world.m_profiles[b.m_index[3]].m_p1C * b.m_weight[3]);
+
+    x[0] = m_tod[next].m_a[0];
+    x[0] -= m_tod[h].m_a[0];
+    x[0] *= t;
+    x[0] += m_tod[h].m_a[0];
+
+    x[1] = m_tod[next].m_a[1];
+    x[1] -= m_tod[h].m_a[1];
+    x[1] *= t;
+    x[1] += m_tod[h].m_a[1];
+
+    amb = x[1];
+    amb -= x[0];
+    amb *= k;
+    amb += x[0];
+
+    m_raster->SetAmbient(amb);
+    m_raster->EnableAmbient(1);
+
+    x[0] = m_tod[next].m_c[0];
+    x[0] -= m_tod[h].m_c[0];
+    x[0] *= t;
+    x[0] += m_tod[h].m_c[0];
+
+    x[1] = m_tod[next].m_c[1];
+    x[1] -= m_tod[h].m_c[1];
+    x[1] *= t;
+    x[1] += m_tod[h].m_c[1];
+
+    sun.m_color = x[1];
+    sun.m_color -= x[0];
+    sun.m_color *= k;
+    sun.m_color += x[0];
+
+    sun.m_direction = m_tod[next].m_b;
+    sun.m_direction -= m_tod[h].m_b;
+    sun.m_direction *= t;
+    sun.m_direction += m_tod[h].m_b;
+    sun.m_direction.Normalize();
+
+    if (m_atmosphere.GetLightning(&flash))
+    {
+        VIColor32F c = sun.m_color;
+
+        c.r += (1.0f - c.r) * flash * 0.9f * m_soundTrack.m_p30;
+        c.g += (1.0f - c.g) * flash * 0.9f * m_soundTrack.m_p30;
+        c.b += (1.0f - c.b) * flash * m_soundTrack.m_p30;
+        sun.m_color = c;
+        sun.m_direction = m_tod[10].m_b;
+    }
+
+    m_raster->SetSunLight(cam.m_view, sun);
+    m_raster->EnableSunLight(1);
+    m_p1FE4 = sun.m_color;
+    m_raster->EnableAllDirLights(0);
+
+    if (0 < m_raster->MaxPointLights())
+    {
+    for (i = 0; i < m_raster->MaxPointLights(); i++)
+        m_raster->EnablePointLight(i, 0);
+
+    m_raster->EnableTessellation(0);
+
+    VIAtmosphere &atm = m_atmosphere;
+
+    if ((unsigned int)m_personalLightMode < 2)
+    {
+        long  dt = GetTime() - m_p2A38;
+        float step;
+
+        if (dt > 0)
+            step = (float)dt * 0.002f;
+        else
+            step = 0.0f;
+
+        if (m_personalLightMode == 1 || m_p1FE0 < 6.0f || 16.0f < m_p1FE0
+            || (0.0f < atm.m_intensity && 0.05f < m_soundTrack.m_p30 && 0.5f < o))
+            m_p2A40 += step;
+        else
+            m_p2A40 -= step;
+
+        m_p2A40 = VIMIN(m_personalLightRadius, VIMAX(0.0f, m_p2A40));
+
+        if (0.0f < m_p2A40)
+        {
+            pl.m_position = m_personalLightAt;
+            pl.m_range = m_p2A40;
+            pl.m_color = m_personalLightColor;
+            m_raster->SetPointLight(0, cam.m_view, pl);
+            m_raster->EnablePointLight(0, 1);
+            m_raster->EnableTessellation(1);
+        }
+
+        m_p2A38 = GetTime();
+    }
+
+    if (m_raster->MaxPointLights() >= 2)
+    {
+        q.Init(m_raster->MaxPointLights() - 1, (VISpriteType)8);
+
+        const VIVect3 &at = cam.m_position;
+        v.m_stamp = 0;
+        v.m_scene = this;
+        v.m_camera = &cam;
+        v.m_sphere.r = 500.0f;
+        v.m_sphere.c.x = at.x;
+        v.m_sphere.c.y = at.y;
+        v.m_sphere.c.z = at.z;
+        v.m_query = &q;
+
+        if (m_world.QueryEmitters(v) < 0)
+            return -1;
+
+        int n = 1;
+
+        for (int it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+        {
+            VIPointLight *l =
+                (VIPointLight *)m_sprites.Value(q.m_map.Value(it).m_b);
+
+            pl.m_position.Zero();
+            pl.m_range = l->m_bsphere.r;
+
+            VIColor32F c = l->m_color;
+
+            pl.m_color = c;
+            m_raster->SetPointLight(n, q.m_map.Value(it).m_matrix, pl);
+            m_raster->EnablePointLight(n, 1);
+            n++;
+        }
+    }
+
+    m_stamp++;
+    }
+
+    return 0;
+}
+
+// ------------------------------------------------------------------ sound --
+
+// Three passes.  The streamed music: of the stream-audio emitters at the
+// camera, the highest priority one plays on BGM slot 1 (restarted when it
+// changes, or when it loops), and with none the slot stops.  The sound
+// emitters: each starts once, and then every frame has its volume attenuated
+// by distance over its scaled radius (linear, quartic, or inverted quartic)
+// and its pan taken from the listener's right vector.  And the emitters heard
+// LAST frame that are no longer heard are stopped -- m_p5B8 is that list.
+int VIScene::UpdateSoundEmitters(VICamera &cam)
+{
+    VIEmitterQuery q;
+    int            it;
+
+    if (VIFile::IsIopStreamingEnabled())
+    {
+        q.Init(32, (VISpriteType)12);
+
+        if (QueryEmittersAtLocation(cam, q) >= 0)
+        {
+            int best = -1;
+            int pri  = 0;
+
+            for (it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+            {
+                int s = q.m_map.Value(it).m_b;
+
+                if (!(((VIStreamAudioSprite *)m_sprites.Value(s))->GetPriority() < pri))
+                {
+                    best = s;
+                    pri = ((VIStreamAudioSprite *)m_sprites.Value(s))->GetPriority();
+                }
+            }
+
+            if (best >= 0)
+            {
+                if (m_p63C != best
+                    || ((VIStreamAudioSprite *)m_sprites.Value(best))->IsLooping())
+                {
+                    char path[256];
+
+                    m_p63C = best;
+                    strcpy(path, "Music\\");
+                    strcat(path,
+                           ((VIStreamAudioSprite *)m_sprites.Value(best))->GetRelativePathname());
+                    m_sound->PlayBgm(1, path);
+                }
+            }
+            else
+            {
+                m_p63C = -1;
+                m_sound->StopBgm(1);
+            }
+        }
+    }
+
+    q.Init(32, (VISpriteType)9);
+
+    int ok = !(QueryEmittersAtLocation(cam, q) < 0);
+
+    if (ok)
+    {
+        for (it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+        {
+            int            s   = q.m_map.Value(it).m_b;
+            VISoundSprite *snd = (VISoundSprite *)m_sprites.Value(s);
+
+            if (snd->m_flags != m_p638 - 1)
+            {
+                snd->m_channel = m_sound->Play(snd->m_sound, 0, VISOUNDCLASS_SFX);
+
+                if (((VISoundSprite *)m_sprites.Value(s))->m_channel <= 0)
+                    continue;
+            }
+
+            VIVect3 d;
+            VIVect3 right;
+            VIActor *a = (VIActor *)q.m_map.Value(it).m_a;
+
+            d.x = cam.m_position.x - a->m_location.x;
+            d.y = 0.0f;
+            d.z = cam.m_position.z - a->m_location.z;
+            right.x = cam.m_dir.z;
+            right.y = 0.0f;
+            right.z = -cam.m_dir.x;
+            d.Normalize();
+            right.Normalize();
+
+            float pan = d.x * right.x + d.z * right.z;
+
+            snd = (VISoundSprite *)m_sprites.Value(s);
+
+            float t = cam.m_position.Distance(((VIActor *)q.m_map.Value(it).m_a)->m_location)
+                      / (((VIActor *)q.m_map.Value(it).m_a)->m_scale
+                         * m_sprites.Value(s)->m_bsphere.r);
+
+            switch (snd->AttenuationMode())
+            {
+            case 0:
+                break;
+            case 1:
+                t *= t * t * t;
+                break;
+            case 2:
+                t = 1.0f - t;
+                t *= t * t * t;
+                t = 1.0f - t;
+                break;
+            }
+
+            m_sound->SetVolume(snd->m_channel, (1.0f - t) * snd->m_volume);
+
+            float p = 0.0f;
+            if (snd->IsPanEnabled())
+                p = pan;
+
+            m_sound->SetPan(snd->m_channel, p);
+            ((VISoundSprite *)m_sprites.Value(s))->m_flags = m_p638;
+        }
+    }
+
+    for (int k = 0; k < 32; k++)
+    {
+        if (m_p5B8[k] != -1)
+        {
+            int found = 0;
+
+            for (it = m_sprites.Begin(); it != m_sprites.End(); it = m_sprites.Next(it))
+                if (it == m_p5B8[k])
+                {
+                    found = 1;
+                    break;
+                }
+
+            if (found)
+            {
+                VISoundSprite *snd = (VISoundSprite *)m_sprites.Value(m_p5B8[k]);
+
+                if (snd->m_flags != m_p638)
+                    m_sound->Stop(snd->m_channel);
+            }
+
+            m_p5B8[k] = -1;
+        }
+    }
+
+    if (ok)
+    {
+        int j = 0;
+
+        for (it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+            m_p5B8[j++] = q.m_map.Value(it).m_b;
+    }
+
+    return 0;
+}
+
+// The ambient music: the terrain profile with the heaviest weight at the
+// camera names a day and a night track.  A change of track (at most once per
+// m_p10 ms, or straight away on the first call) moves the playing state to
+// the second slot to fade out and starts loading the new one; each slot then
+// fades over m_p10 ms, a slot that has finished fading out is retired, and a
+// loaded one starts playing.  Under water (env flags 0xF) the music is muted
+// and the underwater ambience plays instead.
+int VIScene::SetSoundTrack(VICamera &cam, VILoader &l, int file)
+{
+    VITerrainProfileBlend b;
+    VIPickSegment         unused;
+    int                   idx;
+    float                 best;
+    float                 v;
+    int                   k;
+    int                   j;
+
+    m_world.CalcProfileBlend(cam.m_position, b);
+
+    for (j = 0; j < 4; j++)
+    {
+        if (j == 0 || best < b.m_weight[j])
+        {
+            best = b.m_weight[j];
+            k = j;
+        }
+    }
+
+    unsigned int env   = GetEnvFlags(cam.m_position);
+    int          prof  = m_world.m_profiles[b.m_index[k]].m_p20;
+    int          night;
+
+    if (m_p1FE0 < 5.0f || 20.0f < m_p1FE0)
+        night = 1;
+    else
+        night = 0;
+
+    int          track = m_soundTrack.m_tracks[prof][night];
+
+    if (m_soundTrack.m_p10 < m_time - m_soundTrack.m_p18 || m_soundTrack.m_p00)
+    {
+        if (track != m_soundTrack.m_state[0].m_p20)
+        {
+            if (m_soundTrack.m_state[1].m_p1C != -1)
+                m_sound->Stop(m_soundTrack.m_state[1].m_p1C);
+
+            if (m_soundTrack.m_state[1].m_p18 != -1)
+                l.Release(m_soundTrack.m_state[1].m_p18, *this);
+
+            if (m_soundTrack.m_state[1].m_p24 != -1)
+                m_sound->ReleaseSound(m_soundTrack.m_state[1].m_p24, *m_dict);
+
+            if (m_soundTrack.m_state[0].m_p24 != -1)
+            {
+                m_soundTrack.m_state[0].m_p00 = 1;
+                m_soundTrack.m_state[0].m_p08 = m_time;
+                m_soundTrack.m_state[0].m_p10 = m_soundTrack.m_state[0].m_p14;
+            }
+
+            m_soundTrack.m_state[1].Clear();
+            m_soundTrack.m_state[1] = m_soundTrack.m_state[0];
+            m_soundTrack.m_state[0].Clear();
+            m_soundTrack.m_state[0].m_p20 = track;
+            m_soundTrack.m_p18 = m_time;
+        }
+    }
+
+    if (m_soundTrack.m_state[0].m_p18 != -1)
+    {
+        if (l.IsComplete(m_soundTrack.m_state[0].m_p18))
+        {
+            if (!m_dict->FindTyped(track, (VIResourceType)14, idx))
+                return -1;
+
+            m_sound->ShareSound(idx);
+            m_sound->Sound(idx)->AsXm()->SetRepeat(1);
+            m_soundTrack.m_state[0].m_p24 = idx;
+            l.Release(m_soundTrack.m_state[0].m_p18, *this);
+            m_soundTrack.m_state[0].m_p18 = -1;
+        }
+    }
+    else if (m_soundTrack.m_state[0].m_p24 == -1)
+    {
+        if (m_dict->FindTyped(track, (VIResourceType)14, idx))
+        {
+            m_sound->ShareSound(idx);
+            m_sound->Sound(idx)->AsXm()->SetRepeat(1);
+            m_soundTrack.m_state[0].m_p24 = idx;
+        }
+        else if (l.IsResourceAvailable(file, track))
+        {
+            m_soundTrack.m_state[0].m_p18 = l.Load(file, track);
+            if (m_soundTrack.m_state[0].m_p18 < 0)
+                return -1;
+        }
+    }
+
+    for (j = 0; j < 2; j++)
+    {
+        if (m_soundTrack.m_state[j].m_p1C == -1)
+            continue;
+
+        if (m_soundTrack.m_state[j].m_p00 < 3)
+        if (m_soundTrack.m_state[j].m_p00 > 0)
+        {
+            float t = (float)(m_time - m_soundTrack.m_state[j].m_p08)
+                      / (float)m_soundTrack.m_p10;
+
+            t = VIMIN(1.0f, VIMAX(0.0f, t));
+
+            v = 0.0f;
+            if (m_soundTrack.m_state[j].m_p00 != 1)
+                v = m_soundTrack.m_p04;
+
+            v -= m_soundTrack.m_state[j].m_p10;
+            v *= t;
+            v += m_soundTrack.m_state[j].m_p10;
+            m_soundTrack.m_state[j].m_p14 = v;
+
+            if (t == 1.0f)
+            {
+                if (m_soundTrack.m_state[j].m_p00 == 1)
+                    m_soundTrack.m_state[j].m_p00 = 3;
+                else if (m_soundTrack.m_state[j].m_p00 == 2)
+                    m_soundTrack.m_state[j].m_p00 = 0;
+            }
+        }
+
+        VIAtmosphere &atm = m_atmosphere;
+        float q = 1.0f - atm.m_intensity;
+        v = m_soundTrack.m_state[j].m_p14;
+        v *= q;
+        v *= q;
+        v *= q;
+        v *= m_soundTrack.m_p30;
+
+        if (env & 0xF)
+            v = 0.0f;
+
+        m_sound->SetVolume(m_soundTrack.m_state[j].m_p1C, v);
+    }
+
+    for (j = 0; j < 2; j++)
+    {
+        if (m_soundTrack.m_state[j].m_p00 == 3)
+        {
+            if (m_soundTrack.m_state[j].m_p1C != -1)
+                m_sound->Stop(m_soundTrack.m_state[j].m_p1C);
+
+            if (m_soundTrack.m_state[j].m_p18 != -1)
+                l.Release(m_soundTrack.m_state[j].m_p18, *this);
+
+            if (m_soundTrack.m_state[j].m_p24 != -1)
+                m_sound->ReleaseSound(m_soundTrack.m_state[j].m_p24, *m_dict);
+
+            m_soundTrack.m_state[j].Clear();
+        }
+    }
+
+    for (j = 0; j < 2; j++)
+    {
+        if (m_soundTrack.m_state[j].m_p1C != -1 || m_soundTrack.m_state[j].m_p24 == -1)
+            continue;
+
+        idx = m_soundTrack.m_state[j].m_p24;
+
+        if (!m_sound->Sound(idx)->AsXm()->IsCached())
+            continue;
+
+        m_soundTrack.m_state[j].m_p1C = m_sound->Play(idx, 0, VISOUNDCLASS_SFX);
+
+        if (m_soundTrack.m_p00)
+        {
+            m_soundTrack.m_state[j].m_p14 = 1.0f;
+            m_soundTrack.m_p00 = 0;
+        }
+        else
+            m_soundTrack.m_state[j].m_p14 = 0.0f;
+
+        m_soundTrack.m_state[j].m_p00 = 2;
+        m_soundTrack.m_state[j].m_p08 = m_time;
+        m_soundTrack.m_state[j].m_p10 = m_soundTrack.m_state[j].m_p14;
+
+        VIAtmosphere &atm = m_atmosphere;
+        float q = 1.0f - atm.m_intensity;
+        v = m_soundTrack.m_state[j].m_p10 * q;
+        v *= q;
+        v *= q;
+        v *= m_soundTrack.m_p30;
+
+        if (env & 0xF)
+            v = 0.0f;
+
+        m_sound->SetVolume(m_soundTrack.m_state[j].m_p1C, v);
+    }
+
+    if (env & 0xF)
+    {
+        if (m_soundTrack.m_p24 == -1 && m_soundTrack.m_p20 != -1)
+        {
+            m_soundTrack.m_p24 = m_sound->Play(m_soundTrack.m_p20, 0, VISOUNDCLASS_SFX);
+            m_sound->SetVolume(m_soundTrack.m_p24, 0.7f);
+        }
+    }
+    else if (m_soundTrack.m_p24 != -1)
+    {
+        m_sound->Stop(m_soundTrack.m_p24);
+        m_soundTrack.m_p24 = -1;
+    }
+
+    return 0;
+}
+
+// ------------------------------------------------------------------ debug --
+
+// A census of what the scene holds, printed, and the total byte count of the
+// variable-sized allocations returned.  The sprite census counts by type; the
+// sizes are element sizes times counts plus each object's own data block.
+int VIScene::DebugResources()
+{
+    int counts[15];
+    int i;
+    int total;
+    int n;
+    int size;
+
+    for (i = 14; i >= 0; i--)
+        counts[i] = 0;
+
+    for (i = m_sprites.Begin(); i != m_sprites.End(); i = m_sprites.Next(i))
+        counts[GetSpriteType(i)]++;
+
+    printf("Sprites: %d\n", m_sprites.Size());
+    printf(" Simple: %d\n", counts[1]);
+    printf(" Skin: %d\n", counts[3]);
+    printf(" HSprite: %d\n", counts[4]);
+    printf(" CSprite: %d\n", counts[5]);
+    printf(" Name: %d\n", counts[6]);
+    printf(" LOD: %d\n", counts[7]);
+    printf(" PLight: %d\n", counts[8]);
+    printf(" SndSprite: %d\n", counts[9]);
+    printf(" Group: %d\n", counts[11]);
+    printf(" StreamAudio: %d\n", counts[12]);
+    printf(" Flora: %d\n", counts[13]);
+    printf(" EffectVolume: %d\n", counts[14]);
+
+    printf("Actors: %d\n", m_actors.Size());
+    printf("Actors Size: %d\n", m_actors.Size() * 160);
+    printf("Actor Occups: %d\n", m_occups.Size());
+    printf("Actor Occups Size: %d\n", m_occups.Size() * 24);
+
+    size = 0;
+    for (i = m_anims.Begin(); i != m_anims.End(); i = m_anims.Next(i))
+        size = size + 56 + m_anims.Value(i)->m_dataSize;
+
+    printf("Animations: %d\n", m_anims.Size());
+    total = size;
+    printf("Animations Size: %d\n", total);
+
+    n = 0;
+    size = 0;
+    for (i = 0; i < m_world.m_zones.m_size; i++)
+    {
+        n += m_world.m_zones[i].m_rooms.m_size;
+
+        for (int r = 0; r < m_world.m_zones[i].m_rooms.m_size; r++)
+            size += m_world.m_zones[i].m_rooms[r].m_dataSize + 120;
+    }
+
+    printf("Rooms: %d\n", n);
+    total += size;
+    printf("Rooms Size: %d\n", size);
+
+    n = m_world.m_tree.m_nodes.m_size;
+    size = m_world.m_tree.m_nodes.m_size * 24;
+    n += m_world.m_tree.m_leaves.m_size;
+    size += m_world.m_tree.m_leaves.m_size * 4;
+
+    for (i = 0; i < m_world.m_zones.m_size; i++)
+    {
+        n += m_world.m_zones.m_data[i].m_tree.m_nodes.m_size;
+        n += m_world.m_zones.m_data[i].m_tree.m_leaves.m_size;
+        size += m_world.m_zones.m_data[i].m_tree.m_nodes.m_size * 24;
+        size += m_world.m_zones.m_data[i].m_tree.m_leaves.m_size * 8;
+    }
+
+    printf("Scene Tree Nodes: %d\n", n);
+    total += size;
+    printf("Scene Tree Nodes Size: %d\n", size);
+
+    size = 0;
+    n = m_lightings.Size();
+    for (i = m_lightings.Begin(); i != m_lightings.End(); i = m_lightings.Next(i))
+    {
+        size += 16;
+        size += m_lightings.Value(i)->m_buffers.m_size * 4;
+    }
+
+    printf("Static Lighting Objects: %d\n", n);
+    total += size;
+    printf("Static Lighting Objects Size: %d\n", size);
+    printf("Total Scene Allocations: %d\n", total);
+
+    return total;
+}
+
+// The actor's bounding box in the editor: eight corner ticks a fifth of the
+// box's smallest side long, or (draw style non-zero) the twelve edges.
+int VIScene::RasterActorBBox(VICamera &cam, int i)
+{
+    VIColor32F c;
+    VIVect3    n;
+    VIBBox     bb;
+
+    bb = m_sprites.Value(((VIActor *)i)->m_p60)->m_bbox;
+
+    m_raster->SetSolidFillUIMaterial();
+    c.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    n.Set(0.0f, 0.0f, 0.0f);
+
+    if (m_bboxDrawStyle == VISCENEBBOX_NONE)
+    {
+        VIVect3 a;
+        VIVect3 b;
+        VIVect3 d = bb.max;
+
+        d -= bb.min;
+        float   len = VIMIN(d.z, VIMIN(d.y, d.x));
+
+        len *= 0.4f;
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.min.x, bb.min.y, bb.min.z);
+        b = a;
+        b.x += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.max.x, bb.min.y, bb.min.z);
+        b = a;
+        b.x -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.min.x, bb.max.y, bb.min.z);
+        b = a;
+        b.x += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.min.x, bb.min.y, bb.max.z);
+        b = a;
+        b.x += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.max.x, bb.max.y, bb.max.z);
+        b = a;
+        b.x -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.min.x, bb.max.y, bb.max.z);
+        b = a;
+        b.x += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.max.x, bb.min.y, bb.max.z);
+        b = a;
+        b.x -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        a.Set(bb.max.x, bb.max.y, bb.min.z);
+        b = a;
+        b.x -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.y -= len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        b = a;
+        b.z += len;
+        m_raster->Vertex(a);
+        m_raster->Vertex(b);
+        m_raster->EndLines();
+    }
+    else
+    {
+        VIVect3 v[8];
+
+        bb.Store(v);
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        m_raster->Vertex(v[0]);
+        m_raster->Vertex(v[1]);
+        m_raster->Vertex(v[1]);
+        m_raster->Vertex(v[2]);
+        m_raster->Vertex(v[2]);
+        m_raster->Vertex(v[3]);
+        m_raster->Vertex(v[3]);
+        m_raster->Vertex(v[0]);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        m_raster->Vertex(v[0]);
+        m_raster->Vertex(v[4]);
+        m_raster->Vertex(v[1]);
+        m_raster->Vertex(v[5]);
+        m_raster->Vertex(v[2]);
+        m_raster->Vertex(v[6]);
+        m_raster->Vertex(v[3]);
+        m_raster->Vertex(v[7]);
+        m_raster->EndLines();
+
+        m_raster->BeginLines();
+        m_raster->Color(c);
+        m_raster->Normal(n);
+        m_raster->Vertex(v[4]);
+        m_raster->Vertex(v[5]);
+        m_raster->Vertex(v[5]);
+        m_raster->Vertex(v[6]);
+        m_raster->Vertex(v[6]);
+        m_raster->Vertex(v[7]);
+        m_raster->Vertex(v[7]);
+        m_raster->Vertex(v[4]);
+        m_raster->EndLines();
+    }
+
+    return 0;
+}
+
+// -------------------------------------------------------------- shadows --
+
+// A character's blob shadow.  Six nodes of the character's skeleton -- two of
+// them pulled halfway to the root -- are taken into the actor's own frame and
+// bounded; that box, inflated by 0.2 in x and z, is taken back into the world
+// and stretched from 1 below to 0.5 above the actor's feet, and every scene
+// triangle facing up inside it is drawn again with the shadow material, the
+// box mapped onto UV and the alpha fading over one unit of height.
+int VIScene::RenderShadow(int actor)
+{
+    VIMatrix44    toWorld;
+    VIMatrix44    toLocal;
+    VIMatrix44    node;
+    VIVect3       v;
+    VIActorFilter filt;
+    int           nodes[6] = { 5, 6, 4, 7, 0, 1 };
+
+    if (m_p1880 == -1)
+        return -1;
+
+    VIVect3    pts[6];
+    VIBBox     bb;
+    VICSprite *sprite = (VICSprite *)GetActorSpritePtr(actor);
+
+    if (!sprite)
+        return -1;
+
+    GetActorTransform(actor, toWorld);
+    toLocal.Invert(toWorld);
+
+    for (int k = 0; k < 6; k++)
+    {
+        sprite->CalcSlotWorldTransform((VICSpriteNodeID)nodes[k], actor, *this, node);
+        v.x = node.m[3].x;
+        v.y = node.m[3].y;
+        v.z = node.m[3].z;
+        toLocal.Mul(v, pts[k]);
+
+        if (k >= 4)
+            pts[k] *= 0.5f;
+    }
+
+    bb.Init(6, pts);
+
+    VIVect3 e;
+
+    e.Set(0.2f, 0.0f, 0.2f);
+    bb.min -= e;
+    e.Set(0.2f, 0.0f, 0.2f);
+
+    VIBBox box;
+
+    bb.max += e;
+    bb.Transform(toWorld, box);
+
+    v = GetActorLocation(actor);
+    box.max.y = v.y + 0.5f;
+    box.min.y = v.y - 1.0f;
+    e.Set(0.0f, 1.0f, 0.0f);
+
+    m_queryTris.Reset(box, e, 80.0f);
+    QueryIntersection(box, filt, m_queryTris);
+
+    VIVect2 uv[3];
+    VIVect3 p0;
+    VIVect3 p1;
+    VIVect3 p2;
+
+    m_raster->SetMaterial(m_p1880);
+    m_raster->SetZBias(15);
+
+    for (int t = 0; t < m_queryTris.m_numTris; t++)
+    {
+        p0 = m_queryTris.m_tris[t].m_v0;
+        p0.y += 0.04f;
+        p1 = m_queryTris.m_tris[t].m_v1;
+        p1.y += 0.04f;
+        p2 = m_queryTris.m_tris[t].m_v2;
+        p2.y += 0.04f;
+
+        uv[0].x = (p0.x * toLocal.m[0].x + p0.y * toLocal.m[1].x
+                   + p0.z * toLocal.m[2].x + toLocal.m[3].x - bb.min.x)
+                  * (1.0f / (bb.max.x - bb.min.x));
+        uv[0].y = (p0.x * toLocal.m[0].z + p0.y * toLocal.m[1].z
+                   + p0.z * toLocal.m[2].z + toLocal.m[3].z - bb.min.z)
+                  * (1.0f / (bb.max.z - bb.min.z));
+        e.x = v.y - p0.y;
+        e.x = VIMIN(VIMAX(0.0f, e.x), 1.0f);
+
+        uv[1].x = (p1.x * toLocal.m[0].x + p1.y * toLocal.m[1].x
+                   + p1.z * toLocal.m[2].x + toLocal.m[3].x - bb.min.x)
+                  * (1.0f / (bb.max.x - bb.min.x));
+        uv[1].y = (p1.x * toLocal.m[0].z + p1.y * toLocal.m[1].z
+                   + p1.z * toLocal.m[2].z + toLocal.m[3].z - bb.min.z)
+                  * (1.0f / (bb.max.z - bb.min.z));
+        e.y = v.y - p1.y;
+        e.y = VIMIN(VIMAX(0.0f, e.y), 1.0f);
+
+        uv[2].x = (p2.x * toLocal.m[0].x + p2.y * toLocal.m[1].x
+                   + p2.z * toLocal.m[2].x + toLocal.m[3].x - bb.min.x)
+                  * (1.0f / (bb.max.x - bb.min.x));
+        uv[2].y = (p2.x * toLocal.m[0].z + p2.y * toLocal.m[1].z
+                   + p2.z * toLocal.m[2].z + toLocal.m[3].z - bb.min.z)
+                  * (1.0f / (bb.max.z - bb.min.z));
+        e.z = v.y - p2.y;
+        e.z = VIMIN(VIMAX(0.0f, e.z), 1.0f);
+
+        m_raster->BeginTriFan();
+        m_raster->Color(VIColor32F(1.0f, 1.0f, 1.0f, (1.0f - e.x) * 0.65f));
+        m_raster->UV(uv[0]);
+        m_raster->Vertex(p0);
+        m_raster->Color(VIColor32F(1.0f, 1.0f, 1.0f, (1.0f - e.y) * 0.65f));
+        m_raster->UV(uv[1]);
+        m_raster->Vertex(p1);
+        m_raster->Color(VIColor32F(1.0f, 1.0f, 1.0f, (1.0f - e.z) * 0.65f));
+        m_raster->UV(uv[2]);
+        m_raster->Vertex(p2);
+        m_raster->EndTriFan();
+    }
+
+    m_raster->SetZBias(0);
+    return 0;
+}
+
+// A colour table entry from a byte colour: each channel over 255.  Inline, and
+// the destination is a REFERENCE, so the first store folds into the table's
+// base and the rest go through the reference -- which is also why the second
+// channel's byte is still known and the last two are re-read.
+static inline void SetColorFrom(VIColor32F &d, const VIColor32 &c)
+{
+    d.r = c.r * (1.0f / 255.0f);
+    d.g = c.g * (1.0f / 255.0f);
+    d.b = c.b * (1.0f / 255.0f);
+    d.a = c.a * (1.0f / 255.0f);
+}
+
+extern "C" double fabs(double);
+extern "C" float  sinf(float);
+extern "C" float  cosf(float);
+
+// The 24-hour table.  Ambient (m_a[0]) and sun (m_c[0]) colours are written
+// out per hour; the sky (m_d[0]) starts as the sun colour, the overcast
+// ambient (m_a[1]) is the ambient's red at 90%, the overcast sun (m_c[1]) is
+// black and the overcast sky (m_d[1]) a grey peaking at noon; the sun turns
+// 15 degrees an hour about z.  The clock starts at 10:00.
+int VIScene::InitTimeOfDay()
+{
+    int h;
+
+    {
+    VIColor32 c;
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[0].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[1].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[2].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[3].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[4].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[5].m_a[0], c);
+    c.Set(85, 85, 85, 0);
+    SetColorFrom(m_tod[6].m_a[0], c);
+    c.Set(85, 85, 85, 0);
+    SetColorFrom(m_tod[7].m_a[0], c);
+    c.Set(95, 95, 95, 0);
+    SetColorFrom(m_tod[8].m_a[0], c);
+    c.Set(100, 100, 100, 0);
+    SetColorFrom(m_tod[9].m_a[0], c);
+    c.Set(100, 100, 100, 0);
+    SetColorFrom(m_tod[10].m_a[0], c);
+    c.Set(102, 102, 102, 0);
+    SetColorFrom(m_tod[11].m_a[0], c);
+    c.Set(102, 102, 102, 0);
+    SetColorFrom(m_tod[12].m_a[0], c);
+    c.Set(100, 100, 100, 0);
+    SetColorFrom(m_tod[13].m_a[0], c);
+    c.Set(100, 100, 100, 0);
+    SetColorFrom(m_tod[14].m_a[0], c);
+    c.Set(100, 100, 100, 0);
+    SetColorFrom(m_tod[15].m_a[0], c);
+    c.Set(95, 95, 95, 0);
+    SetColorFrom(m_tod[16].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[17].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[18].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[19].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[20].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[21].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[22].m_a[0], c);
+    c.Set(75, 75, 100, 0);
+    SetColorFrom(m_tod[23].m_a[0], c);
+    c.Set(70, 0, 190, 0);
+    SetColorFrom(m_tod[0].m_c[0], c);
+    c.Set(80, 0, 220, 0);
+    SetColorFrom(m_tod[1].m_c[0], c);
+    c.Set(85, 0, 240, 0);
+    SetColorFrom(m_tod[2].m_c[0], c);
+    c.Set(90, 0, 255, 0);
+    SetColorFrom(m_tod[3].m_c[0], c);
+    c.Set(120, 55, 240, 0);
+    SetColorFrom(m_tod[4].m_c[0], c);
+    c.Set(170, 55, 240, 0);
+    SetColorFrom(m_tod[5].m_c[0], c);
+    c.Set(255, 175, 55, 0);
+    SetColorFrom(m_tod[6].m_c[0], c);
+    c.Set(255, 210, 100, 0);
+    SetColorFrom(m_tod[7].m_c[0], c);
+    c.Set(255, 248, 160, 0);
+    SetColorFrom(m_tod[8].m_c[0], c);
+    c.Set(255, 250, 200, 0);
+    SetColorFrom(m_tod[9].m_c[0], c);
+    c.Set(255, 250, 210, 0);
+    SetColorFrom(m_tod[10].m_c[0], c);
+    c.Set(255, 250, 230, 0);
+    SetColorFrom(m_tod[11].m_c[0], c);
+    c.Set(255, 250, 240, 0);
+    SetColorFrom(m_tod[12].m_c[0], c);
+    c.Set(255, 250, 230, 0);
+    SetColorFrom(m_tod[13].m_c[0], c);
+    c.Set(255, 250, 210, 0);
+    SetColorFrom(m_tod[14].m_c[0], c);
+    c.Set(255, 250, 200, 0);
+    SetColorFrom(m_tod[15].m_c[0], c);
+    c.Set(255, 248, 160, 0);
+    SetColorFrom(m_tod[16].m_c[0], c);
+    c.Set(255, 210, 100, 0);
+    SetColorFrom(m_tod[17].m_c[0], c);
+    c.Set(255, 175, 55, 0);
+    SetColorFrom(m_tod[18].m_c[0], c);
+    c.Set(170, 55, 240, 0);
+    SetColorFrom(m_tod[19].m_c[0], c);
+    c.Set(120, 55, 240, 0);
+    SetColorFrom(m_tod[20].m_c[0], c);
+    c.Set(90, 0, 255, 0);
+    SetColorFrom(m_tod[21].m_c[0], c);
+    c.Set(85, 0, 240, 0);
+    SetColorFrom(m_tod[22].m_c[0], c);
+    c.Set(80, 0, 220, 0);
+    SetColorFrom(m_tod[23].m_c[0], c);
+
+    }
+
+    for (h = 0; h < 24; h++)
+        m_tod[h].m_d[0] = m_tod[h].m_c[0];
+
+    for (h = 0; h < 24; h++)
+    {
+        m_tod[h].m_a[1] = m_tod[h].m_a[0];
+        m_tod[h].m_a[1] *= 0.9f;
+        m_tod[h].m_a[1].g = m_tod[h].m_a[1].b = m_tod[h].m_a[1].r;
+
+        float f = 1.0f - (float)fabs((float)(h - 12) / 12.0f);
+
+        f *= 0.7f;
+        f = VIMAX(f, 0.2f);
+        m_tod[h].m_c[1] = VIColor32F(0.0f, 0.0f, 0.0f, 0.0f);
+        m_tod[h].m_d[1] = VIColor32F(f, f, f, 0.0f);
+    }
+
+    for (h = 0; h < 24; h++)
+    {
+        float a = (float)h * 15.0f * 0.0174532924f;
+        float sn = sinf(a);
+        float cs = cosf(a);
+
+        m_tod[h].m_b.Set(-sn, cs, 0.0f);
+    }
+
+    m_p1FE0 = 10.0f;
     return 0;
 }

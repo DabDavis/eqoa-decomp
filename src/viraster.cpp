@@ -15,7 +15,6 @@
 // VIEESurfCache::Init a `lui`/`addiu` pair, not `this + N`.
 #include "vi.h"
 
-extern VIEESurfCache g_surfCache;
 
 // The DMA/GS floor.  None of these bodies is in this TU and the image is
 // un-relocated, so only the ARGUMENT SHAPE is being asserted.
@@ -44,7 +43,8 @@ extern "C" int AddDmacHandler(int ch, int (*fn)(int), int next);
 extern "C" int RemoveDmacHandler(int ch, int id);
 extern "C" int EnableDmac(int ch);
 extern "C" int DisableDmac(int ch);
-extern "C" int VIEERasterDMACHandler(int ch);
+int VIEERasterDMACHandler(int ch);
+void VIEEDMASend(int chan, void *tag);
 
 // The billboard microprogram.  Only the DIFFERENCE of the two labels is used
 // -- `(VIBbRender - VIBbInit) >> 3` is the MSCALF entry point in VU
@@ -85,21 +85,32 @@ static inline void RasterColor32(VIColor32 &c, const VIColor32F &f)
 
 
 
-int VIRaster::RInitOffset;
-int VIRaster::RMaterialOffset;
-int VIRaster::RStripOffset;
-int VIRaster::RStrip2Offset;
-int VIRaster::RStrip3Offset;
-int VIRaster::RStrip4Offset;
-int VIRaster::RStrip5Offset;
-int VIRaster::RStrip6Offset;
-int VIRaster::RFanOffset;
+// The microprogram's entry points, as VU instruction indices.  The labels are
+// absolute VU addresses, so a DIFFERENCE of two of them is not a link-time
+// constant and every offset but the first is computed by the TU's static
+// initialiser (phase 61).  ColorMatrix is initialised so that it, not the
+// first .comm static, names `_GLOBAL_$I$`.
+extern "C" long VIRInit[], VIRMaterial[], VIRStrip[], VIRStrip2[], VIRStrip3[],
+                VIRStrip4[], VIRStrip5[], VIRStrip6[], VIRFan[];
+
+int VIRaster::ColorMatrix = 0;
+int VIRaster::RInitOffset = 0;
+int VIRaster::RMaterialOffset = (VIRMaterial - VIRInit);
+int VIRaster::RStripOffset = (VIRStrip - VIRInit);
+int VIRaster::RStrip2Offset = (VIRStrip2 - VIRInit);
+int VIRaster::RStrip3Offset = (VIRStrip3 - VIRInit);
+int VIRaster::RStrip4Offset = (VIRStrip4 - VIRInit);
+int VIRaster::RStrip5Offset = (VIRStrip5 - VIRInit);
+int VIRaster::RStrip6Offset = (VIRStrip6 - VIRInit);
+int VIRaster::RFanOffset = (VIRFan - VIRInit);
 int VIRaster::ObjectBlendsBuffer;
 int VIRaster::PreTransBuffer;
 int VIRaster::PrimBuffer1;
 int VIRaster::PrimBuffer2;
-int VIRaster::ColorMatrix;
 long VIRaster::DBuffer[128];
+
+// File scope, constructed by the same static initialiser.
+static VIEESurfCache g_surfCache;
 
 // ---------------------------------------------------------------- resources --
 
@@ -1393,6 +1404,22 @@ int VIRaster::RemoveDMACHandler()
         RemoveDmacHandler(1, VIEERasterDMACHandlerID);
         VIEERasterDMACHandlerID = -1;
     }
+    return 0;
+}
+
+// The VIF1 DMAC handler: a packet parked while the channel was busy is kicked
+// from interrupt context, then ExitHandler.
+void *pVIEERasterPendingDMA = 0;
+
+int VIEERasterDMACHandler(int ch)
+{
+    if (ch == 1)
+    {
+        if (pVIEERasterPendingDMA)
+            VIEEDMASend(1, pVIEERasterPendingDMA);
+        pVIEERasterPendingDMA = 0;
+    }
+    __asm__ __volatile__ ("sync.l\n\tei\n");
     return 0;
 }
 

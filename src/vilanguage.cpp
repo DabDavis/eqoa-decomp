@@ -2,9 +2,9 @@
 #include "vi.h"
 
 extern "C" int  strcmp(const char *a, const char *b);
-extern "C" void _VIAssert(const char *file, const char *expr, int line);
+extern "C" void _VIAssert(const char *expr, const char *file, int line);
 
-#define VIASSERT(x)  if (!(x)) _VIAssert(__FILE__, #x, __LINE__);
+#define VIASSERT(x)  if (!(x)) _VIAssert(#x, __FILE__, __LINE__);
 
 const char  *VILanguage::Name[VILANG_COUNT] =
 {

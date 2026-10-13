@@ -78,6 +78,7 @@ SPAN_IGNORE = {
     "VIRStrip2",   # inside AddNode__t5VIMap2ZUiZQ212VIDictionary11VIDictEntryii
     "VIRStrip3",   # inside Insert__t5VIMap2ZUiZQ...
     "VIRStrip4",   # inside EraseFixup__t5VIMap2ZUiZQ...
+    "VIRStrip5",   # inside VIGetCurrentDiscId__Fv (phase 61: its destructor tail)
 }
 
 
@@ -123,6 +124,29 @@ SPAN_CAP = {
     # copies of the VIMap<int,int> members follow it with no names in the map
     # (the named ones live at 0x00415E08), so it derived 3,032 bytes.
     "AdpcmToPcm__10VIESFParsePviT1":            516,
+    # Phase 61.  The SCE PSS sample TUs keep their helpers as unnamed statics
+    # after the public entry points: audiodec's area/send/volume helpers after
+    # audioDecSendToIOP, the macroblock tag builder and its GIF/DMA tag helpers
+    # after setLoadImageTagsTile, and the demuxer callbacks, the reader and the
+    # background clear after playPssFree.
+    "audioDecSendToIOP":                         440,  # 1280      5 (static)
+    "setLoadImageTagsTile":                       52,  # 1064      7 (static)
+    "playPssFree":                                64,  # 1496      7 (static)
+    # Phase 61.  VIEEMemCard's TU closes with the unnamed static initialiser
+    # that constructs and destroys its file-scope VIIconDefinition, so
+    # VIMemCardDeleteFile -- the last named function -- takes its span.
+    "VIMemCardDeleteFile__FPCc":                 160,  #  224      1 (static)
+    # Phase 61.  The raster TU's VIF1 DMAC handler is followed by an unnamed
+    # six-instruction helper (`*p - 1`, clamped at zero) ahead of the
+    # VIPool<VIPrimBuffer *> instantiation.
+    "VIEERasterDMACHandler__Fi":                  76,  #  104      1 (static)
+    # Phase 61.  VIGlobalEE.cpp closes with two unnamed statics -- the CD
+    # streaming RPC call and the SIF command handler that clears its busy
+    # flag -- so VICdStreamStatus, three instructions, takes their span.
+    "VICdStreamStatus__Fv":                       12,  #  160      2 (static)
+    # Phase 61.  VIEndian's TU: VIBufferSwap is followed by the unnamed
+    # __static_initialization_and_destruction that sets VIEndian.
+    "VIBufferSwap__FiPUc":                        56,  #  112      1 (static)
     # Phase 61, from the lanes.  Each is followed by unnamed TU-local code
     # (VIMap<int,int> statics in viscene/vizone/viworld) the map does not name.
     "StreamOutStaticActor__7VISceneiR17VISceneStreamVars": 200,

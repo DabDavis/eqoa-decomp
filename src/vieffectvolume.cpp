@@ -14,6 +14,13 @@ extern "C" int   rand();
 
 VIScene *VIEffectVolume::mScene;
 
+// The three billboard vertex tables GlobalInit fills: each card is four
+// VIVect3 corners, and the zeroing constructor runs over all of them from the
+// TU's static initialiser (phase 61) -- which is what names `_GLOBAL_$I$`.
+VIVect3 sFallEffect[2][30][4];
+VIVect3 sFogCard[8][4];
+VIVect3 sDustCard[60][4];
+
 void VIEffectVolume::GlobalFree()
 {
     mScene = 0;

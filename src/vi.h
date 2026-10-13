@@ -611,6 +611,8 @@ public:
     // constructor and not zero anything.
     VIBBox(const VIBBox &b) { min = b.min; max = b.max; }
 
+    VIBBox(const VIVect3 &a, const VIVect3 &b) : min(a), max(b) {}
+
     int  Init(int n, VIVect3 *p);
     void Scale(float s);
     void Scale(const VIVect3 &v);
@@ -4825,6 +4827,10 @@ public:
     void Reset();
     int  ReleaseSwatch(int i);
     int  CalcZoneIndex(VIRadialFloraLoc &loc);
+    // Phase 61, off VIScene::Render: both are called through the scene's
+    // embedded system, Update with the camera position and its result tested.
+    int  Update(const VIVect3 &at);
+    int  Render(VICamera &cam);
 
     static int QSortCompare(const void *a, const void *b);
 
@@ -4888,6 +4894,9 @@ public:
     int PushBBox(VIBBox &b);
     int PushFrustum(VICamera &cam);
     int PushPortal(VICamera &cam, int n, VIVect3 *p);
+    // Phase 61, off VIZone::QueryThroughPortals: the query-side overload
+    // clips from a sphere's centre and carries the portal's own plane.
+    int PushPortal(VIVect3 &at, float r, int n, VIVect3 *p, VIPlane &plane);
 };
 
 // ----------------------------------------------------------- VIHSpriteAnim --
@@ -5726,7 +5735,7 @@ public:
     static int Particle1BPLRefID;
     static int Particle2BPLRefID;
     static int FontResourceID;
-    static unsigned char NameColors[];
+    static VIColor32 NameColors[];
 };
 
 // ---------------------------------------------------------------------------
@@ -6574,7 +6583,9 @@ public:
     int     m_actor;
     VIVect3 m_v0;
     VIVect3 m_v1;
-    VIVect3 m_normal;
+    // Phase 61: the THIRD VERTEX, not a normal -- VIScene::RenderShadow draws
+    // +4, +16 and +28 as one triangle fan.
+    VIVect3 m_v2;
 };
 
 class VIQueryTriList
@@ -7265,10 +7276,12 @@ public:
     int Init();
     int Clear();
 
-    int  m_p00;
-    long m_p08;
-    int  m_p10;
-    int  m_p14;
+    int  m_p00;      // 0 idle, 2 fading in, 1 fading out, 3 faded out
+    long m_p08;      // when the fade started
+    // Phase 61: both FLOATS -- VIScene::SetSoundTrack fades m_p14 (the
+    // volume) from m_p10 (the volume the fade started at), lwc1/swc1.
+    float m_p10;
+    float m_p14;
     int  m_p18;      // -1
     int  m_p1C;      // -1
     int  m_p20;
@@ -7298,13 +7311,10 @@ public:
     // spell-effect system, is at +0x1B70 and the sound track starts at +0x1A90.
     // Clear (byte-exact) stops at m_state[1], so everything below is touched
     // only by VIScene::SetSoundTrack and ::UpdateSoundEmitters.
-    int   m_p88;                         // +0x88
-    char  m_pad8C[0x98 - 0x8C];
-    int   m_p98;                         // +0x98
-    int   m_p9C;                         // +0x9C
-    int   m_pA0;                         // +0xA0
-    int   m_pA4;                         // +0xA4
-    char  m_padA8[0xE0 - 0xA8];
+    // Phase 61: the track table -- a (day, night) pair of XM DictIDs per
+    // terrain-profile sound index, eleven of them, written by SetTracks and
+    // indexed `[profile.m_p20][night]` by VIScene::SetSoundTrack.
+    int   m_tracks[11][2];               // +0x88 .. +0xE0
 };
 
 // ---------------------------------------------------------------------------
@@ -7638,7 +7648,9 @@ public:
     int        m_p18;     // +0x18
     float      m_p1C;     // +0x1C
     int        m_p20;     // +0x20
-    int        m_p24;     // +0x24
+    // Phase 61: a FLOAT -- VIScene::SetupTimeOfDaySky blends it by the
+    // profile weights (lwc1) and hands it to SetLavastormIntensity.
+    float      m_p24;     // +0x24
 };
 
 // Phase 54, off VIScene::CalcTimeOfDayClipPlanes: four terrain-profile INDICES
@@ -8315,6 +8327,10 @@ public:
     };
 
     VIScene();
+    // Phase 61: `_$_7VIScene` is Clear() and then the member destructors in
+    // reverse declaration order -- the roll-call phase 54 read off the
+    // constructor, run backwards.
+    ~VIScene();
 
     int   Init(long time, VIDictionary &d, VIRaster *r, VISoundDevice *sd,
                VICollide &c);
@@ -8455,6 +8471,26 @@ public:
     VISprite *GetActorSpritePtr(int i) const;
     int       GetActorSprite(int i) const;
 
+    // Phase 61: the const accessors phase 54 left out.
+    int            GetNumActors() const;
+    int            GetFirstActor() const;
+    int            GetNextActor(int i) const;
+    const VIVect3 &GetActorLocation(int i) const;
+    const VIVect3 &GetActorHPR(int i) const;
+    float          GetActorScale(int i) const;
+    int            CalcActorBBox(int i, VIBBox &bb) const;
+    VISceneBBoxDrawStyle GetActorBBoxDrawStyle() const;
+    VIRadialFloraMode    GetRadialFloraMode() const;
+    int    GetWorldGridOffset(int a, int b, VIVect3 &v) const;
+    int    CalcWorldLocation(int a, int b, const VIVect3 &at, VIVect3 &out) const;
+    int    GetTerrainGridNumRows() const;
+    int    GetTerrainGridNumCols() const;
+    float  GetTerrainGridSize() const;
+    int    GetTerrainProfile(int row, int col) const;
+    int    GetTerrainProfile(const VIVect3 &at) const;
+    int    GetTerrainGridCell(const VIVect3 &at, int &row, int &col) const;
+    int    GetTerrainGridCellBVolume(int row, int col, VIBBox &bb) const;
+
     int   CollideActor(VICollSphere &s, VISceneFilter &f, int i);
     int   CollideSprite(VICollSphere &s, VISceneFilter &f, int i);
     int   CollideActor(VICollRay &r, VISceneFilter &f, int i);
@@ -8560,7 +8596,9 @@ public:
     float            m_personalLightRadius;   // +0x2A24
     VIColor32F       m_personalLightColor;    // +0x2A28
     long             m_p2A38;            // +0x2A38  Clear: 0
-    int              m_p2A40;            // +0x2A40  Clear: 0
+    // Phase 61: a FLOAT -- the personal light's current radius, faded
+    // toward m_personalLightRadius by SetupTimeOfDayLights.
+    float            m_p2A40;            // +0x2A40  Clear: 0
     int              m_p2A44;            // +0x2A44
     // The streaming radii -- `claude-notes/streaming-radius-and-hdd-20260814.md`
     // calls them "four immediates in VIScene::Init", and this is where they

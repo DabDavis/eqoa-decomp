@@ -266,17 +266,17 @@ int VIWorld::RenderByVolume(int node, VISceneRendVars &v)
         if (back)
             if (RenderByVolume(m_tree.m_nodes[node].m_back, v) < 0)
                 return -1;
-
-        return 0;
     }
+    else
+    {
+        if (back)
+            if (RenderByVolume(m_tree.m_nodes[node].m_back, v) < 0)
+                return -1;
 
-    if (back)
-        if (RenderByVolume(m_tree.m_nodes[node].m_back, v) < 0)
-            return -1;
-
-    if (front)
-        if (RenderByVolume(m_tree.m_nodes[node].m_front, v) < 0)
-            return -1;
+        if (front)
+            if (RenderByVolume(m_tree.m_nodes[node].m_front, v) < 0)
+                return -1;
+    }
 
     return 0;
 }
@@ -702,10 +702,12 @@ int VIWorld::InsertActor(int node, VISceneInsertVars &v)
         {
             node &= 0x0FFFFFFF;
 
-            int zone = m_tree.m_leaves[node].m_a;
+            v.m_zone = m_tree.m_leaves[node].m_a;
 
-            v.m_zone = zone;
-            return m_zones[zone].InsertActor(v) < 0 ? -1 : 0;
+            if (m_zones[m_tree.m_leaves[node].m_a].InsertActor(v) < 0)
+                return -1;
+
+            return 0;
         }
 
         node &= 0x0FFFFFFF;
@@ -714,30 +716,37 @@ int VIWorld::InsertActor(int node, VISceneInsertVars &v)
     float d = m_tree.m_nodes[node].m_plane.Distance(v.m_bound.c);
 
     if (v.m_bound.r < d)
-        return InsertActor(m_tree.m_nodes[node].m_front, v) < 0 ? -1 : 0;
-
-    if (d < -v.m_bound.r)
-        return InsertActor(m_tree.m_nodes[node].m_back, v) < 0 ? -1 : 0;
-
-    int front = 0;
-    int back  = 0;
-    int i;
-
-    for (i = 0; i < 8; i++)
     {
-        if (0.0f < m_tree.m_nodes[node].m_plane.Distance(v.m_corners[i]))
-            front = 1;
-        else
-            back = 1;
-    }
-
-    if (front)
         if (InsertActor(m_tree.m_nodes[node].m_front, v) < 0)
             return -1;
-
-    if (back)
+    }
+    else if (d < -v.m_bound.r)
+    {
         if (InsertActor(m_tree.m_nodes[node].m_back, v) < 0)
             return -1;
+    }
+    else
+    {
+        int front = 0;
+        int back  = 0;
+        int i;
+
+        for (i = 0; i < 8; i++)
+        {
+            if (0.0f < m_tree.m_nodes[node].m_plane.Distance(v.m_corners[i]))
+                front = 1;
+            else
+                back = 1;
+        }
+
+        if (front)
+            if (InsertActor(m_tree.m_nodes[node].m_front, v) < 0)
+                return -1;
+
+        if (back)
+            if (InsertActor(m_tree.m_nodes[node].m_back, v) < 0)
+                return -1;
+    }
 
     return 0;
 }
@@ -773,20 +782,22 @@ int VIWorld::Stream(int node, VISceneStreamRadialVars &v)
             if (Stream(m_tree.m_nodes[node].m_front, v) < 0)
                 return -1;
 
-        if (back == 0)
-            return 0;
+        if (back)
+            if (Stream(m_tree.m_nodes[node].m_back, v) < 0)
+                return -1;
+    }
+    else
+    {
+        if (back)
+            if (Stream(m_tree.m_nodes[node].m_back, v) < 0)
+                return -1;
 
-        return Stream(m_tree.m_nodes[node].m_back, v) < 0 ? -1 : 0;
+        if (front)
+            if (Stream(m_tree.m_nodes[node].m_front, v) < 0)
+                return -1;
     }
 
-    if (back)
-        if (Stream(m_tree.m_nodes[node].m_back, v) < 0)
-            return -1;
-
-    if (front == 0)
-        return 0;
-
-    return Stream(m_tree.m_nodes[node].m_front, v) < 0 ? -1 : 0;
+    return 0;
 }
 
 int VIWorld::StreamLeaf(int leaf, VISceneStreamRadialVars &v)
@@ -826,34 +837,35 @@ int VIWorld::StreamLeaf(int leaf, VISceneStreamRadialVars &v)
         }
     }
 
-    if (m_zones[zone].m_flags & 1)
-        return 0;
-
-    if (v.m_outer * v.m_outer < d)
+    if (!(m_zones[zone].m_flags & 1))
     {
-        VIArray<int> a;
+        if (v.m_outer * v.m_outer < d)
+        {
+            VIArray<int> a;
 
-        if (v.m_scene->ReleaseStatic(m_zones[zone], *v.m_loader) < 0)
-            return -1;
+            if (v.m_scene->ReleaseStatic(m_zones[zone], *v.m_loader) < 0)
+                return -1;
 
-        if (v.m_scene->RemoveActorsFromZone(m_zones[zone], a) < 0)
-            return -1;
+            if (v.m_scene->RemoveActorsFromZone(m_zones[zone], a) < 0)
+                return -1;
 
-        if (m_zones[zone].ResetToProxy(*v.m_scene) < 0)
-            return -1;
+            if (m_zones[zone].ResetToProxy(*v.m_scene) < 0)
+                return -1;
 
-        if (v.m_scene->UpdateActors(a) < 0)
-            return -1;
+            if (v.m_scene->UpdateActors(a) < 0)
+                return -1;
+        }
+        else
+        {
+            v.m_zone = zone;
 
-        return 0;
+            if (m_zones[zone].Stream(v) < 0)
+                return -1;
+
+            v.m_zone = -1;
+        }
     }
 
-    v.m_zone = zone;
-
-    if (m_zones[zone].Stream(v) < 0)
-        return -1;
-
-    v.m_zone = -1;
     return 0;
 }
 
@@ -873,24 +885,31 @@ int VIWorld::QueryProximal(int node, VISceneProxQueryVars &v)
     float d = m_tree.m_nodes[node].m_plane.Distance(v.m_sphere.c);
 
     if (v.m_sphere.r < d)
-        return QueryProximal(m_tree.m_nodes[node].m_front, v) < 0 ? -1 : 0;
-
-    if (d < -v.m_sphere.r)
-        return QueryProximal(m_tree.m_nodes[node].m_back, v) < 0 ? -1 : 0;
-
-    if (0.0f < d)
+    {
+        if (QueryProximal(m_tree.m_nodes[node].m_front, v) < 0)
+            return -1;
+    }
+    else if (d < -v.m_sphere.r)
+    {
+        if (QueryProximal(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
+    }
+    else if (0.0f < d)
     {
         if (QueryProximal(m_tree.m_nodes[node].m_front, v) < 0)
             return -1;
 
-        return QueryProximal(m_tree.m_nodes[node].m_back, v) < 0 ? -1 : 0;
+        if (QueryProximal(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
     }
+    else
+    {
+        if (QueryProximal(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
 
-    if (QueryProximal(m_tree.m_nodes[node].m_back, v) < 0)
-        return -1;
-
-    if (QueryProximal(m_tree.m_nodes[node].m_front, v) < 0)
-        return -1;
+        if (QueryProximal(m_tree.m_nodes[node].m_front, v) < 0)
+            return -1;
+    }
 
     return 0;
 }
@@ -911,24 +930,31 @@ int VIWorld::QueryEmitters(int node, VISceneEmitterQueryVars &v)
     float d = m_tree.m_nodes[node].m_plane.Distance(v.m_sphere.c);
 
     if (v.m_sphere.r < d)
-        return QueryEmitters(m_tree.m_nodes[node].m_front, v) < 0 ? -1 : 0;
-
-    if (d < -v.m_sphere.r)
-        return QueryEmitters(m_tree.m_nodes[node].m_back, v) < 0 ? -1 : 0;
-
-    if (0.0f < d)
+    {
+        if (QueryEmitters(m_tree.m_nodes[node].m_front, v) < 0)
+            return -1;
+    }
+    else if (d < -v.m_sphere.r)
+    {
+        if (QueryEmitters(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
+    }
+    else if (0.0f < d)
     {
         if (QueryEmitters(m_tree.m_nodes[node].m_front, v) < 0)
             return -1;
 
-        return QueryEmitters(m_tree.m_nodes[node].m_back, v) < 0 ? -1 : 0;
+        if (QueryEmitters(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
     }
+    else
+    {
+        if (QueryEmitters(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
 
-    if (QueryEmitters(m_tree.m_nodes[node].m_back, v) < 0)
-        return -1;
-
-    if (QueryEmitters(m_tree.m_nodes[node].m_front, v) < 0)
-        return -1;
+        if (QueryEmitters(m_tree.m_nodes[node].m_front, v) < 0)
+            return -1;
+    }
 
     return 0;
 }
@@ -1038,40 +1064,619 @@ int VIWorld::QueryVisibleWithPortals(VISceneVisQueryVars &v)
 
     v.m_world = this;
 
+    if (!IsEmpty())
+    {
+        if (FindLeaf(v.m_sphere.c, zone, leaf) < 0)
+            return -1;
+
+        int room = m_zones[zone].m_tree.m_leaves[leaf].m_a;
+
+        if (m_zones[zone].m_rooms[room].m_flags & 1)
+        {
+            if (QueryVisibleBySphere(v) < 0)
+                return -1;
+        }
+        else
+        {
+            VIBBox bb;
+
+            bb.min = v.m_sphere.c;
+            bb.min -= v.m_sphere.r;
+            bb.max = v.m_sphere.c;
+            bb.max += v.m_sphere.r;
+
+            if (v.m_clip->PushBBox(bb) < 0)
+                return -1;
+
+            v.m_clip->GetTop(v.m_numVerts, &v.m_verts, v.m_numPlanes, &v.m_planes);
+
+            if (m_zones[zone].QueryVisibleRoom(room, v) < 0)
+                return -1;
+
+            if (v.m_clip->Pop() < 0)
+                return -1;
+        }
+    }
+
+    return 0;
+}
+
+// ================================================================ phase 61 --
+
+// The env-ray descent is the fourth segment walk, and the only one that SPLITS
+// the segment: a straddling node cuts it at the plane and hands each child the
+// half on its side, so the slack the other three carry is not needed.  Zero
+// counts as the front on the way in and as the back for the split.
+int VIWorld::Collide(int node, VIEnvRay &r, VIVect3 &a, VIVect3 &b)
+{
+    VIVect3 mid;
+
+    if (node & 0xF0000000)
+    {
+        if (node & 0x40000000)
+        {
+            node &= 0x0FFFFFFF;
+            return m_zones[m_tree.m_leaves[node].m_a].Collide(r, a, b);
+        }
+
+        node &= 0x0FFFFFFF;
+    }
+
+    float da = m_tree.m_nodes[node].m_plane.Distance(a);
+    float db = m_tree.m_nodes[node].m_plane.Distance(b);
+    int   hit;
+
+    if (0.0f <= da && 0.0f <= db)
+        return Collide(m_tree.m_nodes[node].m_front, r, a, b) != 0;
+
+    if (da <= 0.0f && db <= 0.0f)
+        return Collide(m_tree.m_nodes[node].m_back, r, a, b) != 0;
+
+    float t = da / (da - db);
+
+    mid = b;
+    mid -= a;
+    mid *= t;
+    mid += a;
+
+    if (0.0f < da)
+    {
+        int one = 1;
+
+        hit = 0;
+        if (Collide(m_tree.m_nodes[node].m_front, r, a, mid))
+            hit = one;
+        if (hit)
+            return hit;
+        if (!Collide(m_tree.m_nodes[node].m_back, r, mid, b))
+            one = 0;
+        hit = one;
+    }
+    else
+    {
+        int one = 1;
+
+        hit = 0;
+        if (Collide(m_tree.m_nodes[node].m_back, r, a, mid))
+            hit = one;
+        if (hit)
+            return hit;
+        if (!Collide(m_tree.m_nodes[node].m_front, r, mid, b))
+            one = 0;
+        hit = one;
+    }
+    return hit;
+}
+
+// The zone's visibility descent, one level up (see vizone.cpp).
+int VIWorld::QueryVisible(int node, VISceneVisQueryVars &v)
+{
+    if (node & 0xF0000000)
+    {
+        if (node & 0x40000000)
+        {
+            node &= 0x0FFFFFFF;
+            return m_zones[m_tree.m_leaves[node].m_a].QueryVisible(v);
+        }
+
+        node &= 0x0FFFFFFF;
+    }
+
+    float d = m_tree.m_nodes[node].m_plane.Distance(v.m_sphere.c);
+
+    if (v.m_sphere.r < d)
+    {
+        if (QueryVisible(m_tree.m_nodes[node].m_front, v) < 0)
+            return -1;
+    }
+    else if (d < -v.m_sphere.r)
+    {
+        if (QueryVisible(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
+    }
+    else
+    {
+    int front = 0;
+    int back  = 0;
+    int i;
+
+    for (i = 0; i < v.m_numVerts; i++)
+    {
+        d = m_tree.m_nodes[node].m_plane.Distance(v.m_verts[i]);
+
+        if (0.0f < d)
+            front = 1;
+        else
+            back = 1;
+    }
+
+        if (d < 0.0f)
+        {
+            if (front)
+                if (QueryVisible(m_tree.m_nodes[node].m_front, v) < 0)
+                    return -1;
+
+            if (back)
+                if (QueryVisible(m_tree.m_nodes[node].m_back, v) < 0)
+                    return -1;
+        }
+        else
+        {
+            if (back)
+                if (QueryVisible(m_tree.m_nodes[node].m_back, v) < 0)
+                    return -1;
+
+            if (front)
+                if (QueryVisible(m_tree.m_nodes[node].m_front, v) < 0)
+                    return -1;
+        }
+    }
+
+    return 0;
+}
+
+int VIWorld::QueryIntersection(int node, VISceneIntersectVars &v)
+{
+    if (node & 0xF0000000)
+    {
+        if (node & 0x40000000)
+        {
+            node &= 0x0FFFFFFF;
+            if (m_zones[m_tree.m_leaves[node].m_a].QueryIntersection(v) < 0)
+                return -1;
+            return 0;
+        }
+
+        node &= 0x0FFFFFFF;
+    }
+
+    float d = m_tree.m_nodes[node].m_plane.Distance(v.m_sphere.c);
+
+    if (v.m_sphere.r < d)
+    {
+        if (QueryIntersection(m_tree.m_nodes[node].m_front, v) < 0)
+            return -1;
+    }
+    else if (d < -v.m_sphere.r)
+    {
+        if (QueryIntersection(m_tree.m_nodes[node].m_back, v) < 0)
+            return -1;
+    }
+    else
+    {
+        int front = 0;
+        int back  = 0;
+        int i;
+
+        for (i = 0; i < 8; i++)
+        {
+            if (0.0f < m_tree.m_nodes[node].m_plane.Distance(v.m_corners[i]))
+                front = 1;
+            else
+                back = 1;
+        }
+
+        if (front)
+            if (QueryIntersection(m_tree.m_nodes[node].m_front, v) < 0)
+                return -1;
+
+        if (back)
+            if (QueryIntersection(m_tree.m_nodes[node].m_back, v) < 0)
+                return -1;
+    }
+
+    return 0;
+}
+
+// Portal rendering starts in the camera's own room: an outdoor room (bit 0)
+// renders the world by frustum instead, an indoor one renders that room under
+// the full view frustum and lets RenderRoom carry on through its portals.
+int VIWorld::RenderByPortals(VISceneRendVars &v)
+{
+    int zone;
+    int leaf;
+
+    v.m_world = this;
+
     if (IsEmpty())
         return 0;
 
-    if (FindLeaf(v.m_sphere.c, zone, leaf) < 0)
+    if (FindLeaf(v.m_camera->m_position, zone, leaf) < 0)
         return -1;
 
     int room = m_zones[zone].m_tree.m_leaves[leaf].m_a;
 
     if (m_zones[zone].m_rooms[room].m_flags & 1)
     {
-        if (QueryVisibleBySphere(v) < 0)
+        if (RenderByFrustum(v) < 0)
+            return -1;
+    }
+    else
+    {
+        v.m_zone = zone;
+
+        if (m_zones[zone].SetPretranslations(*v.m_raster, *v.m_camera) < 0)
             return -1;
 
-        return 0;
+        if (v.m_clip->PushFrustum(*v.m_camera) < 0)
+            return -1;
+
+        v.m_clip->GetTop(v.m_numVerts, &v.m_verts, v.m_numPlanes, &v.m_planes);
+
+        if (m_zones[zone].RenderRoom(room, v) < 0)
+            return -1;
+
+        if (v.m_clip->Pop() < 0)
+            return -1;
     }
 
-    VIBBox bb;
-    int    r = -1;
+    return 0;
+}
 
-    bb.min = v.m_sphere.c;
-    bb.min -= v.m_sphere.r;
-    bb.max = v.m_sphere.c;
-    bb.max += v.m_sphere.r;
+// The radial StreamLeaf with the two distance tests replaced by box overlaps:
+// the zone's base data is loaded while it overlaps the inner box, and its
+// streamed content is released once it leaves the outer one.
+int VIWorld::StreamLeaf(int leaf, VISceneBBoxStreamVars &v)
+{
+    VIVect3 unused;
+    int     zone = m_tree.m_leaves[leaf].m_a;
 
-    if (v.m_clip->PushBBox(bb) < 0)
-        return -1;
+    if (m_zones[zone].m_flags & 1)
+    {
+        if (v.m_bbox.Intersects(m_zones[zone].m_bbox))
+        {
+            if (m_zones[zone].m_trans == -1)
+            {
+                m_zones[zone].m_trans =
+                    v.m_loader->Load(v.m_file, 0, m_zones[zone].m_offset,
+                                     m_zones[zone].m_size, zone);
 
-    v.m_clip->GetTop(v.m_numVerts, &v.m_verts, v.m_numPlanes, &v.m_planes);
+                if (m_zones[zone].m_trans < 0)
+                    return -1;
+            }
+            else if (v.m_loader->IsComplete(m_zones[zone].m_trans))
+            {
+                if (v.m_loader->Release(m_zones[zone].m_trans, *v.m_scene) < 0)
+                    return -1;
 
-    if (m_zones[zone].QueryVisibleRoom(room, v) < 0)
-        return -1;
+                m_zones[zone].m_trans = -1;
+                m_zones[zone].m_flags &= 0xFFFFFFFE;
+            }
+        }
+        else if (m_zones[zone].m_trans != -1)
+        {
+            if (v.m_loader->Release(m_zones[zone].m_trans, *v.m_scene) < 0)
+                return -1;
 
-    if (0 <= v.m_clip->Pop())
-        r = 0;
+            m_zones[zone].m_trans = -1;
+        }
+    }
 
-    return r;
+    if (!(m_zones[zone].m_flags & 1))
+    {
+        if (!v.m_outer.Intersects(m_zones[zone].m_bbox))
+        {
+            VIArray<int> a;
+
+            if (v.m_scene->ReleaseStatic(m_zones[zone], *v.m_loader) < 0)
+                return -1;
+
+            if (v.m_scene->RemoveActorsFromZone(m_zones[zone], a) < 0)
+                return -1;
+
+            if (m_zones[zone].ResetToProxy(*v.m_scene) < 0)
+                return -1;
+
+            if (v.m_scene->UpdateActors(a) < 0)
+                return -1;
+        }
+        else
+        {
+            v.m_zone = zone;
+
+            if (m_zones[zone].Stream(v) < 0)
+                return -1;
+
+            v.m_zone = -1;
+        }
+    }
+
+    return 0;
+}
+
+// The four terrain sub-cells around a point and their bilinear weights.  The
+// point is shifted by half a sub-cell so that it falls between four cell
+// CENTRES; on the far edge of the grid a missing neighbour repeats the cell.
+int VIWorld::CalcProfileBlend(const VIVect3 &at, VITerrainProfileBlend &b)
+{
+    int     idx[4];
+    VIVect3 v = at;
+    float   s = (float)m_subdiv / m_cellSize;
+
+    v -= m_origin;
+    v.x += m_cellSize * 0.5f;
+    v.z += m_cellSize * 0.5f;
+
+    float c = 1.0f / s;
+    float x = v.x - c * 0.5f;
+    float z = v.z - c * 0.5f;
+
+    int col = (int)(x * s);
+    int row = (int)(z * s);
+
+    col = col < 0 ? 0 : col;
+    if (m_numCols * m_subdiv - 1 < col)
+        col = m_numCols * m_subdiv - 1;
+
+    row = row < 0 ? 0 : row;
+    if (m_numRows * m_subdiv - 1 < row)
+        row = m_numRows * m_subdiv - 1;
+
+    float fx = (x - (float)col * c) * s;
+    float fz = (z - (float)row * c) * s;
+
+    fx = VIMIN(1.0f, VIMAX(0.0f, fx));
+    fz = VIMIN(1.0f, VIMAX(0.0f, fz));
+
+    idx[0] = row * m_numCols * m_subdiv + col;
+
+    if (col != m_numCols * m_subdiv - 1)
+        idx[1] = idx[0] + 1;
+    else
+        idx[1] = idx[0];
+
+    if (row != m_numRows * m_subdiv - 1)
+    {
+        idx[2] = idx[0] + m_numCols * m_subdiv;
+        idx[3] = idx[1] + m_numCols * m_subdiv;
+    }
+    else
+    {
+        idx[2] = idx[0];
+        idx[3] = idx[1];
+    }
+
+    b.m_index[0] = m_regions[idx[0]].m_flags;
+    b.m_index[1] = m_regions[idx[1]].m_flags;
+    b.m_index[2] = m_regions[idx[2]].m_flags;
+    b.m_index[3] = m_regions[idx[3]].m_flags;
+
+    b.m_weight[0] = (1.0f - fx) * (1.0f - fz);
+    b.m_weight[1] = fx * (1.0f - fz);
+    b.m_weight[2] = (1.0f - fx) * fz;
+    b.m_weight[3] = fx * fz;
+
+    return 0;
+}
+
+// A colour from bytes, each channel over 255 (VIScene::InitTimeOfDay's
+// idiom: the destination is a reference).
+static inline void SetColorFrom(VIColor32F &d, const VIColor32 &c)
+{
+    d.r = c.r * (1.0f / 255.0f);
+    d.g = c.g * (1.0f / 255.0f);
+    d.b = c.b * (1.0f / 255.0f);
+    d.a = c.a * (1.0f / 255.0f);
+}
+
+// The 22 terrain profiles: the two fog distances, a tint, the sky type, the
+// overcast weight, the ambient-music index and the Lavastorm weight.  Only
+// profile 19 storms.
+int VIWorld::SetProfiles()
+{
+
+    m_profiles[0].m_p00 = 250.0f;
+    m_profiles[0].m_p04 = 800.0f;
+    m_profiles[0].m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    m_profiles[0].m_p18 = 1;
+    m_profiles[0].m_p1C = 1.0f;
+    m_profiles[0].m_p20 = 9;
+    m_profiles[0].m_p24 = 0.0f;
+
+    VIColor32 c;
+
+    m_profiles[1].m_p00 = 0.0f;
+    m_profiles[1].m_p04 = 400.0f;
+    c.Set(210, 230, 180, 255);
+    SetColorFrom(m_profiles[1].m_color, c);
+    m_profiles[1].m_p18 = 1;
+    m_profiles[1].m_p1C = 1.0f;
+    m_profiles[1].m_p20 = 4;
+    m_profiles[1].m_p24 = 0.0f;
+
+    m_profiles[2].m_p00 = 250.0f;
+    m_profiles[2].m_p04 = 800.0f;
+    c.Set(227, 247, 247, 255);
+    SetColorFrom(m_profiles[2].m_color, c);
+    m_profiles[2].m_p18 = 0;
+    m_profiles[2].m_p1C = 1.0f;
+    m_profiles[2].m_p20 = 6;
+    m_profiles[2].m_p24 = 0.0f;
+
+    m_profiles[3].m_p00 = 250.0f;
+    m_profiles[3].m_p04 = 800.0f;
+    c.Set(233, 218, 166, 255);
+    SetColorFrom(m_profiles[3].m_color, c);
+    m_profiles[3].m_p18 = 0;
+    m_profiles[3].m_p1C = 1.0f;
+    m_profiles[3].m_p20 = 3;
+    m_profiles[3].m_p24 = 0.0f;
+
+    m_profiles[4].m_p00 = 150.0f;
+    m_profiles[4].m_p04 = 800.0f;
+    m_profiles[4].m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    m_profiles[4].m_p18 = 2;
+    m_profiles[4].m_p1C = 0.5f;
+    m_profiles[4].m_p20 = 5;
+    m_profiles[4].m_p24 = 0.0f;
+
+    m_profiles[5].m_p00 = 0.0f;
+    m_profiles[5].m_p04 = 400.0f;
+    c.Set(90, 140, 65, 255);
+    SetColorFrom(m_profiles[5].m_color, c);
+    m_profiles[5].m_p18 = 0;
+    m_profiles[5].m_p1C = 1.0f;
+    m_profiles[5].m_p20 = 7;
+    m_profiles[5].m_p24 = 0.0f;
+
+    m_profiles[6].m_p00 = 0.0f;
+    m_profiles[6].m_p04 = 350.0f;
+    c.Set(140, 170, 120, 255);
+    SetColorFrom(m_profiles[6].m_color, c);
+    m_profiles[6].m_p18 = 2;
+    m_profiles[6].m_p1C = 0.5f;
+    m_profiles[6].m_p20 = 10;
+    m_profiles[6].m_p24 = 0.0f;
+
+    m_profiles[7].m_p00 = 250.0f;
+    m_profiles[7].m_p04 = 800.0f;
+    m_profiles[7].m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    m_profiles[7].m_p18 = 1;
+    m_profiles[7].m_p1C = 1.0f;
+    m_profiles[7].m_p20 = 2;
+    m_profiles[7].m_p24 = 0.0f;
+
+    m_profiles[8].m_p00 = 250.0f;
+    m_profiles[8].m_p04 = 800.0f;
+    m_profiles[8].m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    m_profiles[8].m_p18 = 1;
+    m_profiles[8].m_p1C = 1.0f;
+    m_profiles[8].m_p20 = 1;
+    m_profiles[8].m_p24 = 0.0f;
+
+    m_profiles[9].m_p00 = 0.0f;
+    m_profiles[9].m_p04 = 400.0f;
+    c.Set(210, 230, 180, 255);
+    SetColorFrom(m_profiles[9].m_color, c);
+    m_profiles[9].m_p18 = 1;
+    m_profiles[9].m_p1C = 1.0f;
+    m_profiles[9].m_p20 = 1;
+    m_profiles[9].m_p24 = 0.0f;
+
+    m_profiles[10].m_p00 = 250.0f;
+    m_profiles[10].m_p04 = 800.0f;
+    c.Set(227, 247, 247, 255);
+    SetColorFrom(m_profiles[10].m_color, c);
+    m_profiles[10].m_p18 = 0;
+    m_profiles[10].m_p1C = 1.0f;
+    m_profiles[10].m_p20 = 1;
+    m_profiles[10].m_p24 = 0.0f;
+
+    m_profiles[11].m_p00 = 250.0f;
+    m_profiles[11].m_p04 = 800.0f;
+    c.Set(233, 218, 166, 255);
+    SetColorFrom(m_profiles[11].m_color, c);
+    m_profiles[11].m_p18 = 0;
+    m_profiles[11].m_p1C = 1.0f;
+    m_profiles[11].m_p20 = 1;
+    m_profiles[11].m_p24 = 0.0f;
+
+    m_profiles[12].m_p00 = 150.0f;
+    m_profiles[12].m_p04 = 800.0f;
+    m_profiles[12].m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    m_profiles[12].m_p18 = 2;
+    m_profiles[12].m_p1C = 0.5f;
+    m_profiles[12].m_p20 = 1;
+    m_profiles[12].m_p24 = 0.0f;
+
+    m_profiles[13].m_p00 = 0.0f;
+    m_profiles[13].m_p04 = 400.0f;
+    c.Set(90, 140, 65, 255);
+    SetColorFrom(m_profiles[13].m_color, c);
+    m_profiles[13].m_p18 = 0;
+    m_profiles[13].m_p1C = 1.0f;
+    m_profiles[13].m_p20 = 1;
+    m_profiles[13].m_p24 = 0.0f;
+
+    m_profiles[14].m_p00 = 0.0f;
+    m_profiles[14].m_p04 = 350.0f;
+    c.Set(140, 170, 120, 255);
+    SetColorFrom(m_profiles[14].m_color, c);
+    m_profiles[14].m_p18 = 2;
+    m_profiles[14].m_p1C = 0.5f;
+    m_profiles[14].m_p20 = 1;
+    m_profiles[14].m_p24 = 0.0f;
+
+    m_profiles[15].m_p00 = 250.0f;
+    m_profiles[15].m_p04 = 800.0f;
+    m_profiles[15].m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    m_profiles[15].m_p18 = 1;
+    m_profiles[15].m_p1C = 1.0f;
+    m_profiles[15].m_p20 = 8;
+    m_profiles[15].m_p24 = 0.0f;
+
+    m_profiles[16].m_p00 = 250.0f;
+    m_profiles[16].m_p04 = 800.0f;
+    m_profiles[16].m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    m_profiles[16].m_p18 = 1;
+    m_profiles[16].m_p1C = 1.0f;
+    m_profiles[16].m_p20 = 1;
+    m_profiles[16].m_p24 = 0.0f;
+
+    m_profiles[17].m_p00 = 0.0f;
+    m_profiles[17].m_p04 = 800.0f;
+    c.Set(255, 170, 170, 255);
+    SetColorFrom(m_profiles[17].m_color, c);
+    m_profiles[17].m_p18 = 0;
+    m_profiles[17].m_p1C = 1.0f;
+    m_profiles[17].m_p20 = 3;
+    m_profiles[17].m_p24 = 0.0f;
+
+    m_profiles[18].m_p00 = 0.0f;
+    m_profiles[18].m_p04 = 550.0f;
+    c.Set(110, 140, 30, 255);
+    SetColorFrom(m_profiles[18].m_color, c);
+    m_profiles[18].m_p18 = 1;
+    m_profiles[18].m_p1C = 1.0f;
+    m_profiles[18].m_p20 = 8;
+    m_profiles[18].m_p24 = 0.0f;
+
+    m_profiles[19].m_p00 = 0.0f;
+    m_profiles[19].m_p04 = 600.0f;
+    c.Set(255, 170, 170, 255);
+    SetColorFrom(m_profiles[19].m_color, c);
+    m_profiles[19].m_p18 = 2;
+    m_profiles[19].m_p1C = 1.0f;
+    m_profiles[19].m_p20 = 8;
+    m_profiles[19].m_p24 = 1.0f;
+
+    m_profiles[20].m_p00 = 250.0f;
+    m_profiles[20].m_p04 = 800.0f;
+    c.Set(175, 200, 240, 255);
+    SetColorFrom(m_profiles[20].m_color, c);
+    m_profiles[20].m_p18 = 1;
+    m_profiles[20].m_p1C = 1.0f;
+    m_profiles[20].m_p20 = 6;
+    m_profiles[20].m_p24 = 0.0f;
+
+    m_profiles[21].m_p00 = 0.0f;
+    m_profiles[21].m_p04 = 600.0f;
+    c.Set(140, 170, 160, 255);
+    SetColorFrom(m_profiles[21].m_color, c);
+    m_profiles[21].m_p18 = 1;
+    m_profiles[21].m_p1C = 1.0f;
+    m_profiles[21].m_p20 = 7;
+    m_profiles[21].m_p24 = 0.0f;
+
+    return 0;
 }
