@@ -1,5 +1,19 @@
-// VIConsole -- SUPPORT 0x004A0A88 .. 0x004A0C20.
+// VIConsole -- SUPPORT 0x004A0A68 .. 0x004A0C20.  The first two functions are
+// the disc-flags accessors (phase 61): nothing named sits between them and
+// VIConsole::Init, and the code ahead of them is VICSFFile's template tail.
 #include "vi.h"
+
+static unsigned int s_discFlags;
+
+unsigned int VIGetDiscFlags()
+{
+    return s_discFlags;
+}
+
+void VISetDiscFlags(unsigned int f)
+{
+    s_discFlags = f;
+}
 
 extern "C" void *memset(void *d, int c, unsigned int n);
 

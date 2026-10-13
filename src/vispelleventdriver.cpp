@@ -6,6 +6,7 @@
 #include "vi.h"
 
 extern "C" unsigned int VIHashResourceID(const char *);
+extern "C" int rand(void);
 
 VISpellEventDriver::VISpellEventDriver(VISpellEffectDriver *d, VISpellEventList *l,
                                        int actor, VIScene *sc)
@@ -654,13 +655,762 @@ int VISpellEventDriver::Process()
     return 1;
 }
 
-// The four big traversals, not attempted in phase 38: 609, 420, 399 and 1187
-// instructions.  They are stubbed so the rest of the TU links and so eqcheck
-// reports them as `wrong` rather than `no-target`.
-int VISpellEventDriver::NewPlayTargetProjectile(VISpellEvent *ev) { return 0; }
-int VISpellEventDriver::ProcessCreateEmitter(VISpellActiveEvent *e, bool a) { return 0; }
-int VISpellEventDriver::ProcessLightningEvent() { return 0; }
-int VISpellEventDriver::ProcessProjectileEvent() { return 0; }
+// The four big traversals phase 38 left as stubs (609, 420, 399 and 1187
+// instructions), written in phase 61.
+// The projectile: an active event per target, an optional stand-in actor
+// carrying the caster's item projectile (pinned at y = -8000 until the flight
+// places it), a trail emitter, and the flight state for the four modes.  Mode
+// 3 runs two endpoints, expressed in the target's local frame.  `~x` is the
+// source's test for "x is not -1": it is a `nor`, where `x != -1` is a `li`
+// and a compare.  Shipped: the sprite type is read again after the switch
+// with no null test -- an actor without a sprite reads `((VISprite *)0)->m_type`.
+int VISpellEventDriver::NewPlayTargetProjectile(VISpellEvent *ev)
+{
+    VIMatrix44 m;
+    VIMatrix44 m2;
+    VIVect3    a;
+    VIVect3    b;
+    VIVect3    c;
+
+    for (int i = 0; i < m_driver->m_numSecondary + 1; i++)
+    {
+        VISpellEventDriver *d = 0;
+
+        if (ev->m_p04 & 1)
+            if (i == 0)
+                d = m_driver->AddSpellEventDriver(
+                        &m_driver->m_effect->m_targetEvents, m_driver->m_target);
+
+        if (ev->m_p04 & 2)
+            if (i != 0)
+                d = m_driver->AddSpellEventDriver(
+                        &m_driver->m_effect->m_areaEvents,
+                        m_driver->m_secondary[i - 1]);
+
+        if (m_actor != -1 && d != 0)
+        {
+            VISpellActiveEvent *e = new VISpellActiveEvent(ev, m_scene);
+            e->m_time = m_scene->GetTime();
+
+            VISprite *sp = m_scene->GetActorSpritePtr(m_actor);
+
+            if (sp && sp->m_type == 5 && ((ev->m_p0C >> 12) & 1))
+            {
+                VICSprite *cs = (VICSprite *)m_scene->GetActorSpritePtr(m_actor);
+
+                if (cs == 0)
+                    return -1;
+
+                int s = -1;
+
+                if (~cs->m_items[0].m_projectile)
+                    s = cs->m_items[0].m_projectile;
+                else if (~cs->m_items[1].m_projectile)
+                    s = cs->m_items[1].m_projectile;
+
+                if (s >= 0)
+                {
+                    e->m_actor0 = m_scene->CreateActor(VIVect3(0.0f, -8000.0f, 0.0f),
+                                                       VIVect3(), 1.0f, s);
+                    m_scene->SetActorCollideable(e->m_actor0, 0);
+                }
+            }
+
+            if (ev->m_id >= 0)
+            {
+                e->m_emitter0 = new VIParticleEmitter();
+
+                VIParticleSystem *ps = m_scene->ParticleSystem();
+                e->m_emitter0->Create(ps, ps->ParticleDefinition(ev->m_id));
+            }
+
+            switch ((ev->m_p0C >> 8) & 0xF)
+            {
+            case 0:
+                break;
+            case 1:
+                if ((ev->m_p0C & 0xFF) == 3)
+                    e->m_f9C = 0.0f;
+                else
+                    e->m_f9C = (float)rand() / 5347.0f;
+                e->m_fA0 = 0.0f;
+                break;
+            case 2:
+                e->m_f9C = 1.0f;
+                break;
+            }
+
+            if (sp->m_type != 5)
+            {
+                e->m_v14 = m_scene->GetActorLocation(m_actor);
+                e->m_c[0].Zero();
+            }
+            else
+            {
+                switch ((unsigned char)ev->m_p0C)
+                {
+                case 0:
+                    GetNodeTransform(m_actor, (VICSpriteNodeID)0, m);
+                    e->m_v14 = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+                    e->m_c[0].Zero();
+                    break;
+                case 1:
+                    GetNodeTransform(m_actor, (VICSpriteNodeID)1, m);
+                    e->m_v14 = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+                    e->m_c[0].Zero();
+                    break;
+                case 2:
+                    GetNodeTransform(m_actor, (VICSpriteNodeID)0, m);
+                    a = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+                    GetNodeTransform(m_actor, (VICSpriteNodeID)1, m);
+                    b = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+                    e->m_v14 = a;
+                    e->m_v14 += b;
+                    e->m_v14 *= 0.5f;
+                    e->m_c[0].Zero();
+                    break;
+                case 3:
+                    GetNodeTransform(m_actor, (VICSpriteNodeID)0, m);
+                    a = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+                    GetNodeTransform(m_actor, (VICSpriteNodeID)1, m);
+                    b = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+                    e->m_v14 = a;
+                    e->m_v14 += b;
+                    e->m_v14 *= 0.5f;
+
+                    m_scene->GetActorTransform(m_actor, m);
+                    m2.Transpose(m);
+                    m2.m[3].x = -(m2.m[0].w * m2.m[0].x + m2.m[1].w * m2.m[1].x
+                                  + m2.m[2].w * m2.m[2].x);
+                    m2.m[3].y = -(m2.m[0].w * m2.m[0].y + m2.m[1].w * m2.m[1].y
+                                  + m2.m[2].w * m2.m[2].y);
+                    m2.m[3].z = -(m2.m[0].w * m2.m[0].z + m2.m[1].w * m2.m[1].z
+                                  + m2.m[2].w * m2.m[2].z);
+                    m2.m[0].w = m2.m[1].w = m2.m[2].w = 0.0f;
+
+                    m2.Mul(a, e->m_a[0]);
+                    m2.Mul(b, e->m_a[1]);
+                    m2.Mul(e->m_v14, c);
+                    e->m_a[0] -= c;
+                    e->m_a[1] -= c;
+
+                    if ((ev->m_p0C >> 12) & 1)
+                    {
+                        VICSprite *cs = (VICSprite *)m_scene->GetActorSpritePtr(m_actor);
+
+                        if (cs == 0)
+                            return -1;
+
+                        int s = -1;
+
+                        if (~cs->m_items[0].m_projectile)
+                            s = cs->m_items[0].m_projectile;
+                        else if (~cs->m_items[1].m_projectile)
+                            s = cs->m_items[1].m_projectile;
+
+                        if (s >= 0)
+                        {
+                            e->m_actor1 = m_scene->CreateActor(
+                                VIVect3(0.0f, -8000.0f, 0.0f), VIVect3(), 1.0f, s);
+                            m_scene->SetActorCollideable(e->m_actor1, 0);
+                        }
+                    }
+
+                    if (ev->m_id >= 0)
+                    {
+                        e->m_emitter1 = new VIParticleEmitter();
+
+                        VIParticleSystem *ps = m_scene->ParticleSystem();
+                        e->m_emitter1->Create(ps, ps->ParticleDefinition(ev->m_id));
+                    }
+
+                    e->m_c[0] = e->m_a[0];
+                    e->m_c[1] = e->m_a[1];
+                    break;
+                }
+            }
+
+            e->m_v20 = e->m_v14;
+            d->m_projectile = e;
+        }
+    }
+    return 0;
+}
+// ProcessCreateSprite's actor choice twice -- once off the event's flags and
+// once off the attractor word -- into ONE `actor` and ONE `sp` declared above
+// both, which is what keeps the attractor's sprite in a callee-saved register.
+// An unresolvable actor skips the attractor as well, straight to the expiry.
+int VISpellEventDriver::ProcessCreateEmitter(VISpellActiveEvent *e, bool active)
+{
+    VIVect3       pos;
+    VIVect3       off;
+    VIMatrix44    m;
+    VISpellEvent *ev = e->m_event;
+
+    if (m_actor != -1)
+    {
+        VISprite *sp;
+        int       actor;
+
+        if (active == true)
+        {
+            if (ev->m_p0C & 0x10000)
+                actor = m_driver->m_caster;
+            else
+                actor = m_actor;
+            if (ev->m_p0C & 0x20000)
+                actor = m_driver->m_target;
+
+            if (actor == -1)
+                goto expire;
+
+            {
+                sp = m_scene->GetActorSpritePtr(actor);
+
+                if (sp)
+                {
+                    VIMatrix44 m2;
+                    VIMatrix33 r;
+
+                    if (sp->m_type != 5 || (ev->m_p0C & 0xFFFF) == 0xFFFF)
+                        m_scene->GetActorTransform(actor, m2);
+                    else
+                        ((VICSprite *)sp)->CalcSlotWorldTransform(
+                            (VICSpriteNodeID)(ev->m_p0C & 0xFFFF), actor,
+                            *m_scene, m2);
+
+                    int shape = (ev->m_p0C >> 20) & 3;
+
+                    if (shape)
+                    {
+                        VIVect3 v;
+                        float angle = e->m_f9C;
+                        float t = (float)sin(e->m_fA0) * 0.5f + 0.5f;
+
+                        switch (shape)
+                        {
+                        case 1:
+                            m.RotateHPR(VIVect3(0.0f, angle, 0.0f));
+                            v = VIVect3(ev->m_f14 + (ev->m_f18 - ev->m_f14) * t,
+                                        ev->m_f24, 0.0f);
+                            break;
+                        case 2:
+                            m.RotateHPR(VIVect3(angle, 0.0f, 0.0f));
+                            v = VIVect3(0.0f, ev->m_f14 + (ev->m_f18 - ev->m_f14) * t,
+                                        ev->m_f24);
+                            break;
+                        case 3:
+                            m.RotateHPR(VIVect3(0.0f, 0.0f, angle));
+                            v = VIVect3(ev->m_f24, 0.0f,
+                                        ev->m_f14 + (ev->m_f18 - ev->m_f14) * t);
+                            break;
+                        }
+
+                        m.Mul(v, off);
+
+                        e->m_f9C += ev->m_f20 * 2.0f
+                                    * m_scene->m_particleSystem.DeltaTime();
+                        e->m_fA0 += ev->m_f1C * m_scene->m_particleSystem.DeltaTime();
+
+                        if (6.2831855f < e->m_f9C)
+                            e->m_f9C = e->m_f9C - 6.2831855f;
+                        else if (e->m_f9C < -6.2831855f)
+                            e->m_f9C = e->m_f9C + 6.2831855f;
+
+                        if (6.2831855f < e->m_fA0)
+                            e->m_fA0 = e->m_fA0 - 6.2831855f;
+                        else if (e->m_fA0 < -6.2831855f)
+                            e->m_fA0 = e->m_fA0 + 6.2831855f;
+
+                        m2.Mul(off, pos);
+                    }
+                    else
+                        pos = VIVect3(m2.m[3].x, m2.m[3].y, m2.m[3].z);
+
+                    r.m[0].x = m2.m[0].x;
+                    r.m[0].y = m2.m[0].y;
+                    r.m[0].z = m2.m[0].z;
+                    r.m[1].x = m2.m[1].x;
+                    r.m[1].y = m2.m[1].y;
+                    r.m[1].z = m2.m[1].z;
+                    r.m[2].x = m2.m[2].x;
+                    r.m[2].y = m2.m[2].y;
+                    r.m[2].z = m2.m[2].z;
+
+                    e->m_emitter0->SetLocation(pos);
+                    e->m_emitter0->SetDirection(r);
+                    e->m_emitter0->Update();
+                }
+            }
+        }
+
+        {
+            if (e->m_p84 != -1)
+            {
+                if (e->m_p84 & 0x10000)
+                    actor = m_driver->m_caster;
+                else
+                    actor = m_actor;
+                if (e->m_p84 & 0x20000)
+                    actor = m_driver->m_target;
+
+                sp = m_scene->GetActorSpritePtr(actor);
+
+                if (sp)
+                {
+                    VIMatrix44 m3;
+
+                    if (sp->m_type != 5 || (e->m_p84 & 0xFFFF) == 0xFFFF)
+                        m_scene->GetActorTransform(actor, m3);
+                    else
+                        ((VICSprite *)sp)->CalcSlotWorldTransform(
+                            (VICSpriteNodeID)(e->m_p84 & 0xFFFF), actor,
+                            *m_scene, m3);
+
+                    e->m_emitter0->SetAttractor(
+                        VIVect3(m3.m[3].x, m3.m[3].y, m3.m[3].z), e->m_f88);
+                }
+            }
+            else
+                e->m_emitter0->ClearAttractor();
+        }
+    }
+
+expire:
+    if (active == true && ev->m_p10 != 0
+        && ev->m_p10 < (int)(m_scene->GetTime() - e->m_time))
+    {
+        e->Remove();
+        m_inactive.AddTail(e);
+    }
+    return 0;
+}
+// The bolt pair: endpoint mode 0/1 is a single node of the source actor, 2 the
+// midpoint of its two nodes, 3 a second bolt from the other node; the far end
+// is always the midpoint of this driver's actor's two nodes.  While the event
+// lasts the bolts are recharged; after it, the event and both bolts go once
+// either bolt has faded (`alive` starts {1, 1}, copied out of .rodata).
+int VISpellEventDriver::ProcessLightningEvent()
+{
+    VIVect3     a;
+    VIVect3     b;
+    VIMatrix44  m;
+    VIVect3     src[2];
+    VIVect3     dst;
+    int         alive[2] = { 1, 1 };
+
+    VIRaster *r = m_scene->m_raster;
+    VISpellEvent *ev = m_lightning->m_event;
+    int actor = m_lightning->m_actor0;
+
+    if (m_actor == -1 || actor == -1)
+    {
+        alive[0] = 0;
+        alive[1] = 0;
+    }
+    else
+    {
+        if (m_scene->GetActorSpritePtr(m_actor) == 0)
+            return -1;
+
+        switch ((unsigned char)ev->m_id)
+        {
+        case 0:
+            GetNodeTransform(actor, (VICSpriteNodeID)0, m);
+            src[0] = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+            break;
+        case 1:
+            GetNodeTransform(actor, (VICSpriteNodeID)1, m);
+            src[0] = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+            break;
+        case 2:
+            GetNodeTransform(actor, (VICSpriteNodeID)0, m);
+            a = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+            GetNodeTransform(actor, (VICSpriteNodeID)1, m);
+            b = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+            src[0].x = (a.x + b.x) * 0.5f;
+            src[0].y = (a.y + b.y) * 0.5f;
+            src[0].z = (a.z + b.z) * 0.5f;
+            break;
+        case 3:
+            GetNodeTransform(actor, (VICSpriteNodeID)0, m);
+            src[0] = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+            GetNodeTransform(actor, (VICSpriteNodeID)1, m);
+            src[1] = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+            break;
+        }
+
+        GetNodeTransform(m_actor, (VICSpriteNodeID)0, m);
+        a = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+        GetNodeTransform(m_actor, (VICSpriteNodeID)1, m);
+        b = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+        dst.x = (a.x + b.x) * 0.5f;
+        dst.y = (a.y + b.y) * 0.5f;
+        dst.z = (a.z + b.z) * 0.5f;
+
+        if (m_bolt0 == 0)
+            m_bolt0 = new VILightning;
+        if ((unsigned char)ev->m_id == 3 && m_bolt1 == 0)
+            m_bolt1 = new VILightning;
+
+        if ((int)(m_scene->GetTime() - m_lightning->m_time) <= ev->m_p0C)
+        {
+            m_bolt0->SetCharge(1.0f);
+            if (m_bolt1)
+                m_bolt1->SetCharge(1.0f);
+        }
+
+        {
+            VIColor32F c(ev->m_f14, ev->m_f18, ev->m_f1C, 1.0f);
+
+            m_bolt0->SetColor(c);
+        }
+        m_bolt0->SetLocation(src[0], dst);
+        m_bolt0->SetMaxBranchCount(ev->m_p10);
+        m_bolt0->Update((int)(m_scene->m_particleSystem.DeltaTime() * 1000.0f));
+        m_bolt0->Render(*r);
+        alive[0] = 0.0f < m_bolt0->Charge();
+
+        if (m_bolt1)
+        {
+            m_bolt1->SetColor(VIColor32F(ev->m_f14, ev->m_f18, ev->m_f1C, 1.0f));
+            m_bolt1->SetLocation(src[1], dst);
+            m_bolt1->SetMaxBranchCount(ev->m_p10);
+            m_bolt1->Update((int)(m_scene->m_particleSystem.DeltaTime() * 1000.0f));
+            m_bolt1->Render(*r);
+            alive[1] = 0.0f < m_bolt1->Charge();
+        }
+    }
+
+    if (ev->m_p0C < (int)(m_scene->GetTime() - m_lightning->m_time))
+    {
+        if (!alive[0] || !alive[1])
+        {
+            m_lightning->m_actor0 = -1;
+            delete m_lightning;
+            m_lightning = 0;
+            if (m_bolt0)
+            {
+                delete m_bolt0;
+                m_bolt0 = 0;
+            }
+            if (m_bolt1)
+            {
+                delete m_bolt1;
+                m_bolt1 = 0;
+            }
+        }
+    }
+    return 0;
+}
+// The vector helpers the projectile flight is written with: a difference
+// returned BY VALUE (its temporary is what Magnitude is handed) and a cross
+// product built in a temporary and then assigned, which is why the one whose
+// destination is also an operand still comes out right.
+static inline VIVect3 Diff(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+static inline VIVect3 Sum(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+static inline VIVect3 Cross(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.y * b.z - a.z * b.y, -a.x * b.z + a.z * b.x, a.x * b.y - a.y * b.x);
+}
+
+// One frame of flight.  The projectile flies at Floats[0] toward the target's
+// node 4; the emitter positions are offsets in a frame built on the flight
+// direction, scaled in over the first 1/0.6 units.  Mode 1 orbits, mode 2
+// jitters between random points every 1/15 s, mode 3 adds a sine arc.  It
+// arrives when it has stopped closing in AND is within 3 units, and moves to
+// the inactive list to drain.  The zero the basis vectors start from is a
+// float VARIABLE (cse loads it back out of the first zeroed vector), and it is
+// the same variable the 0.6 ramp is computed into.
+int VISpellEventDriver::ProcessProjectileEvent()
+{
+    VIMatrix44 m;
+    VIMatrix44 m2;
+    VIVect3    a;
+    VIVect3    p0;
+    VIVect3    p1;
+    VIVect3    tgt;
+    VIVect3    d;
+    VIVect3    q0;
+    VIVect3    q1;
+    float      z = 0.0f;
+    VIVect3    right(z, z, z);
+    VIVect3    up(z, 1.0f, z);
+    VIVect3    fwd(z, z, z);
+    bool       done = false;
+    float      dist;
+    float      dist1;
+    float      total;
+    float      scale;
+
+    VISpellActiveEvent *e = m_projectile;
+
+    if (m_actor == -1)
+        done = true;
+    else
+    {
+        if (m_scene->GetActorSpritePtr(m_actor) == 0)
+            return -1;
+
+        GetNodeTransform(m_actor, (VICSpriteNodeID)4, m);
+        p0 = VIVect3(m.m[3].x, m.m[3].y, m.m[3].z);
+        tgt = p0;
+
+        a = e->m_v14;
+        a -= tgt;
+        total = Diff(tgt, e->m_v20).Magnitude();
+        dist = a.Magnitude();
+
+        d = tgt;
+        d -= e->m_v14;
+        fwd = d;
+        right = Cross(up, fwd);
+        up = Cross(fwd, right);
+        right.Normalize();
+        up.Normalize();
+        fwd.Normalize();
+
+        m.m[0].x = right.x;
+        m.m[0].y = right.y;
+        m.m[0].z = right.z;
+        m.m[0].w = 0.0f;
+        m.m[1].x = up.x;
+        m.m[1].y = up.y;
+        m.m[1].z = up.z;
+        m.m[1].w = 0.0f;
+        m.m[2].x = fwd.x;
+        m.m[2].y = fwd.y;
+        m.m[2].z = fwd.z;
+        m.m[2].w = 0.0f;
+        m.m[3].x = e->m_v14.x;
+        m.m[3].y = e->m_v14.y;
+        m.m[3].z = e->m_v14.z;
+        m.m[3].w = 1.0f;
+
+        z = dist * 0.6f;
+        scale = VIMIN(z, 1.0f);
+
+        switch ((e->m_event->m_p0C >> 8) & 0xF)
+        {
+        case 0:
+            if (e->m_emitter1 || e->m_actor1 >= 0)
+            {
+                q0 = e->m_a[0];
+                q1 = e->m_a[1];
+                q0 *= scale;
+                q1 *= scale;
+                m.Mul(q0, p0);
+                m.Mul(q1, p1);
+            }
+            else
+                p0 = e->m_v14;
+            break;
+
+        case 1:
+            m2.RotateHPR(VIVect3(0.0f, 0.0f, e->m_f9C));
+            e->m_f9C += e->m_event->m_f1C * 5.0f * m_scene->m_particleSystem.DeltaTime();
+
+            if (e->m_emitter1 || e->m_actor1 >= 0)
+            {
+                p0 = e->m_a[0];
+                p1 = e->m_a[1];
+                p0 *= scale;
+                p1 *= scale;
+                m2.Mul(p0, q0);
+                m2.Mul(p1, q1);
+                m.Mul(q0, p0);
+                m.Mul(q1, p1);
+            }
+            else
+            {
+                e->m_fA0 += m_scene->m_particleSystem.DeltaTime() * 3.0f;
+                e->m_fA0 = VIMIN(e->m_fA0, e->m_event->m_f18);
+                p0.Zero();
+                p0.x = e->m_fA0 * scale;
+                m2.Mul(p0, p1);
+                m.Mul(p1, p0);
+            }
+            break;
+
+        case 2:
+            if (e->m_emitter1 || e->m_actor1 >= 0)
+            {
+                if (1.0f <= e->m_f9C)
+                {
+                    e->m_b[0] = e->m_c[0];
+                    e->m_b[1] = e->m_c[1];
+                    e->m_c[0].x = e->m_a[0].x
+                        + ((float)rand() - (float)rand()) * 4.656613e-10f * 0.2f;
+                    e->m_c[0].y = e->m_a[0].y
+                        + ((float)rand() - (float)rand()) * 4.656613e-10f * 0.2f;
+                    e->m_c[0].z = e->m_a[0].z
+                        + ((float)rand() - (float)rand()) * 4.656613e-10f * 0.05f;
+                    e->m_c[1].x = e->m_a[1].x
+                        + ((float)rand() - (float)rand()) * 4.656613e-10f * 0.2f;
+                    e->m_c[1].y = e->m_a[1].y
+                        + ((float)rand() - (float)rand()) * 4.656613e-10f * 0.2f;
+                    e->m_c[1].z = e->m_a[1].z
+                        + ((float)rand() - (float)rand()) * 4.656613e-10f * 0.05f;
+                    e->m_c[0] *= e->m_event->m_f18;
+                    e->m_c[1] *= e->m_event->m_f18;
+                    e->m_f9C = 0.0f;
+                }
+
+                q0 = e->m_c[0];
+                q0 -= e->m_b[0];
+                q0 *= e->m_f9C;
+                q0 += e->m_b[0];
+                q0 *= scale;
+                q1 = e->m_c[1];
+                q1 -= e->m_b[1];
+                q1 *= e->m_f9C;
+                q1 += e->m_b[1];
+                q1 *= scale;
+                e->m_f9C += m_scene->m_particleSystem.DeltaTime() * 15.0f;
+                m.Mul(q0, p0);
+                m.Mul(q1, p1);
+            }
+            else
+            {
+                if (1.0f <= e->m_f9C)
+                {
+                    e->m_b[0] = e->m_c[0];
+                    e->m_c[0].x = ((float)rand() - (float)rand()) * 4.656613e-10f * 0.2f;
+                    e->m_c[0].y = ((float)rand() - (float)rand()) * 4.656613e-10f * 0.2f;
+                    e->m_c[0].z = ((float)rand() - (float)rand()) * 4.656613e-10f * 0.05f;
+                    e->m_c[0] *= e->m_event->m_f18;
+                    e->m_f9C = 0.0f;
+                }
+
+                p1 = e->m_c[0];
+                p1 -= e->m_b[0];
+                p1 *= e->m_f9C;
+                p1 += e->m_b[0];
+                p1 *= scale;
+                e->m_f9C += m_scene->m_particleSystem.DeltaTime() * 15.0f;
+                m.Mul(p1, p0);
+            }
+            break;
+
+        case 3:
+            if (e->m_emitter1 || e->m_actor1 >= 0)
+            {
+                q0 = e->m_a[0];
+                q1 = e->m_a[1];
+                q0 *= scale;
+                q1 *= scale;
+                m.Mul(q0, p0);
+                m.Mul(q1, p1);
+            }
+            else
+                p0 = e->m_v14;
+
+            {
+                float h = sinf(Diff(e->m_v14, e->m_v20).Magnitude() / total * 3.1415927f)
+                          * (1.0f / e->m_event->m_f14) * (1.0f / e->m_event->m_f14)
+                          * total * total;
+
+                p0.y += h;
+                p1.y += h;
+            }
+            break;
+        }
+
+        if (e->m_emitter0)
+        {
+            e->m_emitter0->SetLocation(p0);
+            e->m_emitter0->SetDirection(d);
+            e->m_emitter0->Update();
+        }
+        if (e->m_emitter1)
+        {
+            e->m_emitter1->SetLocation(p1);
+            e->m_emitter1->SetDirection(d);
+            e->m_emitter1->Update();
+        }
+
+        {
+            VIMatrix44 m3;
+            VIVect3    hpr;
+
+            if (e->m_actor0 != -1 || e->m_actor1 != -1)
+            {
+                VIVect3 r2;
+                VIVect3 u2(0.0f, 1.0f, 0.0f);
+                VIVect3 f2;
+
+                if (((e->m_event->m_p0C >> 8) & 0xF) == 3)
+                {
+                    f2 = d;
+
+                    VIVect3 next;
+
+                    f2.Normalize();
+                    f2 *= e->m_event->m_f14;
+                    f2 *= m_scene->m_particleSystem.DeltaTime();
+                    f2 *= 2.0f;
+                    next = Sum(e->m_v14, f2);
+
+                    float h = sinf(Diff(next, e->m_v20).Magnitude() / total * 3.1415927f)
+                              * (1.0f / e->m_event->m_f14) * (1.0f / e->m_event->m_f14)
+                              * total * total;
+
+                    next.y += h;
+                    f2 = Diff(next, p0);
+                }
+                else
+                    f2 = d;
+
+                r2 = Cross(u2, f2);
+                u2 = Cross(f2, r2);
+                r2.Normalize();
+                u2.Normalize();
+                f2.Normalize();
+
+                m3.Identity();
+                m3.m[0].x = r2.x;
+                m3.m[0].y = r2.y;
+                m3.m[0].z = r2.z;
+                m3.m[1].x = u2.x;
+                m3.m[1].y = u2.y;
+                m3.m[1].z = u2.z;
+                m3.m[2].x = f2.x;
+                m3.m[2].y = f2.y;
+                m3.m[2].z = f2.z;
+                m3.ConvertToEulerZXY(hpr);
+            }
+
+            if (e->m_actor0 >= 0)
+                m_scene->SetActorTransform(e->m_actor0, hpr, 1.0f, p0);
+            if (e->m_actor1 >= 0)
+                m_scene->SetActorTransform(e->m_actor1, hpr, 1.0f, p1);
+        }
+
+        d.Normalize();
+        d *= e->m_event->m_f14;
+        d *= m_scene->m_particleSystem.DeltaTime();
+        e->m_v14 += d;
+
+        a = e->m_v14;
+        a -= tgt;
+        dist1 = a.Magnitude();
+    }
+
+    if (done == true || (dist <= dist1 && dist1 < 3.0f))
+    {
+        m_inactive.AddTail(e);
+        m_projectile = 0;
+    }
+    return 0;
+}
 
 // NewSetAction's sibling: the same reset / find / reset-trigger tail, with the
 // action chosen out of a four-way switch and a weapon trail hung on it.
@@ -754,16 +1504,24 @@ int VISpellEventDriver::NewCreateSound(VISpellEvent *ev)
     return 0;
 }
 
+// The actor choice is an if/ELSE: with the default assigned up front, cse
+// follows the path straight through both flag tests and shares the -1 and the
+// flags word with the guard above; with the default in the else arm it does
+// not, the -1 is rematerialised and gcse copies the flags word (`move a0,v0`).
+// The node is `& 0xFFFF`, which is ONE expression for the test and the
+// argument, where a cast is two loads.
 int VISpellEventDriver::ProcessCreateSprite(VISpellActiveEvent *e, bool active)
 {
     VISpellEvent *ev = e->m_event;
 
     if (m_actor != -1 && active == true)
     {
-        int actor = m_actor;
+        int actor;
 
         if (ev->m_p0C & 0x10000)
             actor = m_driver->m_caster;
+        else
+            actor = m_actor;
         if (ev->m_p0C & 0x20000)
             actor = m_driver->m_target;
 
@@ -776,11 +1534,11 @@ int VISpellEventDriver::ProcessCreateSprite(VISpellActiveEvent *e, bool active)
                 VIMatrix44 m;
                 VIVect3 hpr;
 
-                if (sp->m_type != 5 || (unsigned short)ev->m_p0C == 0xFFFF)
+                if (sp->m_type != 5 || (ev->m_p0C & 0xFFFF) == 0xFFFF)
                     m_scene->GetActorTransform(actor, m);
                 else
                     ((VICSprite *)sp)->CalcSlotWorldTransform(
-                        (VICSpriteNodeID)(unsigned short)ev->m_p0C, actor,
+                        (VICSpriteNodeID)(ev->m_p0C & 0xFFFF), actor,
                         *m_scene, m);
 
                 m.ConvertToEulerZXY(hpr);
@@ -810,10 +1568,12 @@ int VISpellEventDriver::ProcessCreateSound(VISpellActiveEvent *e, bool active)
 
     if (m_actor != -1 && active == true)
     {
-        int actor = m_actor;
+        int actor;
 
         if (ev->m_p0C & 0x10000)
             actor = m_driver->m_caster;
+        else
+            actor = m_actor;
         if (ev->m_p0C & 0x20000)
             actor = m_driver->m_target;
 
@@ -826,11 +1586,11 @@ int VISpellEventDriver::ProcessCreateSound(VISpellActiveEvent *e, bool active)
                 VIMatrix44 m;
                 VIMatrix33 dir;
 
-                if (sp->m_type != 5 || (unsigned short)ev->m_p0C == 0xFFFF)
+                if (sp->m_type != 5 || (ev->m_p0C & 0xFFFF) == 0xFFFF)
                     m_scene->GetActorTransform(actor, m);
                 else
                     ((VICSprite *)sp)->CalcSlotWorldTransform(
-                        (VICSpriteNodeID)(unsigned short)ev->m_p0C, actor,
+                        (VICSpriteNodeID)(ev->m_p0C & 0xFFFF), actor,
                         *m_scene, m);
 
                 dir.m[0].x = m.m[0].x;

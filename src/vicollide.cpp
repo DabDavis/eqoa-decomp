@@ -276,38 +276,39 @@ int VICollide::Cull(VICollRay &r, VIBBox &b)
 // REPEATED, exactly as VICollSphere::Init repeats VICollRay::Init.  The default
 // is to cull -- the one early-out that answers 0 is starting INSIDE the sphere,
 // where there is nothing to reject.
-// OPEN, 39/74.  The shape is settled -- the nesting, the four tests, the
-// pointer variable for m_dir and the sqrtf NaN retest all line up -- and what
-// is left is the standing phenomenon: the target holds 0.0f in $f7 from the
-// top and the constant 1 in a CALLEE-SAVED $s1 (it is live across the sqrtf
-// call), where ours materialises each at its use; and the l vector lands in
-// f6/f4/f5 against our f6/f5/f4.  Naming the zero as a local scores better (35)
-// but gives it a STACK SLOT the target does not have, so it is not the source.
+// Phase 61 closed both: the callee-saved $s1 holding 1 across the sqrtf is a
+// RESULT variable (`int cull = 1;`, cleared on the two accepting paths), not
+// a constant, and `l` is the copy-then-subtract pair with the summed radius
+// (where there is one) computed first.
 int VICollide::Cull(VICollRay &r, VISphere &v)
 {
     VIVect3 l;
 
-    l.x = r.m_start.x - v.c.x;
-    l.y = r.m_start.y - v.c.y;
-    l.z = r.m_start.z - v.c.z;
+    l = r.m_start;
+    l -= v.c;
 
+    // Phase 61: the callee-saved 1 is a RESULT, a phi of 1 and 0 -- the
+    // rejections fall through to `return cull` rather than `return 1`.
+    int cull = 1;
     float c = l.x * l.x + l.y * l.y + l.z * l.z - v.r * v.r;
     if (0.0f < c)
     {
         VIVect3 *d = &r.m_dir;
         float b = l.x * d->x + l.y * d->y + l.z * d->z;
-        if (!(b < 0.0f))
-            return 1;
-
-        float e = b * b - c;
-        if (!(0.0f < e))
-            return 1;
-
-        float t = -(b + sqrtf(e)) * r.m_invLength;
-        if (!(t < r.m_hitTime))
-            return 1;
+        if (b < 0.0f)
+        {
+            float e = b * b - c;
+            if (0.0f < e)
+            {
+                float t = -(b + sqrtf(e)) * r.m_invLength;
+                if (t < r.m_hitTime)
+                    cull = 0;
+            }
+        }
     }
-    return 0;
+    else
+        cull = 0;
+    return cull;
 }
 
 // The swept form: the same body with the two radii summed before squaring.
@@ -315,27 +316,30 @@ int VICollide::Cull(VICollSphere &s, VISphere &v)
 {
     VIVect3 l;
 
+    float r = s.m_radius + v.r;
     l = s.m_start;
     l -= v.c;
 
-    float r = s.m_radius + v.r;
+    int cull = 1;
     float c = l.x * l.x + l.y * l.y + l.z * l.z - r * r;
     if (0.0f < c)
     {
         VIVect3 *d = &s.m_dir;
         float b = l.x * d->x + l.y * d->y + l.z * d->z;
-        if (!(b < 0.0f))
-            return 1;
-
-        float e = b * b - c;
-        if (!(0.0f < e))
-            return 1;
-
-        float t = -(b + sqrtf(e)) * s.m_invLength;
-        if (!(t < s.m_hitTime))
-            return 1;
+        if (b < 0.0f)
+        {
+            float e = b * b - c;
+            if (0.0f < e)
+            {
+                float t = -(b + sqrtf(e)) * s.m_invLength;
+                if (t < s.m_hitTime)
+                    cull = 0;
+            }
+        }
     }
-    return 0;
+    else
+        cull = 0;
+    return cull;
 }
 
 // The three format strings come out as three `lui`s hoisted to the top in
@@ -345,11 +349,9 @@ int VICollide::Cull(VICollSphere &s, VISphere &v)
 // statement reassociates to `bytes + (92 + size)`), and the two accumulators
 // come out in the REVERSE of source order, so bytes is written first.
 //
-// OPEN by ONE word, 4/61: the target reads the node table as `8(a0)` off a
-// register still holding `this + 528` from the entry Begin() call, where ours
-// folds it to `536(this)`.  Naming the pool through a pointer variable -- the
-// lever that produces exactly this in ReleaseCollBuffer -- costs 25 words here,
-// because it also takes `this` out of s2.
+// The node table is read as `8(a0)` off the pool's own `this + 528`: the
+// element comes through the inline Value(i) (phase 27's lever), not a
+// written-out m_nodes[i] -- phase 61, 4/61 to byte-exact.
 int VICollide::DebugResources()
 {
     int bytes = 0;
@@ -357,8 +359,7 @@ int VICollide::DebugResources()
 
     for (int i = m_buffers.Begin(); i != m_buffers.End(); i = m_buffers.Next(i))
     {
-        VIPool<VICollBuffer *>::Node *n = &m_buffers.m_nodes[i];
-        VICollBuffer *b = n->m_data;
+        VICollBuffer *b = m_buffers.Value(i);
         int t = bytes + sizeof(VICollBuffer);
         bytes = t + b->m_dataSize;
         prims += b->m_numPrims;
@@ -555,7 +556,7 @@ int VICollide::Collide(VICollSphere &s, VIVect3 &p)
 // The same body against a static VISphere: the two radii are summed BEFORE
 // squaring -- the Minkowski trick -- and the reciprocal that scales the contact
 // normal is computed inline rather than read from m_invRadius.
-// OPEN, 23/159.  `rad` is computed BEFORE the guard -- the delay slot of the
+// OPEN, 20/159.  `rad` is computed BEFORE the guard -- the delay slot of the
 // first `bc1f` carries it, so it is unconditional (Phase 34's lever) -- and
 // that is worth 14 words.  The rest is the entry block again.
 int VICollide::Collide(VICollSphere &s, VISphere &v)
@@ -563,9 +564,8 @@ int VICollide::Collide(VICollSphere &s, VISphere &v)
     int hit = 0;
     VIVect3 l;
 
-    l.x = s.m_start.x - v.c.x;
-    l.y = s.m_start.y - v.c.y;
-    l.z = s.m_start.z - v.c.z;
+    l = s.m_start;
+    l -= v.c;
 
     VIVect3 *dir = &s.m_dir;
     float b = l.x * dir->x + l.y * dir->y + l.z * dir->z;

@@ -1,4 +1,4 @@
-// VIGameOptions -- SUPPORT 0x004A2A90 .. 0x004A2CE8.
+// VIGameOptions -- SUPPORT 0x004A2A80 .. 0x004A2D38.
 #include "vi.h"
 
 extern "C" void *memset(void *d, int c, unsigned int n);
@@ -9,6 +9,16 @@ extern int VIMemCardWriteFile(const char *name, const void *buf, int size);
 extern unsigned int VIGetDiscFlags();
 
 static const char OptionsFile[] = "BAEQOAOPT/options.dat";
+
+// Phase 61.  The one global options object.  Its constructor is what makes the
+// TU's `_GLOBAL_$I$VIGetGameOptions__Fv` -- named after VIGetGameOptions, the
+// first PUBLIC symbol, because a static object never names it.
+static VIGameOptions s_gameOptions;
+
+VIGameOptions *VIGetGameOptions()
+{
+    return &s_gameOptions;
+}
 
 VIGameOptions::VIGameOptions()
 {

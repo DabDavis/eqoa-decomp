@@ -106,10 +106,8 @@ float VIVect3::NormalizeMagn()
 
 float VIVect3::Distance(const VIVect3 &v) const
 {
-    VIVect3 d;
-    d.x = x - v.x;
-    d.y = y - v.y;
-    d.z = z - v.z;
+    VIVect3 d = *this;
+    d -= v;
     return sqrtf((d.x * d.x + d.y * d.y) + d.z * d.z);
 }
 
@@ -180,23 +178,29 @@ float VIVect4::NormalizeMagn()
     return d;
 }
 
+// The compound subtract VIVect4 / VIVect3D / VIVect4D do not declare, in
+// VIVect3::operator-='s shape: a REFERENCE to the destination.
+static inline void V4Sub(VIVect4 &a, const VIVect4 &b)
+{
+    a.x = a.x - b.x;
+    a.y = a.y - b.y;
+    a.z = a.z - b.z;
+    a.w = a.w - b.w;
+}
+
 float VIVect4::Distance(const VIVect4 &v) const
 {
     VIVect4 d;
-    d.x = x - v.x;
-    d.y = y - v.y;
-    d.z = z - v.z;
-    d.w = w - v.w;
+    d.Set(*this);
+    V4Sub(d, v);
     return sqrtf(((d.x * d.x + d.y * d.y) + d.z * d.z) + d.w * d.w);
 }
 
 float VIVect4::DistanceSquared(const VIVect4 &v) const
 {
     VIVect4 d;
-    d.x = x - v.x;
-    d.y = y - v.y;
-    d.z = z - v.z;
-    d.w = w - v.w;
+    d.Set(*this);
+    V4Sub(d, v);
     return ((d.x * d.x + d.y * d.y) + d.z * d.z) + d.w * d.w;
 }
 
@@ -204,6 +208,31 @@ float VIVect4::DistanceSquared(const VIVect4 &v) const
 // Same source shapes, one register class down: `sqrt` is a libgcc CALL here,
 // not the EE's inline `sqrt.s`, so there is no NaN-retest branch at all.
 
+
+static inline void D3SubV(VIVect3D &a, const VIVect3D &b)
+{
+    a.x = a.x - b.x;
+    a.y = a.y - b.y;
+    a.z = a.z - b.z;
+}
+
+static inline double D3DotV(const VIVect3D &a, const VIVect3D &b)
+{
+    return (a.x * b.x + a.y * b.y) + a.z * b.z;
+}
+
+static inline double D4DotV(const VIVect4D &a, const VIVect4D &b)
+{
+    return ((a.x * b.x + a.y * b.y) + a.z * b.z) + a.w * b.w;
+}
+
+static inline void D4SubV(VIVect4D &a, const VIVect4D &b)
+{
+    a.x = a.x - b.x;
+    a.y = a.y - b.y;
+    a.z = a.z - b.z;
+    a.w = a.w - b.w;
+}
 
 double VIVect3D::Magnitude() const
 {
@@ -238,38 +267,27 @@ double VIVect3D::NormalizeMagn()
     return d;
 }
 
-// COPY THEN SUBTRACT IN PLACE, not `d[i] = x - v.x`.  The target loads all three
-// components of *this* up front, stores them into d's own slots and reloads each
-// one before its call -- a 64-byte frame saving s0 alone.  `d[i] = x - v.x` loads
-// them lazily and keeps BOTH pointers live, which no compiler setting can undo,
-// so the array form is refuted as source.  Proved on the 2.9-ee rig: this spelling
-// gives 43 of the target's 45 instructions in order, REGISTER FOR REGISTER, once
-// the soft-double libcalls are not marked const (see below).
-//
-// It scores WORSE here (53/54 wrong vs 48/49 for the array form) and that is a
-// compiler difference, not a source one: our cc1 marks dpsub/dpmul/dpadd as const
-// calls, so cse forwards each store to the later load of the same slot -- 9 loads
-// deleted in the `.cse` dump -- and the surviving pseudos then span the calls and
-// take s1-s4.  The target's build does not forward, so nothing needs a register.
-// The word count for these four is measured with the wrong compiler and is not a
-// guide.  See claude-notes/decomp-cse-memory-forwarding-20260822.md.
+// COPY THEN SUBTRACT IN PLACE, through REFERENCES: `d = *this`, then a
+// compound subtract and a dot product that take `d` by reference (D3SubV /
+// D3DotV above -- VIVect3D declares no operators of its own).  Phase 8 read
+// the residue of the field-wise spelling as a compiler difference (cse
+// forwarding the stores past the soft-double libcalls); phase 61 showed it is
+// the source: through the references d's slots are re-read after each call,
+// exactly as the target does, and all six float/double Distance functions are
+// byte-exact this way.
 double VIVect3D::Distance(const VIVect3D &v) const
 {
     VIVect3D d = *this;
-    d.x -= v.x;
-    d.y -= v.y;
-    d.z -= v.z;
-    return sqrt((d.x * d.x + d.y * d.y) + d.z * d.z);
+    D3SubV(d, v);
+    return sqrt(D3DotV(d, d));
 }
 
 // Copy then subtract in place -- see VIVect3D::Distance above.
 double VIVect3D::DistanceSquared(const VIVect3D &v) const
 {
     VIVect3D d = *this;
-    d.x -= v.x;
-    d.y -= v.y;
-    d.z -= v.z;
-    return (d.x * d.x + d.y * d.y) + d.z * d.z;
+    D3SubV(d, v);
+    return D3DotV(d, d);
 }
 
 void VIVect3D::HPR(double h, double p, double r)
@@ -330,20 +348,14 @@ double VIVect4D::NormalizeMagn()
 double VIVect4D::Distance(const VIVect4D &v) const
 {
     VIVect4D d = *this;
-    d.x -= v.x;
-    d.y -= v.y;
-    d.z -= v.z;
-    d.w -= v.w;
-    return sqrt(((d.x * d.x + d.y * d.y) + d.z * d.z) + d.w * d.w);
+    D4SubV(d, v);
+    return sqrt(D4DotV(d, d));
 }
 
 // Copy then subtract in place -- see VIVect3D::Distance above.
 double VIVect4D::DistanceSquared(const VIVect4D &v) const
 {
     VIVect4D d = *this;
-    d.x -= v.x;
-    d.y -= v.y;
-    d.z -= v.z;
-    d.w -= v.w;
-    return ((d.x * d.x + d.y * d.y) + d.z * d.z) + d.w * d.w;
+    D4SubV(d, v);
+    return D4DotV(d, d);
 }

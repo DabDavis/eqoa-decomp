@@ -67,6 +67,13 @@ unsigned long VIFont::SjisToJis(unsigned long c)
     return ((hi + 1) << 8) + lo + 0x2021;
 }
 
+// Phase 61.  A qsort/bsearch comparator for 16-bit character codes; nothing in
+// SUPPORT takes its address, so its user is CLIENT.
+int uint16_compare(const void *a, const void *b)
+{
+    return *(const unsigned short *)a - *(const unsigned short *)b;
+}
+
 int VIFont::DrawString(VIRaster *r, VIDictionary *d, const unsigned short *s, int x, int y)
 {
     int i;

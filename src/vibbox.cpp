@@ -16,6 +16,10 @@ int VIBBox::Init(int n, VIVect3 *p)
         Bound(i == 0, p[i]);
     return 0;
 }
+// An inline FUNCTION, not the VIMIN macro: its return value is a pseudo of
+// its own, which is what gives v.x the lower FP register (phase 61).
+static inline float BBMin(float a, float b) { return (a > b) ? b : a; }
+
 
 // The `else` branch is inline and the `if` body at the branch target, so the
 // source's `if` holds the six-store initialisation (Phase 7's rule).
@@ -24,19 +28,16 @@ int VIBBox::Init(int n, VIVect3 *p)
 // materialised `a0+12` and folds only the +0 access back to `12(a0)`.  Every
 // spelling of `max.y` reaches 16(a0) directly instead.
 //
-// OPEN, one instruction: the target shares ONE `lwc1 f1,0(a2)` (v.x) between
-// both paths -- a non-annulled delay slot that `redundant_insn` merged with the
-// head of the fall-through block.  This build allocates v.x to f2 in the
-// expand block and f1 in the init block, so the two loads are not the same
-// insn, cannot merge, and gcc annuls (`bnezl`) and duplicates the load.  A
-// register-allocation coincidence, not a source shape: 18 spellings swept.
+// The min side goes through BBMin, an inline function: with the VIMIN macro
+// v.x and the result swap FP registers (and the shared delay-slot load the
+// target has cannot form).
 void VIBBox::Bound(int first, const VIVect3 &v)
 {
     if (!first)
     {
-        min.x = (v.x < min.x) ? v.x : min.x;
-        min.y = (v.y < min.y) ? v.y : min.y;
-        min.z = (v.z < min.z) ? v.z : min.z;
+        min.x = BBMin(min.x, v.x);
+        min.y = BBMin(min.y, v.y);
+        min.z = BBMin(min.z, v.z);
         VIVect3 *mx = &max;
         mx->x = (v.x < mx->x) ? mx->x : v.x;
         mx->y = (v.y < mx->y) ? mx->y : v.y;
@@ -174,21 +175,10 @@ float VIBBox::DistanceSquared(const VIVect3 &v) const
     return d.x * d.x + d.y * d.y + d.z * d.z;
 }
 
-// `const VIVect3 *mx = &b.max;` is what puts b.max.y / b.max.z on `4(v0)` /
-// `8(v0)` off a materialised a1+12 -- the same lever as VIBBox::Bound's `mx`
-// and StoreOutward's per-plane normal pointer.
-//
-// OPEN, three words: the target keeps `d`'s zeroing constructor (three
-// `sw zero` into the stack slot) where this build deletes all three, and keeps
-// two of the three `d = *mx` stores where this build forwards every one.  The
-// stores to `this->c` sit between the two groups in both builds, so the
-// difference is how far the dead-store scan reaches, not the source: eight
-// spellings (declaration position, field-wise vs `operator=`, pointers on `c`
-// and on `b.min`) all give the identical 43.
-// OPEN (both Scales, and both VIBRect/VIRect twins): the target reloads the
-// stack local `c` after every store through `this` and keeps two of the three
-// `c = min` copy stores; this build forwards all of them in registers.  Same
-// `cse` memory-forwarding divergence as the double Distance family (Phase 8d).
+// Both Scales (and the VIBRect/VIRect twins) are VIVect3's own compound
+// operators on min and max: each operator's reference gives `max` a pointer of
+// its own and re-reads `c` off the stack, which is the divergence the old
+// field-by-field spelling showed (phase 61 closed all six on that).
 //
 // The pivot is `min + max`, NOT the centre -- there is no 0.5f anywhere in
 // either Scale, where Center() and VISphere::Init both materialise 0x3F000000.
@@ -198,65 +188,35 @@ float VIBBox::DistanceSquared(const VIVect3 &v) const
 void VIBBox::Scale(float s)
 {
     VIVect3 c;
-    VIVect3 *mx = &max;
-
     c = min;
-    c.x = c.x + mx->x;
-    c.y = c.y + mx->y;
-    c.z = c.z + mx->z;
+    c += max;
+    min -= c;
+    min *= s;
+    min += c;
+    max -= c;
+    max *= s;
+    max += c;
+}
 
-    min.x = min.x - c.x;
-    min.y = min.y - c.y;
-    min.z = min.z - c.z;
-    mx->x = mx->x - c.x;
-    mx->y = mx->y - c.y;
-    mx->z = mx->z - c.z;
-
-    min.x = min.x * s;
-    min.y = min.y * s;
-    min.z = min.z * s;
-    mx->x = mx->x * s;
-    mx->y = mx->y * s;
-    mx->z = mx->z * s;
-
-    min.x = min.x + c.x;
-    min.y = min.y + c.y;
-    min.z = min.z + c.z;
-    mx->x = mx->x + c.x;
-    mx->y = mx->y + c.y;
-    mx->z = mx->z + c.z;
+// VIVect3 has no component-wise `*=`; this is its shape.
+static inline void BBMul(VIVect3 &a, const VIVect3 &k)
+{
+    a.x = a.x * k.x;
+    a.y = a.y * k.y;
+    a.z = a.z * k.z;
 }
 
 void VIBBox::Scale(const VIVect3 &s)
 {
     VIVect3 c;
-    VIVect3 *mx = &max;
-
     c = min;
-    c.x = c.x + mx->x;
-    c.y = c.y + mx->y;
-    c.z = c.z + mx->z;
-
-    min.x = min.x - c.x;
-    min.y = min.y - c.y;
-    min.z = min.z - c.z;
-    mx->x = mx->x - c.x;
-    mx->y = mx->y - c.y;
-    mx->z = mx->z - c.z;
-
-    min.x = min.x * s.x;
-    min.y = min.y * s.y;
-    min.z = min.z * s.z;
-    mx->x = mx->x * s.x;
-    mx->y = mx->y * s.y;
-    mx->z = mx->z * s.z;
-
-    min.x = min.x + c.x;
-    min.y = min.y + c.y;
-    min.z = min.z + c.z;
-    mx->x = mx->x + c.x;
-    mx->y = mx->y + c.y;
-    mx->z = mx->z + c.z;
+    c += max;
+    min -= c;
+    BBMul(min, s);
+    min += c;
+    max -= c;
+    BBMul(max, s);
+    max += c;
 }
 
 // 0x003EE930.  A segment against the box: trivially out if both ends are
@@ -346,24 +306,17 @@ int VIBBox::Intersects(const VISphere &s) const
     return 0;
 }
 
+// VIVect3's compound operators again: `c = b.min; c += b.max; c *= 0.5f;`.
+// The old field-by-field spelling lost d's zeroing stores and two of the
+// `d = b.max` copies to forwarding; the operators' references keep them.
 int VISphere::Init(const VIBBox &b)
 {
     VIVect3 d;
-    const VIVect3 *mx = &b.max;
-
     c = b.min;
-    c.x = c.x + mx->x;
-    c.y = c.y + mx->y;
-    c.z = c.z + mx->z;
-    c.x = c.x * 0.5f;
-    c.y = c.y * 0.5f;
-    c.z = c.z * 0.5f;
-
-    d = *mx;
-    d.x = d.x - c.x;
-    d.y = d.y - c.y;
-    d.z = d.z - c.z;
-
+    c += b.max;
+    c *= 0.5f;
+    d = b.max;
+    d -= c;
     r = d.Magnitude();
     return 0;
 }

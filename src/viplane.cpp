@@ -106,16 +106,20 @@ int VIPlane::operator()(const VIVect3 &a, const VIVect3 &b, const VIVect3 &c)
     return 0;
 }
 
+// VIVect3D's compound operators, in the shape VIVect3's are declared (vi.h
+// has none on the double vector): references, so `r` is re-read after each
+// call where the field-wise spelling forwarded it.
+static inline void D3Mul(VIVect3D &a, double k) { a.x = a.x * k; a.y = a.y * k; a.z = a.z * k; }
+static inline void D3Add(VIVect3D &a, const VIVect3D &b) { a.x = a.x + b.x; a.y = a.y + b.y; a.z = a.z + b.z; }
+static inline double D3Dot(const VIVect3D &a, const VIVect3D &b) { return (a.x * b.x + a.y * b.y) + a.z * b.z; }
+static inline void D3Sub(VIVect3D &a, const VIVect3D &b) { a.x = a.x - b.x; a.y = a.y - b.y; a.z = a.z - b.z; }
+
 VIVect3D VIPlaneD::Project(const VIVect3D &v) const
 {
     VIVect3D r = n;
     double t = -(((v.x * n.x + v.y * n.y) + v.z * n.z) + d);
-    r.x = r.x * t;
-    r.y = r.y * t;
-    r.z = r.z * t;
-    r.x = r.x + v.x;
-    r.y = r.y + v.y;
-    r.z = r.z + v.z;
+    D3Mul(r, t);
+    D3Add(r, v);
     return r;
 }
 
@@ -128,13 +132,8 @@ int VIPlaneD::RayIntersection(const VIVect3D &o, const VIVect3D &dir, double &t,
     {
         t = -t / den;
         out = dir;
-        double s = t;
-        out.x = out.x * s;
-        out.y = out.y * s;
-        out.z = out.z * s;
-        out.x = out.x + o.x;
-        out.y = out.y + o.y;
-        out.z = out.z + o.z;
+        D3Mul(out, t);
+        D3Add(out, o);
         return 1;
     }
 
@@ -151,25 +150,24 @@ int VIPlaneD::operator()(const VIVect3D &a, const VIVect3D &b, const VIVect3D &c
     VIVect3D v;
     double w[3];
 
-    u.x = u.x - a.x;
-    u.y = u.y - a.y;
-    u.z = u.z - a.z;
+    D3Sub(u, a);
     v = c;
-    v.x = v.x - b.x;
-    v.y = v.y - b.y;
-    v.z = v.z - b.z;
+    D3Sub(v, b);
 
-    w[0] = v.y * u.z - v.z * u.y;
-    w[1] = -v.x * u.z + v.z * u.x;
-    w[2] = v.x * u.y - v.y * u.x;
-
-    n.x = w[0];
-    n.y = w[1];
-    n.z = w[2];
+    double wx = v.y * u.z - v.z * u.y;
+    double wy = -v.x * u.z + v.z * u.x;
+    double wz = v.x * u.y - v.y * u.x;
+    // The array is written and never read -- dead stores the target keeps.
+    w[0] = wx;
+    w[1] = wy;
+    w[2] = wz;
+    n.x = wx;
+    n.y = wy;
+    n.z = wz;
 
     if (n.Normalize())
     {
-        d = -((n.x * a.x + n.y * a.y) + n.z * a.z);
+        d = -D3Dot(n, a);
         return 1;
     }
 

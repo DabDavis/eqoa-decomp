@@ -8,6 +8,10 @@
 
 extern "C" unsigned int VIHashResourceID(const char *);
 extern "C" unsigned int VIHashResourceID_Icon(const char *);
+extern "C" int sprintf(char *, const char *, ...);
+extern "C" int printf(const char *, ...);
+extern int VIMemCardReadFile(const char *name, void *buf, int size);
+VIGameOptions *VIGetGameOptions();
 
 VIUI::VIUI()
 {
@@ -226,6 +230,161 @@ int VIUI::StretchBlitEx(VIUITexId id, VIVect2I at, VIVect2I size,
     return m_raster->StretchBlit(i, 0, at, size, a, b, m, alpha);
 }
 
+// Phase 61.  Four edges tiled between four corners.  `br` is `size + at` --
+// the operand order survives into the two addu's -- and the top and left
+// edges start at `tl + VIVect2I(dx, 0)`, an operator+ whose operand gets its
+// own stack temp beside the result.
+int VIUI::BlitFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                    VIAlphaBlendMode m, float alpha, unsigned char left)
+{
+    VIVect2I tl;
+    VIVect2I br;
+    VIVect2I u;
+    VIVect2I v;
+    int w = size.x;
+    if (w <= 0 || size.y <= 0)
+        return 0;
+    tl = at;
+    br = size + at;
+    const VIUITexEntry *e0 = GetUITexture(fp.m_tl.m_id);
+    const VIUITexEntry *e1 = GetUITexture(fp.m_tr.m_id);
+    const VIUITexEntry *e2 = GetUITexture(fp.m_br.m_id);
+    const VIUITexEntry *e3 = GetUITexture(fp.m_bl.m_id);
+    if (e0 == 0 || e1 == 0 || e2 == 0 || e3 == 0)
+        return -1;
+
+    BlitHorz(tl + VIVect2I(left ? e0->m_uv1.x : 0, 0), fp.m_top.m_id,
+             left ? w - e0->m_uv1.x - e1->m_uv1.x : w - e1->m_uv1.x,
+             m, alpha, fp.m_top.m_flags);
+    BlitHorz(VIVect2I(tl.x + (left ? e3->m_uv1.x : 0), br.y - e3->m_uv1.y),
+             fp.m_bottom.m_id,
+             left ? size.x - e3->m_uv1.x - e2->m_uv1.x : size.x - e2->m_uv1.x,
+             m, alpha, fp.m_bottom.m_flags);
+    if (left)
+        BlitVert(tl + VIVect2I(0, e0->m_uv1.y), fp.m_left.m_id,
+                 size.y - e0->m_uv1.y - e3->m_uv1.y, m, alpha,
+                 fp.m_left.m_flags);
+    BlitVert(VIVect2I(br.x - e1->m_uv1.x, tl.y + e1->m_uv1.y), fp.m_right.m_id,
+             size.y - e1->m_uv1.y - e2->m_uv1.y, m, alpha, fp.m_right.m_flags);
+
+    if (left)
+        BlitEx(fp.m_tl.m_id, tl, m, alpha, fp.m_tl.m_flags);
+    BlitEx(fp.m_tr.m_id, VIVect2I(br.x - e1->m_uv1.x, tl.y), m, alpha,
+           fp.m_tr.m_flags);
+    if (left)
+        BlitEx(fp.m_bl.m_id, VIVect2I(tl.x, br.y - e3->m_uv1.y), m, alpha,
+               fp.m_bl.m_flags);
+    BlitEx(fp.m_br.m_id, VIVect2I(br.x - e2->m_uv1.x, br.y - e2->m_uv1.y), m,
+           alpha, fp.m_br.m_flags);
+    return 0;
+}
+
+// Phase 61.  The plain frame, then rows of studs evenly spaced along each
+// edge: nx along the top and bottom, ny down the sides.
+int VIUI::BlitStuddedFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                           VIUIFrameParam studs, int nx, int ny,
+                           VIAlphaBlendMode m, float alpha, unsigned char left)
+{
+    VIVect2I p;
+    const VIUITexEntry *e;
+    int step;
+    int i;
+
+    BlitFrame(at, size, fp, m, alpha, left);
+
+    p = at;
+    e = GetUITexture(studs.m_top.m_id);
+    if (e == 0)
+        return -1;
+    step = size.x / (nx + 1) - e->m_uv1.x / 2;
+    for (i = nx; i > 0; i--)
+    {
+        p.x = p.x + step;
+        BlitEx(studs.m_top.m_id, p, m, alpha, studs.m_top.m_flags);
+    }
+
+    p = at;
+    e = GetUITexture(studs.m_bottom.m_id);
+    if (e == 0)
+        return -1;
+    p.y = p.y + (size.y - e->m_uv1.y);
+    step = size.x / (nx + 1) - e->m_uv1.x / 2;
+    for (i = nx; i > 0; i--)
+    {
+        p.x = p.x + step;
+        BlitEx(studs.m_bottom.m_id, p, m, alpha, studs.m_bottom.m_flags);
+    }
+
+    if (left)
+    {
+        p = at;
+        e = GetUITexture(studs.m_left.m_id);
+        if (e == 0)
+            return -1;
+        step = size.y / (ny + 1) - e->m_uv1.y / 2;
+        for (i = ny; i > 0; i--)
+        {
+            p.y = p.y + step;
+            BlitEx(studs.m_left.m_id, p, m, alpha, studs.m_left.m_flags);
+        }
+    }
+
+    p = at;
+    e = GetUITexture(studs.m_right.m_id);
+    if (e == 0)
+        return -1;
+    p.x = p.x + (size.x - e->m_uv1.x);
+    step = size.y / (ny + 1) - e->m_uv1.y / 2;
+    for (i = ny; i > 0; i--)
+    {
+        p.y = p.y + step;
+        BlitEx(studs.m_right.m_id, p, m, alpha, studs.m_right.m_flags);
+    }
+    return 0;
+}
+
+// Phase 61.  The fill is tiled inside the corner insets, then the frame goes
+// over it.
+int VIUI::BlitFillFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                        VIUITexId fill, VIAlphaBlendMode m, float alpha,
+                        unsigned char left)
+{
+    const VIUITexEntry *e0 = GetUITexture(fp.m_tl.m_id);
+    const VIUITexEntry *e1 = GetUITexture(fp.m_br.m_id);
+    const VIUITexEntry *e2 = GetUITexture(fill);
+    if (e0 == 0 || e1 == 0 || e2 == 0)
+        return -1;
+    VIVect2I p;
+    VIVect2I sz;
+    int w = size.x;
+    int h = size.y;
+    p.Set(at.x + e0->m_uv1.x, at.y + e0->m_uv1.y);
+    sz.Set(w - e0->m_uv1.x - e1->m_uv1.x, h - e0->m_uv1.y - e1->m_uv1.y);
+    BlitRect(fill, p, sz, m, alpha);
+    return BlitFrame(at, VIVect2I(w, h), fp, m, alpha, left);
+}
+
+int VIUI::BlitFillStuddedFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                               VIUIFrameParam studs, VIUITexId fill, int nx,
+                               int ny, VIAlphaBlendMode m, float alpha,
+                               unsigned char left)
+{
+    const VIUITexEntry *e0 = GetUITexture(fp.m_tl.m_id);
+    const VIUITexEntry *e1 = GetUITexture(fp.m_br.m_id);
+    const VIUITexEntry *e2 = GetUITexture(fill);
+    if (e0 == 0 || e1 == 0 || e2 == 0)
+        return -1;
+    VIVect2I p;
+    VIVect2I sz;
+    int w = size.x;
+    int h = size.y;
+    p.Set(at.x + e0->m_uv1.x, at.y + e0->m_uv1.y);
+    sz.Set(w - e0->m_uv1.x - e1->m_uv1.x, h - e0->m_uv1.y - e1->m_uv1.y);
+    BlitRect(fill, p, sz, m, alpha);
+    return BlitStuddedFrame(at, VIVect2I(w, h), fp, studs, nx, ny, m, alpha,
+                            left);
+}
+
 int VIUI::BlitHorz(VIVect2I at, VIUITexId id, int w, VIAlphaBlendMode m,
                    float alpha, unsigned int flags)
 {
@@ -318,6 +477,111 @@ int VIUI::BlitRect(VIUITexId id, VIVect2I at, VIVect2I size,
         BlitEx((VIUITexId)e->m_x00, at, size, m, alpha, 0);
     }
     return 0;
+}
+
+// Phase 61.  The end cap is drawn twice, the second time with blit flag 1
+// (mirrored), so one texture serves both ends.  Both text-position vectors are
+// set through VIVect2I::Set: the stores go through `this`, cse forgets them,
+// and the offset is read back in both arms (33 wrong words to 0).
+int VIUI::BlitBar(const unsigned short *s, VIColor32F c, VIVect2I at,
+                  VIUITexId end, VIUITexId mid, int w, VIAlphaBlendMode m,
+                  float alpha, unsigned int just, int shadow)
+{
+    VIVect2I off;
+    VIVect2I tp;
+    VIVect2I p = at;
+    const VIUITexEntry *e1 = GetUITexture(end);
+    const VIUITexEntry *e2 = GetUITexture(mid);
+    if (e1 == 0 || e2 == 0)
+        return -1;
+    BlitEx(end, p, m, alpha, 0);
+    p.x = p.x + e1->m_uv1.x;
+    if (e2->m_row == 1)
+    {
+        BlitHorz(p, mid, w - e1->m_uv1.x * 2, m, alpha, 0);
+    }
+    else
+    {
+        VIVect2I sz(w - e1->m_uv1.x * 2, e2->m_uv1.y);
+        BlitEx(mid, p, sz, m, alpha, 0);
+    }
+    p.x = at.x + w - e1->m_uv1.x;
+    BlitEx(end, p, m, alpha, 1);
+    off.Set(0, 3);
+    if (just == 1)
+        tp.Set(at.x + e1->m_uv1.x - off.x, at.y + e2->m_uv1.y / 2 - off.y);
+    else
+        tp.Set(at.x + w / 2 - off.x, at.y + e2->m_uv1.y / 2 - off.y);
+    DrawCenteredStringEx(s, tp.x, tp.y, c, just, shadow);
+    return 0;
+}
+
+int VIUI::BlitBar(const char *s, VIColor32F c, VIVect2I at,
+                  VIUITexId end, VIUITexId mid, int w, VIAlphaBlendMode m,
+                  float alpha, unsigned int just, int shadow)
+{
+    unsigned short t[256];
+    VIString::str8to16(t, 512, s);
+    return BlitBar(t, c, at, end, mid, w, m, alpha, just, shadow);
+}
+
+int VIUI::BlitBar(unsigned short id, VIColor32F c, VIVect2I at,
+                  VIUITexId end, VIUITexId mid, int w, VIAlphaBlendMode m,
+                  float alpha, unsigned int just, int shadow)
+{
+    return BlitBar((const unsigned short *)m_words.GetString(id, m_language),
+                   c, at, end, mid, w, m, alpha, just, shadow);
+}
+
+int VIUI::BlitBar(const unsigned short *s, VIColor32F c, VIVect2I at,
+                  VIUITexId left, VIUITexId right, VIUITexId mid, int w,
+                  VIAlphaBlendMode m, float alpha, unsigned int just, int shadow)
+{
+    VIVect2I off;
+    VIVect2I tp;
+    VIVect2I p = at;
+    const VIUITexEntry *e1 = GetUITexture(left);
+    const VIUITexEntry *e2 = GetUITexture(right);
+    const VIUITexEntry *e3 = GetUITexture(mid);
+    if (e1 == 0 || e2 == 0 || e3 == 0)
+        return -1;
+    BlitEx(left, p, m, alpha, 0);
+    p.x = p.x + e1->m_uv1.x;
+    if (e3->m_row == 1)
+    {
+        BlitHorz(p, mid, w - e1->m_uv1.x - e2->m_uv1.x, m, alpha, 0);
+    }
+    else
+    {
+        VIVect2I sz(w - e1->m_uv1.x - e2->m_uv1.x, e3->m_uv1.y);
+        BlitEx(mid, p, sz, m, alpha, 0);
+    }
+    p.x = at.x + w - e2->m_uv1.x;
+    BlitEx(right, p, m, alpha, 0);
+    off.Set(0, 3);
+    if (just == 1)
+        tp.Set(at.x + e1->m_uv1.x - off.x, at.y + e3->m_uv1.y / 2 - off.y);
+    else
+        tp.Set(at.x + w / 2 - off.x, at.y + e3->m_uv1.y / 2 - off.y);
+    DrawCenteredStringEx(s, tp.x, tp.y, c, just, shadow);
+    return 0;
+}
+
+int VIUI::BlitBar(const char *s, VIColor32F c, VIVect2I at,
+                  VIUITexId left, VIUITexId right, VIUITexId mid, int w,
+                  VIAlphaBlendMode m, float alpha, unsigned int just, int shadow)
+{
+    unsigned short t[256];
+    VIString::str8to16(t, 512, s);
+    return BlitBar(t, c, at, left, right, mid, w, m, alpha, just, shadow);
+}
+
+int VIUI::BlitBar(unsigned short id, VIColor32F c, VIVect2I at,
+                  VIUITexId left, VIUITexId right, VIUITexId mid, int w,
+                  VIAlphaBlendMode m, float alpha, unsigned int just, int shadow)
+{
+    return BlitBar((const unsigned short *)m_words.GetString(id, m_language),
+                   c, at, left, right, mid, w, m, alpha, just, shadow);
 }
 
 int VIUI::BlitVertBar(VIVect2I at, VIUITexId top, VIUITexId bot, VIUITexId mid,
@@ -516,6 +780,79 @@ int VIUI::SoundPlay(const char *name, float vol)
     }
     return 0;
 }
+
+// Phase 61.  WORDS.TXT for the current language, in order of preference: the
+// WORDS_<lang>.TXT entry of WORDS.WAD on the memory card, the same entry of
+// data2\words.wad on the disc, WORDS.TXT on the card, data\words.txt on the
+// disc.  The card's WAD goes through a 256 KB scratch buffer.
+
+int VIUI::ReloadWords()
+{
+    char name[32];
+    char *data = 0;
+    int size = 0;
+
+    m_words.Unload();
+    m_wordsFromCard = 0;
+    sprintf(name, "WORDS_%s.TXT",
+            VILanguage::GetName((VILanguageID)(char)VIGetGameOptions()->m_region));
+
+    char *buf = new char[0x40000];
+    int n = VIMemCardReadFile("WORDS.WAD", buf, 0x40000);
+
+    if (n > 0)
+    {
+        VIWadFile wad;
+
+        if (wad.Init(buf, n) >= 0)
+        {
+            size = wad.GetSize(name);
+            if (size > 0)
+            {
+                data = new char[size];
+                wad.Load(name, data, size);
+                wad.Free();
+            }
+        }
+    }
+    delete [] buf;
+
+    if (data == 0)
+    {
+        VIWadFile wad;
+
+        if (wad.Init("data2\\words.wad") >= 0)
+        {
+            size = wad.GetSize(name);
+            if (size > 0)
+            {
+                data = new char[size];
+                wad.Load(name, data, size);
+                wad.Free();
+            }
+        }
+    }
+
+    if (data)
+    {
+        n = m_words.LoadFromMemory(data, size);
+        delete [] data;
+        if (n == 0)
+            return 0;
+    }
+
+    if (m_words.LoadFromMemCard("WORDS.TXT") == 0)
+    {
+        m_wordsFromCard = 1;
+        printf("WORDS.TXT read from memory card.\n");
+        return 0;
+    }
+    if (m_words.Load("data\\words.txt") < 0)
+        return -1;
+    printf("WORDS.TXT read from disc.\n");
+    return 0;
+}
+
 
 const VIUISoundEntry *GetUISound(VIUISoundId id)
 {

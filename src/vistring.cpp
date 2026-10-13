@@ -1,4 +1,5 @@
-// VIString -- SUPPORT 0x003EC278 .. 0x003ED5E0.
+// VIString -- SUPPORT 0x003EC278 .. 0x003EDE70; the last 0x890 bytes are the
+// two VI_vsnprintf instantiations, emitted at the end of the TU (phase 61).
 //
 // The first non-mathematical class in this tree: pointers, chars, `new[]` /
 // `delete[]`, varargs and alloca, on the same toolchain everything else
@@ -28,8 +29,24 @@ extern "C" char *_strlwr(char *);
 extern "C" char *_strupr(char *);
 extern "C" int   _strcasecmp(const char *, const char *);
 extern "C" int   _strncasecmp(const char *, const char *, int);
-extern "C" int   _vsnprintf(char *, int, const char *, char *);
-extern "C" int   _vsnprintf16(unsigned short *, int, const unsigned short *, char *);
+extern "C" int   sprintf(char *, const char *, ...);
+extern "C" void  _VIAssert(const char *expr, const char *file, int line);
+extern "C" void  _VIAssertf(int cond, const char *fmt, ...);
+extern "C" const char *__VIAssertf_file;
+extern "C" int   __VIAssertf_line;
+
+#define VIASSERT(x)  if (!(x)) _VIAssert(#x, __FILE__, __LINE__);
+#define VIASSERTF(x, fmt, args...) \
+    { __VIAssertf_file = __FILE__; __VIAssertf_line = __LINE__; _VIAssertf(x, fmt, ## args); }
+
+// The printf engine is ONE template over the character type, instantiated for
+// char and unsigned short; gcc 2.95 emits both at the end of the TU, which is
+// where the image has them.  Defined at the bottom of this file.
+template <class T> void VI_vsnprintf(T *dst, int dstCount, const T *fmt, char *ap);
+
+// Every vararg occupies one 8-byte slot on this EABI; the target reads it back
+// with `addiu ap,ap,8` and a load at -8 and nothing else.
+#define va_arg(ap, T)  (*(T *)(((ap) += 8) - 8))
 
 // gcc 2.95's own va-mips.h, reconstructed: SETUP_INCOMING_VARARGS for the EABI
 // (config/mips/abi64.h) puts the register save block BELOW
@@ -284,9 +301,504 @@ int VIString::Deallocate()
     return 0;
 }
 
+// No `return`: the target is the call and nothing else, so the int the
+// snprintf family hands back is whatever the template left in v0 -- the address
+// of the terminating NUL.  Shipped.
 int VIString::vsnprintf(char *d, int n, const char *f, char *ap)
 {
-    return _vsnprintf(d, n, f, ap);
+    VI_vsnprintf(d, n, f, ap);
+}
+
+// Phase 61.  The character narrowing VI_vsnprintf runs every format character
+// through, as two explicit specialisations emitted in place.
+template <class T> char charTto8(T c);
+
+template <> char charTto8(unsigned short c)
+{
+    return VIString::char16to8(c);
+}
+
+template <> char charTto8(char c)
+{
+    return c;
+}
+
+// The four appenders VI_vsnprintf's %s / %S and every numeric conversion end
+// in: one per (destination, source) character pair, each writing while there
+// is room for the terminator and substituting "(null)" for a null string.  The
+// two that read a WIDE source copy a wide "(null)" into a block-scope array
+// and point at it after the block has ended, and they also write '?' wherever
+// the narrowed character does not read back equal -- which for the
+// unsigned short -> unsigned short copy can never fire.
+static void AppendString(char *dst, int &pos, int dstCount, const char *s)
+{
+    if (s == 0)
+        s = "(null)";
+    if (*s)
+    {
+        const char *p = s;
+        do
+        {
+            if (pos + 1 < dstCount)
+                dst[pos++] = *p;
+            p++;
+        }
+        while (*p);
+    }
+}
+
+static void AppendString(unsigned short *dst, int &pos, int dstCount, const char *s)
+{
+    if (s == 0)
+        s = "(null)";
+    if (*s)
+    {
+        const char *p = s;
+        do
+        {
+            if (pos + 1 < dstCount)
+                dst[pos++] = VIString::char8to16(*p);
+            p++;
+        }
+        while (*p);
+    }
+}
+
+static void AppendString(char *dst, int &pos, int dstCount, const unsigned short *s)
+{
+    if (s == 0)
+    {
+        unsigned short null16[] = { '(', 'n', 'u', 'l', 'l', ')', 0 };
+        s = null16;
+    }
+    if (*s)
+    {
+        const unsigned short *p = s;
+        do
+        {
+            if (pos + 1 < dstCount)
+            {
+                dst[pos] = VIString::char16to8(*p);
+                if (dst[pos] != *p)
+                    dst[pos] = '?';
+                pos++;
+            }
+            p++;
+        }
+        while (*p);
+    }
+}
+
+static void AppendString(unsigned short *dst, int &pos, int dstCount, const unsigned short *s)
+{
+    if (s == 0)
+    {
+        unsigned short null16[] = { '(', 'n', 'u', 'l', 'l', ')', 0 };
+        s = null16;
+    }
+    if (*s)
+    {
+        const unsigned short *p = s;
+        do
+        {
+            if (pos + 1 < dstCount)
+            {
+                dst[pos] = *p;
+                if (dst[pos] != *p)
+                    dst[pos] = '?';
+                pos++;
+            }
+            p++;
+        }
+        while (*p);
+    }
+}
+
+// A result variable and a `break`: the early `return 1` moves the exit out of
+// line and the loop's own test changes shape.
+int StringIncludes(const char *s, char c)
+{
+    int r = 0;
+    while (*s)
+        if (*s++ == c)
+        {
+            r = 1;
+            break;
+        }
+    return r;
+}
+
+// ---------------------------------------------------------------------------
+// VI_vsnprintf<T> -- the printf engine under every VIString formatter.
+//
+// Its two asserts carry the original's line numbers, 663 and 792 of
+// core/VIString.cpp, as immediates: the blank runs below are FILLER that put
+// them there, not a claim about what the original had in between.
+// ---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template <class T>
+void VI_vsnprintf(T *dst, int DstCount, const T *fmt, char *ap)
+{
+    int pos = 0;
+    int i = 0;
+
+    DstCount /= sizeof(T);
+    VIASSERT(DstCount > 0);
+
+    while (pos + 1 < DstCount && fmt[i])
+    {
+        if (fmt[i] == '%')
+        {
+            char conv[] = "cCdiIouxXeEfgGnpsSh%";
+            char spec[64];
+            char tmp[64];
+            unsigned int n = 0;
+            char c;
+
+            for (;;)
+            {
+                c = charTto8(fmt[i++]);
+                spec[n++] = c;
+                if (n > 1 && StringIncludes(conv, c))
+                    break;
+                if (n + 1 == sizeof(spec) || c == 0)
+                    goto done;
+            }
+            spec[n] = 0;
+
+            switch (c)
+            {
+            case 'S':
+                AppendString(dst, pos, DstCount, va_arg(ap, const unsigned short *));
+                break;
+
+            case 's':
+                AppendString(dst, pos, DstCount, va_arg(ap, const char *));
+                break;
+
+            // A hex dump: pointer, then byte count; a space every four bytes.
+            case 'h':
+            {
+                const unsigned char *p = va_arg(ap, const unsigned char *);
+                int len = va_arg(ap, int);
+
+                for (int k = 0; k < len; k++)
+                {
+                    char hex[] = "0123456789ABCDEF";
+
+                    if (k != 0 && (k & 3) == 0)
+                    {
+                        dst[pos++] = ' ';
+                        if (pos + 1 == DstCount)
+                            break;
+                    }
+                    dst[pos++] = hex[p[k] >> 4];
+                    if (pos + 1 == DstCount)
+                        break;
+                    dst[pos++] = hex[p[k] & 15];
+                    if (pos + 1 == DstCount)
+                        break;
+                }
+                break;
+            }
+
+            case 'c':
+            case 'C':
+                if (pos + 1 < DstCount)
+                    dst[pos++] = va_arg(ap, T);
+                break;
+
+            case '%':
+                if (pos + 1 < DstCount)
+                    dst[pos++] = '%';
+                break;
+
+            case 'I':
+                sprintf(tmp, "%lli", va_arg(ap, long));
+                AppendString(dst, pos, DstCount, tmp);
+                break;
+
+            case 'e':
+            case 'E':
+            case 'f':
+            case 'g':
+            case 'G':
+                sprintf(tmp, spec, va_arg(ap, double));
+                AppendString(dst, pos, DstCount, tmp);
+                break;
+
+            // No `break`: %n stores the count and then ALSO consumes the next
+            // argument and prints it as an integer.  Shipped.
+            case 'n':
+                *va_arg(ap, int *) = pos;
+
+            case 'd':
+            case 'i':
+            case 'o':
+            case 'p':
+            case 'u':
+            case 'x':
+            case 'X':
+                sprintf(tmp, spec, va_arg(ap, int));
+                AppendString(dst, pos, DstCount, tmp);
+                break;
+
+            default:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                VIASSERTF(0, "VIString::vsnprintf16 unimplemented format '%s'", spec);
+                break;
+            }
+        }
+        else
+            dst[pos++] = fmt[i++];
+    }
+
+done:
+    dst[pos] = 0;
 }
 
 // OPEN, two words: the target sets up the alloca frame pointer (`move s8,sp`)
@@ -306,7 +818,7 @@ int VIString::vsnprintf16(unsigned short *d, int n, const char *f, char *ap)
 
 int VIString::vsnprintf16(unsigned short *d, int n, const unsigned short *f, char *ap)
 {
-    return _vsnprintf16(d, n, f, ap);
+    VI_vsnprintf(d, n, f, ap);
 }
 
 int VIString::snprintf(char *d, int n, const char *f, ...)

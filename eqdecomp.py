@@ -124,6 +124,8 @@ SPAN_CAP = {
     # copies of the VIMap<int,int> members follow it with no names in the map
     # (the named ones live at 0x00415E08), so it derived 3,032 bytes.
     "AdpcmToPcm__10VIESFParsePviT1":            516,
+    "IsValidRaceClassCityComboExpansion__FiiiUi":   112,  # 4120      1 (static)
+    "charTto8__H1Zc_X01_c":                          12,  #  680      4 (static)
     "ShareResources__16VIStaticLightingR8VIRaster": 128,  #  504   many (static)
     # Phase 61.  The SCE PSS sample TUs keep their helpers as unnamed statics
     # after the public entry points: audiodec's area/send/volume helpers after

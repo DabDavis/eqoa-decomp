@@ -582,13 +582,13 @@ int VISoundDevice::Play(int sound, int priority, VISOUNDCLASS cls)
         int pan = (int)(pb->m_pan * 16383.0f);
 
         gSndArgs[0] = first;
-        gSndArgs[2] = second;
         gSndArgs[1] = w->m_spuAddr;
+        gSndArgs[2] = second;
         int right;
-        if (second == -1)
-            right = 0;
-        else
+        if (second != -1)
             right = w->m_spuAddr + (w->m_size >> 1);
+        else
+            right = 0;
         gSndArgs[3] = right;
         gSndArgs[4] = (int)(((long)w->m_sampleRate << 12) / 48000);
         gSndArgs[5] = (unsigned int)(pb->m_volume * w->Volume() * m_classVolume[cls] * 16383.0f);
@@ -598,8 +598,11 @@ int VISoundDevice::Play(int sound, int priority, VISOUNDCLASS cls)
         gSndArgs[6] = p;
         SoundCmd(2, 7);
     }
-    else if (s->Type() == VISound::XM)
+    else
     {
+        if (s->Type() != VISound::XM)
+            return -1;
+
         VIXm *x = s->AsXm();
 
         pb->m_pitch = 4096;
@@ -617,10 +620,6 @@ int VISoundDevice::Play(int sound, int priority, VISOUNDCLASS cls)
             pan = 0;
         gSndArgs[6] = pan;
         SoundCmd(8, 7);
-    }
-    else
-    {
-        return -1;
     }
     return handle;
 }
@@ -683,16 +682,16 @@ void VISoundDevice::SetPitch(int handle, int pitch)
         int scaled = (rate * pb->m_pitch) / 4096;
 
         gSndArgs[0] = FirstChannel(pb->m_channels);
-        gSndArgs[2] = scaled;
         gSndArgs[1] = NextChannel(pb->m_channels, gSndArgs[0]);
+        gSndArgs[2] = scaled;
         SoundCmd(5, 3);
     }
     if (s->Type() == VISound::XM)
     {
         s->AsXm();
         gSndArgs[0] = (int)(pb->m_channels & 0xffffff);
-        gSndArgs[2] = pitch;
         gSndArgs[1] = (int)(pb->m_channels >> 24);
+        gSndArgs[2] = pitch;
         SoundCmd(11, 3);
     }
 }
@@ -921,14 +920,12 @@ unsigned long VISoundDevice::AllocateChannels(int count, int priority)
         pb = FirstPlayback();
         while (pb)
         {
-            if (priority < pb->m_priority)
+            if (priority >= pb->m_priority)
             {
-                pb = NextPlayback(pb);
-                continue;
+                need -= ChannelCount(pb->m_channels);
+                if (need <= 0)
+                    break;
             }
-            need -= ChannelCount(pb->m_channels);
-            if (need <= 0)
-                break;
             pb = NextPlayback(pb);
         }
         if (need > 0)
@@ -953,14 +950,13 @@ unsigned long VISoundDevice::AllocateChannels(int count, int priority)
         }
     }
 
-    unsigned long mask = m_channels;
     int i;
     int n = 0;
 
     for (i = 0; i < 46; i++)
     {
         unsigned long bit = (unsigned long)1 << i;
-        if ((mask & bit) == 0)
+        if ((m_channels & bit) == 0)
         {
             got |= bit;
             n++;
@@ -1283,8 +1279,8 @@ int VISoundDevice::BeginAdpcmTransfer(void **src, unsigned int spuAddr, int size
                                       int *flag)
 {
     m_xferRemain = size;
-    m_xferSpuAddr = spuAddr;
     m_xferSrc = *src;
+    m_xferSpuAddr = spuAddr;
     m_xferXmAddr = -1;
     m_xferFlag = flag;
     m_xferIdle = 0;
@@ -1297,14 +1293,14 @@ int VISoundDevice::BeginXmTransfer(void **src, unsigned int xmAddr,
                                    unsigned int sampleAddr, int size, int *flag)
 {
     m_xferRemain = size;
-    m_xferSpuAddr = -1;
     m_xferSrc = *src;
+    m_xferSpuAddr = -1;
+    m_xferXmAddr = xmAddr;
     m_xferXmSpu = xmAddr;
     m_xferSampleSpu = sampleAddr;
     m_xferFlag = flag;
-    m_xferFree = 0;
-    m_xferXmAddr = xmAddr;
     m_xferIdle = 0;
+    m_xferFree = 0;
     return 0;
 }
 
@@ -1360,10 +1356,7 @@ int VISoundDevice::IdleTransfer()
         FlushCache(0);
 
         dma[0] = (int)m_xferSrc;
-        if (m_xferSpuAddr == -1)
-            dma[1] = (int)m_xferXmAddr;
-        else
-            dma[1] = (int)m_iopBuf;
+        dma[1] = m_xferSpuAddr == -1 ? (int)m_xferXmAddr : (int)m_iopBuf;
         dma[2] = n;
         dma[3] = 0;
         FlushCache(0);

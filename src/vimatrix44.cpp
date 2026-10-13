@@ -13,7 +13,10 @@
 // spellings that should have done it all coalesce the same way.
 VIMatrix44::VIMatrix44(const VIMatrix44 &a)
 {
-    *this = a;
+    // The block move inline: `*this = a` became a CALL once vi.h declared
+    // operator= out of line, which the target does not make.
+    struct B { VIVect4 v[4]; };
+    *(B *)m = *(const B *)a.m;
 }
 
 void VIMatrix44::Scale(float s)

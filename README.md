@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,211 of 3,575 byte-exact**, phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,326 of 3,658 byte-exact**, phase 61 in progress)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against

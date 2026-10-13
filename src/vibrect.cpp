@@ -4,12 +4,16 @@
 // including one that is a shipped BUG in both (see Store).
 #include "vi.h"
 
+// An inline FUNCTION, not the VIMIN macro: its return value is a pseudo of
+// its own, which is what gives v.x the lower FP register.
+static inline float BRMin(float a, float b) { return (a > b) ? b : a; }
+
 void VIBRect::Bound(int first, const VIVect2 &v)
 {
     if (!first)
     {
-        min.x = (v.x < min.x) ? v.x : min.x;
-        min.y = (v.y < min.y) ? v.y : min.y;
+        min.x = BRMin(min.x, v.x);
+        min.y = BRMin(min.y, v.y);
         VIVect2 *mx = &max;
         mx->x = (v.x < mx->x) ? mx->x : v.x;
         mx->y = (v.y < mx->y) ? mx->y : v.y;
@@ -98,53 +102,46 @@ float VIBRect::DistanceSquared(const VIVect2 &v) const
     return d.x * d.x + d.y * d.y;
 }
 
+// Component-wise helpers taking REFERENCES, the shape of VIVect2's own
+// operators: the first access through each folds into the base, the rest go
+// through the reference's own pointer.
+static inline void BRAdd(VIVect2 &a, const VIVect2 &b) { a.x = a.x + b.x; a.y = a.y + b.y; }
+static inline void BRSub(VIVect2 &a, const VIVect2 &b) { a.x = a.x - b.x; a.y = a.y - b.y; }
+static inline void BRMul(VIVect2 &a, float k) { a.x = a.x * k; a.y = a.y * k; }
+static inline void BRMul(VIVect2 &a, const VIVect2 &k) { a.x = a.x * k.x; a.y = a.y * k.y; }
+
 void VIBRect::Scale(float s)
 {
     VIVect2 c;
-    VIVect2 *mx = &max;
-
     c = min;
-    c.x = c.x + mx->x;
-    c.y = c.y + mx->y;
-
-    min.x = min.x - c.x;
-    min.y = min.y - c.y;
-    min.x = min.x * s;
-    min.y = min.y * s;
-    min.x = min.x + c.x;
-    min.y = min.y + c.y;
-    mx->x = mx->x - c.x;
-    mx->y = mx->y - c.y;
-    mx->x = mx->x * s;
-    mx->y = mx->y * s;
-    mx->x = mx->x + c.x;
-    mx->y = mx->y + c.y;
+    BRAdd(c, max);
+    BRSub(min, c);
+    BRMul(min, s);
+    BRAdd(min, c);
+    BRSub(max, c);
+    BRMul(max, s);
+    BRAdd(max, c);
 }
 
 void VIBRect::Scale(const VIVect2 &s)
 {
     VIVect2 c;
-    VIVect2 *mx = &max;
-
     c = min;
-    c.x = c.x + mx->x;
-    c.y = c.y + mx->y;
-
-    min.x = min.x - c.x;
-    min.y = min.y - c.y;
-    min.x = min.x * s.x;
-    min.y = min.y * s.y;
-    min.x = min.x + c.x;
-    min.y = min.y + c.y;
-    mx->x = mx->x - c.x;
-    mx->y = mx->y - c.y;
-    mx->x = mx->x * s.x;
-    mx->y = mx->y * s.y;
-    mx->x = mx->x + c.x;
-    mx->y = mx->y + c.y;
+    BRAdd(c, max);
+    BRSub(min, c);
+    BRMul(min, s);
+    BRAdd(min, c);
+    BRSub(max, c);
+    BRMul(max, s);
+    BRAdd(max, c);
 }
 
 // ------------------------------------------------------------------ VIRect --
+
+// The min/max are inline FUNCTIONS, both written on `a > b`: VIRect's
+// Union/Intersect match only with these, not with the VIMIN/VIMAX macros.
+static inline int IRMax(int a, int b) { return (a > b) ? a : b; }
+static inline int IRMin(int a, int b) { return (a > b) ? b : a; }
 
 void VIRect::Bound(int first, const VIVect2I &v)
 {
@@ -165,26 +162,26 @@ void VIRect::Bound(int first, const VIVect2I &v)
 
 void VIRect::Union(const VIRect &b)
 {
-    min.x = (b.min.x < min.x) ? b.min.x : min.x;
-    min.y = (b.min.y < min.y) ? b.min.y : min.y;
-    max.x = (b.max.x < max.x) ? max.x : b.max.x;
-    max.y = (b.max.y < max.y) ? max.y : b.max.y;
+    min.x = IRMin(min.x, b.min.x);
+    min.y = IRMin(min.y, b.min.y);
+    max.x = IRMax(max.x, b.max.x);
+    max.y = IRMax(max.y, b.max.y);
 }
 
 void VIRect::Union(const VIRect &a, const VIRect &b)
 {
-    min.x = (b.min.x < a.min.x) ? b.min.x : a.min.x;
-    min.y = (b.min.y < a.min.y) ? b.min.y : a.min.y;
-    max.x = (b.max.x < a.max.x) ? a.max.x : b.max.x;
-    max.y = (b.max.y < a.max.y) ? a.max.y : b.max.y;
+    min.x = IRMin(a.min.x, b.min.x);
+    min.y = IRMin(a.min.y, b.min.y);
+    max.x = IRMax(a.max.x, b.max.x);
+    max.y = IRMax(a.max.y, b.max.y);
 }
 
 int VIRect::Intersect(const VIRect &a, const VIRect &b)
 {
-    min.x = (b.min.x < a.min.x) ? a.min.x : b.min.x;
-    min.y = (b.min.y < a.min.y) ? a.min.y : b.min.y;
-    max.x = (b.max.x < a.max.x) ? b.max.x : a.max.x;
-    max.y = (b.max.y < a.max.y) ? b.max.y : a.max.y;
+    min.x = IRMax(a.min.x, b.min.x);
+    min.y = IRMax(a.min.y, b.min.y);
+    max.x = IRMin(a.max.x, b.max.x);
+    max.y = IRMin(a.max.y, b.max.y);
 
     if (max.x < min.x) return 0;
     if (max.y < min.y) return 0;
@@ -234,62 +231,49 @@ VIVect2I VIRect::Center() const
     return VIVect2I((min.x + max.x) >> 1, (min.y + max.y) >> 1);
 }
 
+
 int VIRect::DistanceSquared(const VIVect2I &v) const
 {
     VIVect2I d;
 
-    d.x = (0 >= min.x - v.x) ? 0 : min.x - v.x;
-    d.y = (0 >= min.y - v.y) ? 0 : min.y - v.y;
+    d.x = (d.x < min.x - v.x) ? min.x - v.x : d.x;
+    d.y = (d.y < min.y - v.y) ? min.y - v.y : d.y;
     d.x = (d.x < v.x - max.x) ? v.x - max.x : d.x;
     d.y = (d.y < v.y - max.y) ? v.y - max.y : d.y;
 
     return d.x * d.x + d.y * d.y;
 }
 
+// The integer twins of the BR* helpers.
+static inline void IRAdd(VIVect2I &a, const VIVect2I &b) { a.x = a.x + b.x; a.y = a.y + b.y; }
+static inline void IRSub(VIVect2I &a, const VIVect2I &b) { a.x = a.x - b.x; a.y = a.y - b.y; }
+static inline void IRMul(VIVect2I &a, int k) { a.x = a.x * k; a.y = a.y * k; }
+static inline void IRMul(VIVect2I &a, const VIVect2I &k) { a.x = a.x * k.x; a.y = a.y * k.y; }
+
 void VIRect::Scale(int s)
 {
     VIVect2I c;
-    VIVect2I *mx = &max;
-
     c = min;
-    c.x = c.x + mx->x;
-    c.y = c.y + mx->y;
-
-    min.x = min.x - c.x;
-    min.y = min.y - c.y;
-    min.x = min.x * s;
-    min.y = min.y * s;
-    min.x = min.x + c.x;
-    min.y = min.y + c.y;
-    mx->x = mx->x - c.x;
-    mx->y = mx->y - c.y;
-    mx->x = mx->x * s;
-    mx->y = mx->y * s;
-    mx->x = mx->x + c.x;
-    mx->y = mx->y + c.y;
+    IRAdd(c, max);
+    IRSub(min, c);
+    IRMul(min, s);
+    IRAdd(min, c);
+    IRSub(max, c);
+    IRMul(max, s);
+    IRAdd(max, c);
 }
 
 void VIRect::Scale(const VIVect2I &s)
 {
     VIVect2I c;
-    VIVect2I *mx = &max;
-
     c = min;
-    c.x = c.x + mx->x;
-    c.y = c.y + mx->y;
-
-    min.x = min.x - c.x;
-    min.y = min.y - c.y;
-    min.x = min.x * s.x;
-    min.y = min.y * s.y;
-    min.x = min.x + c.x;
-    min.y = min.y + c.y;
-    mx->x = mx->x - c.x;
-    mx->y = mx->y - c.y;
-    mx->x = mx->x * s.x;
-    mx->y = mx->y * s.y;
-    mx->x = mx->x + c.x;
-    mx->y = mx->y + c.y;
+    IRAdd(c, max);
+    IRSub(min, c);
+    IRMul(min, s);
+    IRAdd(min, c);
+    IRSub(max, c);
+    IRMul(max, s);
+    IRAdd(max, c);
 }
 
 // The same degenerate-corner bug as Store: the y of every corner is min.y,

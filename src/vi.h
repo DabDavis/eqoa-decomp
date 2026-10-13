@@ -551,6 +551,13 @@ public:
     // why the constant pair is stored, read, and stored again between the two.
     VIVect2I &operator+=(const VIVect2I &v) { x += v.x; y += v.y; return *this; }
     VIVect2I &operator-=(const VIVect2I &v) { x -= v.x; y -= v.y; return *this; }
+    // Phase 61.  VIUI::BlitBar's text offset is set through this: the stores
+    // go through `this`, a register base, so cse forgets them and both arms
+    // read the offset back.
+    void Set(int _x, int _y) { x = _x; y = _y; }
+    // Phase 61.  VIUI::BlitFrame offsets a corner by a (dx, 0) / (0, dy)
+    // temporary: the operand lands in its own stack temp next to the result.
+    VIVect2I operator+(const VIVect2I &v) const { return VIVect2I(x + v.x, y + v.y); }
 };
 
 // SUPPORT 0x003EF750 (VIBRect) / 0x003F9EB0 (VIRect).  min at +0, max at +8.
@@ -6117,6 +6124,45 @@ public:
 };
 
 // ---------------------------------------------------------------------------
+// The race and class descriptor tables -- phase 61.  `virace.cpp` (SUPPORT
+// 0x004A2F50 .. 0x004A4050) builds gRaces[21] in its static initialiser and
+// `viclass.cpp` (0x0049F668 .. 0x0049F6D0) holds the fifteen classes as plain
+// initialised data.  Layout and contents: claude-notes/playable-race-system.md.
+// Both accessors clamp out of range to entry 0, never a null.
+// ---------------------------------------------------------------------------
+class VIClassDef
+{
+public:
+    int          m_nameStrID;     // +0x00  165..179
+    int          m_shortStrID;    // +0x04  303..316, 1190
+    int          m_statMask;      // +0x08  bit N = stat N highlighted (srav)
+    int          m_bonus[7];      // +0x0C  STR STA AGI DEX WIS INT CHA
+    unsigned int m_expansion;     // +0x28
+};
+
+class VIRaceDef
+{
+public:
+    int          m_nameStrID;     // +0x00
+    int          m_shortStrID;    // +0x04
+    unsigned int m_maleModel;     // +0x08  VIHashResourceID("<Race>Male")
+    unsigned int m_femaleModel;   // +0x0C
+    int          m_bonus[7];      // +0x10  sums to 35
+    int          m_classMask;     // +0x2C  bit N = class N allowed (srav)
+    float        m_selectX;       // +0x30  create-screen placement
+    float        m_selectZ;       // +0x34
+    const char  *m_bgm;           // +0x38
+    unsigned int m_expansion;     // +0x3C
+};
+
+const VIClassDef *GetClass(int c);
+int IsStatHighlighted(int c, int stat);
+const VIRaceDef  *GetRace(int r);
+int IsValidRaceClassCityCombo(int race, int c, int city);
+int IsValidRaceClassCityComboExpansion(int race, int c, int city,
+                                       unsigned int owned);
+
+// ---------------------------------------------------------------------------
 // VIConsole -- SUPPORT 0x004A0A88 .. 0x004A0C20.  Phase 27.
 //
 // One pad and one keyboard behind a single GetInput().  The two sub-objects'
@@ -6161,11 +6207,14 @@ public:
 // TWO bytes, not sixteen: VIKeyboard's queue is indexed by `sll a1,a1,1` and
 // each entry is copied with two `lb`/`sb` pairs.  Phase 27 guessed 16 off the
 // VIConsole frame; the keyboard's own code settles it.
+// Phase 61: both bytes are UNSIGNED -- the keyboard's PrepareQueueKeyEvent
+// widens m_a with `lbu` into an int and Read tests it against 255.  m_a is the
+// character, m_b is 1 on a press and 0 on a release.
 class VIConsoleKey
 {
 public:
-    char m_a;
-    char m_b;
+    unsigned char m_a;
+    unsigned char m_b;
 };
 
 // ------------------------------------------------------------- VILoader ----
@@ -6547,6 +6596,19 @@ void         VISetFeatureFlags(unsigned int f);
 // offsets), of which this phase names the head and the tail: a file descriptor,
 // a 128-entry event queue reached through a POINTER to a file static, and the
 // dead-key state the combining tables need.
+// libkbd's event record (16 bytes) and read buffer -- phase 61, off Read and
+// TranslateEvent.  Field names are ours; the offsets are the target's.
+struct _lgKbdEvent
+{
+    unsigned int   m_x0;        // +0x00
+    unsigned short m_code;      // +0x04  USB usage code
+    unsigned short m_x6;        // +0x06
+    unsigned short m_locks;     // +0x08  bit 0 num lock, bit 1 caps lock
+    unsigned short m_mods;      // +0x0A  0x22 shift, 0x40 right alt
+    unsigned short m_state;     // +0x0C  1 = down
+    unsigned short m_xE;        // +0x0E
+};
+
 class VIKeyboard
 {
 public:
@@ -6559,13 +6621,20 @@ public:
     void QueueKeyEvent(VIConsoleKey *k);
     int  DequeueKeyEvent(VIConsoleKey *k);
 
-    int           m_x0;         // +0x000
+    int           m_x0;         // +0x000  0 = not yet open, 1 = open (Read)
     int           m_fd;         // +0x004  -1 == closed
     VIConsoleKey *m_queue;      // +0x008  a file static, not embedded
     int           m_numQueued;  // +0x00C  capped at 128
-    char          m_pad[0x200]; // +0x010
-    int           m_x210;       // +0x210
-    int           m_x214;       // +0x214
+    // Phase 61: the 512 bytes are one VIConsoleKey per USB usage code -- the
+    // character a key produced when it went DOWN, so its release reports the
+    // same character whatever the modifiers are by then (Read).
+    VIConsoleKey  m_keys[256];  // +0x010
+    int           m_x210;       // +0x210  the pending DEAD key, 0 = none
+    int           m_x214;       // +0x214  the key that completed a dead key
+
+    unsigned char TranslateEvent(_lgKbdEvent *e);
+    void PrepareQueueKeyEvent(VIConsoleKey *k);
+    unsigned char CombineDeadkey(unsigned char c);
 };
 
 int VIStartKeyboardDriver();
@@ -6614,6 +6683,15 @@ public:
     void  SetAppPtr(void *p);
     void *GetAppPtr();
     void  SetFocus(VIWnd *w, bool notify);
+
+    // Phase 61.  Five accessors emitted out of line at the very END of the
+    // original TU, after the VISet<VIWnd *> instantiations and __tf5VIWnd --
+    // the place gcc 2.95 puts an inline it could not inline everywhere.
+    VIWnd *GetParent();
+    void   SetVisible(bool v);
+    int    GetVisible();
+    static VIUI  *UI();
+    static VIWnd *GetFocus();
 
     VISet<VIWnd *> m_children;   // 0x00
     VIWnd         *m_parent;     // 0x14
@@ -7442,10 +7520,27 @@ public:
     float m_volume;              // +0x04
 };                               // 8 bytes -- GetUISound's shift
 
+// Phase 61.  64 bytes, eight {texture, blit flags} pairs clockwise from the
+// top-left corner -- read off BlitFrame, which fetches the four corners (0, 2,
+// 4, 6) and tiles the four edges (1, 3, 5, 7).
+class VIUIFramePart
+{
+public:
+    VIUITexId    m_id;
+    unsigned int m_flags;
+};
+
 class VIUIFrameParam
 {
 public:
-    int m_x00;
+    VIUIFramePart m_tl;          // +0x00
+    VIUIFramePart m_top;         // +0x08
+    VIUIFramePart m_tr;          // +0x10
+    VIUIFramePart m_right;       // +0x18
+    VIUIFramePart m_br;          // +0x20
+    VIUIFramePart m_bottom;      // +0x28
+    VIUIFramePart m_bl;          // +0x30
+    VIUIFramePart m_left;        // +0x38
 };
 
 class VIUI
@@ -7503,6 +7598,43 @@ public:
                         unsigned int flags);
     int BlitAbilityIcon(VIVect2I at, int idx, VIAlphaBlendMode m, float alpha);
 
+    // Phase 61.  The window frames.  `left` false leaves out the left column
+    // -- both left corners and the left edge -- for a frame that butts onto
+    // another.
+    int BlitFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                  VIAlphaBlendMode m, float alpha, unsigned char left);
+    int BlitStuddedFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                         VIUIFrameParam studs, int nx, int ny,
+                         VIAlphaBlendMode m, float alpha, unsigned char left);
+    int BlitFillFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                      VIUITexId fill, VIAlphaBlendMode m, float alpha,
+                      unsigned char left);
+    int BlitFillStuddedFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+                             VIUIFrameParam studs, VIUITexId fill, int nx,
+                             int ny, VIAlphaBlendMode m, float alpha,
+                             unsigned char left);
+
+    // Phase 61.  A captioned bar: two end caps and a tiled middle, with the
+    // text either centred or (just == 1) set against the left cap.
+    int BlitBar(const unsigned short *s, VIColor32F c, VIVect2I at,
+                VIUITexId end, VIUITexId mid, int w, VIAlphaBlendMode m,
+                float alpha, unsigned int just, int shadow);
+    int BlitBar(const char *s, VIColor32F c, VIVect2I at,
+                VIUITexId end, VIUITexId mid, int w, VIAlphaBlendMode m,
+                float alpha, unsigned int just, int shadow);
+    int BlitBar(unsigned short id, VIColor32F c, VIVect2I at,
+                VIUITexId end, VIUITexId mid, int w, VIAlphaBlendMode m,
+                float alpha, unsigned int just, int shadow);
+    int BlitBar(const unsigned short *s, VIColor32F c, VIVect2I at,
+                VIUITexId left, VIUITexId right, VIUITexId mid, int w,
+                VIAlphaBlendMode m, float alpha, unsigned int just, int shadow);
+    int BlitBar(const char *s, VIColor32F c, VIVect2I at,
+                VIUITexId left, VIUITexId right, VIUITexId mid, int w,
+                VIAlphaBlendMode m, float alpha, unsigned int just, int shadow);
+    int BlitBar(unsigned short id, VIColor32F c, VIVect2I at,
+                VIUITexId left, VIUITexId right, VIUITexId mid, int w,
+                VIAlphaBlendMode m, float alpha, unsigned int just, int shadow);
+
     int DrawStringEx(const char *s, int x, int y, VIColor32F c, int shadow);
     int DrawStringEx(const unsigned short *s, int x, int y, VIColor32F c,
                      int shadow);
@@ -7557,6 +7689,29 @@ public:
     void Free();
 
     VIVect2I RowCenter(int row);
+
+    // Phase 61.  Three inline by-value accessors, read off the TEMPORARIES they
+    // leave: every caller builds the result in a fresh stack temp (reused slot
+    // by slot across statements) and reads one component back out of it.
+    VIVect2I Center() const { return m_center; }
+    VIVect2I TopLeft() const
+    {
+        return VIVect2I(m_center.x - (m_size.x >> 1), m_center.y - (m_size.y >> 1));
+    }
+    VIVect2I BottomRight() const
+    {
+        return VIVect2I(m_center.x + (m_size.x >> 1), m_center.y + (m_size.y >> 1));
+    }
+
+    int  Draw();
+    void DrawTextInternal(const unsigned short *s, int x, int y,
+                          const VIColor32F &c, unsigned int f);
+    void DrawFrame(int x, int row, int w, int rows, unsigned int flags);
+    void DrawFrameVScroll(int x, int row, int w, int rows, float t);
+    void DrawHScroll(int x, int row, int w, float t, unsigned int flags);
+    void DrawProgress(int x, int row, int w, float t);
+    void DrawColorBar(int x, int row, int w, const VIColor32F &c);
+
     void SetTitle(const char *s);
     void SetTitle(const unsigned short *s);
     void Resize(int w, int rows);

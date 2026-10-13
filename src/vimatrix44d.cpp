@@ -398,65 +398,51 @@ void VIMatrix44D::SubMatrixMul(const VIVect3D &v, VIVect3D &out) const
     out.z += m[2].z * v.z;
 }
 
-// The vector component and the weight are multiplied ONCE per row and the
-// product hoisted -- `v.x * w` is a call, and the target makes it four times
-// in the whole function rather than sixteen.  Note this is NOT the shape
-// SubMatrixBlendAccum below uses, which left-associates m*v*w per element.
-// NOT byte-exact: 8 of 156 words, and all eight are one pair swapped four
-// times -- the target keeps the libcall's result copy glued to the call and
-// loads the next row element after it, where this build schedules the load
-// first.  The shape is otherwise settled: row POINTERS (direct `m[0].x` member
-// access scores 156/156 wrong), the vector component and the weight multiplied
-// ONCE per row into a hoisted local -- four calls in the function, not sixteen
-// -- and this is NOT the shape SubMatrixBlendAccum uses, which left-associates
-// m * v * w per element.
+// BlendAccum and the two vector products are row operations on VIVect4D
+// REFERENCES (D4MulSet / D4MulAdd / D4Add here -- VIVect4D declares no
+// compound operators): each row is a pointer of its own, the vector component
+// times the weight is ONE call per row, and the libcall's result is copied
+// before the next row element loads.  Phase 8 read that last order as a
+// scheduler tie-break; with the references it is byte-exact (phase 61).
+static inline void D4MulSet(VIVect4D &o, const VIVect4D &r, double f)
+{
+    o.x = r.x * f;
+    o.y = r.y * f;
+    o.z = r.z * f;
+    o.w = r.w * f;
+}
+
+static inline void D4Add(VIVect4D &o, const VIVect4D &r)
+{
+    o.x += r.x;
+    o.y += r.y;
+    o.z += r.z;
+    o.w += r.w;
+}
+
+static inline void D4MulAdd(VIVect4D &o, const VIVect4D &r, double f)
+{
+    o.x += r.x * f;
+    o.y += r.y * f;
+    o.z += r.z * f;
+    o.w += r.w * f;
+}
+
+
 void VIMatrix44D::BlendAccum(const VIVect4D &v, double w, VIVect4D &out) const
 {
-    const double *s0 = &m[0].x, *s1 = &m[1].x, *s2 = &m[2].x, *s3 = &m[3].x;
-    double f0 = v.x * w;
-    out.x += s0[0] * f0;
-    out.y += s0[1] * f0;
-    out.z += s0[2] * f0;
-    out.w += s0[3] * f0;
-    double f1 = v.y * w;
-    out.x += s1[0] * f1;
-    out.y += s1[1] * f1;
-    out.z += s1[2] * f1;
-    out.w += s1[3] * f1;
-    double f2 = v.z * w;
-    out.x += s2[0] * f2;
-    out.y += s2[1] * f2;
-    out.z += s2[2] * f2;
-    out.w += s2[3] * f2;
-    double f3 = v.w * w;
-    out.x += s3[0] * f3;
-    out.y += s3[1] * f3;
-    out.z += s3[2] * f3;
-    out.w += s3[3] * f3;
+    D4MulAdd(out, m[0], v.x * w);
+    D4MulAdd(out, m[1], v.y * w);
+    D4MulAdd(out, m[2], v.z * w);
+    D4MulAdd(out, m[3], v.w * w);
 }
 
 void VIMatrix44D::BlendAccum(const VIVect3D &v, double w, VIVect4D &out) const
 {
-    double f0 = v.x * w;
-    const double *s0 = &m[0].x, *s1 = &m[1].x, *s2 = &m[2].x, *s3 = &m[3].x;
-    out.x += s0[0] * f0;
-    out.y += s0[1] * f0;
-    out.z += s0[2] * f0;
-    out.w += s0[3] * f0;
-    double f1 = v.y * w;
-    out.x += s1[0] * f1;
-    out.y += s1[1] * f1;
-    out.z += s1[2] * f1;
-    out.w += s1[3] * f1;
-    double f2 = v.z * w;
-    out.x += s2[0] * f2;
-    out.y += s2[1] * f2;
-    out.z += s2[2] * f2;
-    out.w += s2[3] * f2;
-    out.x += s3[0] * w;
-    out.y += s3[1] * w;
-    out.z += s3[2] * w;
-    out.w += s3[3] * w;
+    D4MulAdd(out, m[0], v.x * w);
+    D4MulAdd(out, m[1], v.y * w);
+    D4MulAdd(out, m[2], v.z * w);
+    D4MulAdd(out, m[3], w);
 }
 
 void VIMatrix44D::SubMatrixBlendAccum(const VIVect3D &v, double w, VIVect3D &out) const
@@ -1020,55 +1006,20 @@ int VIMatrix44D::Debug()
 // even from the VIVect3D form -- the point is widened with w = 1.0.
 VIVect4D operator*(const VIVect4D &v, const VIMatrix44D &m)
 {
-    const double *s0 = &m.m[0].x, *s1 = &m.m[1].x, *s2 = &m.m[2].x, *s3 = &m.m[3].x;
     VIVect4D r;
-    double *d = &r.x;
-    double f0 = v.x;
-    d[0] = s0[0] * f0;
-    d[1] = s0[1] * f0;
-    d[2] = s0[2] * f0;
-    d[3] = s0[3] * f0;
-    double f1 = v.y;
-    d[0] += s1[0] * f1;
-    d[1] += s1[1] * f1;
-    d[2] += s1[2] * f1;
-    d[3] += s1[3] * f1;
-    double f2 = v.z;
-    d[0] += s2[0] * f2;
-    d[1] += s2[1] * f2;
-    d[2] += s2[2] * f2;
-    d[3] += s2[3] * f2;
-    double f3 = v.w;
-    d[0] += s3[0] * f3;
-    d[1] += s3[1] * f3;
-    d[2] += s3[2] * f3;
-    d[3] += s3[3] * f3;
+    D4MulSet(r, m.m[0], v.x);
+    D4MulAdd(r, m.m[1], v.y);
+    D4MulAdd(r, m.m[2], v.z);
+    D4MulAdd(r, m.m[3], v.w);
     return r;
 }
 
 VIVect4D operator*(const VIVect3D &v, const VIMatrix44D &m)
 {
-    const double *s0 = &m.m[0].x, *s1 = &m.m[1].x, *s2 = &m.m[2].x, *s3 = &m.m[3].x;
     VIVect4D r;
-    double *d = &r.x;
-    double f0 = v.x;
-    d[0] = s0[0] * f0;
-    d[1] = s0[1] * f0;
-    d[2] = s0[2] * f0;
-    d[3] = s0[3] * f0;
-    double f1 = v.y;
-    d[0] += s1[0] * f1;
-    d[1] += s1[1] * f1;
-    d[2] += s1[2] * f1;
-    d[3] += s1[3] * f1;
-    double f2 = v.z;
-    d[0] += s2[0] * f2;
-    d[1] += s2[1] * f2;
-    d[2] += s2[2] * f2;
-    d[3] += s2[3] * f2;
-    d[0] += s3[0];
-    d[1] += s3[1];
-    d[2] += s3[2];
-    d[3] += s3[3];
+    D4MulSet(r, m.m[0], v.x);
+    D4MulAdd(r, m.m[1], v.y);
+    D4MulAdd(r, m.m[2], v.z);
+    D4Add(r, m.m[3]);
     return r;
 }

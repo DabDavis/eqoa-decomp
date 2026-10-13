@@ -211,35 +211,38 @@ void VIMatrix33::Transform(float r, const VIVect2 &s, const VIVect2 &t)
     m[2].y = t.y;
 }
 
+// The vector products are row operations through VIVect3 REFERENCES: one
+// pointer per row and the product of each row with its component, in the
+// shape of VIVect3's own compound operators (phase 61).
+static inline void M3MulSet(VIVect3 &o, const VIVect3 &r, float f)
+{
+    o.x = r.x * f;
+    o.y = r.y * f;
+    o.z = r.z * f;
+}
+
+static inline void M3MulAdd(VIVect3 &o, const VIVect3 &r, float f)
+{
+    o.x += r.x * f;
+    o.y += r.y * f;
+    o.z += r.z * f;
+}
+
 VIVect3 operator*(const VIVect3 &v, const VIMatrix33 &m)
 {
-    const float *s0 = &m.m[0].x, *s1 = &m.m[1].x, *s2 = &m.m[2].x;
     VIVect3 r;
-    r.x = s0[0] * v.x;
-    r.y = s0[1] * v.x;
-    r.z = s0[2] * v.x;
-    r.x += s1[0] * v.y;
-    r.y += s1[1] * v.y;
-    r.z += s1[2] * v.y;
-    r.x += s2[0] * v.z;
-    r.y += s2[1] * v.z;
-    r.z += s2[2] * v.z;
+    M3MulSet(r, m.m[0], v.x);
+    M3MulAdd(r, m.m[1], v.y);
+    M3MulAdd(r, m.m[2], v.z);
     return r;
 }
 
 VIVect3 operator*(const VIVect2 &v, const VIMatrix33 &m)
 {
-    const float *s0 = &m.m[0].x, *s1 = &m.m[1].x, *s2 = &m.m[2].x;
     VIVect3 r;
-    r.x = s0[0] * v.x;
-    r.y = s0[1] * v.x;
-    r.z = s0[2] * v.x;
-    r.x += s1[0] * v.y;
-    r.y += s1[1] * v.y;
-    r.z += s1[2] * v.y;
-    r.x += s2[0];
-    r.y += s2[1];
-    r.z += s2[2];
+    M3MulSet(r, m.m[0], v.x);
+    M3MulAdd(r, m.m[1], v.y);
+    r += m.m[2];
     return r;
 }
 
