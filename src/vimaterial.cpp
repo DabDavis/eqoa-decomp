@@ -566,23 +566,22 @@ int VIMaterial::ConstructSolidFillPass(int i, VIRaster &r, VIQWord *q)
     switch (Layer(this, i)->m_blendMode)
     {
     case 1:
-        alpha = 0x8000000048;
+        q->m_d[0] = 0x8000000048;
         break;
     case 2:
-        alpha = 0x8000000042;
+        q->m_d[0] = 0x8000000042;
         break;
     case 3:
-        alpha = 0x8000000044;
+        q->m_d[0] = 0x8000000044;
         break;
     case 4:
-        alpha = 0x8000000089;
+        q->m_d[0] = 0x8000000089;
         break;
     case 0:
     default:
-        alpha = 0x8000000064;
+        q->m_d[0] = 0x8000000064;
         break;
     }
-    q->m_d[0] = alpha;
     q->m_d[1] = 66;
     q++;
 

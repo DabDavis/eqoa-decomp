@@ -85,13 +85,7 @@ inline void *operator new(unsigned int, void *p)
 // its DestroyPool has a `jal` where VIRadialFloraModel's has nothing.
 // (moved to vi.h -- phase 51)
 
-class VIRadialFloraInst
-{
-public:
-    VIMatrix44 m_world;         // +0x00
-    VISphere   m_sphere;        // +0x40
-    int        m_a, m_b, m_c, m_d;  // +0x50
-};
+// (moved to vi.h -- phase 61)
 
 // One byte, and the constructor is one `sb`.
 // (moved to vi.h -- phase 51)

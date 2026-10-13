@@ -228,6 +228,27 @@ float VIHSprite::GetPlayRate(int i)
 // Phase 47 -- the rest of the class.
 // ---------------------------------------------------------------------------
 
+// VIHSpriteFrame::Pack -- 0x00444D98, ahead of the class it serves.  Rotation
+// in 1/32767, scale and translation in 1/512, each rounded half away from zero
+// and clamped to a short.  Both the rounding and the clamp are MACROS, which
+// is why the product is recomputed at every test.
+#define VIROUND(x) ((x) < 0.0f ? (int)((x) - 0.5f) : (int)((x) + 0.5f))
+
+static inline void PackQuat(VIVect4S16 &out, const VIQuat &q, float k)
+{
+    out.x = VIMIN(32767, VIMAX(-32768, VIROUND(q.x * k)));
+    out.y = VIMIN(32767, VIMAX(-32768, VIROUND(q.y * k)));
+    out.z = VIMIN(32767, VIMAX(-32768, VIROUND(q.z * k)));
+    out.w = VIMIN(32767, VIMAX(-32768, VIROUND(q.w * k)));
+}
+
+void VIHSpriteFrame::Pack(VIHSpritePackFrame &p)
+{
+    PackQuat(p.m_rot, m_rot, 32767.0f);
+    VIQuat st(m_scale, m_trans.x, m_trans.y, m_trans.z);
+    PackQuat(p.m_scaleTrans, st, 512.0f);
+}
+
 VIHSprite::VIHSprite()
 {
     m_type = 4;
@@ -305,6 +326,44 @@ int VIHSprite::GetNodeFixScale(int i, VIVect3 &v)
 {
     VIHSpriteNode *n = &m_nodes.m_data[i];
     v = n->m_fixScale;
+    return 0;
+}
+
+// The world bind transform goes into the node's own frame and its inverse into
+// +0xA0; the REST pose is that transform taken back into the parent's space --
+// or, for a root, the bind pose itself.
+int VIHSprite::SetNodeBindPose(int i, const VIQuat &q, float s, const VIVect3 &t)
+{
+    VIMatrix44 m, r;
+    VIVector<VIHSpriteNode> *a = &m_nodes;
+
+    // A fresh element pointer per statement: every store re-derives the
+    // element address, base first.
+    VIHSpriteNode *n0 = &a->m_data[i];
+    n0->m_bind.m_rot = q;
+    VIHSpriteNode *n1 = &a->m_data[i];
+    n1->m_bind.m_scale = s;
+    VIHSpriteNode *n2 = &a->m_data[i];
+    n2->m_bind.m_trans = t;
+    m.Transform(q, s, t);
+    VIHSpriteNode *n3 = &a->m_data[i];
+    n3->m_invBindWorld.Invert(m);
+
+    VIHSpriteNode *n4 = &a->m_data[i];
+    if (n4->m_parent != -1)
+    {
+        r.Mul(m, a->m_data[n4->m_parent].m_invBindWorld);
+        VIHSpriteNode *n5 = &a->m_data[i];
+        r.ConvertTo(n5->m_rest.m_rot, n5->m_rest.m_scale, n5->m_rest.m_trans);
+    }
+    else
+    {
+        n4->m_rest.m_rot = q;
+        VIHSpriteNode *n6 = &a->m_data[i];
+        n6->m_rest.m_scale = s;
+        VIHSpriteNode *n7 = &a->m_data[i];
+        n7->m_rest.m_trans = t;
+    }
     return 0;
 }
 
@@ -397,6 +456,72 @@ int VIHSprite::AddPlay(int anim, VIPlaybackType type, VIScene &sc)
 {
     VIHSpriteAnim *a = sc.Animation(anim);
     return AddPlay(anim, type, a->m_playSpeed, sc);
+}
+
+// The play record, then one play node per animation node whose ref id the
+// sprite's ref map can resolve -- a node the map does not know is skipped,
+// not an error.
+int VIHSprite::AddPlay(int anim, VIPlaybackType type, float speed, VIScene &sc)
+{
+    VIPool<VIHSpritePlay> *pool = &m_plays;
+    VIRefMap *map = sc.RefMap(m_refMap);
+    VIHSpriteAnim *a = sc.Animation(anim);
+    int i = pool->Add();
+
+    if (i < 0)
+        return -1;
+    if (sc.ShareAnimation(anim) < 0)
+        return -1;
+
+    pool->Value(i).m_animID = anim;
+    pool->Value(i).m_playbackType = type;
+    pool->Value(i).m_interpolate = 1;
+    pool->Value(i).m_blendMode = 0;
+    pool->Value(i).m_blendStart = sc.GetTime();
+    pool->Value(i).m_blendDuration = 0;
+    pool->Value(i).m_weight = 0.0f;
+    pool->Value(i).m_rate = a->m_playRate;
+    pool->Value(i).m_speed = speed;
+    pool->Value(i).m_frameA = 0;
+    pool->Value(i).m_frameB = 0;
+    pool->Value(i).m_timeAccum = 0.0f;
+    pool->Value(i).m_frameT = 0.0f;
+    pool->Value(i).m_lastTime = sc.GetTime();
+    pool->Value(i).m_frameRate = 0.0f;
+    pool->Value(i).m_numNodes = 0;
+    pool->Value(i).m_firstNode = -1;
+    pool->Value(i).m_pad58 = -1;
+
+    for (int k = 0; k < a->m_numNodes; k++)
+    {
+        int key = a->m_nodes[k].m_refID;
+        int f = map->m_map.Find(key);
+        int node;
+
+        if (f != map->m_map.End())
+            node = map->m_map.Value(f);
+        else
+            node = -1;
+
+        if (node != -1)
+        {
+            int n = m_playNodes.Add();
+
+            if (n < 0)
+                return -1;
+            if (m_plays.Value(i).m_numNodes == 0)
+                m_plays.Value(i).m_firstNode = n;
+            m_plays.Value(i).m_pad58 = n;
+            m_playNodes.Value(n).m_a = 0;
+            m_playNodes.Value(n).m_b = node;
+            m_playNodes.Value(n).m_c = a->m_nodes[k].m_firstFrame;
+            m_plays.Value(i).m_numNodes++;
+        }
+    }
+
+    if (PrecalcPlayback(i) < 0)
+        return -1;
+    return i;
 }
 
 int VIHSprite::AddPlayWithSync(int anim, int sync, VIScene &sc)
@@ -844,6 +969,32 @@ int VIHSprite::Collide(VICollSphere &s, VISceneFilter &f, VIScene &sc, VICollide
             t.Mul(m_nodes.m_data[m_attach.Value(i).m_node].m_world, m);
             c.SetWorld(t);
             if (sc.Sprite(m_attach.Value(i).m_sprite)->Collide(s, f, sc, c))
+            {
+                f.m_hitAttachment = i;
+                hit = 1;
+            }
+        }
+    }
+    return hit;
+}
+
+// The sphere overload above with the ray handed down instead -- slot 5 of the
+// attachment's vtable rather than slot 4.
+int VIHSprite::Collide(VICollRay &ray, VISceneFilter &f, VIScene &sc, VICollide &c)
+{
+    VIMatrix44 m;
+    VIMatrix44 t;
+    int hit = 0;
+    if (Process(-1, sc) < 0)
+        return -1;
+    CalcTransAboutCenter(*c.GetWorld(), sc, m);
+    for (int i = m_attach.Begin(); i != m_attach.End(); i = m_attach.Next(i))
+    {
+        if (m_attach.Value(i).m_node != -1)
+        {
+            t.Mul(m_nodes.m_data[m_attach.Value(i).m_node].m_world, m);
+            c.SetWorld(t);
+            if (sc.Sprite(m_attach.Value(i).m_sprite)->Collide(ray, f, sc, c))
             {
                 f.m_hitAttachment = i;
                 hit = 1;

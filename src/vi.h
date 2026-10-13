@@ -546,6 +546,15 @@ public:
     // the implicit copy constructor is an unaligned `ldl`/`ldr` block move.
     VIVect2I(const VIVect2I &v) { x = v.x; y = v.y; }
     VIVect2I &operator=(const VIVect2I &v) { x = v.x; y = v.y; return *this; }
+    // Phase 61, VIRadialFloraSystem::Update: a 0/1 VALUE, `move a1,zero` in
+    // the first branch's delay slot and `li a1,1` on the way out.
+    int operator!=(const VIVect2I &v) const { return x != v.x || y != v.y; }
+    // Phase 61, VIRadialFloraSystem::CalcRadialLoc.  An inline CALL inside a
+    // VIMIN/VIMAX is what stops fold() turning the macros into MIN_EXPR and
+    // MAX_EXPR (operand_equal_p refuses a CALL_EXPR), so the clamp threads
+    // and branches; and the returned reference is the address register the
+    // store goes through.
+    int &operator[](int i) { return (&x)[i]; }
     // Phase 42.  VIUI::FrameFillRectangle insets its rectangle by a temporary
     // built twice at the SAME stack slot -- `r[0] += VIVect2I(2,2)` -- which is
     // why the constant pair is stored, read, and stored again between the two.
@@ -2911,7 +2920,7 @@ public:
     ~VIParticleEmitter();
 
     int  Create(VIParticleSystem *s, VIParticleDefinition *d);
-    int  Destroy();
+    void Destroy();  // phase 61: VOID -- VICSprite::Release (see there)
 
     VIMatrix44 &Space() const;
     void  SetSpace(const VIMatrix44 &m);
@@ -3785,8 +3794,8 @@ public:
     int Create(VIScene *sc);
     int Destroy();
 
-    int GetLastImpactTime(VIScene &sc, unsigned int a, int b, int c, int d,
-                          int *e, int *f);
+    int GetLastImpactTime(VIScene &sc, unsigned int start, int caster, int target,
+                          int numSecondary, int *secondary, int *out);
 
     VIScene         *m_scene;         // +0x08
     VISpellEventList m_casterEvents;  // +0x0C
@@ -3814,6 +3823,7 @@ public:
     int  Trigger(int a, int b);
     VISpellEventDriver *AddSpellEventDriver(VISpellEventList *l, int actor);
     int  Process();
+    int  ParticleCount() const;
 
     VISpellEffect  *m_effect;           // +0x00
     VIScene        *m_scene;            // +0x04
@@ -3976,6 +3986,8 @@ public:
     static int GetRobeTexture(int robe, VICSpriteTextSlot slot);
     static int GetHelm(VICSpriteArmorSet set);
     static VIColor32 *GetTintColor(VICSpriteTint tint);
+    // Phase 61: void, and the raster is not used.
+    static void SetResources(VIRaster &r, VIDictionary &d);
 
     static VIColor32 Tints[15];
     static int       Armor[9][5];
@@ -4845,43 +4857,56 @@ public:
 //   +0x00  VIScene   *m_scene
 //   +0x04  VIRaster  *m_raster      scene+0x4BA0
 //   +0x08  VICollide *m_collide     scene+0x4BA8
-//   +0x0C  int        m_zone        -1
-//   +0x10  int        m_row, m_row2, m_col, m_col2
+//   +0x0C  VIRadialFloraLoc m_loc  (zone -1, cell, sub-cell)
 //   +0x20  VIRadialFloraSwatch *m_swatches[9]
 //   +0x44  int        m_numSorted
 //   +0x48  VIRadialFloraSort m_sorted[700]
 //   +0x2118 int       m_rebuild
 // ---------------------------------------------------------------------------
-class VIRadialFloraInst;
-
-// 0x34 bytes, which is what CreateSwatch hands __builtin_new: a bounding box,
-// the zone address it was built for, a seed, and the instance array whose
-// destructor every release path calls at +0x2C.
-class VIRadialFloraSwatch
+// One placed plant, 96 bytes: its world transform, its bounding sphere (the
+// frustum test DrawSwatch makes), and the prim buffer and material palette
+// CreateFloraInsts copies out of the zone's VIRadialFloraModel.  Phase 24's
+// stub out of viarray.cpp; its constructor is three deep (VIVect4[4], the
+// VIMatrix44 VU0 zeroing, then the sphere's double pass).
+class VIRadialFloraInst
 {
 public:
-    VIVect3 m_min;      // +0x00
-    VIVect3 m_max;      // +0x0C
-    int     m_row;      // +0x18
-    int     m_col;      // +0x1C
-    int     m_subRow;   // +0x20
-    int     m_subCol;   // +0x24
-    int     m_seed;     // +0x28
-    VIArray<VIRadialFloraInst> m_insts;   // +0x2C
+    VIMatrix44 m_world;         // +0x00
+    VISphere   m_sphere;        // +0x40
+    int        m_prim;          // +0x50
+    int        m_pal;           // +0x54
+    int        m_c, m_d;        // +0x58
 };
 
-// Six ints.  Only the first three are pinned by the functions in this phase:
-// CalcZoneIndex hands +0x08 and +0x04 to VIScene::GetWorldGridCenter and takes
-// the leaf back through +0x00.
+// Phase 61: a world-grid cell, a 40-unit sub-cell of it, and the zone leaf
+// the cell's centre lands in.  20 bytes -- Update builds two on its stack at
+// +64 and +96 and the system carries one at +0x0C -- and the constructor is
+// two VIVect2I zeroings and then `m_zone = -1`, which is what the system's own
+// constructor and Update's prologue both emit.  The cell is (row, col): x is
+// tested against GetWorldGridNumRows and y against ...NumCols, and
+// GetWorldGridCenter takes them as (col, row).
 class VIRadialFloraLoc
 {
 public:
-    int m_zone;         // +0x00
-    int m_row;          // +0x04
-    int m_col;          // +0x08
-    int m_subRow;       // +0x0C
-    int m_subCol;       // +0x10
-    int m_slot;         // +0x14
+    int      m_zone;    // +0x00
+    VIVect2I m_cell;    // +0x04  x row, y col
+    VIVect2I m_sub;     // +0x0C  x sub-row, y sub-col, each in [-25, 24]
+
+    VIRadialFloraLoc() { m_zone = -1; }
+};
+
+// 0x34 bytes, which is what CreateSwatch hands __builtin_new: the swatch's
+// bounding box (zeroed twice -- VIBBox's members, then its body), the location
+// it was built for, and the instance array whose destructor every release path
+// calls at +0x2C.  Phase 61 replaces phase 32's loose ints with the Loc: the
+// inline constructor's `-1` at +0x18 is the Loc's body, landing between its
+// two VIVect2I zeroings and the array's constructor.
+class VIRadialFloraSwatch
+{
+public:
+    VIBBox           m_bbox;    // +0x00
+    VIRadialFloraLoc m_loc;     // +0x18
+    VIArray<VIRadialFloraInst> m_insts;   // +0x2C
 };
 
 class VIRadialFloraSort
@@ -4907,17 +4932,19 @@ public:
     // embedded system, Update with the camera position and its result tested.
     int  Update(const VIVect3 &at);
     int  Render(VICamera &cam);
+    int  DrawSwatch(int i, VICamera &cam);
+    int  CreateSwatch(int i, VIRadialFloraLoc &loc);
+    int  CreateFloraInsts(int i);
+    int  CalcRadialLoc(VIVect3 p, VIRadialFloraLoc &loc);
 
     static int QSortCompare(const void *a, const void *b);
 
     VIScene   *m_scene;                 // +0x00
     VIRaster  *m_raster;                // +0x04
     VICollide *m_collide;               // +0x08
-    int        m_zone;                  // +0x0C
-    int        m_row;                   // +0x10
-    int        m_row2;                  // +0x14
-    int        m_col;                   // +0x18
-    int        m_col2;                  // +0x1C
+    // Phase 61: one VIRadialFloraLoc, the location the grid was last built
+    // around -- Update compares a fresh one against it and copies it back.
+    VIRadialFloraLoc m_loc;             // +0x0C
     VIRadialFloraSwatch *m_swatches[9]; // +0x20
     int        m_numSorted;             // +0x44
     VIRadialFloraSort m_sorted[700];    // +0x48
@@ -5014,6 +5041,8 @@ enum VIPlaybackType
 // move (VIQuat has no user operator=), the scale as one word, and the
 // translation component by component through a pointer at +0x14 (VIVect3 does
 // have one -- Phase 4).
+class VIHSpritePackFrame;
+
 class VIHSpriteFrame
 {
 public:
@@ -5055,6 +5084,9 @@ public:
         // VIVector<VIHSpriteNode>::Add, where this constructor is inlined.
         m_trans.Zero();
     }
+
+    // Phase 61, SUPPORT 0x00444D98: quantise to the packed form.
+    void Pack(VIHSpritePackFrame &p);
 };
 
 // Four packed shorts.  The user operator= is what makes a copy four halfword
@@ -5496,6 +5528,16 @@ public:
 
     int PointInSolid(const VIVect3 &p);
 
+    // Phase 61, VICSprite::SetDefaults: the length and radius are stored off
+    // the capsule's OWN address register, so the four go through a member.
+    void Set(const VIVect3 &base, const VIVect3 &dir, float length, float radius)
+    {
+        m_base = base;
+        m_dir = dir;
+        m_length = length;
+        m_radius = radius;
+    }
+
     VIVect3 m_base;    // +0x00
     VIVect3 m_dir;     // +0x0C  unit axis
     float   m_length;  // +0x18
@@ -5547,10 +5589,13 @@ public:
     int   m_sync;           // +0x0C
     int   m_priority[2];    // +0x10   0
     int   m_sound[2];       // +0x18  -1
-    float m_volume;         // +0x20   1.0
-    float m_pitch;          // +0x24   1.0
-    float m_particle;       // +0x28   phase 60: a FLOAT, from the play list
-    float m_trigger;        // +0x2C   phase 60: a FLOAT, from the play list
+    // Phase 61: TWO arrays, one entry per sound layer -- VICSprite::Process
+    // indexes both by the layer (`this + (anim*52 + layer*4) + 0x1C8`), the
+    // volume scale at +0x20 and the pitch variation at +0x28, and the play
+    // list parser reads them as (vol, var) per layer.  They were m_volume,
+    // m_pitch, m_particle and m_trigger.
+    float m_volume[2];      // +0x20   1.0
+    float m_pitchVar[2];    // +0x28   0.0
     int   m_channel;        // +0x30   SetAnimSoundChannels writes only this
 
     VICSpriteAnimEntry()
@@ -5564,10 +5609,10 @@ public:
         m_sound[1] = -1;
         m_sound[0] = -1;
         m_channel = 0;
-        m_pitch = 1.0f;
-        m_volume = 1.0f;
-        m_trigger = 0.0f;
-        m_particle = 0.0f;
+        m_volume[1] = 1.0f;
+        m_volume[0] = 1.0f;
+        m_pitchVar[1] = 0.0f;
+        m_pitchVar[0] = 0.0f;
     }
 };
 
@@ -5634,14 +5679,16 @@ public:
     int   m_sound;    // +0x00  -1
     float m_volume;   // +0x04   0
     int   m_channel;  // +0x08  -1
-    long  m_time;     // +0x10   0
 
+    // Phase 61: TWELVE bytes.  The eight-byte zero at +0x10 is not the sound's
+    // -- the constructor stores it off the VICSprite's own base, and
+    // VICSprite::Copy moves exactly 12 bytes here -- it is
+    // VICSprite::m_emitterTime, which UpdateParticleEmitters stamps.
     VICSpriteSoundState()
     {
         m_sound = -1;
-        m_channel = -1;
         m_volume = 0.0f;
-        m_time = 0;
+        m_channel = -1;
     }
 };
 
@@ -5797,21 +5844,31 @@ public:
     int        m_action;        // +0x11E8  -1
     int        m_actionSeq;     // +0x11EC   0
     VICSpriteSoundState m_snd;  // +0x11F0
+    // Phase 61: the scene time UpdateParticleEmitters last ran, zeroed by a
+    // mem-initialiser in the constructor's member order.
+    long       m_emitterTime;   // +0x1200
     VIArray<VICSpritePartEmitter> m_emitters;  // +0x1208
 
-    static int PrimSoundRefID;
-    static int SecSoundRefID;
-    static int PrimSoundBPURefID;
-    static int SecSoundBPURefID;
-    static int PrimSoundBPLRefID;
-    static int SecSoundBPLRefID;
-    static int Particle1RefID;
-    static int Particle2RefID;
-    static int Particle1BPURefID;
-    static int Particle2BPURefID;
-    static int Particle1BPLRefID;
-    static int Particle2BPLRefID;
+    // Phase 61: CONST, and VICSprite::Process is the proof -- the loop hoists
+    // the eight of these it reads twice into stack slots ahead of a body full
+    // of calls, which loop.c does only for an unchanging MEM.  Hashed at
+    // static-initialisation time (the TU's __static_initialization_and_
+    // destruction_0).
+    static const int PrimSoundRefID;
+    static const int SecSoundRefID;
+    static const int PrimSoundBPURefID;
+    static const int SecSoundBPURefID;
+    static const int PrimSoundBPLRefID;
+    static const int SecSoundBPLRefID;
+    static const int Particle1RefID;
+    static const int Particle2RefID;
+    static const int Particle1BPURefID;
+    static const int Particle2BPURefID;
+    static const int Particle1BPLRefID;
+    static const int Particle2BPLRefID;
     static int FontResourceID;
+    // Phase 61: three VIColor32s, built by the TU's static initialiser with
+    // the four-byte constructor -- not a byte table.
     static VIColor32 NameColors[];
 };
 
@@ -6509,7 +6566,7 @@ public:
 //   +0x00  VIScene *m_scene
 //   +0x04  int      m_track     -1
 //   +0x08  int      m_state
-//   +0x0C  int      m_loaded
+//   +0x0C  float    m_loaded    the fade volume (phase 61)
 //   +0x10  float    m_rate      0.01
 //   +0x14  int      m_stopNow
 //   +0x18  int      m_sound     -1, the device's sound index
@@ -6528,12 +6585,16 @@ public:
     void Stop(bool now);
     void StopNow();
     int  Preload(int track);
-    int  Unload();
+    // void (phase 61): nothing writes v0 on any path, and an int return is
+    // what moved Free's -1 out of v0 and into v1.
+    void Unload();
 
     VIScene *m_scene;    // +0x00
     int      m_track;    // +0x04
     int      m_state;    // +0x08
-    int      m_loaded;   // +0x0C
+    // A FLOAT (phase 61): Process ramps it by m_rate and hands it to
+    // VISoundDevice::SetVolume -- the current fade volume, not a flag.
+    float    m_loaded;   // +0x0C
     float    m_rate;     // +0x10
     int      m_stopNow;  // +0x14
     int      m_sound;    // +0x18
@@ -7403,7 +7464,10 @@ public:
     virtual int FilterActor(VIScene &scene, int actor);
 };
 
-class VIRadialFloraFilter : public VISceneFilter
+// Phase 61: an ACTOR filter, not a scene filter -- CreateFloraInsts builds
+// one on the stack with __13VIActorFilter and stores the vptr at +4, and its
+// __tf calls __tf13VIActorFilter.
+class VIRadialFloraFilter : public VIActorFilter
 {
 public:
     virtual int FilterActor(VIScene &scene, int actor);
@@ -7836,7 +7900,10 @@ public:
 // Element types of three of VIZone's arrays.  Only their SIZES are known --
 // the address arithmetic states them -- and nothing in this phase indexes a
 // field of one.
-class VIRadialFloraSet      { public: int m_model, m_dist, m_c; };   // 12
+// Phase 61: m_model is the FIRST dist index and m_dist the dist COUNT (the
+// names predate VIZoneRadialFlora::Precalc, which walks [m_model, m_model +
+// m_dist)); +0x08 is a FLOAT, the set's total weight, summed there.
+class VIRadialFloraSet      { public: int m_model, m_dist; float m_c; };   // 12
 
 // 28 bytes, and ParseZoneFloraSets names four of the seven words: a DictID, an
 // index and three floats.  The two after the id are never read from the file.
@@ -7844,8 +7911,8 @@ class VIRadialFloraDist
 {
 public:
     unsigned int m_id;    // +0x00
-    int          m_p04;
-    int          m_p08;
+    float        m_p04;   // Precalc: the cumulative weight at the dist's start
+    float        m_p08;   //          ... and at its end, both normalised
     int          m_set;   // +0x0C
     float        m_p10;
     float        m_p14;
@@ -7914,6 +7981,7 @@ public:
     VIArray<VIRadialFloraDist>  m_dists;   // +0x08
     VIArray<VIRadialFloraSet>   m_sets;    // +0x10
 
+    int Init();
     int Clear();
     int Precalc(VIScene &sc);
 };

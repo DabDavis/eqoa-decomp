@@ -340,18 +340,14 @@ int VIWalkControl::PitchDown(float t)
     if ((m_committed.m_flags & 0x10A8) == 0)
     {
         t = VIMIN(1.0f, VIMAX(-1.0f, t));
-        axis.x = 0.0f;
-        axis.y = 1.0f;
-        axis.z = 0.0f;
+        axis.Set(0.0f, 1.0f, 0.0f);
         AddVec(dir, axis, m_pitchAccel);
         AddVec(m_phys.m_torque, dir, t);
     }
     else
     {
         t = VIMIN(1.0f, VIMAX(0.0f, t));
-        axis.x = 0.0f;
-        axis.y = -1.0f;
-        axis.z = 0.0f;
+        axis.Set(0.0f, -1.0f, 0.0f);
         AddVec(dir, axis, m_swimAccel);
         AddVec(m_phys.m_force, dir, t);
     }
@@ -792,12 +788,15 @@ int VIWalkControl::UpdatePhysics(float dt)
     // ONE powf call with its argument selected, not three calls cross-jumped:
     // the guest loads the chosen damping into f12 in each arm's DELAY SLOT and
     // falls into a single `jal`.
-    if (IN_LIQUID(m_phys))
-        k = m_swimDamping;
-    else if ((m_phys.m_flags & 1) == 0)
-        k = m_parm44;
+    if (!IN_LIQUID(m_phys))
+    {
+        if (m_phys.m_flags & 1)
+            k = m_moveDamping;
+        else
+            k = m_parm44;
+    }
     else
-        k = m_moveDamping;
+        k = m_swimDamping;
     damp = powf(k, dt);
 
     f = m_phys.m_force;
@@ -906,8 +905,7 @@ int VIWalkControl::ViewRelativeMove(const VIVect3 &ref, float x, float y)
 
     if (m_phys.m_flags & 0x200)
     {
-        Move(x, 0.0f);
-        return 0;
+        return Move(x, 0.0f);
     }
     if (!ON_FLOOR_OR_LIQUID(m_phys))
         return 0;
@@ -919,17 +917,15 @@ int VIWalkControl::ViewRelativeMove(const VIVect3 &ref, float x, float y)
     u.y = 0.0f;
     u.z = ref.z;
     u.Normalize();
-    up.x = 0.0f;
-    up.y = 1.0f;
-    up.z = 0.0f;
+    up.Set(0.0f, 1.0f, 0.0f);
     Cross(w, u, up);
     w.Normalize();
     if (m_moveDeadzone < mag)
     {
-        dir.x = u.x * v.x + w.x * v.y;
-        dir.y = u.y * v.x + w.y * v.y;
-        dir.z = u.z * v.x + w.z * v.y;
-        if (m_runThreshold < mag && (m_phys.m_flags & 0x3800) == 0)
+        dir = u;
+        dir *= v.x;
+        AddVec(dir, w, v.y);
+        if (m_runThreshold < mag && !(IN_MUD(m_phys) || m_phys.m_bits.slowRun))
             accel = m_runAccel;
         else
             accel = m_walkAccel;
@@ -958,8 +954,7 @@ int VIWalkControl::ViewRelativeWalk(const VIVect3 &ref, float x, float y)
 
     if (m_phys.m_flags & 0x200)
     {
-        Walk(x, 0.0f);
-        return 0;
+        return Walk(x, 0.0f);
     }
     if (!ON_FLOOR_OR_LIQUID(m_phys))
         return 0;
@@ -971,16 +966,14 @@ int VIWalkControl::ViewRelativeWalk(const VIVect3 &ref, float x, float y)
     u.y = 0.0f;
     u.z = ref.z;
     u.Normalize();
-    up.x = 0.0f;
-    up.y = 1.0f;
-    up.z = 0.0f;
+    up.Set(0.0f, 1.0f, 0.0f);
     Cross(w, u, up);
     w.Normalize();
     if (m_moveDeadzone < mag)
     {
-        dir.x = u.x * v.x + w.x * v.y;
-        dir.y = u.y * v.x + w.y * v.y;
-        dir.z = u.z * v.x + w.z * v.y;
+        dir = u;
+        dir *= v.x;
+        AddVec(dir, w, v.y);
         AddVec(m_phys.m_force, dir, m_walkAccel);
         dir.HPR(&h, &p, &r);
     }

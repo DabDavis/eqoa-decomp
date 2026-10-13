@@ -1,4 +1,4 @@
-// endpoint.cpp -- SUPPORT 0x004b9218..0x004bab40, one addressable party.
+// endpoint.cpp -- SUPPORT 0x004b9218..0x004baa20, one addressable party.
 //
 // An endpoint owns a tree of connections keyed by the far id, one list of
 // messages that have arrived for any of them, and a close set remembering the
@@ -8,19 +8,23 @@
 // out one at a time, so two connections made to the same far id at different
 // moments are told apart even after both are closed.
 //
-// PARTIAL.  The lifetime, segment-handling and serialisation half of this file
-// -- `connection_create`, `get_connection`, `send`, `send_reset_connection`,
-// `handle_segment`, `connection_free_arrivals`, `_connection_destroy`,
-// `destroy_buffer`, `reconcile_connections`, `create_buffer`, `transfer` and
-// `close` -- reads and writes `connection_t` and `segment_header_t` fields
-// directly, and those two layouts are settled in connection.cpp and drdp.cpp,
-// neither of which is written yet.  What is here is everything that reaches
-// the other structures only through their own accessors.
+// The original is `C:/code-frontiers-gm/drdp/endpoint.cpp`, a little over
+// 1,200 lines -- its asserts say so -- and the source below is padded to that
+// layout: an assert's `__LINE__` is an immediate, and so is the line the
+// `endpoint_connection_destroy` macro hands `_endpoint_connection_destroy`.
 #include "drdp.h"
 
 // A char ARRAY, not a literal: alignment 1, so the inline four-byte copy in
 // `endpoint_create` comes out `lwl`/`lwr` into `swl`/`swr` (message.cpp).
 static const char ENDPOINT_TAG[] = "ENDPOINT";
+static const char NULL_TAG[] = "NULL";
+
+// The asserting form that takes a printf format: the location is parked first
+// and the format quoted with it (uassert.cpp).
+#define VASSERTF(x, f) _uassert_set_location(__FILE__, __LINE__), _uassertf((x), (f))
+
+// Every destroy says where it came from; the close set records it.
+#define endpoint_connection_destroy(c) _endpoint_connection_destroy((c), __FILE__, __LINE__)
 
 int endpoint_get_vnode_offset(int iWhich)
 {
@@ -105,6 +109,287 @@ uns32 endpoint_get_instance(endpoint_t *pEndpoint)
     return pEndpoint->m_uiInstance++;
 }
 
+// A connection is made once per far id: a second one, or one to an endpoint
+// with no route, is refused.  Bit 0 of the flags says "we opened it", bit 1
+// "the far end's instance is already known".
+int endpoint_connection_create(endpoint_t *pEndpoint, connection_t **ppConnection, uns64 uiDst,
+                               uns64 uiRoute, uns32 uiInstance, int iFlags)
+{
+    int iResult;
+    route_t *pRoute;
+    connection_t *pConnection = 0;
+
+    if (uiRoute == (uns64)-1 || vtree_lookup(&pEndpoint->m_connections, &uiDst))
+        iResult = -1;
+    else
+    {
+        iResult = drdp_get_route(pEndpoint->m_pDrdp, uiRoute, &pRoute);
+        if (iResult == 0)
+        {
+            int iConnectionFlags = iFlags & 1;
+
+            if (iFlags & 2)
+                iConnectionFlags |= 2;
+            iResult = connection_create(&pConnection, pEndpoint, uiDst, uiInstance,
+                                        iConnectionFlags);
+            if (iResult == 0)
+            {
+                endpoint_connection_insert(pEndpoint, pConnection);
+                route_link_connection(pRoute, pConnection);
+                drdp_format_endpoint1(connection_get_src(pConnection));
+                drdp_format_endpoint2(connection_get_dst(pConnection));
+                connection_set_logger(pConnection,
+                                      drdp_get_default_logger(pEndpoint->m_pDrdp));
+                *ppConnection = pConnection;
+                pConnection = 0;
+            }
+        }
+    }
+    if (pConnection)
+        connection_destroy(pConnection);
+    return iResult;
+}
+
+// Find the connection to a far id, or make one -- but only between two
+// SOFTWARE endpoints, which is the one pairing `find_connection` refuses.
+int endpoint_get_connection(endpoint_t *pEndpoint, uns64 uiDst, connection_t **ppConnection)
+{
+    int iResult;
+    connection_t *pConnection = 0;
+
+    pConnection = (connection_t *)vtree_lookup(&pEndpoint->m_connections, &uiDst);
+    if (!pConnection)
+    {
+        if (!drdp_is_software_endpoint(uiDst)
+            || !drdp_is_software_endpoint(endpoint_get_id(pEndpoint)))
+        {
+            iResult = -1;
+            goto done;
+        }
+        iResult = endpoint_connection_create(pEndpoint, &pConnection, uiDst,
+                                             drdp_get_route_endpoint(pEndpoint->m_pDrdp, uiDst),
+                                             endpoint_get_instance(pEndpoint), 0);
+        if (iResult)
+            goto done;
+    }
+    *ppConnection = pConnection;
+    pConnection = 0;
+    iResult = 0;
+done:
+    if (pConnection)
+        connection_destroy(pConnection);
+    return iResult;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Three ways out.  A far id the drdp has no route for comes straight back as
+// a one-byte system message, type 22 "unreachable", queued as if it had
+// arrived from the far end.  A far id that lives in this same process is
+// delivered by building the message and enqueuing it on that endpoint --
+// no connection, no wire.  Everything else goes through a connection.
+void endpoint_send(endpoint_t *pEndpoint, uns64 uiDst, const void *pData, int iSize, int iType)
+{
+    message_t *pMessage = 0;
+    endpoint_t *pTo;
+    int iResult;
+
+    VASSERT( !endpoint_is_closed( pEndpoint ) );   // 315
+    VASSERT( iSize <= connection_get_max_message_size( iType ) );   // 316
+    if (!drdp_is_client(pEndpoint->m_pDrdp)
+        && drdp_get_route_endpoint(pEndpoint->m_pDrdp, uiDst) == (uns64)-1)
+    {
+        buffer_t buffer;
+        uns8 data[16];
+        message_t *pUnreachable;
+
+        buffer_init(&buffer, data, sizeof(data), BUFFER_LITTLE_ENDIAN);
+        buffer_append_uns8(&buffer, 22);
+        if (message_create(&pUnreachable, pEndpoint, 0, uiDst, endpoint_get_id(pEndpoint),
+                           buffer.data, buffer.position, 249, 0,
+                           drdp_get_time(pEndpoint->m_pDrdp)) == 0)
+            endpoint_arrival_enqueue(pEndpoint, pUnreachable);
+        return;
+    }
+    pTo = drdp_find_endpoint(pEndpoint->m_pDrdp, uiDst);
+    if (!pTo)
+    {
+        connection_t *pConnection = 0;
+
+        iResult = endpoint_get_connection(pEndpoint, uiDst, &pConnection);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        VASSERT( iResult == 0 );   // 366
+        iResult = connection_send_internal(pConnection, (const uns8 *)pData, iSize, iType);
+
+
+        VASSERT( iResult == 0 );   // 370
+    }
+    else
+    {
+        iResult = message_create(&pMessage, pTo, 0, endpoint_get_id(pEndpoint), uiDst, pData,
+                                 iSize, iType, 0, drdp_get_time(pEndpoint->m_pDrdp));
+
+
+
+
+
+
+
+
+
+
+
+
+        VASSERT( iResult == 0 );   // 388
+        endpoint_arrival_enqueue(pTo, pMessage);
+    }
+}
+
 uns32 endpoint_get_time(endpoint_t *pEndpoint)
 {
     return drdp_get_time(pEndpoint->m_pDrdp);
@@ -113,6 +398,296 @@ uns32 endpoint_get_time(endpoint_t *pEndpoint)
 uns64 endpoint_get_id(const endpoint_t *pEndpoint)
 {
     return pEndpoint->m_uiId;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// A hardware pair is reset over the wire.  A software pair is answered by
+// the drdp's knowledge of the source: status 2 means the source lives behind
+// a route the header names, and nothing is sent at all.
+void endpoint_send_reset_connection(endpoint_t *pEndpoint, const segment_header_t *pHeader)
+{
+    int iStatus;
+
+    if (drdp_is_hardware_endpoint(pHeader->m_uiSrc) || drdp_is_hardware_endpoint(pHeader->m_uiDst))
+    {
+        drdp_send_reset_connection(pEndpoint->m_pDrdp, pHeader);
+        return;
+    }
+    iStatus = drdp_get_sw_endpoint_status(pEndpoint->m_pDrdp, pHeader->m_uiSrc);
+    VASSERT( drdp_is_software_endpoint( pHeader->m_uiSrc ) && drdp_is_software_endpoint( pHeader->m_uiDst ) );   // 433
+    switch (iStatus)
+    {
+    case 0:
+    case 1:
+        break;
+    case 2:
+
+
+
+
+
+
+
+        VASSERT( pHeader->m_uiFlags & 0x8000 );   // 447
+        break;
+    }
+}
+
+
+
+
+
+
+
+
+
+// One segment for this endpoint.  A segment from a connection this endpoint
+// closed in the last two minutes is answered with a reset.  An unknown
+// sender that carries an instance number opens a connection; one that does
+// not is reset.  A remote hardware endpoint that has moved to a new drdp port
+// is found under its LEADER port (0xfffe) and re-keyed in place.
+int endpoint_handle_segment(endpoint_t *pEndpoint, segment_header_t *pHeader, buffer_t *pBuffer)
+{
+    int iResult;
+    int iCreated = 0;
+    connection_t *pConnection = 0;
+
+    if (pHeader->m_uiFlags & 0x2000)
+    {
+        if (close_set_lookup(&pEndpoint->m_closeSet, pHeader->m_uiSrc, pHeader->m_uiCrc))
+        {
+            if (pHeader->m_uiFlags & 0x2000)
+            {
+                drdp_format_endpoint1(pHeader->m_uiSrc);
+                drdp_format_endpoint2(pHeader->m_uiDst);
+            }
+            endpoint_send_reset_connection(pEndpoint, pHeader);
+            goto skip;
+        }
+    }
+    close_set_release_expired(&pEndpoint->m_closeSet, drdp_get_time(pEndpoint->m_pDrdp));
+    VASSERT( ( pHeader->m_uiFlags & 0x20000 ) == 0 );   // 485
+    pConnection = (connection_t *)vtree_lookup(&pEndpoint->m_connections, &pHeader->m_uiSrc);
+    if (!pConnection)
+    {
+        if (drdp_is_remote_hardware_endpoint(pHeader->m_uiSrc))
+        {
+            drdp_addr_t addr;
+            uns16 usDrdpPort;
+            uns64 uiLeader;
+
+            drdp_endpoint_to_address(pHeader->m_uiSrc, addr.m_ucIp, &addr.m_usPort, &usDrdpPort);
+            drdp_address_to_endpoint(addr.m_ucIp, addr.m_usPort, DRDP_PORT_LEADER, &uiLeader);
+            pConnection = (connection_t *)vtree_lookup(&pEndpoint->m_connections, &uiLeader);
+            if (pConnection)
+            {
+                route_t *pRoute;
+                int iLimit;
+
+                iResult = drdp_get_route(pEndpoint->m_pDrdp,
+                                         drdp_get_route_endpoint(pEndpoint->m_pDrdp,
+                                                                 pHeader->m_uiSrc),
+                                         &pRoute);
+                if (iResult)
+                    goto out;
+                iLimit = connection_get_bps_limit(pConnection);
+                endpoint_connection_remove(pConnection);
+                route_unlink_connection(pConnection);
+                connection_set_remote_id(pConnection, pHeader->m_uiSrc);
+                route_link_connection(pRoute, pConnection);
+                endpoint_connection_insert(pEndpoint, pConnection);
+                connection_set_bps_limit(pConnection, iLimit);
+            }
+        }
+    }
+    if (pConnection)
+    {
+        if (pHeader->m_uiFlags & 0x10000)
+        {
+            iResult = connection_handle_reset(pConnection, pHeader);
+            goto out;
+        }
+        if ((pHeader->m_uiFlags & 0x2000) && connection_has_instance_remote(pConnection)
+            && pHeader->m_uiCrc != connection_get_instance_remote(pConnection)
+            && pHeader->m_uiCrc != connection_get_instance_remote(pConnection))
+        {
+            if (drdp_is_hardware_endpoint(pHeader->m_uiSrc)
+                || drdp_is_hardware_endpoint(pHeader->m_uiDst))
+            {
+                if (pHeader->m_uiFlags & 0x4000)
+                    connection_terminate_reason(pConnection, 1, 11);
+            }
+            else
+                connection_rx_reset(pConnection);
+        }
+    }
+    if (!pConnection)
+    {
+        if ((pHeader->m_uiFlags & 0x2000) && !(pHeader->m_uiFlags & 0x10000))
+        {
+            uns64 uiRoute;
+            uns32 uiInstance;
+            int iFlags;
+
+            if (drdp_is_client(pEndpoint->m_pDrdp))
+                uiRoute = pHeader->m_uiRoute;
+            else
+                uiRoute = drdp_get_route_endpoint(pEndpoint->m_pDrdp, pHeader->m_uiSrc);
+            if (pHeader->m_uiFlags & 0x4000)
+            {
+                uiInstance = pHeader->m_uiCrc;
+                iFlags = 2;
+            }
+            else
+            {
+                uiInstance = endpoint_get_instance(pEndpoint);
+                iFlags = 0;
+            }
+            iCreated = 1;
+            iResult = endpoint_connection_create(pEndpoint, &pConnection, pHeader->m_uiSrc, uiRoute,
+                                                 uiInstance, iFlags);
+            if (iResult)
+                goto out;
+        }
+        else
+            endpoint_send_reset_connection(pEndpoint, pHeader);
+    }
+    if (pConnection)
+    {
+        if (connection_is_terminated(pConnection))
+        {
+            uns8 ucReason = 4;
+
+            connection_send_reset(pConnection, &ucReason, 1);
+        }
+        else
+        {
+            buffer_t buffer;
+
+            buffer_init_read(&buffer, buffer_get_position_ptr(pBuffer), pHeader->m_uiSize,
+                             BUFFER_LITTLE_ENDIAN);
+            iResult = connection_handle_segment(pConnection, pHeader, &buffer);
+            if (iResult)
+            {
+                if (iCreated)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    endpoint_connection_destroy(pConnection);   // 654
+                goto out;
+            }
+        }
+    }
+skip:
+    buffer_skip(pBuffer, pHeader->m_uiSize);
+    iResult = 0;
+out:
+    return iResult;
+}
+
+// A connection going away takes its arrivals with it -- except between two
+// software endpoints, where the message outlives the connection and is only
+// cut loose from it.
+void endpoint_connection_free_arrivals(connection_t *pConnection)
+{
+    endpoint_t *pEndpoint = connection_get_endpoint(pConnection);
+    message_t *pMessage = (message_t *)vlist_peek_head(&pEndpoint->m_arrivals);
+
+    while (pMessage)
+    {
+        message_t *pNext = (message_t *)vlist_get_next(&pEndpoint->m_arrivals, pMessage);
+
+        if (message_get_connection(pMessage) == pConnection)
+        {
+            if (drdp_is_software_endpoint(message_get_src(pMessage))
+                && drdp_is_software_endpoint(message_get_dst(pMessage)))
+                message_set_connection(pMessage, 0);
+            else
+            {
+                endpoint_arrival_remove(pEndpoint, pMessage);
+                message_destroy(pMessage);
+            }
+        }
+        pMessage = pNext;
+    }
 }
 
 // How many of the endpoint's queued arrivals belong to one connection.  The
@@ -133,6 +708,68 @@ int endpoint_connection_get_arrival_count(connection_t *pConnection)
         pMessage = pNext;
     }
     return iCount;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Reached through the `endpoint_connection_destroy` macro, which hands it the
+// caller's file and line -- the close set keeps them and nothing reads them.
+// A connection whose far instance is known goes into the close set, so a late
+// segment from it is reset rather than re-opening it.
+void _endpoint_connection_destroy(connection_t *pConnection, const char *pFile, int iLine)
+{
+    endpoint_t *pEndpoint = connection_get_endpoint(pConnection);
+    int iResult;
+
+    endpoint_connection_remove(pConnection);
+    route_unlink_connection(pConnection);
+    if (!connection_is_closed(pConnection))
+        endpoint_connection_free_arrivals(pConnection);
+    drdp_format_endpoint1(connection_get_src(pConnection));
+    drdp_format_endpoint2(connection_get_dst(pConnection));
+    if (connection_has_instance_remote(pConnection))
+    {
+        iResult = close_set_insert(&pEndpoint->m_closeSet, connection_get_dst(pConnection),
+                                   connection_get_instance_remote(pConnection),
+                                   connection_get_time_last_instance_arrival(pConnection),
+                                   drdp_get_time(pEndpoint->m_pDrdp), pFile, iLine);
+        VASSERT( iResult == 0 );   // 770
+    }
+    connection_destroy(pConnection);
 }
 
 // Two questions, and the second is the one that matters: a freed endpoint may
@@ -173,9 +810,246 @@ void endpoint_free_arrivals(endpoint_t *pEndpoint, buffer_t *pBuffer)
     }
 }
 
+// Serialise and free.  The record is the tag, the id, the instance counter,
+// the flags, the two counts and +0xA8; the close set and every connection
+// follow it, then the arrivals.  With no buffer it is a plain destroy.
+void endpoint_destroy_buffer(endpoint_t *pEndpoint, buffer_t *pBuffer)
+{
+    connection_t *pConnection;
+
+    vtree_get_size(&pEndpoint->m_connections);
+    vlist_get_size(&pEndpoint->m_arrivals);
+    drdp_format_endpoint1(pEndpoint->m_uiId);
+    if (pBuffer)
+    {
+        int iCount = vtree_get_size(&pEndpoint->m_connections);
+
+        buffer_appendm_uns8(pBuffer, (const uns8 *)pEndpoint->m_szTag, 4);
+        buffer_append_packed_uns64(pBuffer, pEndpoint->m_uiId);
+        buffer_append_uns32(pBuffer, pEndpoint->m_uiInstance);
+        buffer_append_uns32(pBuffer, pEndpoint->m_iFlags);
+        buffer_append_packed_uns64(pBuffer, iCount);
+        buffer_append_packed_uns64(pBuffer, vlist_get_size(&pEndpoint->m_arrivals));
+        buffer_append_packed_uns32(pBuffer, pEndpoint->m_uiA8);
+    }
+    close_set_destroy_buffer(&pEndpoint->m_closeSet, pBuffer, drdp_get_time(pEndpoint->m_pDrdp));
+    while ((pConnection = (connection_t *)vtree_peek_first(&pEndpoint->m_connections)) != 0)
+    {
+        endpoint_connection_remove(pConnection);
+        route_unlink_connection(pConnection);
+        connection_destroy_buffer(pConnection, pBuffer);
+    }
+    if (!endpoint_is_closed(pEndpoint))
+        endpoint_free_arrivals(pEndpoint, pBuffer);
+    memcpy(pEndpoint->m_szTag, NULL_TAG, 4);
+    free(pEndpoint);
+}
+
 void endpoint_destroy(endpoint_t *pEndpoint)
 {
     endpoint_destroy_buffer(pEndpoint, 0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Two endpoints in this process each hold a connection to the other: tie the
+// pair together so each side delivers straight into the other, then drop
+// both connections.
+void endpoint_reconcile_connections(endpoint_t *pEndpoint, connection_t *pConnection,
+                                    endpoint_t *pWith)
+{
+    connection_t *pOther = 0;
+    int iResult;
+    uns64 uiId = endpoint_get_id(pEndpoint);
+    uns64 uiWith = endpoint_get_id(pWith);
+
+    drdp_format_endpoint1(uiId);
+    drdp_format_endpoint2(uiWith);
+    iResult = endpoint_get_connection(pWith, endpoint_get_id(pEndpoint), &pOther);
+    VASSERT( iResult == 0 );   // 944
+    connection_short_circuit(pConnection, pOther);
+    connection_short_circuit(pOther, pConnection);
+
+    endpoint_connection_destroy(pConnection);   // 948
+    endpoint_connection_destroy(pOther);   // 949
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// The inverse of `destroy_buffer`.  Each restored connection is re-linked: to
+// the local endpoint it names if there is one, else onto its route, and one
+// whose far end has no route any more is dropped.
+int endpoint_create_buffer(endpoint_t **ppEndpoint, drdp_t *pDrdp, buffer_t *pBuffer)
+{
+    int iResult;
+    uns64 uiConnections;
+    uns64 uiArrivals;
+    connection_t *pConnection;
+    route_t *pRoute;
+    message_t *pMessage;
+    int i;
+    endpoint_t *pEndpoint = (endpoint_t *)malloc(sizeof(endpoint_t));
+
+    if (!pEndpoint)
+    {
+        iResult = -2;
+        goto done;
+    }
+    pEndpoint->m_pDrdp = pDrdp;
+    pEndpoint->m_pAppPtr = 0;
+    pEndpoint->m_uiAC = drdp_get_time(pDrdp);
+    vtree_init(&pEndpoint->m_connections, connection_get_vnode_offset(0),
+               (vcmp_t)uns64_cmp, connection_get_key_offset(0));
+    vlist_init(&pEndpoint->m_arrivals, message_get_vlink_offset(0), 0, 0);
+    close_set_init(&pEndpoint->m_closeSet);
+    buffer_readm_uns8(pBuffer, (uns8 *)pEndpoint->m_szTag, 4);
+    buffer_read_packed_uns64(pBuffer, &pEndpoint->m_uiId);
+    buffer_read_uns32(pBuffer, &pEndpoint->m_uiInstance);
+    buffer_read_uns32(pBuffer, (uns32 *)&pEndpoint->m_iFlags);
+    buffer_read_packed_uns64(pBuffer, &uiConnections);
+    buffer_read_packed_uns64(pBuffer, &uiArrivals);
+    buffer_read_packed_uns32(pBuffer, &pEndpoint->m_uiA8);
+    pEndpoint->m_uiA8++;
+    iResult = close_set_create_buffer(&pEndpoint->m_closeSet, pBuffer,
+                                      drdp_get_time(pEndpoint->m_pDrdp));
+    if (iResult)
+        goto done;
+    for (i = 0; i < uiConnections; i++)
+    {
+        endpoint_t *pWith;
+
+        iResult = connection_create_buffer(&pConnection, pEndpoint, pBuffer);
+        if (iResult)
+            goto done;
+        endpoint_connection_insert(pEndpoint, pConnection);
+        pWith = drdp_find_endpoint(pEndpoint->m_pDrdp, connection_get_dst(pConnection));
+        if (!pWith)
+        {
+            uns64 uiRoute = drdp_get_route_endpoint(pEndpoint->m_pDrdp,
+                                                    connection_get_dst(pConnection));
+
+            if (uiRoute == (uns64)-1)
+                endpoint_connection_destroy(pConnection);   // 1020
+            else
+            {
+                iResult = drdp_get_route(pEndpoint->m_pDrdp, uiRoute, &pRoute);
+                if (iResult)
+                    goto done;
+                route_link_connection(pRoute, pConnection);
+            }
+        }
+        else
+            endpoint_reconcile_connections(pEndpoint, pConnection, pWith);
+    }
+    drdp_reconcile_local_endpoints(pDrdp, pEndpoint);
+    for (i = 0; i < uiArrivals; i++)
+    {
+        uns64 uiSrc;
+        connection_t *pOwner;
+
+        iResult = message_create_buffer(&pMessage, pEndpoint, 0, pBuffer);
+        if (iResult)
+            goto done;
+        uiSrc = message_get_src(pMessage);
+        pOwner = (connection_t *)vtree_lookup(&pEndpoint->m_connections, &uiSrc);
+        message_set_connection(pMessage, pOwner);
+        endpoint_arrival_enqueue(pEndpoint, pMessage);
+    }
+    *ppEndpoint = pEndpoint;
+    iResult = 0;
+    pEndpoint = 0;
+done:
+    if (pEndpoint)
+        endpoint_destroy(pEndpoint);
+    return iResult;
 }
 
 void *endpoint_get_app_ptr(const endpoint_t *pEndpoint)
@@ -186,6 +1060,65 @@ void *endpoint_get_app_ptr(const endpoint_t *pEndpoint)
 void endpoint_set_app_ptr(endpoint_t *pEndpoint, void *pAppPtr)
 {
     pEndpoint->m_pAppPtr = pAppPtr;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Hand an endpoint to another process: serialise the whole thing into one
+// system message (type 17) to the master, which forwards it, and destroy the
+// local copy.  The buffer is half a megabyte ON THE STACK.
+void endpoint_transfer(endpoint_t *pEndpoint, uns64 uiTo, const void *pData, int iSize)
+{
+    connection_t *pMaster = drdp_get_master_connection(pEndpoint->m_pDrdp);
+    buffer_t buffer;
+    uns8 data[0x80000];
+
+    buffer_init(&buffer, data, sizeof(data), BUFFER_LITTLE_ENDIAN);
+    buffer_append_uns8(&buffer, 17);
+    buffer_append_uns64(&buffer, endpoint_get_id(pEndpoint));
+    buffer_append_uns64(&buffer, uiTo);
+    buffer_append_uns64(&buffer, iSize);
+    buffer_appendm_uns8(&buffer, (const uns8 *)pData, iSize);
+    endpoint_destroy_buffer(pEndpoint, &buffer);
+    VASSERTF( !buffer.error, "endpoint_transfer: buffer overflow" );   // 1120
+    connection_send(pMaster, buffer.data, buffer.position, 249);
 }
 
 // Two software endpoints are never allowed to talk to each other directly --
@@ -236,3 +1169,62 @@ int endpoint_is_in_sync(endpoint_t *pEndpoint)
         pEndpoint->m_iFlags |= 2;
     return (pEndpoint->m_iFlags >> 1) & 1;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// A closed endpoint drops its arrivals at once, but is only destroyed when
+// every connection is in sync -- until then it waits for the far ends.
+void endpoint_close(endpoint_t *pEndpoint)
+{
+    VASSERT( !endpoint_is_closed( pEndpoint ) );   // 1224
+    endpoint_free_arrivals(pEndpoint, 0);
+    pEndpoint->m_iFlags |= 1;
+    if (endpoint_is_in_sync(pEndpoint))
+        drdp_endpoint_destroy(pEndpoint);
+}
+

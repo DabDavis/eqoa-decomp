@@ -124,6 +124,14 @@ SPAN_CAP = {
     # copies of the VIMap<int,int> members follow it with no names in the map
     # (the named ones live at 0x00415E08), so it derived 3,032 bytes.
     "AdpcmToPcm__10VIESFParsePviT1":            516,
+    # Phase 61 (flora lane): each is followed by unnamed TU-local code.
+    "CalcVolumeAndPan__9VICSpriteR8VICameraRC7VIVect3RfT3":     332,  # 2848
+    "GetLastImpactTime__13VISpellEffectR7VISceneUiiiiPiT6":     912,  # 3424
+    "ParticleCount__C19VISpellEffectDriver":                     84,  # 2600
+    "Precalc__17VIZoneRadialFloraR7VIScene":                    728,  # 3240
+    "SetTracks__17VISceneSoundTrack":                           320,  # 2832
+    "Unload__13VIBattleMusic":                                  128,  # 2640
+    "endpoint_close__FP10endpoint_t": 112,  #  528  five unnamed icmp.cpp statics follow
     "IsValidRaceClassCityComboExpansion__FiiiUi":   112,  # 4120      1 (static)
     "charTto8__H1Zc_X01_c":                          12,  #  680      4 (static)
     "ShareResources__16VIStaticLightingR8VIRaster": 128,  #  504   many (static)

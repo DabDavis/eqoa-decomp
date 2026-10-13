@@ -135,3 +135,114 @@ int VISpellActiveEvent::ParticleCount() const
         n = n + m_emitter1->ParticleCount();
     return n;
 }
+
+static inline VIVect3 operator-(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+// When the last impact of this effect lands, in ms from the cast: walk the
+// caster's events accumulating the delays they schedule, and every projectile
+// event adds its flight time -- distance over speed -- to the target, and to
+// each secondary target when the event says so.  No projectile at all means
+// the impact is the end of the delays.
+int VISpellEffect::GetLastImpactTime(VIScene &sc, unsigned int start, int caster,
+                                     int target, int numSecondary, int *secondary,
+                                     int *out)
+{
+    VISpellEventList *l = &m_casterEvents;
+    int time = 0;
+    int last = 0;
+    VIMatrix44 m;
+    VIVect3 src, dst;
+    int pending = 0;
+
+    if (sc.GetActorTransform(caster, m) < 0)
+        return -1;
+    src.x = m.m[3].x;
+    src.y = m.m[3].y;
+    src.z = m.m[3].z;
+
+    for (int i = 0; i < l->m_count; i++)
+    {
+        VISpellEvent *e = &l->m_events[i];
+
+        switch (e->m_type)
+        {
+        case 2:
+        case 15:
+            pending = 1;
+            break;
+
+        case 1:
+            switch (e->m_p04)
+            {
+            case 0:
+                if (pending)
+                {
+                    pending = 0;
+                    time += 1000;
+                }
+                break;
+            case 1:
+                time += e->m_id;
+                break;
+            case 2:
+                if (time <= (int)start)
+                    time = start;
+                break;
+            case 3:
+                if (pending)
+                {
+                    pending = 0;
+                    time += 500;
+                }
+                break;
+            case 4:
+                break;
+            }
+            break;
+
+        case 7:
+        case 13:
+            if (last < time)
+                last = time;
+            break;
+
+        case 8:
+            if (e->m_p04 & 1)
+            {
+                if (sc.GetActorTransform(target, m) >= 0)
+                {
+                    dst.x = m.m[3].x;
+                    dst.y = m.m[3].y;
+                    dst.z = m.m[3].z;
+                    int t = (int)((dst - src).Magnitude() * (1.0f / e->m_f14) * 1000.0f) + time;
+                    if (last < t)
+                        last = t;
+                }
+            }
+            if (e->m_p04 & 2)
+            {
+                for (int k = 0; k < numSecondary; k++)
+                {
+                    if (sc.GetActorTransform(secondary[k], m) >= 0)
+                    {
+                        dst.x = m.m[3].x;
+                        dst.y = m.m[3].y;
+                        dst.z = m.m[3].z;
+                        int t = (int)((dst - src).Magnitude() * (1.0f / e->m_f14) * 1000.0f) + time;
+                        if (last < t)
+                            last = t;
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    if (last == 0)
+        last = time;
+    *out = last;
+    return 0;
+}

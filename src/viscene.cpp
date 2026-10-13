@@ -1968,7 +1968,7 @@ int VIScene::Collide(VICollSphere &s, VISceneFilter &f, VISceneQuery &q)
     {
         VIVector<int> &objs = q.m_objects;
 
-        int actor = objs.m_data[i];
+        int &actor = objs.m_data[i];
 
         if (CollideActor(s, f, actor))
             hit = 1;

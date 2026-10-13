@@ -478,8 +478,10 @@ int vtree_vnode_range_cmp(vtree_t *tree, void *lo, void *hi, vnode_t *node)
         return r;
     r = tree->cmp(hi, VTREE_KEY(tree, node));
     if (r < 0)
-        return -1;
-    return 0;
+        r = -1;
+    else
+        r = 0;
+    return r;
 }
 
 void *vtree_iterate_in_range(vtree_t *tree, void *lo, void *hi, void *object, int dir)

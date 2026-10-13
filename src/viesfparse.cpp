@@ -1273,7 +1273,7 @@ int VIESFParse::ParseLODSpriteLevels(VILODSprite &l)
 {
     unsigned short type, version;
 
-    if (m_file->ReadBegin(type, version) < 0) goto fail;
+    if (m_file->ReadBegin(type, version) < 0) return -1;
     if (type != 0x2A30) return -1;
 
     m_file->Read(l.m_numLevels);
@@ -1284,8 +1284,9 @@ int VIESFParse::ParseLODSpriteLevels(VILODSprite &l)
         VIResourceType t;
 
         m_file->Read(id);
-        if (m_dict->Find(id, t, l.m_levels[i].m_sprite) == 0) return -1;
-        if (m_scene->ShareSprite(l.m_levels[i].m_sprite) < 0) return -1;
+        if (m_dict->Find(id, t, l.m_levels[i].m_sprite) == 0
+            || m_scene->ShareSprite(l.m_levels[i].m_sprite) < 0)
+            return -1;
         m_file->Read(l.m_levels[i].m_dist);
     }
 
@@ -1294,8 +1295,6 @@ int VIESFParse::ParseLODSpriteLevels(VILODSprite &l)
 
     if (m_file->ReadEnd() < 0) return -1;
     return 0;
-fail:
-    return -1;
 }
 
 // The world's zone table.  m_zone is the parse's context and it is set and
@@ -1330,7 +1329,7 @@ int VIESFParse::ParseSkinLODSpriteLevels(VILODSprite &l)
 {
     unsigned short type, version;
 
-    if (m_file->ReadBegin(type, version) < 0) goto fail;
+    if (m_file->ReadBegin(type, version) < 0) return -1;
     if (type != 0x2A70) return -1;
 
     m_file->Read(l.m_numLevels);
@@ -1341,8 +1340,9 @@ int VIESFParse::ParseSkinLODSpriteLevels(VILODSprite &l)
         VIResourceType t;
 
         m_file->Read(id);
-        if (m_dict->Find(id, t, l.m_levels[i].m_sprite) == 0) return -1;
-        if (m_scene->ShareSprite(l.m_levels[i].m_sprite) < 0) return -1;
+        if (m_dict->Find(id, t, l.m_levels[i].m_sprite) == 0
+            || m_scene->ShareSprite(l.m_levels[i].m_sprite) < 0)
+            return -1;
         m_file->Read(l.m_levels[i].m_dist);
     }
 
@@ -1351,8 +1351,6 @@ int VIESFParse::ParseSkinLODSpriteLevels(VILODSprite &l)
 
     if (m_file->ReadEnd() < 0) return -1;
     return 0;
-fail:
-    return -1;
 }
 
 // The attachment table.  Kind 0 is a skin (resource type 4) and kind 1 is a
@@ -1364,8 +1362,7 @@ int VIESFParse::ParseHSpriteAttachments(VIHSprite &h)
     unsigned short type, version;
     int n;
 
-    if (m_file->ReadBegin(type, version) < 0) goto fail;
-    if (type != 0x2500) goto fail;
+    if (m_file->ReadBegin(type, version) < 0 || type != 0x2500) return -1;
 
     m_file->Read(n);
 
@@ -1379,33 +1376,26 @@ int VIESFParse::ParseHSpriteAttachments(VIHSprite &h)
         m_file->Read(id);
         m_file->Read(node);
 
-        if (kind == 0)
-            t = (VIResourceType)4;
-        else if (kind == 1)
-            t = (VIResourceType)7;
-        else
-            goto fail;
+        switch (kind)
+        {
+        case 0: t = (VIResourceType)4; break;
+        case 1: t = (VIResourceType)7; break;
+        default: return -1;
+        }
 
         if (id)
         {
             int r;
-            if (m_dict->FindTyped(id, t, r) == 0) goto fail;
-
             int a;
-
-            if (node == -1)
-                a = h.AttachSkin(r, *m_scene);
-            else
-                a = h.Attach(r, node, *m_scene);
-
-            if (a < 0) goto fail;
+            if (m_dict->FindTyped(id, t, r) == 0
+                || (a = (node == -1 ? h.AttachSkin(r, *m_scene)
+                                    : h.Attach(r, node, *m_scene))) < 0)
+                return -1;
         }
     }
 
     if (m_file->ReadEnd() < 0) return -1;
     return 0;
-fail:
-    return -1;
 }
 
 // One placed actor: a DictID, a position, a rotation, a scale and a baked
@@ -2584,8 +2574,9 @@ int VIESFParse::ParseGroupSpriteMembers(VIGroupSprite &g)
     {
         m_file->Read(id);
 
-        if (m_dict->Find(id, rt, g.m_members[i].m_sprite) == 0) return -1;
-        if (m_scene->ShareSprite(g.m_members[i].m_sprite) < 0) return -1;
+        if (m_dict->Find(id, rt, g.m_members[i].m_sprite) == 0
+            || m_scene->ShareSprite(g.m_members[i].m_sprite) < 0)
+            return -1;
 
         m_file->Read(g.m_members[i].m_loc.x);
         m_file->Read(g.m_members[i].m_loc.y);
@@ -2826,52 +2817,50 @@ int VIESFParse::ParseZoneResource()
 
     if (m_progress) m_progress(m_progressArg);
 
-    if (m_file->ReadBegin(type, version) < 0) goto fail;
+    if (m_file->ReadBegin(type, version) < 0) return -1;
 
     switch (type)
     {
-    case 0x2000: i = ParseSimpleSpriteObj(); if (i < 0) goto fail; break;
-    case 0x2200: i = ParseHSpriteObj(); if (i < 0) goto fail; break;
-    case 0x2700: i = ParseCSpriteObj(); if (i < 0) goto fail; break;
-    case 0x2A00: i = ParseLODSpriteObj(); if (i < 0) goto fail; break;
-    case 0x2B00: i = ParsePointLightObj(); if (i < 0) goto fail; break;
-    case 0xB100: i = ParseSoundSpriteObj(); if (i < 0) goto fail; break;
-    case 0xC100: i = ParseParticleSpriteObj(); if (i < 0) goto fail; break;
-    case 0x2310: i = ParseSimpleSubSpriteObj(); if (i < 0) goto fail; break;
-    case 0x2C00: i = ParseGroupSpriteObj(); if (i < 0) goto fail; break;
-    case 0x2D00: if (ParsePointSpriteObj() < 0) goto fail; break;
-    case 0x2E00: if (ParseStreamAudioSpriteObj() < 0) goto fail; break;
-    case 0x2F00: if (ParseFloraSpriteObj() < 0) goto fail; break;
-    case 0xC300: if (ParseEffectVolumeSpriteObj() < 0) goto fail; break;
-    case 0x6000: if (ParseActorObj() < 0) goto fail; break;
+    case 0x2000: i = ParseSimpleSpriteObj(); if (i < 0) return -1; break;
+    case 0x2200: i = ParseHSpriteObj(); if (i < 0) return -1; break;
+    case 0x2700: i = ParseCSpriteObj(); if (i < 0) return -1; break;
+    case 0x2A00: i = ParseLODSpriteObj(); if (i < 0) return -1; break;
+    case 0x2B00: i = ParsePointLightObj(); if (i < 0) return -1; break;
+    case 0xB100: i = ParseSoundSpriteObj(); if (i < 0) return -1; break;
+    case 0xC100: i = ParseParticleSpriteObj(); if (i < 0) return -1; break;
+    case 0x2310: i = ParseSimpleSubSpriteObj(); if (i < 0) return -1; break;
+    case 0x2C00: i = ParseGroupSpriteObj(); if (i < 0) return -1; break;
+    case 0x2D00: if (ParsePointSpriteObj() < 0) return -1; break;
+    case 0x2E00: if (ParseStreamAudioSpriteObj() < 0) return -1; break;
+    case 0x2F00: if (ParseFloraSpriteObj() < 0) return -1; break;
+    case 0xC300: if (ParseEffectVolumeSpriteObj() < 0) return -1; break;
+    case 0x6000: if (ParseActorObj() < 0) return -1; break;
     case 0x1001:
         if (m_raster)
         {
             i = ParseSurfaceArrayObj();
-            if (i < 0) goto fail;
+            if (i < 0) return -1;
         }
-        else
-            m_file->ReadEnd();
+        else if (m_file->ReadEnd() < 0)
+            return -1;
         break;
     case 0x1110:
         if (m_raster)
         {
             i = ParseMaterialPalObj();
-            if (i < 0) goto fail;
+            if (i < 0) return -1;
         }
-        else
-            m_file->ReadEnd();
+        else if (m_file->ReadEnd() < 0)
+            return -1;
         break;
-    case 0x3200: if (ParseZoneBaseObj() < 0) goto fail; break;
-    case 0x3270: if (ParseZoneRoomActorsObj() < 0) goto fail; break;
-    case 0x3290: if (ParseZoneRoomStaticLightingsObj() < 0) goto fail; break;
+    case 0x3200: if (ParseZoneBaseObj() < 0) return -1; break;
+    case 0x3270: if (ParseZoneRoomActorsObj() < 0) return -1; break;
+    case 0x3290: if (ParseZoneRoomStaticLightingsObj() < 0) return -1; break;
     default:
-        if (m_file->ReadEnd() < 0) goto fail;
+        if (m_file->ReadEnd() < 0) return -1;
         break;
     }
     return i;
-fail:
-    return -1;
 }
 
 // The five pixel converters.  Each takes the store the file names, the source
@@ -3327,10 +3316,10 @@ int VIESFParse::ParseCSpritePlayList(VICSprite &c)
         c.m_entries[slot].m_sync = sync;
         c.m_entries[slot].m_sound[0] = snd[0];
         c.m_entries[slot].m_sound[1] = snd[1];
-        c.m_entries[slot].m_volume = vol[0];
-        c.m_entries[slot].m_pitch = vol[1];
-        c.m_entries[slot].m_particle = part[0];
-        c.m_entries[slot].m_trigger = part[1];
+        c.m_entries[slot].m_volume[0] = vol[0];
+        c.m_entries[slot].m_volume[1] = vol[1];
+        c.m_entries[slot].m_pitchVar[0] = part[0];
+        c.m_entries[slot].m_pitchVar[1] = part[1];
     }
 
     if (m_file->ReadEnd() < 0) return -1;
@@ -3699,7 +3688,8 @@ int VIESFParse::ParseAdpcmObj()
                 }
                 else
                 {
-                    int half = (blocks * (channels * 56)) >> 1;
+                    int cb = channels * 56;
+                    int half = (blocks * cb) >> 1;
                     unsigned char *pcm = new unsigned char[half << 1];
 
                     AdpcmToPcm(b, n, pcm);

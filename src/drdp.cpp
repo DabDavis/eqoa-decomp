@@ -172,7 +172,7 @@ void drdp_assign_endpoint_block_master(drdp_t *pDrdp)
 
 
 
-    VASSERT( pDrdp->m_endpointBlock[1].remaining >= ENDPOINT_BLOCK_SIZE );
+    VASSERT( pDrdp->m_endpointBlock[1].remaining >= ENDPOINT_BLOCK_SIZE );   // 175
 
     pDrdp->m_endpointBlock[0].next      = pDrdp->m_endpointBlock[1].next;
     pDrdp->m_endpointBlock[0].remaining = ENDPOINT_BLOCK_SIZE;
@@ -219,8 +219,8 @@ void drdp_assign_endpoint_block(drdp_t *pDrdp, connection_t *pConnection)
 
 
 
-    VASSERT( ( pDrdp->m_endpointBlock[1].next & ( ENDPOINT_BLOCK_SIZE-1 ) ) == 0 );
-    VASSERT( pDrdp->m_endpointBlock[1].remaining >= ENDPOINT_BLOCK_SIZE );
+    VASSERT( ( pDrdp->m_endpointBlock[1].next & ( ENDPOINT_BLOCK_SIZE-1 ) ) == 0 );   // 222
+    VASSERT( pDrdp->m_endpointBlock[1].remaining >= ENDPOINT_BLOCK_SIZE );   // 223
 
     route_table_update_block(&pDrdp->m_routeTable, pDrdp->m_endpointBlock[1].next,
                              connection_get_dst(pConnection));
@@ -454,6 +454,154 @@ done:
     return iResult;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Hand out ONE software endpoint id.  The two blocks are drained smallest
 // first, and when the one in use runs dry the master takes another out of the
 // pool it owns while a leader asks the master for one.
@@ -462,179 +610,28 @@ int drdp_endpoint_create(drdp_t *pDrdp, endpoint_t **ppEndpoint)
     endpoint_t *pEndpoint = 0;
     int iResult;
     int i;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    VASSERT( pDrdp->m_endpointBlock[0].remaining > 0 || pDrdp->m_endpointBlock[1].remaining > 0 );
-
+    VASSERT( pDrdp->m_endpointBlock[0].remaining > 0 || pDrdp->m_endpointBlock[1].remaining > 0 );   // 613
     if (pDrdp->m_endpointBlock[0].remaining == 0
         && pDrdp->m_endpointBlock[1].remaining == 0)
     {
         iResult = -1;
         goto done;
     }
-
-    if (pDrdp->m_endpointBlock[1].remaining == 0)
-        i = 0;
-    else if (pDrdp->m_endpointBlock[0].remaining == 0
-             || pDrdp->m_endpointBlock[1].remaining < pDrdp->m_endpointBlock[0].remaining)
-        i = 1;
+    if (pDrdp->m_endpointBlock[1].remaining != 0)
+    {
+        if (pDrdp->m_endpointBlock[0].remaining == 0)
+            i = 1;
+        else
+            i = pDrdp->m_endpointBlock[1].remaining < pDrdp->m_endpointBlock[0].remaining ? 1 : 0;
+    }
     else
         i = 0;
-
     iResult = endpoint_create(&pEndpoint, pDrdp, pDrdp->m_endpointBlock[i].next);
     if (iResult)
         goto done;
-
     vtree_insert(&pDrdp->m_endpoints, pEndpoint);
     pDrdp->m_endpointBlock[i].next++;
     pDrdp->m_endpointBlock[i].remaining--;
-
     if (pDrdp->m_endpointBlock[i].remaining == 0)
     {
         if (pDrdp->m_iRole == DRDP_ROLE_MASTER)
@@ -656,15 +653,16 @@ int drdp_endpoint_create(drdp_t *pDrdp, endpoint_t **ppEndpoint)
 
 
 
-            VASSERT( pDrdp->m_iRole == DRDP_ROLE_LEADER );
+
+
+
+            VASSERT( pDrdp->m_iRole == DRDP_ROLE_LEADER );   // 659
             connection_send_uns8(pDrdp->m_pMasterConnection, 32);
         }
     }
-
     *ppEndpoint = pEndpoint;
     pEndpoint = 0;
     iResult = 0;
-
 done:
     if (pEndpoint)
         endpoint_destroy(pEndpoint);
@@ -716,6 +714,8 @@ void drdp_route_destroy(route_t *pRoute)
     route_destroy(pRoute);
 }
 
+
+
 void drdp_destroy(drdp_t *pDrdp)
 {
     route_t *pRoute;
@@ -744,7 +744,7 @@ void drdp_destroy(drdp_t *pDrdp)
 
 
 
-    VASSERT( drdp_is_valid( pDrdp ) );
+    VASSERT( drdp_is_valid( pDrdp ) );   // 747
 
     memcpy(pDrdp->m_szTag, NULL_TAG, 4);
 
@@ -1029,7 +1029,7 @@ void drdp_re_route_connections_to_endpoint(drdp_t *pDrdp, uns64 uiId, uns64 uiRo
 
 
 
-    VASSERT( iResult == 0 );
+    VASSERT( iResult == 0 );   // 1032
 
     while (pConnection)
     {
@@ -1106,12 +1106,12 @@ void drdp_handle_segment_endpoint_not_local(drdp_t *pDrdp, segment_header_t *pHe
 
 
 
-        VASSERT( !"not tested, shouldn't happen unless I start using drdp ports again" );
+        VASSERT( !"not tested, shouldn't happen unless I start using drdp ports again" );   // 1109
         drdp_send_reset_endpoint(pDrdp, pHeader);
         return;
     }
 
-    VASSERT( drdp_is_software_endpoint( pHeader->m_uiDst ) );
+    VASSERT( drdp_is_software_endpoint( pHeader->m_uiDst ) );   // 1114
 
     uiRoute = drdp_get_route_endpoint(pDrdp, pHeader->m_uiDst);
     if (uiRoute == (uns64)-1)
@@ -1166,9 +1166,8 @@ int drdp_handle_segment(drdp_t *pDrdp, buffer_t *pBuffer, uns64 uiRoute)
     }
 
     iResult = endpoint_handle_segment(pEndpoint, &header, pBuffer);
-    if (iResult)
-        iResult = 0;
-
+    if (iResult == 0)
+        return 0;
     return iResult;
 }
 
@@ -1256,9 +1255,7 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
     buffer_t buffer;
     drdp_addr_t address;
     uns16 usDrdpPort;
-    drdp_addr_t connectionless;
     uns16 usPort;
-    segment_header_t header;
     uns64 uiRoute;
     route_t *pRoute;
     connection_t *pConnection;
@@ -1280,6 +1277,8 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
 
     if (usDrdpPort == DRDP_PORT_NONE)
     {
+        drdp_addr_t connectionless;
+
         memcpy(&connectionless, &address, 4);
         connectionless.m_usPort = address.m_usPort;
 
@@ -1322,9 +1321,10 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
 
     if (buffer_bytes_remaining(&buffer) == 0)
     {
-        pRoute = (route_t *)vtree_lookup(&pDrdp->m_routesById, &uiRoute);
-        if (pRoute)
-            route_terminate(pRoute, 15);
+        route_t *pTerminated = (route_t *)vtree_lookup(&pDrdp->m_routesById, &uiRoute);
+
+        if (pTerminated)
+            route_terminate(pTerminated, 15);
         return 0;
     }
 
@@ -1341,6 +1341,8 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
 
     while (buffer_bytes_remaining(&buffer))
     {
+        segment_header_t header;
+
         buffer_read_segment_header(&buffer, &header, uiRoute,
                                    endpoint_get_id(pDrdp->m_pSystemEndpoint));
         buffer_skip(&buffer, header.m_uiSize);
@@ -1375,11 +1377,15 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
             return iResult;
     }
 
-    pRoute = (route_t *)vtree_lookup(&pDrdp->m_routesById, &uiRoute);
-    if (pRoute)
-        route_record_arrival(pRoute, iSize - 6);
+    {
+        route_t *pArrived = (route_t *)vtree_lookup(&pDrdp->m_routesById, &uiRoute);
+
+        if (pArrived)
+            route_record_arrival(pArrived, iSize - 6);
+    }
     return 0;
 }
+
 
 // The one entry point a datagram arrives through.  A port of zero in the
 // six-byte prefix is the ICMP socket, not the UDP one.
@@ -1520,13 +1526,7 @@ int drdp_process_packet(drdp_t *pDrdp, const void *pData, int iSize)
 
 
 
-
-
-
-
-
-
-    VASSERT( drdp_is_valid( pDrdp ) );
+    VASSERT( drdp_is_valid( pDrdp ) );   // 1529
 
     buffer_init_read(&buffer, pData, iSize, BUFFER_LITTLE_ENDIAN);
     buffer_skip(&buffer, 4);
@@ -1601,7 +1601,7 @@ int drdp_receive_packet(drdp_t *pDrdp, void *pData, int iSize, int *piRead, int 
 
 
 
-    VASSERT( drdp_is_valid( pDrdp ) );
+    VASSERT( drdp_is_valid( pDrdp ) );   // 1604
 
     pDrdp->m_uiTimeRecv = pDrdp->m_uiTime;
 
@@ -1788,7 +1788,7 @@ uns64 drdp_get_route_endpoint(drdp_t *pDrdp, uns64 uiId)
 
 
 
-        VASSERT( pDrdp->m_iRole != DRDP_ROLE_CLIENT );
+        VASSERT( pDrdp->m_iRole != DRDP_ROLE_CLIENT );   // 1791
 
         if (route_table_find(&pDrdp->m_routeTable, uiId, &uiRoute) == -1)
         {
@@ -1951,7 +1951,7 @@ void drdp_close_connections_to_endpoint(drdp_t *pDrdp, uns64 uiId)
 
 
 
-        _endpoint_connection_destroy(pConnection, __FILE__, __LINE__);
+        _endpoint_connection_destroy(pConnection, __FILE__, __LINE__);   // 1954
         pConnection = pNext;
     }
 }
@@ -2031,7 +2031,7 @@ void drdp_invalidate_range(drdp_t *pDrdp, uns64_range_t *pRange)
 
 
 
-        _endpoint_connection_destroy(pConnection, __FILE__, __LINE__);
+        _endpoint_connection_destroy(pConnection, __FILE__, __LINE__);   // 2034
         pConnection = pNext;
     }
 
@@ -2191,7 +2191,7 @@ void drdp_master_send_route_table(drdp_t *pDrdp, connection_t *pConnection)
 
 
 
-    VASSERT( iLeaderCount == find_leader_index( p_leader_endpoints, iLeaderCount, endpoint_get_id( pDrdp->m_pSystemEndpoint ) ) );
+    VASSERT( iLeaderCount == find_leader_index( p_leader_endpoints, iLeaderCount, endpoint_get_id( pDrdp->m_pSystemEndpoint ) ) );   // 2194
 
     buffer_append_packed_int32(&buffer, iLeaderCount);
     buffer_appendm_uns64(&buffer, p_leader_endpoints, iLeaderCount);
@@ -2222,24 +2222,24 @@ void drdp_master_send_route_table(drdp_t *pDrdp, connection_t *pConnection)
 
 
 
-                VASSERT( endpoint_get_id( pDrdp->m_pSystemEndpoint ) == rte->m_uiRoute );
+                VASSERT( endpoint_get_id( pDrdp->m_pSystemEndpoint ) == rte->m_uiRoute );   // 2225
         }
         else
 
 
 
-            VASSERT( p_leader_endpoints[leader_index] == rte->m_uiRoute );
+            VASSERT( p_leader_endpoints[leader_index] == rte->m_uiRoute );   // 2231
 
         buffer_append_packed_int32(&buffer, leader_index);
     }
 
 
 
-    VASSERT( !buffer.error );
-    VASSERT( DRDP_SW_ENDPOINT_MIN == ((route_table_entry_t *)vtree_peek_first(&pDrdp->m_routeTable.m_tree))->m_range.lo );
-    VASSERT( ((route_table_entry_t *)vtree_peek_last(&pDrdp->m_routeTable.m_tree))->m_range.hi == DRDP_SW_ENDPOINT_MAX );
+    VASSERT( !buffer.error );   // 2238
+    VASSERT( DRDP_SW_ENDPOINT_MIN == ((route_table_entry_t *)vtree_peek_first(&pDrdp->m_routeTable.m_tree))->m_range.lo );   // 2239
+    VASSERT( ((route_table_entry_t *)vtree_peek_last(&pDrdp->m_routeTable.m_tree))->m_range.hi == DRDP_SW_ENDPOINT_MAX );   // 2240
 
-    VASSERT( buffer.position <= connection_get_max_message_size( 249 ) );
+    VASSERT( buffer.position <= connection_get_max_message_size( 249 ) );   // 2242
 
     connection_send(pConnection, buffer.data, buffer.position, 249);
 
@@ -2309,10 +2309,10 @@ void drdp_slave_read_route_table(buffer_t *pBuffer, route_table_t *pTable, uns64
 
 
 
-    VASSERT( !pBuffer->error );
-    VASSERT( buffer_bytes_remaining( pBuffer ) == 0 );
-    VASSERT( DRDP_SW_ENDPOINT_MIN == ((route_table_entry_t *)vtree_peek_first(&pTable->m_tree))->m_range.lo );
-    VASSERT( ((route_table_entry_t *)vtree_peek_last(&pTable->m_tree))->m_range.hi == DRDP_SW_ENDPOINT_MAX );
+    VASSERT( !pBuffer->error );   // 2312
+    VASSERT( buffer_bytes_remaining( pBuffer ) == 0 );   // 2313
+    VASSERT( DRDP_SW_ENDPOINT_MIN == ((route_table_entry_t *)vtree_peek_first(&pTable->m_tree))->m_range.lo );   // 2314
+    VASSERT( ((route_table_entry_t *)vtree_peek_last(&pTable->m_tree))->m_range.hi == DRDP_SW_ENDPOINT_MAX );   // 2315
 
     delete [] p_leader_endpoints;
 }
@@ -2419,7 +2419,7 @@ void drdp_connection_terminate(drdp_t *pDrdp, uns64 uiId, const void *pData, int
 
 
 
-    VASSERT( pDrdp->m_iRole == DRDP_ROLE_MASTER );
+    VASSERT( pDrdp->m_iRole == DRDP_ROLE_MASTER );   // 2422
     drdp_leader_remove(pDrdp, uiId);
 }
 
@@ -2487,7 +2487,7 @@ void drdp_handle_block_transfer(drdp_t *pDrdp, uns64 uiNext)
 
 
 
-        VASSERT( pDrdp->m_endpointBlock[0].remaining == 0 || pDrdp->m_endpointBlock[1].remaining == 0 );
+        VASSERT( pDrdp->m_endpointBlock[0].remaining == 0 || pDrdp->m_endpointBlock[1].remaining == 0 );   // 2490
     }
 
     i = pDrdp->m_endpointBlock[1].remaining < pDrdp->m_endpointBlock[0].remaining;
@@ -2634,7 +2634,7 @@ int drdp_leader_add(drdp_t *pDrdp, connection_t *pConnection)
 
 
 
-    VASSERT( pDrdp->m_endpointBlock[1].remaining >= 2 * ENDPOINT_BLOCK_SIZE );
+    VASSERT( pDrdp->m_endpointBlock[1].remaining >= 2 * ENDPOINT_BLOCK_SIZE );   // 2637
 
     drdp_assign_endpoint_block(pDrdp, pConnection);
     drdp_assign_endpoint_block(pDrdp, pConnection);
@@ -2661,7 +2661,7 @@ int drdp_leader_add(drdp_t *pDrdp, connection_t *pConnection)
 
 
 
-    VASSERT( !buffer.error );
+    VASSERT( !buffer.error );   // 2664
 
     connection_send(pConnection, buffer.data, buffer.position, 249);
     return 0;
@@ -2683,16 +2683,55 @@ void drdp_handle_endpoint_info(drdp_t *pDrdp, uns64 uiId, uns64 uiRoute)
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Every type-249 message in the library lands here.  The switch is the
 // protocol between the three roles, and the jump table says the type is 1..48.
 void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 {
     buffer_t buffer;
-    uns8 data[128];
-    buffer_t reply;
     connection_t *pConnection;
     connection_t *pOpened;
-    endpoint_t *pEndpoint;
     leader_t *pLeader;
     leader_t *pTo;
     leader_t *pFrom;
@@ -2702,66 +2741,27 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
     uns64 uiOther;
     uns64 uiA;
     uns64 uiB;
-    uns64 uiTo;
-    uns64 uiFrom;
-    uns64 uiSkip;
     void *pData;
     uns32 uiSize;
     uns8 ucType;
     int iResult;
-
     uiSrc = message_get_src(pMessage);
     uiDst = message_get_dst(pMessage);
     pData = message_get_data(pMessage);
     uiSize = message_get_size(pMessage);
     pConnection = message_get_connection(pMessage);
-
     buffer_init_read(&buffer, pData, uiSize, BUFFER_LITTLE_ENDIAN);
     buffer_read_uns8(&buffer, &ucType);
-
     switch (ucType)
     {
     case 18:
         drdp_format_endpoint2(connection_get_dst(pConnection));
         drdp_format_endpoint1(connection_get_src(pConnection));
         break;
-
     case 7:
         if (pDrdp->m_iRole != DRDP_ROLE_MASTER)
         {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);
+            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);   // 2764
             break;
         }
         if (pDrdp->m_iDataSize + 1 == (int)message_get_size(pMessage)
@@ -2776,7 +2776,7 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 
 
 
-            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);
+            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);   // 2779
             break;
         }
 
@@ -2784,9 +2784,8 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 
 
 
-        connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);
+        connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);   // 2787
         break;
-
     case 1:
         if (pDrdp->m_iRole == DRDP_ROLE_LEADER)
         {
@@ -2807,16 +2806,17 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 
 
 
-        VASSERT( pDrdp->m_iRole == DRDP_ROLE_MASTER );
+
+        VASSERT( pDrdp->m_iRole == DRDP_ROLE_MASTER );   // 2810
         while (buffer_bytes_remaining(&buffer) > 0)
         {
+            leader_t *pFound;
             buffer_read_uns64(&buffer, &uiId);
-            pLeader = (leader_t *)vtree_lookup(&pDrdp->m_leaders, &uiId);
-            if (pLeader)
-                connection_send_uns8_uns64(pLeader->m_pConnection, 2, uiSrc);
+            pFound = (leader_t *)vtree_lookup(&pDrdp->m_leaders, &uiId);
+            if (pFound)
+                connection_send_uns8_uns64(pFound->m_pConnection, 2, uiSrc);
         }
         break;
-
     case 2:
         buffer_read_uns64(&buffer, &uiOther);
         iResult = connection_open(&pOpened, pDrdp->m_pSystemEndpoint, uiOther);
@@ -2831,12 +2831,11 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 
 
 
-        VASSERT( iResult == 0 );
+        VASSERT( iResult == 0 );   // 2834
         connection_set_bps_limit(pOpened, 2097152);
         connection_send_uns8(pOpened, 5);
         drdp_leader_add_internal(pDrdp, uiOther, pOpened);
         break;
-
     case 5:
         if (!vtree_lookup(&pDrdp->m_leaders, &uiSrc))
         {
@@ -2850,22 +2849,23 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 
 
 
-            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);
+
+            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);   // 2853
             break;
         }
 
-        VASSERT( pConnection != 0 );
+        VASSERT( pConnection != 0 );   // 2857
         connection_set_bps_limit(pConnection, 2097152);
         drdp_leader_set_connection(pDrdp, uiSrc, pConnection);
         break;
-
     case 6:
+    {
+        uns8 data[128];
+        buffer_t reply;
 
 
 
-
-
-        VASSERT( pDrdp->m_iRole == DRDP_ROLE_MASTER );
+        VASSERT( pDrdp->m_iRole == DRDP_ROLE_MASTER );   // 2868
         if (!vtree_lookup(&pDrdp->m_leaders, &uiSrc))
             break;
         buffer_read_uns64(&buffer, &uiId);
@@ -2877,10 +2877,12 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
         buffer_append_uns64(&reply, uiSrc);
         buffer_append_uns64(&reply, uiId);
         buffer_copy(&buffer, &reply, buffer_bytes_remaining(&buffer));
-        connection_send(pLeader->m_pConnection, reply.data, reply.position, 1);
+        connection_terminate(pLeader->m_pConnection, 1, reply.data, reply.position);
         break;
-
+    }
     case 3:
+    {
+        leader_t *pGone;
 
 
 
@@ -2899,140 +2901,131 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 
 
 
-
-
-        VASSERT( pDrdp->m_iRole == DRDP_ROLE_LEADER );
+        VASSERT( pDrdp->m_iRole == DRDP_ROLE_LEADER );   // 2904
         buffer_read_uns64(&buffer, &uiId);
-        pLeader = (leader_t *)vtree_lookup(&pDrdp->m_leaders, &uiId);
-        if (!pLeader)
+        pGone = (leader_t *)vtree_lookup(&pDrdp->m_leaders, &uiId);
+        if (!pGone)
             break;
-        if (pLeader->m_pConnection)
-            connection_terminate_reason(pLeader->m_pConnection, 1, 13);
+        if (pGone->m_pConnection)
+            connection_terminate_reason(pGone->m_pConnection, 1, 13);
         drdp_leader_remove_internal(pDrdp, uiId);
         drdp_invalidate_all_endpoints_owned_by_leader(pDrdp, uiId);
         break;
-
+    }
     case 32:
         drdp_assign_endpoint_block(pDrdp, pConnection);
         break;
-
     case 33:
         buffer_read_uns64(&buffer, &uiA);
         drdp_handle_block_transfer(pDrdp, uiA);
         break;
-
     case 34:
         buffer_read_uns64(&buffer, &uiA);
         drdp_handle_block_received(pDrdp, uiA, uiSrc);
         break;
-
     case 48:
         drdp_slave_read_route_table(&buffer, &pDrdp->m_routeTable,
                                     connection_get_dst(pDrdp->m_pMasterConnection));
         break;
-
     case 35:
         buffer_read_uns64(&buffer, &uiA);
         buffer_read_uns64(&buffer, &uiB);
         route_table_update_block(&pDrdp->m_routeTable, uiA, uiB);
         break;
-
     case 36:
-        if (uiSrc != connection_get_dst(pDrdp->m_pMasterConnection))
+        if (uiSrc == connection_get_dst(pDrdp->m_pMasterConnection))
         {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);
-            break;
+            buffer_read_uns64(&buffer, &uiA);
+            route_table_update_block(&pDrdp->m_routeTable, uiA, uiSrc);
         }
-        buffer_read_uns64(&buffer, &uiA);
-        route_table_update_block(&pDrdp->m_routeTable, uiA, uiSrc);
-        break;
+        else
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);   // 2971
+        break;
     case 17:
         if (pDrdp->m_iRole == DRDP_ROLE_MASTER)
         {
-            buffer_read_uns64(&buffer, &uiId);
+            uns64 uiEndpoint, uiTo, uiFrom;
+            leader_t *pWalk, *pNext;
+            buffer_read_uns64(&buffer, &uiEndpoint);
             buffer_read_uns64(&buffer, &uiTo);
-
             pFrom = (leader_t *)vtree_lookup(&pDrdp->m_leaders, &uiSrc);
             if (!pFrom)
             {
                 drdp_log_hack_attempt(pDrdp, drdp_format_endpoint1(uiSrc),
                                       "HACK DRDP_SYSTEM_ENDPOINT_TRANSFER receieved from non-leader");
-                connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);
+
+
+
+
+                connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);   // 2989
                 break;
             }
-
             pTo = (leader_t *)vtree_lookup(&pDrdp->m_leaders, &uiTo);
             if (!pTo)
                 pTo = pFrom;
-
-            drdp_format_endpoint1(uiId);
+            drdp_format_endpoint1(uiEndpoint);
             drdp_format_endpoint2(message_get_src(pMessage));
             drdp_format_endpoint3(connection_get_dst(pTo->m_pConnection));
             message_get_size(pMessage);
-
             uiFrom = pTo->m_uiId;
             connection_send(pTo->m_pConnection, message_get_data(pMessage),
                             message_get_size(pMessage), 249);
-
             if (pFrom->m_uiId == uiFrom)
                 break;
-
-            route_table_update(&pDrdp->m_routeTable, uiId, uiFrom);
-            drdp_re_route_connections_to_endpoint(pDrdp, uiId, uiFrom);
-
-            for (pLeader = (leader_t *)vtree_peek_first(&pDrdp->m_leaders); pLeader;
-                 pLeader = (leader_t *)vtree_get_next(&pDrdp->m_leaders, pLeader))
+            route_table_update(&pDrdp->m_routeTable, uiEndpoint, uiFrom);
+            drdp_re_route_connections_to_endpoint(pDrdp, uiEndpoint, uiFrom);
+            pWalk = (leader_t *)vtree_peek_first(&pDrdp->m_leaders);
+            while (pWalk)
             {
-                if (uiFrom != pLeader->m_uiId)
+                pNext = (leader_t *)vtree_get_next(&pDrdp->m_leaders, pWalk);
+                if (uiFrom != pWalk->m_uiId)
                 {
-                    connection_send_uns8_uns64_uns64(pLeader->m_pConnection, 19,
-                                                     uiId, uiTo);
+                    connection_send_uns8_uns64_uns64(pWalk->m_pConnection, 19,
+                                                     uiEndpoint, uiTo);
                 }
+                pWalk = pNext;
             }
-            break;
         }
-
-        buffer_read_uns64(&buffer, &uiA);
-        buffer_read_uns64(&buffer, &uiB);
-        buffer_read_uns64(&buffer, &uiSkip);
-        buffer_skip(&buffer, (int)uiSkip);
-
-        iResult = endpoint_create_buffer(&pEndpoint, pDrdp, &buffer);
-
-
-
-
-
-
+        else
+        {
+            uns64 uiEndpoint;
+            uns64 uiTo;
+            uns64 uiSkip;
+            endpoint_t *pEndpoint;
+            buffer_read_uns64(&buffer, &uiEndpoint);
+            buffer_read_uns64(&buffer, &uiTo);
+            buffer_read_uns64(&buffer, &uiSkip);
+            buffer_skip(&buffer, (int)uiSkip);
+            iResult = endpoint_create_buffer(&pEndpoint, pDrdp, &buffer);
 
 
 
@@ -3066,55 +3059,62 @@ void drdp_process_system_message(drdp_t *pDrdp, message_t *pMessage)
 
 
 
-        VASSERT( iResult == 0 );
-        vtree_insert(&pDrdp->m_endpoints, pEndpoint);
 
-        drdp_format_endpoint1(uiA);
-        route_table_update(&pDrdp->m_routeTable, endpoint_get_id(pEndpoint),
-                           endpoint_get_id(pDrdp->m_pSystemEndpoint));
+
+
+
+
+
+
+            VASSERT( iResult == 0 );   // 3069
+            vtree_insert(&pDrdp->m_endpoints, pEndpoint);
+            drdp_format_endpoint1(uiEndpoint);
+            route_table_update(&pDrdp->m_routeTable, endpoint_get_id(pEndpoint),
+                               endpoint_get_id(pDrdp->m_pSystemEndpoint));
+        }
         break;
-
     case 21:
         buffer_read_uns64(&buffer, &uiId);
         drdp_handle_endpoint_destroyed(pDrdp, uiId, uiSrc);
         break;
-
     case 19:
         buffer_read_uns64(&buffer, &uiId);
         buffer_read_uns64(&buffer, &uiB);
         drdp_handle_endpoint_info(pDrdp, uiId, uiB);
         break;
-
     case 20:
-        if (uiSrc != connection_get_dst(pDrdp->m_pMasterConnection))
+        if (uiSrc == connection_get_dst(pDrdp->m_pMasterConnection))
         {
-
-
-
-
-
-
-
-
-
-
-
-
-
-            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);
-            break;
+            buffer_read_uns64(&buffer, &uiId);
+            drdp_handle_endpoint_info(pDrdp, uiId, uiSrc);
         }
-        buffer_read_uns64(&buffer, &uiId);
-        drdp_handle_endpoint_info(pDrdp, uiId, uiSrc);
+        else
+
+
+
+
+
+
+
+
+
+
+
+
+            connection_terminate_file_line(pConnection, 1, __FILE__, __LINE__);   // 3104
         break;
     }
 }
+
+
+
+
 
 message_t *drdp_receive(drdp_t *pDrdp)
 {
     message_t *pMessage;
     endpoint_t *pEndpoint;
-    VASSERT( drdp_is_valid( pDrdp ) );
+    VASSERT( drdp_is_valid( pDrdp ) );   // 3117
 
     pMessage = (message_t *)vlist_peek_head(&pDrdp->m_arrivals);
 
@@ -3147,7 +3147,7 @@ message_t *drdp_receive(drdp_t *pDrdp)
 
 
 
-            VASSERT( message_get_type( pMessage ) != 255 && message_get_type( pMessage ) != 253 );
+            VASSERT( message_get_type( pMessage ) != 255 && message_get_type( pMessage ) != 253 );   // 3150
             message_set_connection(pMessage, 0);
         }
     }
@@ -3173,14 +3173,13 @@ int drdp_get_route(drdp_t *pDrdp, uns64 uiId, route_t **ppRoute)
     {
         iResult = route_create(&pRoute, pDrdp, uiId);
         if (iResult)
-            return iResult;
-
+            goto done;
         vtree_insert(&pDrdp->m_routesById, pRoute);
         vtree_insert(&pDrdp->m_routes.tree, pRoute);
     }
-
     iResult = 0;
     *ppRoute = pRoute;
+done:
     return iResult;
 }
 
@@ -3338,11 +3337,14 @@ int drdp_get_leader_connections(drdp_t *pDrdp, connection_t **ppConnections, int
         if (pLeader->m_pConnection)
         {
             if (n == iMax)
-                return -1;
+            {
+                n = -1;
+                goto done;
+            }
             ppConnections[n++] = pLeader->m_pConnection;
         }
     }
-
+done:
     return n;
 }
 
@@ -3379,13 +3381,13 @@ int drdp_is_software_endpoint(uns64 uiId)
 
 int drdp_is_endpoint(uns64 uiId)
 {
-    if (drdp_is_hardware_endpoint(uiId))
-        return 1;
+    int iResult = 0;
 
-    if (drdp_is_software_endpoint(uiId) == 0)
-        return 0;
+    if (drdp_is_hardware_endpoint(uiId) || drdp_is_software_endpoint(uiId))
+        iResult = 1;
 
-    return 1;
+
+    return iResult;
 }
 
 int drdp_is_local_hardware_endpoint(uns64 uiId)
@@ -3437,11 +3439,11 @@ connection_t *drdp_get_master_connection(drdp_t *pDrdp)
 int drdp_has_endpoint(const drdp_t *pDrdp, const endpoint_t *pEndpoint)
 {
     uns64 uiId = endpoint_get_id(pEndpoint);
+    int iResult = drdp_is_valid(pDrdp);
 
-    if (!drdp_is_valid(pDrdp))
-        return 0;
-
-    return pEndpoint == (endpoint_t *)vtree_lookup(&pDrdp->m_endpoints, &uiId);
+    if (iResult)
+        iResult = pEndpoint == (endpoint_t *)vtree_lookup(&pDrdp->m_endpoints, &uiId);
+    return iResult;
 }
 
 void drdp_connection_insert(drdp_t *pDrdp, connection_t *pConnection)

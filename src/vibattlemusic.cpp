@@ -200,3 +200,91 @@ int VIBattleMusic::Preload(int track)
     // cannot produce (21 of 62 words).
     return track == 0 ? 0 : (m_sound > -1 ? 0 : -1);
 }
+
+// The XM path's per-frame fade.  State 1 starts the channel once the sound is
+// cached and ramps the volume up by m_rate to 1.0 (then state 3, playing);
+// state 2 ramps it down -- ten times faster for a StopNow-style stop -- and
+// stops the channel at zero.
+int VIBattleMusic::Process()
+{
+    if (VIGetFeatureFlags() & 0x100)
+        return 0;
+    if (m_scene == 0)
+        return 0;
+
+    VISoundDevice *sd = m_scene->m_sound;
+
+    if (sd == 0)
+        return 0;
+    if (m_track == 0)
+        return 0;
+
+    switch (m_state)
+    {
+    case 0:
+        break;
+
+    case 1:
+        if (m_channel == -1)
+        {
+            if (m_sound == -1)
+                return -1;
+            if (!sd->Sound(m_sound)->IsCached())
+                return 0;
+            m_channel = sd->Play(m_sound, 0, VISOUNDCLASS_MUSIC);
+            sd->SetVolume(m_channel, m_loaded);
+        }
+        m_loaded += m_rate;
+        if (m_loaded >= 1.0f)
+        {
+            m_loaded = 1.0f;
+            m_state = 3;
+        }
+        sd->SetVolume(m_channel, m_loaded);
+        break;
+
+    case 2:
+    {
+        float v = m_rate * 0.1f;
+        float l = m_loaded;
+
+        if (m_stopNow)
+            v = l - v * 10.0f;
+        else
+            v = l - v;
+        m_loaded = v;
+
+        if (v <= 0.0f)
+        {
+            StopNow();
+            m_state = 0;
+        }
+        else
+            sd->SetVolume(m_channel, v);
+        break;
+    }
+
+    }
+    return 0;
+}
+
+void VIBattleMusic::Unload()
+{
+    if (VIGetFeatureFlags() & 0x100)
+        return;
+    if (m_scene == 0)
+        return;
+
+    VISoundDevice *sd = m_scene->m_sound;
+
+    if (sd == 0)
+        return;
+
+    StopNow();
+    if (m_sound >= 0)
+    {
+        sd->ReleaseSound(m_sound, *m_scene->m_dict);
+        m_sound = -1;
+    }
+    m_track = -1;
+}

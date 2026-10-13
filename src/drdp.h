@@ -265,7 +265,7 @@ int  vset_remove_first(vset_t *set, void *element);
 // one byte per pair when both are small (`nonzeros << 4 | zeros`) and two when
 // they are not (`0x80 | nonzeros`, then `zeros`).  A zero header byte ends the
 // stream, which is why the short form is the one that can terminate.
-int  run_length_encode(const uns8 *data, uns32 size, buffer_t *buffer);
+void run_length_encode(const uns8 *data, uns32 size, buffer_t *buffer);
 void run_length_decode(buffer_t *buffer, uns8 *data, uns32 size);
 
 void buffer_append_string(buffer_t *buffer, const char *string);
@@ -503,7 +503,7 @@ struct segment_body_t
     uns16   m_usConnFlags;          // +0x002  OR'd straight into the connection
     uns8    m_ucChannels[248];      // +0x004  which channels arrived
     int     m_iChannelCount;        // +0x0FC
-    int     m_i100;                 // +0x100
+    uns32   m_uiInstance;           // +0x100  the sender's idea of OUR instance
     int     m_iArrival;             // +0x104
     int     m_iGuaranteedAck;       // +0x108
     int     m_iAcks;                // +0x10C
@@ -623,7 +623,7 @@ int   connection_send_state(connection_t *pConnection, const uns8 *pData, int iS
                             int iChannel);
 int   connection_send_internal(connection_t *pConnection, const uns8 *pData, int iSize,
                                int iType);
-int   connection_send(connection_t *pConnection, const void *pData, int iSize, int iType);
+void  connection_send(connection_t *pConnection, const void *pData, int iSize, int iType);
 int   connection_get_max_message_size(int iType);
 route_t *connection_get_route(connection_t *pConnection);
 void  connection_set_route(connection_t *pConnection, route_t *pRoute);
@@ -689,7 +689,7 @@ void  connection_set_bps_limit(connection_t *pConnection, int iLimit);
 int   connection_get_bps_limit(connection_t *pConnection);
 int   connection_get_bps_sent(connection_t *pConnection);
 int   connection_get_bps_recv(connection_t *pConnection);
-int   connection_receive_list(connection_t *pConnection, message_list_t *pList);
+void  connection_receive_list(connection_t *pConnection, message_list_t *pList);
 void  connection_short_circuit(connection_t *pConnection, connection_t *pWith);
 int   connection_send_instance_push(const connection_t *pConnection);
 int   connection_handle_reset(connection_t *pConnection, const segment_header_t *pHeader);
@@ -751,9 +751,9 @@ void buffer_readm_packed(buffer_t *pBuffer, T *pValue, int iCount)
 
 void  buffer_append_size(buffer_t *pBuffer, uns16 usSize);
 void  buffer_read_size(buffer_t *pBuffer, uns16 *pusSize);
-int   compress_flush_time_history(buffer_t *pBuffer, uns32 *puiHistory);
-int   decompress_flush_time_history(buffer_t *pBuffer, uns32 *puiHistory);
-int   compress_flush_time_history_verified(buffer_t *pBuffer, uns32 *puiHistory);
+void  compress_flush_time_history(buffer_t *pBuffer, uns32 *puiHistory);
+void  decompress_flush_time_history(buffer_t *pBuffer, uns32 *puiHistory);
+void  compress_flush_time_history_verified(buffer_t *pBuffer, uns32 *puiHistory);
 
 // The rest of the library, reached from connection.cpp.
 extern "C" char *strdup(const char *);
@@ -1036,6 +1036,34 @@ int  unet_get_local_address(ipaddress_t *pAddress);
 
 int uns16_cmp_wrap(const uns16 *a, const uns16 *b);
 
+// viusocket.cpp -- 0x004ae088..0x004aeb70.  The PS2 port's datagram path: two
+// EE threads per socket, each with its own libnet client and work buffer, and
+// two queues of 2,084-byte packets drawn from one global pool of sixteen.
+// Read off VIInitUSocketEx's stores and VIFreeUSocketEx's `memset(.., 188)`.
+struct sceSifMClientData
+{
+    uns32 m_uiData[15];
+};
+
+struct usocket_ex_t
+{
+    sceSifMClientData m_sendCd;     // +0x00  the send thread's libnet client
+    sceSifMClientData m_recvCd;     // +0x3C
+    uns32  *m_pSendBuf;             // +0x78  memalign(64, 2112)
+    uns32  *m_pRecvBuf;             // +0x7C
+    llist   m_sendList;             // +0x80  queued by VIUSocketSend
+    llist   m_recvList;             // +0x8C  filled by the receive thread
+    void   *m_pSendStack;           // +0x98  memalign(16, 8192)
+    void   *m_pRecvStack;           // +0x9C
+    int     m_iSendThread;          // +0xA0
+    int     m_iRecvThread;          // +0xA4
+    int     m_iSendError;           // +0xA8  sticky: the last send's failure
+    int     m_iRecvError;           // +0xAC
+    int     m_iSendSema;            // +0xB0
+    int     m_iRecvSema;            // +0xB4
+    int     m_iQuit;                // +0xB8
+};                                  //  0xBC
+
 // usocket.cpp -- 0x004ad480..0x004ae088.  200 bytes, of which this file names
 // eleven: the tag, the SCE descriptor, the type, the listen flag and one byte
 // of readiness bits.  The rest is the VIUSocketEx thread state hung off the
@@ -1047,7 +1075,8 @@ struct usocket_t
     uns8  m_ucType;         // +0x08
     uns8  m_ucListen;       // +0x09
     uns8  m_ucFlags;        // +0x0A  bit 0 readable, bit 1 writable
-    uns8  m_ucEx[189];      // +0x0B  VIInitUSocketEx's, never touched here
+    uns8  m_ucPad;          // +0x0B
+    usocket_ex_t m_ex;      // +0x0C  VIInitUSocketEx's, never touched here
 };                          //  0xC8
 
 enum

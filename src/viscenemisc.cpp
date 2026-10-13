@@ -81,3 +81,33 @@ int VISceneSoundTrack::Clear()
     m_state[1].Clear();
     return 0;
 }
+
+// The (day, night) XM track pairs for the eleven terrain-profile sound indices:
+// index 0 is silence and the rest are twenty resource-name hashes, written as
+// constants.
+int VISceneSoundTrack::SetTracks()
+{
+    m_tracks[0][0] = 0;
+    m_tracks[0][1] = 0;
+    m_tracks[1][0] = (int)0x9A5DBACC;
+    m_tracks[1][1] = (int)0xA5C60038;
+    m_tracks[2][0] = (int)0xEBF2EEC3;
+    m_tracks[2][1] = (int)0x909E78E7;
+    m_tracks[3][0] = (int)0x92C9A8CE;
+    m_tracks[3][1] = (int)0xA0DBE44A;
+    m_tracks[4][0] = (int)0xB9422F46;
+    m_tracks[4][1] = (int)0x2FEB20F5;
+    m_tracks[5][0] = (int)0x864A0682;
+    m_tracks[5][1] = (int)0x656F64E9;
+    m_tracks[6][0] = (int)0xDB5AA9FB;
+    m_tracks[6][1] = (int)0x2143B5DF;
+    m_tracks[7][0] = (int)0x42E6CF3A;
+    m_tracks[7][1] = (int)0x72F08216;
+    m_tracks[8][0] = (int)0x1ADCC066;
+    m_tracks[8][1] = (int)0x68B480A2;
+    m_tracks[9][0] = (int)0x9E562B5A;
+    m_tracks[9][1] = (int)0xCEF71F36;
+    m_tracks[10][0] = (int)0x0CE4AB35;
+    m_tracks[10][1] = (int)0xFD6FEEE9;
+    return 0;
+}

@@ -189,7 +189,11 @@ int VIParticleEmitter::Purge()
     m_numParticles = 0;
 }
 
-int VIParticleEmitter::Destroy()
+// Phase 61: VOID, not int.  The body is the same either way -- there was never
+// a return statement -- but a CALLER sees the difference: VICSprite::Release
+// calls this and then loads a local, and only a call with no value lets that
+// local have $v0 (a call_value's REG_UNUSED $v0 blocks it); 3 words to 0.
+void VIParticleEmitter::Destroy()
 {
     if (m_system != 0)
     {

@@ -12,12 +12,14 @@
 // (`<` vs `!=`, hex, an explicit guarded do/while, a pointer walker, the
 // counters at function scope, a named `start`); the whole tail of the function
 // is otherwise instruction-for-instruction identical.
-int run_length_encode(const uns8 *data, uns32 size, buffer_t *buffer)
+void run_length_encode(const uns8 *data, uns32 size, buffer_t *buffer)
 {
     const uns8 *end = data + size;
 
-    // the start position is read and thrown away -- the count this function
-    // returns is the END position, not the number of bytes it wrote.
+    // the start position is read and thrown away, and so is the end one: the
+    // function is VOID.  v0 holds the end position at the `jr ra` either way,
+    // but declared `int` its one caller, connection_append_state, goes from
+    // byte-exact to 6 wrong words -- an ignored call_value is not a call.
     buffer_get_position(buffer);
     for (;;)
     {
@@ -45,7 +47,7 @@ int run_length_encode(const uns8 *data, uns32 size, buffer_t *buffer)
         buffer_appendm_uns8(buffer, data, nonzeros);
         data += nonzeros;
     }
-    return buffer_get_position(buffer);
+    buffer_get_position(buffer);
 }
 
 void run_length_decode(buffer_t *buffer, uns8 *data, uns32 size)

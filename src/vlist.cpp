@@ -80,7 +80,7 @@ void vlist_replace(vlist_t *list, void *object, void *with)
 void *vlist_remove_head(vlist_t *list)
 {
     vnode_t *node = list->head;
-    void *result = 0;
+    void *result;
 
     if (node)
     {
@@ -91,16 +91,18 @@ void *vlist_remove_head(vlist_t *list)
             node->prev->next = node->next;
         if (node->next)
             node->next->prev = node->prev;
-        result = vlist_object(list, node);
         list->size--;
+        result = vlist_object(list, node);
     }
+    else
+        result = 0;
     return result;
 }
 
 void *vlist_remove_tail(vlist_t *list)
 {
     vnode_t *node = list->tail;
-    void *result = 0;
+    void *result;
 
     if (node)
     {
@@ -111,9 +113,11 @@ void *vlist_remove_tail(vlist_t *list)
             node->prev->next = node->next;
         if (node->next)
             node->next->prev = node->prev;
-        result = vlist_object(list, node);
         list->size--;
+        result = vlist_object(list, node);
     }
+    else
+        result = 0;
     return result;
 }
 

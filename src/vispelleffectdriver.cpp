@@ -161,3 +161,13 @@ int VISpellEffectDriver::Process()
     }
     return m_drivers.m_head->m_next != 0;
 }
+
+int VISpellEffectDriver::ParticleCount() const
+{
+    int n = 0;
+
+    for (VISpellEventDriver *d = (VISpellEventDriver *)m_drivers.m_head;
+         d->m_next; d = (VISpellEventDriver *)d->m_next)
+        n += d->ParticleCount();
+    return n;
+}

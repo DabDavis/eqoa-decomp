@@ -379,19 +379,18 @@ void buffer_read_packed_uns32(buffer_t *buffer, uns32 *value)
     *value = (uns32)v;
 }
 
-// The delta codecs.  The read side adds the raw byte UNSIGNED even where the
-// type is signed -- `lbu`/`lhu`, never `lb`/`lh` -- and the VALUE is the left
-// operand: written the other way round all four of the 32- and 64-bit readers
-// compute into the offset's register instead.  The 8- and 16-bit SIGNED pair
-// wants the opposite allocation and no spelling has produced it (twelve swept),
-// which is the standing phenomenon: their unsigned twins are byte-exact from
-// this same text.
+// The delta codecs.  The VALUE is the left operand of the add: written the
+// other way round all four of the 32- and 64-bit readers compute into the
+// offset's register instead.  The add is in the declared TYPE, with no cast to
+// the unsigned twin: `(UTYPE)v + offset` leaves the 8- and 16-bit SIGNED pair
+// computing into the value's register (2 wrong words each), and moving the
+// operands instead breaks the four wide readers.
 #define BUFFER_OFFSET_TYPE(NAME, TYPE, UTYPE)                                 \
     void buffer_read_offset_##NAME(buffer_t *buffer, TYPE *value, TYPE offset) \
     {                                                                         \
         TYPE v;                                                               \
         buffer_read_##NAME(buffer, &v);                                       \
-        *value = (TYPE)((UTYPE)v + offset);                                   \
+        *value = (TYPE)(v + offset);                                          \
     }                                                                         \
     void buffer_append_offset_##NAME(buffer_t *buffer, TYPE value, TYPE offset) \
     {                                                                         \
