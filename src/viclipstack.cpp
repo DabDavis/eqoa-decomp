@@ -307,3 +307,267 @@ int VIClipStack::PushBBox(VIBBox &b)
     m_numEntries = n + 1;
     return n;
 }
+
+// 0x0041ED98.  The camera's view volume as a clip volume: frustum planes 1..5
+// (the near plane is dropped) and five points -- the eye and the four far
+// corners, so the volume is a pyramid from the eye rather than the frustum
+// itself.  The vertex count is stored as a literal 5 through a re-derived
+// entry pointer and then overwritten by the derived count.
+int VIClipStack::PushFrustum(VICamera &cam)
+{
+    VIClipEntry *e = &m_entries.m_data[m_numEntries];
+    // Named here for the corner copies only: the plane walk reads off `cam`.
+    VIFrustum *f = &cam.m_frustum;
+
+    e->m_planeIndex = m_numPlanes;
+    e->m_vertIndex = m_numVerts;
+
+    // Through VIArray::operator[], an address pseudo, where `.m_data[k]`
+    // folds and renames every register in the copy.
+    for (int i = 1; i < 6; i++)
+    {
+        m_planes[m_numPlanes] = cam.m_frustum.m_planes[i];
+        m_numPlanes++;
+    }
+
+    m_verts[m_numVerts] = cam.m_position;
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[4];
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[5];
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[6];
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[7];
+    m_numVerts++;
+
+    m_entries[m_numEntries].m_numVerts = 5;
+    e->m_numPlanes = m_numPlanes - e->m_planeIndex;
+    e->m_numVerts = m_numVerts - e->m_vertIndex;
+    int n = m_numEntries;
+    m_numEntries = n + 1;
+    return n;
+}
+
+// Through references: the direction's +0 folds onto the camera and its +4/+8
+// come off a register the loop keeps, which is what spills the walk's
+// constant 12 around the plane call.
+static inline float Dot(const VIVect3 &a, const VIVect3 &b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// 0x0041EF70.  A portal seen from the camera: the camera's frustum plane 1,
+// then one plane per portal edge through the eye, and the portal's corners
+// pushed out along their rays from the eye to the far distance (measured
+// along the view direction).  The eye itself is the first vertex.
+int VIClipStack::PushPortal(VICamera &cam, int n, VIVect3 *p)
+{
+    VIVect3 d;
+    VIPlane pl;
+    VIClipEntry *e = &m_entries.m_data[m_numEntries];
+    VIVect3 *prev = &p[n - 1];
+
+    e->m_planeIndex = m_numPlanes;
+    e->m_vertIndex = m_numVerts;
+
+    m_planes[m_numPlanes] = cam.m_frustum.m_planes[1];
+    m_numPlanes++;
+    m_verts[m_numVerts] = cam.m_position;
+    m_numVerts++;
+
+    for (int i = 0; i < n; i++)
+    {
+        pl(*prev, *p, cam.m_position);
+        prev = p;
+        m_planes[m_numPlanes] = pl;
+        m_numPlanes++;
+
+        d.x = p->x - cam.m_position.x;
+        d.y = p->y - cam.m_position.y;
+        d.z = p->z - cam.m_position.z;
+        p++;
+        float t = Dot(d, cam.m_dir);
+        m_verts[m_numVerts] = d;
+        m_verts[m_numVerts] *= cam.m_far / t;
+        m_verts[m_numVerts] += cam.m_position;
+        m_numVerts++;
+    }
+
+    e->m_numPlanes = m_numPlanes - e->m_planeIndex;
+    e->m_numVerts = m_numVerts - e->m_vertIndex;
+    int k = m_numEntries;
+    m_numEntries = k + 1;
+    return k;
+}
+
+// 0x0041F258.  The same for an arbitrary eye: the near plane is the caller's,
+// flipped and moved out to `dist`, and the corners are pushed out to `dist`
+// measured along that plane's normal.
+int VIClipStack::PushPortal(VIVect3 &eye, float dist, int n, VIVect3 *p,
+                            VIPlane &near)
+{
+    VIVect3 d;
+    VIPlane pl;
+    VIClipEntry *e = &m_entries.m_data[m_numEntries];
+    VIVect3 *prev = &p[n - 1];
+
+    e->m_planeIndex = m_numPlanes;
+    e->m_vertIndex = m_numVerts;
+
+    float t = near.Distance(eye);
+    m_planes[m_numPlanes].n = VIVect3(-near.n.x, -near.n.y, -near.n.z);
+    m_planes[m_numPlanes].d = -((dist - t) + near.d);
+    m_numPlanes++;
+    m_verts[m_numVerts] = eye;
+    m_numVerts++;
+
+    for (int i = 0; i < n; i++)
+    {
+        pl(*prev, *p, eye);
+        prev = p;
+        m_planes[m_numPlanes] = pl;
+        m_numPlanes++;
+
+        d.x = p->x - eye.x;
+        d.y = p->y - eye.y;
+        d.z = p->z - eye.z;
+        p++;
+        float t = Dot(d, near.n);
+        m_verts[m_numVerts] = d;
+        m_verts[m_numVerts] *= dist / t;
+        m_verts[m_numVerts] += eye;
+        m_numVerts++;
+    }
+
+    e->m_numPlanes = m_numPlanes - e->m_planeIndex;
+    e->m_numVerts = m_numVerts - e->m_vertIndex;
+    int k = m_numEntries;
+    m_numEntries = k + 1;
+    return k;
+}
+
+// 0x0041F598.  PushFrustum moved by `t`: every plane pushed back along its
+// own normal, every point moved.
+int VIClipStack::PushTranslatedFrustum(VICamera &cam, const VIVect3 &t)
+{
+    VIClipEntry *e = &m_entries.m_data[m_numEntries];
+    VIFrustum *f = &cam.m_frustum;
+
+    e->m_planeIndex = m_numPlanes;
+    e->m_vertIndex = m_numVerts;
+
+    for (int i = 1; i < 6; i++)
+    {
+        m_planes[m_numPlanes] = cam.m_frustum.m_planes[i];
+        VIPlane &p = m_planes[m_numPlanes];
+        p.d -= t.x * p.n.x + t.y * p.n.y + t.z * p.n.z;
+        m_numPlanes++;
+    }
+
+    m_verts[m_numVerts] = cam.m_position;
+    m_verts[m_numVerts] += t;
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[4];
+    m_verts[m_numVerts] += t;
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[5];
+    m_verts[m_numVerts] += t;
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[6];
+    m_verts[m_numVerts] += t;
+    m_numVerts++;
+    m_verts[m_numVerts] = f->m_verts[7];
+    m_verts[m_numVerts] += t;
+    m_numVerts++;
+
+    m_entries[m_numEntries].m_numVerts = 5;
+    e->m_numPlanes = m_numPlanes - e->m_planeIndex;
+    e->m_numVerts = m_numVerts - e->m_vertIndex;
+    int n = m_numEntries;
+    m_numEntries = n + 1;
+    return n;
+}
+
+// 0x0041FAC8.  VIClipper::Clip's body again against the top volume's planes
+// and this stack's own two scratch arrays -- there is no call to it -- with
+// ONE difference: a point exactly on a plane is DROPPED here, where Clip
+// keeps it.
+int VIClipStack::ClipByTop(int n, VIVect3 *v, int &numOut, VIVect3 **out)
+{
+    int cnt = 0;
+    int k = m_numEntries - 1;
+    VIClipEntry *e = &m_entries.m_data[k];
+    int np = e->m_numPlanes;
+    VIPlane *planes = &m_planes.m_data[e->m_planeIndex];
+    VIVect3 *dst = &m_clipA[0];
+    int flip = 1;
+
+    for (; np != 0; np--, planes++)
+    {
+        VIVect3 *prev = v + n - 1;
+        float dPrev = planes->Distance(*prev);
+
+        for (; n != 0; n--, v++)
+        {
+            float t;
+            float dCur = planes->Distance(*v);
+
+            if (dCur < 0.0f)
+            {
+                if (0.0f < dPrev)
+                {
+                    t = dPrev / (dPrev - dCur);
+                    *dst = *v;
+                    *dst -= *prev;
+                    *dst *= t;
+                    *dst += *prev;
+                    cnt++;
+                    dst++;
+                }
+                *dst = *v;
+                cnt++;
+                dst++;
+            }
+            else if (0.0f < dCur)
+            {
+                if (dPrev < 0.0f)
+                {
+                    t = dPrev / (dPrev - dCur);
+                    *dst = *v;
+                    *dst -= *prev;
+                    *dst *= t;
+                    *dst += *prev;
+                    cnt++;
+                    dst++;
+                }
+            }
+            prev = v;
+            dPrev = dCur;
+        }
+
+        if (cnt == 0)
+        {
+            numOut = 0;
+            *out = 0;
+            return 0;
+        }
+        if (flip)
+        {
+            v = &m_clipA[0];
+            dst = &m_clipB[0];
+        }
+        else
+        {
+            v = &m_clipB[0];
+            dst = &m_clipA[0];
+        }
+        n = cnt;
+        flip = 1 - flip;
+        cnt = 0;
+    }
+
+    numOut = n;
+    *out = v;
+    return 1;
+}

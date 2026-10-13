@@ -30,6 +30,11 @@ VISurface::VISurface()
         m_levels[i].m_header = 0;
 }
 
+VISurface::~VISurface()
+{
+    Deallocate();
+}
+
 int VISurface::Init(VIRaster &r, int w, int h, VIBitDepth bd, int levels)
 {
     // The VIRaster & is DISCARDED, exactly as VIPrimBuffer::Init discards
@@ -184,41 +189,34 @@ int VISurface::CalcSurfaceOffsets()
     switch (m_paletteStore)
     {
     case VIPixelStoreRGBA32:
-    {
-        int n;
         m_paletteSize = 64;
         offset = 64;
         m_paletteOffset = offset;
         m_paletteHeader = 0;
-        n = m_paletteCount * 4;
-        if (n & 15)
-            n = n - (n & 15) + 16;
-        m_paletteSize = n + 64;
-        n = m_paletteCount * 4;
-        if (n & 15)
-            n = n - (n & 15) + 16;
-        offset = n + 64;
+        // The align-up as one ternary per use, the way a macro writes it: gcc
+        // distributes the +64 into both arms (+80 / +64), and the second use
+        // re-reads m_paletteCount after the m_paletteSize store.
+        m_paletteSize = ((m_paletteCount * 4) & 15
+                         ? (m_paletteCount * 4) - ((m_paletteCount * 4) & 15) + 16
+                         : (m_paletteCount * 4)) + 64;
+        offset = ((m_paletteCount * 4) & 15
+                  ? (m_paletteCount * 4) - ((m_paletteCount * 4) & 15) + 16
+                  : (m_paletteCount * 4)) + 64;
         m_paletteQWC = m_paletteSize >> 4;
         break;
-    }
     case VIPixelStoreRGBA16:
-    {
-        int n;
         m_paletteSize = 64;
         offset = 64;
         m_paletteOffset = offset;
         m_paletteHeader = 0;
-        n = m_paletteCount * 2;
-        if (n & 15)
-            n = n - (n & 15) + 16;
-        m_paletteSize = n + 64;
-        n = m_paletteCount * 2;
-        if (n & 15)
-            n = n - (n & 15) + 16;
-        offset = n + 64;
+        m_paletteSize = ((m_paletteCount * 2) & 15
+                         ? (m_paletteCount * 2) - ((m_paletteCount * 2) & 15) + 16
+                         : (m_paletteCount * 2)) + 64;
+        offset = ((m_paletteCount * 2) & 15
+                  ? (m_paletteCount * 2) - ((m_paletteCount * 2) & 15) + 16
+                  : (m_paletteCount * 2)) + 64;
         m_paletteQWC = m_paletteSize >> 4;
         break;
-    }
     default:
         m_paletteHeader = 0;
         m_paletteOffset = 0;
@@ -237,9 +235,10 @@ int VISurface::CalcSurfaceOffsets()
         int stride = CalcMipLevelStride(w);
         if (stride < 0)
             return -1;
-        int size = stride * h + 64;
-        m_levels[level].m_pixels = offset + 64;
+        int size = stride * h;
+        size += 64;
         m_levels[level].m_header = offset;
+        m_levels[level].m_pixels = offset + 64;
         m_levels[level].m_stride = stride;
         m_levels[level].m_width = w;
         m_levels[level].m_height = h;

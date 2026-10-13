@@ -62,7 +62,7 @@ int VIWalkCamera::SetOrbitDistance(float d)
 // holds -- +0x144, not +0xBC.
 int VIWalkCamera::SetOrbitAngleBehind()
 {
-    return SetOrbitAngle(m_anglesAlt.x + 3.14159274f);
+    return SetOrbitAngle(m_committed.m_angles.x + 3.14159274f);
 }
 
 // 0x00483360.
@@ -116,18 +116,18 @@ int VIWalkCamera::OrbitIn(float t)
 // set, and the camera's own force and velocity.
 int VIWalkCamera::Halt()
 {
-    m_v168.Zero();
-    m_v150.Zero();
-    m_v174.Zero();
-    m_v15C.Zero();
+    m_committed.m_force.Zero();
+    m_committed.m_velocity.Zero();
+    m_committed.m_torque.Zero();
+    m_committed.m_angularVel.Zero();
     m_last.m_orbitForce.Zero();
     m_last.m_orbitVel.Zero();
     m_last.m_distForce = 0.0f;
     m_last.m_distVel = 0.0f;
-    m_force.Zero();
-    m_velocity.Zero();
-    m_torque.Zero();
-    m_angularVel.Zero();
+    m_phys.m_force.Zero();
+    m_phys.m_velocity.Zero();
+    m_phys.m_torque.Zero();
+    m_phys.m_angularVel.Zero();
     m_cur.m_orbitForce.Zero();
     m_cur.m_orbitVel.Zero();
     m_cur.m_distForce = 0.0f;
@@ -182,15 +182,15 @@ int VIWalkCamera::SetCameraMode(VIWalkCameraMode mode)
         // the low half of a field Phase 18 proved is a `long` -- and the clear
         // mask is one UNSIGNED constant shared by both, `lui 0xffff` + `ori`,
         // where a signed -257 would be a single `addiu`.
-        *(unsigned int *)&m_flags |= 0x100;
-        *(unsigned int *)&m_flags2 |= 0x100;
-        m_targetHeading = m_angles.x;
-        m_p190 = m_anglesAlt.x;
+        m_phys.m_flags |= 0x100;
+        m_committed.m_flags |= 0x100;
+        m_phys.m_targetHeading = m_phys.m_angles.x;
+        m_committed.m_targetHeading = m_committed.m_angles.x;
     }
     else
     {
-        *(unsigned int *)&m_flags &= ~0x100;
-        *(unsigned int *)&m_flags2 &= ~0x100;
+        m_phys.m_flags &= ~0x100;
+        m_committed.m_flags &= ~0x100;
     }
     return 0;
 }
@@ -293,9 +293,9 @@ int VIWalkCamera::SetOrbitAngle(float a)
 
         dir.HPR(m_cur.m_orbit.x, -m_cur.m_orbit.y, 0.0f);
 
-        p = m_position;
+        p = m_phys.m_position;
         p.x = p.x + dir.x * m_cur.m_dist;
-        p.y = p.y + m_targetHeight + dir.y * m_cur.m_dist + m_field104;
+        p.y = p.y + m_targetHeight + dir.y * m_cur.m_dist + m_phys.m_heightOffset;
         p.z = p.z + dir.z * m_cur.m_dist;
 
         m_last.m_cameraPos = p;
@@ -343,7 +343,7 @@ int VIWalkCamera::Process(VICamera &cam, VIScene &scene, int flags)
         float   r;
 
         d = m_cur.m_cameraPos;
-        d -= m_position;
+        d -= m_phys.m_position;
         d.y = 0.0f;
         d.HPR(&m_cur.m_orbit.x, &p, &r);
     }
@@ -420,7 +420,7 @@ int VIWalkCamera::UpdateCameraPhysics(float dt)
             {
                 m_cur.m_orbit.x = tgt;
                 m_cur.m_flags &= ~1;
-                *(unsigned int *)&m_flags &= ~0x200;
+                m_phys.m_flags &= ~0x200;
             }
         }
         else if (tgt <= cur)
@@ -430,7 +430,7 @@ int VIWalkCamera::UpdateCameraPhysics(float dt)
             {
                 m_cur.m_orbit.x = tgt;
                 m_cur.m_flags &= ~1;
-                *(unsigned int *)&m_flags &= ~0x200;
+                m_phys.m_flags &= ~0x200;
             }
         }
     }
@@ -491,6 +491,134 @@ int VIWalkCamera::UpdateCameraPhysics(float dt)
     return 0;
 }
 
+// 0x00482AF0.  Place the camera.  In mode 3 the orbit is swept against the
+// world first: a clear sweep at the default pitch snaps the pitch back to it;
+// a blocked one zooms in while there is distance to give, then tries the
+// alternate pitch, and only then hunts for another orbit angle (zooming to
+// the minimum when there is none).  Modes 0-2 sweep straight from the target
+// to the eye, and only m_autoOrbit lets the hit point move the eye in.
+int VIWalkCamera::MoveCamera(VIScene &scene)
+{
+    VICollSphere       sphere;
+    VIWalkCameraFilter filter;
+    VIVect3            from;
+    VIVect3            to;
+    VIVect3            dir;
+
+    if (m_cameraMode == 3)
+    {
+        if (!(m_cur.m_bits.snapAngle || m_cur.m_bits.zoomIn ||
+              m_cur.m_bits.snapPitch))
+        {
+            from = m_phys.m_position;
+            from.y = from.y + m_targetHeight;
+            // Read ONCE: the second sweep passes the same value after the
+            // first HPR has rewritten dir.
+            float roll = dir.z;
+            dir.HPR(m_cur.m_orbit.x, -m_defOrbitPitch, roll);
+
+            to = m_phys.m_position;
+            to.x = to.x + dir.x * m_cur.m_dist;
+            to.y = to.y + m_targetHeight + dir.y * m_cur.m_dist;
+            to.z = to.z + dir.z * m_cur.m_dist;
+            from.y = from.y + m_phys.m_heightOffset;
+            to.y = to.y + m_phys.m_heightOffset;
+
+            if (sphere.Init(from, to, m_collisionRadius) < 0)
+                return -1;
+            filter.Init(m_parm64);
+            if (scene.Collide(sphere, filter) == 0)
+            {
+                if (m_cur.m_orbit.y != m_defOrbitPitch)
+                {
+                    m_cur.m_snapPitch = m_defOrbitPitch;
+                    m_cur.m_flags |= 8;
+                }
+            }
+            else if (m_cur.m_dist > m_minCollisionDist)
+                m_cur.m_flags |= 4;
+            else
+            {
+                from = m_phys.m_position;
+                from.y = from.y + m_targetHeight;
+                dir.HPR(m_cur.m_orbit.x, -m_altOrbitPitch, roll);
+
+                to = m_phys.m_position;
+                to.x = to.x + dir.x * m_cur.m_dist;
+                to.y = to.y + m_targetHeight + dir.y * m_cur.m_dist;
+                to.z = to.z + dir.z * m_cur.m_dist;
+                from.y = from.y + m_phys.m_heightOffset;
+                to.y = to.y + m_phys.m_heightOffset;
+
+                if (sphere.Init(from, to, m_collisionRadius) < 0)
+                    return -1;
+                if (scene.Collide(sphere, filter) == 0 &&
+                    m_phys.m_landscapeNormal.y < 0.9f)
+                {
+                    if (m_cur.m_orbit.y != m_altOrbitPitch)
+                    {
+                        m_cur.m_snapPitch = m_altOrbitPitch;
+                        m_cur.m_flags |= 8;
+                    }
+                }
+                else if (FindOrbitAngle(m_cur.m_orbit.x, scene,
+                                        m_cur.m_snapAngle) == 0)
+                    m_cur.m_flags |= 2;
+                else if (m_cur.m_orbit.x != m_cur.m_snapAngle)
+                {
+                    m_cur.m_flags |= 1;
+                    m_phys.m_flags |= 0x200;
+                }
+            }
+        }
+
+        dir.HPR(m_cur.m_orbit.x, -m_cur.m_orbit.y, 0.0f);
+        m_cur.m_cameraPos = m_phys.m_position;
+        m_cur.m_cameraPos.y = m_cur.m_cameraPos.y + m_targetHeight;
+        AddVec(m_cur.m_cameraPos, dir, m_cur.m_dist);
+        m_cur.m_cameraPos.y = m_cur.m_cameraPos.y + m_phys.m_heightOffset;
+    }
+    else
+    {
+        if (m_cameraMode == 2)
+        {
+            from = m_phys.m_position;
+            from.y = from.y + m_targetHeight;
+            dir.HPR(m_phys.m_angles.x, m_phys.m_angles.y, dir.z);
+
+            to = m_phys.m_position;
+            to.x = to.x - dir.x * m_cur.m_dist;
+            to.y = to.y + m_targetHeight - dir.y * m_cur.m_dist;
+            to.z = to.z - dir.z * m_cur.m_dist;
+        }
+        else
+        {
+            from = m_phys.m_position;
+            from.y = from.y + m_targetHeight;
+            dir.HPR(m_cur.m_orbit.x, -m_cur.m_orbit.y, dir.z);
+
+            to = m_phys.m_position;
+            to.x = to.x + dir.x * m_cur.m_dist;
+            to.y = to.y + m_targetHeight + dir.y * m_cur.m_dist;
+            to.z = to.z + dir.z * m_cur.m_dist;
+        }
+        from.y = from.y + m_phys.m_heightOffset;
+        to.y = to.y + m_phys.m_heightOffset;
+
+        if (m_autoOrbit)
+        {
+            if (sphere.Init(from, to, m_collisionRadius) < 0)
+                return -1;
+            filter.Init(m_parm64);
+            scene.Collide(sphere, filter);
+            m_cur.m_cameraPos = sphere.GetHitPoint();
+        }
+        else
+            m_cur.m_cameraPos = to;
+    }
+    return 0;
+}
+
 // 0x00483578.  Turn the orbit state into an eye point and a look direction and
 // hand them to the camera, through the shake.  The four modes are an if/else
 // chain tested 0, 2, then 1-or-3 -- not a switch.
@@ -501,20 +629,20 @@ int VIWalkCamera::SetCamera(VICamera &cam, VIScene &scene, int flags)
 
     if (m_cameraMode == 0)
     {
-        pos = m_position;
+        pos = m_phys.m_position;
         pos.y = pos.y + m_lookAtHeight;
-        dir.HPR(m_angles.x, m_angles.y, 0.0f);
+        dir.HPR(m_phys.m_angles.x, m_phys.m_angles.y, 0.0f);
     }
     else if (m_cameraMode == 2)
     {
         pos = m_cur.m_cameraPos;
-        dir.HPR(m_angles.x, m_angles.y, 0.0f);
+        dir.HPR(m_phys.m_angles.x, m_phys.m_angles.y, 0.0f);
     }
     else if (m_cameraMode == 1 || m_cameraMode == 3)
     {
         pos = m_cur.m_cameraPos;
-        dir = m_position;
-        dir.y = dir.y + m_field104 + m_lookAtHeightAbove;
+        dir = m_phys.m_position;
+        dir.y = dir.y + m_phys.m_heightOffset + m_lookAtHeightAbove;
         dir -= m_cur.m_cameraPos;
     }
 
@@ -557,18 +685,18 @@ int VIWalkCamera::FindOrbitAngle(float a, VIScene &scene, float &out)
 
     for (i = 0; i < 8; i++)
     {
-        from = m_prevPosition;
+        from = m_committed.m_position;
         from.y = from.y + m_targetHeight;
         dir.HPR(angles[i], -m_last.m_orbit.y, 0.0f);
 
-        to = m_prevPosition;
+        to = m_committed.m_position;
         to.x = to.x + dir.x * m_last.m_dist;
         to.y = to.y + m_targetHeight + dir.y * m_last.m_dist;
         to.z = to.z + dir.z * m_last.m_dist;
         // The step-up offset goes on FROM first and TO second: the other order
         // is the same 172 instructions with two registers renamed.
-        from.y = from.y + m_field18C;
-        to.y = to.y + m_field18C;
+        from.y = from.y + m_committed.m_heightOffset;
+        to.y = to.y + m_committed.m_heightOffset;
 
         if (sphere.Init(from, to, m_collisionRadius) < 0)
             return -1;
@@ -613,16 +741,16 @@ int VIWalkCamera::FindBestOrbitAngle(float a, VIScene &scene, float &out)
 
     for (i = 0; i < 8; i++)
     {
-        from = m_prevPosition;
+        from = m_committed.m_position;
         from.y = from.y + m_targetHeight;
         dir.HPR(angles[i], -m_last.m_orbit.y, 0.0f);
 
-        to = m_prevPosition;
+        to = m_committed.m_position;
         to.x = to.x + dir.x * m_last.m_dist;
         to.y = to.y + m_targetHeight + dir.y * m_last.m_dist;
         to.z = to.z + dir.z * m_last.m_dist;
-        from.y = from.y + m_field18C;
-        to.y = to.y + m_field18C;
+        from.y = from.y + m_committed.m_heightOffset;
+        to.y = to.y + m_committed.m_heightOffset;
 
         if (sphere.Init(from, to, m_collisionRadius) < 0)
             return -1;

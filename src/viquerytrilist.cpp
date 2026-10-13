@@ -77,3 +77,44 @@ int VIQueryTriList::Allocate()
 
     return 0;
 }
+
+// The view direction through a reference: its +0 folds onto `this`, +4/+8
+// come off a register.
+static inline float Dot(const VIVect3 &a, const VIVect3 &b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// 0x0045DC50.  Keep a triangle that faces the query direction closely enough,
+// clipped to the query box, as a fan.  Every path returns 0 -- the caller
+// reads m_numTris, not the result.
+int VIQueryTriList::Intersect(int actor, const VIVect3 &a, const VIVect3 &b,
+                              const VIVect3 &c)
+{
+    VIVect3 tri[3];
+    VIPlane pl;
+    int numOut;
+    VIVect3 *out;
+
+    if (m_numTris == m_maxTris)
+        return 0;
+
+    tri[0] = a;
+    tri[1] = b;
+    tri[2] = c;
+    pl(a, b, c);
+    if (Dot(pl.n, m_dir) < m_cosAngle)
+        return 0;
+    if (m_clipper.Clip(3, tri, 6, m_planes, numOut, &out) == 0)
+        return 0;
+
+    for (int i = 2; i < numOut && m_numTris < m_maxTris; i++)
+    {
+        m_tris[m_numTris].m_actor = actor;
+        m_tris[m_numTris].m_v0 = out[0];
+        m_tris[m_numTris].m_v1 = out[i - 1];
+        m_tris[m_numTris].m_v2 = out[i];
+        m_numTris++;
+    }
+    return 0;
+}

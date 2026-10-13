@@ -100,18 +100,12 @@ int VILODSprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc, VIRaste
 
     float d = p.x * p.x + p.y * p.y + p.z * p.z;
     int i = 0;
-    while (m_levels[i].m_dist * m_levels[i].m_dist < d)
-    {
-        if (i >= m_numLevels)
-            break;
+    // One `&&`: the bound test is the loop's own bottom test, not a break.
+    while (m_levels[i].m_dist * m_levels[i].m_dist < d && i < m_numLevels)
         i++;
-    }
-    // Note the direction is the OPPOSITE of Raster's five lines above: here the
-    // `return 0` goes in the `if` and the call falls through, and that is
-    // measured -- swapping them costs one instruction and 12 words.
-    if (i == m_numLevels)
-        return 0;
-    return sc.Sprite(m_levels[i].m_sprite)->Pick(seg, f, sc, r);
+    if (i != m_numLevels)
+        return sc.Sprite(m_levels[i].m_sprite)->Pick(seg, f, sc, r);
+    return 0;
 }
 
 int VILODSprite::QueryIntersection(const VIBBox &b, VIQueryTriList &l,

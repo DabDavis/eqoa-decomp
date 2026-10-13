@@ -73,6 +73,8 @@ template <class T> int VISet<T>::Begin() const
     return i;
 }
 
+// ONE return at the bottom (phase 61): with the descent returning on its
+// own, the ascent's `i = p` and the return collapse to one move.
 template <class T> int VISet<T>::Next(int i) const
 {
     if (NODE(i)->m_right != 0)
@@ -80,16 +82,17 @@ template <class T> int VISet<T>::Next(int i) const
         i = NODE(i)->m_right;
         while (NODE(i)->m_left != 0)
             i = NODE(i)->m_left;
-        return i;
     }
-
-    int p = NODE(i)->m_parent;
-    while (p != 0 && NODE(p)->m_right == i)
+    else
     {
+        int p = NODE(i)->m_parent;
+        while (p != 0 && NODE(p)->m_right == i)
+        {
+            i = p;
+            p = NODE(p)->m_parent;
+        }
         i = p;
-        p = NODE(p)->m_parent;
     }
-    i = p;
     return i;
 }
 

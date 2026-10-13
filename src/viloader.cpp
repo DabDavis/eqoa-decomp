@@ -237,17 +237,18 @@ int VILoader::Find(int i, unsigned int id, unsigned long &off, unsigned int &siz
     int hi = d.m_size - 1;
     int mid;
 
+    // The inline operator[], not m_data[] -- an address pseudo per use.
     while (lo <= hi)
     {
         mid = (lo + hi) >> 1;
-        if (d.m_data[mid].m_id == id) break;
-        if (id < d.m_data[mid].m_id) hi = mid - 1;
+        if (d[mid].m_id == id) break;
+        if (id < d[mid].m_id) hi = mid - 1;
         else lo = mid + 1;
     }
     if (lo <= hi)
     {
-        off = d.m_data[mid].m_offset;
-        size = d.m_data[mid].m_size;
+        off = d[mid].m_offset;
+        size = d[mid].m_size;
         return 1;
     }
     return 0;
@@ -290,7 +291,7 @@ int VILoader::Align(VILoaderTrans &t)
     t.m_readOffset = t.m_offset;
 
     int a = m_files[t.m_file].m_file.AsynchAlignment();
-    unsigned int r = t.m_position % a;
+    unsigned long r = t.m_position % a;
     t.m_position -= r;
     t.m_offset += r;
     t.m_readSize += r;

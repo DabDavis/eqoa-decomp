@@ -185,7 +185,8 @@ int VIFlyCamera::UpdateCameraPhysics(float dt)
     // destination register where the target lets the upper bound's own
     // register be the default.
     float p = m_angles.y;
-    m_angles.y = VIMIN(1.5607964f, VIMAX(-1.5607964f, p));
+    float c = VIMIN(1.5607964f, VIMAX(-1.5607964f, p));
+    m_angles.y = c;
 
     AddVec(m_angularVel, tq, dt);
     {

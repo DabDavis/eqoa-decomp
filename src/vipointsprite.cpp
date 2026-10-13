@@ -23,13 +23,15 @@ VIPointSprite::~VIPointSprite()
 
 int VIPointSprite::Init(VIPointType type)
 {
+    // VIPointLight::Init's pointer, and the literal radius goes BEFORE Zero().
+    VISphere *b = &m_bsphere;
     m_pointType = type;
-    m_bsphere.c.Zero();
     m_bsphere.r = 0.1f;
-    m_bbox.min = m_bsphere.c;
-    m_bbox.min -= m_bsphere.r;
-    m_bbox.max = m_bsphere.c;
-    m_bbox.max += m_bsphere.r;
+    m_bsphere.c.Zero();
+    m_bbox.min = b->c;
+    m_bbox.min -= b->r;
+    m_bbox.max = b->c;
+    m_bbox.max += b->r;
     return 0;
 }
 

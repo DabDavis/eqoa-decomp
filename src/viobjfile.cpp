@@ -630,9 +630,11 @@ int VIObjFile::ReadBegin(unsigned short &type, unsigned short &version,
     }
     size = m_dirs[m_level].m_obj.m_size + 12;
     m_dirs[m_level].m_remain = m_dirs[m_level].m_obj.m_size;
-    if (m_file.Eof())
-        return -1;
-    m_readOpen = 1;
+    // The last Eof test guards the success path, so its `return -1` is the
+    // function's final block and every early failure threads to it.
+    if (!m_file.Eof())
+    {
+        m_readOpen = 1;
     type = m_dirs[m_level].m_obj.m_type;
     version = m_dirs[m_level].m_obj.m_version;
     if (m_dirs[m_level].m_obj.m_numSubObjects != 0)
@@ -640,6 +642,8 @@ int VIObjFile::ReadBegin(unsigned short &type, unsigned short &version,
     else
         m_canRead = 1;
     return 0;
+    }
+    return -1;
 }
 
 int VIObjFile::ReadBegin(unsigned long offset, unsigned short &type, unsigned short &version)

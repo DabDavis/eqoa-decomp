@@ -276,6 +276,10 @@ public:
     // The VU0 macro-mode 4x4 product; declared for VIGroupSprite, which
     // composes a member transform onto the caller's.
     void Mul(const VIMatrix44 &a, const VIMatrix44 &b);
+    // Phase 61, VU0 macro mode.
+    void Mul(const VIMatrix44 &a, float f);
+    void BlendAccum(const VIVect4 &v, float w, VIVect4 &out) const;
+    void BlendAccum(const VIVect3 &v, float w, VIVect4 &out) const;
     void ConvertToEulerXYZ(VIVect3 &v) const;
     void ConvertToEulerZXY(VIVect3 &v) const;
     void Store(float *p) const;
@@ -1316,7 +1320,10 @@ public:
     VIVect2      m_uvRate;
     VIVect2      m_uvOffset;
     int          m_pass;
-    char         m_packet[20];
+    int          m_pad7C;
+    // Phase 61: ConstructTextPass copies the four A+D pairs with `ld` at 128..
+    // off the same `this + i*144` the accessors use.
+    long         m_reg[8];
 };
 
 // VIBuffer, again: the constructor's first two stores are +0x04 then +0x00,
@@ -1326,6 +1333,21 @@ public:
 // +480/+484, so the 488 the members alone account for is rounded UP -- the
 // element's alignment is 16, not 8.  The attribute moves no member (480 is
 // already a multiple of 16), which is why it was invisible in Phase 15.
+// Phase 61: the unit VIMaterial's packet builders write in, one VIF/GIF
+// quadword.  Named off the mangled `P7VIQWord` of the four builders.
+// A class wrapping an anonymous union, so the `class VIQWord;` forward
+// declaration elsewhere still names it.
+class VIQWord
+{
+public:
+    union
+    {
+        unsigned int m_w[4];
+        long         m_d[2];
+        float        m_f[4];
+    };
+};
+
 class VIMaterial : public VIBuffer
 {
 public:
@@ -1334,7 +1356,9 @@ public:
                                     //        0x10 dither, 0x20 tessellate
     VIColor32       m_emissive;     // +0x10
     int             m_pad14;        // +0x14
-    double          m_time;         // +0x18  zeroed as one 64-bit `sd`
+    // A `long`, not the `double` phase 15 modelled the 64-bit `sd` with:
+    // Process compares it with `ld` + `beq` against VIRaster::GetTime().
+    long            m_time;         // +0x18
     int             m_dirty;        // +0x20
     int             m_handle;       // +0x24  = -1
     int             m_pad28;        // +0x28
@@ -1366,9 +1390,15 @@ public:
     int  SetLayerMagFilter(int i, int on);
     int  SetLayerUVSet(int i, int set);
     int  SetLayerTexture(int i, int tex, VIRaster &r, VIDictionary &d);
-    // Phase 61, off VIRaster::AddMaterial: builds the material's GS packet
-    // into its LRU slot and returns the quadword count.
+    // Phase 61.  ConstructDMAPacket is off VIRaster::AddMaterial: it builds
+    // the material's GS packet into its LRU slot and returns the quadword count.
+    int  SetNumLayers(int n, VIRaster &r, VIDictionary &d);
+    int  CopyLayer(int src, int dst, VIRaster &r, VIDictionary &d);
+    int  Process(long time);
     int  ConstructDMAPacket(VIRaster &r, VIQWord *q);
+    int  ConstructTextPass(int i, VIRaster &r, VIQWord *q);
+    int  ConstructSolidFillPass(int i, VIRaster &r, VIQWord *q);
+    int  ConstructWirePass(int i, VIRaster &r, VIQWord *q);
 } __attribute__((aligned(16)));
 
 class VIPrimBuffer : public VIBuffer
@@ -1951,6 +1981,59 @@ public:
 // guesses.
 class VIScene;
 
+// VIWalkPhysics -- 0x70 bytes, the rigid body VIWalkControl carries twice.
+// Read off its compiler-generated operator= (0x004886A0): `ld`/`sd` at +0,
+// six VIVect3 copies, then lw / lwc1 / lw / lwc1 / lwc1 and a seventh vector.
+//
+// The flag word is a UNION of the word and a run of one-bit fields, and both
+// views are in the binary.  A test of OR'd bit-fields is merged by fold into
+// one masked load, and get_best_mode picks the widest mode the 8-aligned
+// object allows -- `ld` -- so IsInLava is `m_bits.inLava || m_bits.atLavaSurface`
+// and comes out `ld`/`andi 0x30`; a test of the WORD comes out `lw`.  Phase 18
+// modelled this as a `long` plus an `(int)` cast per site; the copy here is
+// what settles it, since operator= moves +0x50 with `lw` and +0x54 with `lwc1`.
+struct VIWalkFlags
+{
+    unsigned int onFloor        : 1;  // 0x0001
+    unsigned int b1             : 1;  // 0x0002
+    unsigned int inWater        : 1;  // 0x0004
+    unsigned int atWaterSurface : 1;  // 0x0008
+    unsigned int inLava         : 1;  // 0x0010
+    unsigned int atLavaSurface  : 1;  // 0x0020
+    unsigned int inSlime        : 1;  // 0x0040
+    unsigned int atSlimeSurface : 1;  // 0x0080
+    unsigned int b8             : 1;  // 0x0100  SetLocation keeps it
+    unsigned int noTurn         : 1;  // 0x0200
+    unsigned int landscape      : 1;  // 0x0400
+    unsigned int inMud          : 1;  // 0x0800
+    unsigned int atMudSurface   : 1;  // 0x1000
+    unsigned int slowRun        : 1;  // 0x2000
+};
+
+class VIWalkPhysics
+{
+public:
+    long    m_time;            // +0x00  VIScene::GetTime of this state
+    VIVect3 m_position;        // +0x08
+    VIVect3 m_angles;          // +0x14  (heading, pitch, roll)
+    VIVect3 m_velocity;        // +0x20
+    VIVect3 m_angularVel;      // +0x2C
+    VIVect3 m_force;           // +0x38
+    VIVect3 m_torque;          // +0x44
+    union
+    {
+        unsigned int m_flags;  // +0x50
+        VIWalkFlags  m_bits;
+    };
+    float   m_floor;           // +0x54  SetLocation seeds it with position.y
+    int     m_locoState;       // +0x58
+    float   m_heightOffset;    // +0x5C  GetSmoothLocation adds it to y
+    float   m_targetHeading;   // +0x60
+    VIVect3 m_landscapeNormal; // +0x64
+
+    VIVect3 GetSmoothLocation() const;
+};
+
 class VIWalkControl
 {
 public:
@@ -1989,49 +2072,23 @@ public:
     VIVect3 m_facing;          // +0x08C  heading and pitch
     VIVect3 m_up;              // +0x098  NOT normalized
 
-    float   m_pA4;             // +0x0A4  twelve bytes the ctor does not zero,
-    float   m_pA8;             // +0x0A8  so three members that are not a
-    float   m_pAC;             // +0x0AC  VIVect3
+    float   m_pA4;             // +0x0A4  the one word the ctor does not zero
 
-    VIVect3 m_position;        // +0x0B0
-    VIVect3 m_angles;          // +0x0BC  (heading, pitch, roll)
-    VIVect3 m_velocity;        // +0x0C8
-    VIVect3 m_angularVel;      // +0x0D4
-    VIVect3 m_force;           // +0x0E0
-    VIVect3 m_torque;          // +0x0EC
-
-    long    m_flags;           // +0x0F8  `ld` at four sites, so eight bytes
-    int     m_locoState;       // +0x100
-    float   m_field104;        // +0x104
-    float   m_targetHeading;   // +0x108
-    VIVect3 m_v10C;            // +0x10C
+    // The rigid body, TWICE (phase 61).  SetLocation fills +0x130 and copies
+    // it onto +0xA8 with one `jal __as__13VIWalkPhysics`; Process steps +0xA8
+    // a tick at a time and copies it back.  Phase 18's flat list was every
+    // field of both halves, which is why its eighteen VIVect3 offsets fell in
+    // two runs of seven plus four.
+    VIWalkPhysics m_phys;      // +0x0A8  the state being stepped
     int     m_parm118;         // +0x118
     float   m_walkAccel;       // +0x11C
     float   m_runAccel;        // +0x120
     float   m_turnAccel;       // +0x124
     float   m_pitchAccel;      // +0x128
     float   m_swimAccel;       // +0x12C
-    int     m_p130;            // +0x130
-    int     m_p134;            // +0x134
-    VIVect3 m_prevPosition;    // +0x138
-    // +0x144, and its .y IS the alternate pitch go-eqoa-vi/viwalk calls
-    // PitchAlt (+0x148).  It is a VIVect3 and not three floats: the
-    // constructor zeroes it through its own base register, which is what
-    // VIVect3::Zero() gives and three plain members do not -- so the pitch
-    // limit lives in the middle of a second angles triple.
-    VIVect3 m_anglesAlt;       // +0x144
-    VIVect3 m_v150;            // +0x150
-    VIVect3 m_v15C;            // +0x15C
-    VIVect3 m_v168;            // +0x168
-    VIVect3 m_v174;            // +0x174
-    int     m_flags2;          // +0x180  a SECOND flag word, same masks
-    int     m_p184;            // +0x184
-    int     m_moveMode;        // +0x188
-    float   m_field18C;        // +0x18C
-    // SetCameraMode stores VIWalkCamera's alternate heading here with swc1,
-    // so it is a float, not the int Phase 18 left it as.
-    float   m_p190;            // +0x190
-    VIVect3 m_landscapeNormal; // +0x194
+    // The committed state.  Its m_angles.y IS the alternate pitch
+    // go-eqoa-vi/viwalk calls PitchAlt (+0x148).
+    VIWalkPhysics m_committed; // +0x130
 
     // The two gravities, SUPPORT 0x004E31F8 and 0x004E3208.  Each is a
     // VIVect3 with x and z zero, so gravity is straight down in world space
@@ -2050,8 +2107,14 @@ public:
     int   ClearForces();
     int   InitParms();
     int   InitIntermediate();
+    int   Init(const VIVect3 &pos, const VIVect3 &angles, VIScene &s);
     int   SetLocation(const VIVect3 &pos, const VIVect3 &angles, VIScene &s);
     int   Process(int flags, VIScene &s);
+    int   SetUpdatePhysics(VIWalkPhysics &p, VIScene &s);
+    int   UpdateSprite(VICSprite &sprite, VIScene &s);
+    int   Move(int flags, VIScene &s);
+    int   CalcFit(int flags, VIScene &s, VIVect3 &a, VIVect3 &b, VIVect3 &c);
+    int   CalcFloor(VIScene &s, VIVect3 &a, VIVect3 &b);
     int   UpdateDirections();
     int   Walk(float x, float y);
     int   Run(float x, float y);
@@ -2534,7 +2597,7 @@ public:
     // Phase 54, off VIScene::QueryProximalActor: the walk runs backwards too,
     // to drop the farthest entry once the query is full.
     int Prev(int i) const;
-    int Last();
+    int Last() const;
     int DestroyPool();
     int LinkFreeChain(int i);
     int Allocate();
@@ -2963,6 +3026,7 @@ public:
     VIPool<VICollBuffer *> m_buffers;
 
     VICollide();
+    ~VICollide();
 
     int Init();
     int Close();
@@ -3042,6 +3106,7 @@ public:
     VIMap<unsigned int, VIDictEntry> m_map;
 
     VIDictionary();
+    ~VIDictionary();
 
     int Size();
     int Clear();
@@ -4532,9 +4597,11 @@ public:
 // and then the data, which starts 256 bytes in.  Lookup is a LINEAR walk over
 // a case-folded string hash -- there is no ordering and no bucket table.
 //
+//   +0x00 m_file          the VIFile, a MEMBER and not a base: the destructor
+//                         calls `_$_6VIFile` with `li a1,2` and deletes itself
 //   +0xC0 m_numEntries    read straight out of the header
 //   +0xC4 m_entries       new WadEntry[m_numEntries]
-class VIWadFile : public VIFile
+class VIWadFile
 {
 public:
     struct WadEntry
@@ -4545,10 +4612,12 @@ public:
         int          pad;
     };
 
+    VIFile    m_file;
     int       m_numEntries;
     WadEntry *m_entries;
 
     VIWadFile();
+    ~VIWadFile();
 
     int Init(const char *path);
     int Init(void *p, int size);
@@ -4894,9 +4963,10 @@ public:
     int PushBBox(VIBBox &b);
     int PushFrustum(VICamera &cam);
     int PushPortal(VICamera &cam, int n, VIVect3 *p);
-    // Phase 61, off VIZone::QueryThroughPortals: the query-side overload
-    // clips from a sphere's centre and carries the portal's own plane.
-    int PushPortal(VIVect3 &at, float r, int n, VIVect3 *p, VIPlane &plane);
+    // Phase 61.  The eye overload is the query side (VIZone::QueryThroughPortals):
+    // it clips from a sphere's centre and carries the portal's own plane.
+    int PushPortal(VIVect3 &eye, float dist, int n, VIVect3 *p, VIPlane &near);
+    int PushTranslatedFrustum(VICamera &cam, const VIVect3 &t);
 };
 
 // ----------------------------------------------------------- VIHSpriteAnim --
@@ -6572,6 +6642,8 @@ class VIClipper
 public:
     int Init(int n);
     int Clear();
+    int Clip(int n, VIVect3 *v, int np, VIPlane *planes, int &numOut,
+             VIVect3 **out);
 
     VIArray<VIVect3> m_in;    // 0x00
     VIArray<VIVect3> m_out;   // 0x08
@@ -6584,7 +6656,8 @@ public:
     VIVect3 m_v0;
     VIVect3 m_v1;
     // Phase 61: the THIRD VERTEX, not a normal -- VIScene::RenderShadow draws
-    // +4, +16 and +28 as one triangle fan.
+    // +4, +16 and +28 as one triangle, and VIQueryTriList::Intersect fans the
+    // clipped polygon into (out[0], out[i-1], out[i]).
     VIVect3 m_v2;
 };
 
@@ -6838,8 +6911,20 @@ public:
     public:
         long    m_time;         // +0x00
         // UNSIGNED: every clear mask comes out `lui 0xffff` + `ori`, where a
-        // signed ~mask would be one `addiu`.
-        unsigned int m_flags;   // +0x08  1 snap-angle, 2/4 zoom, 8 snap-pitch
+        // signed ~mask would be one `addiu`.  And a union with one-bit fields,
+        // as VIWalkPhysics' is: MoveCamera's `ld`/`andi 0xd` is three of them
+        // OR'd (phase 61).
+        union
+        {
+            unsigned int m_flags;   // +0x08  1 snap-angle, 2/4 zoom, 8 snap-pitch
+            struct
+            {
+                unsigned int snapAngle : 1;   // 0x1
+                unsigned int zoomToMin : 1;   // 0x2
+                unsigned int zoomIn    : 1;   // 0x4
+                unsigned int snapPitch : 1;   // 0x8
+            } m_bits;
+        };
         VIVect3 m_orbit;        // +0x0C  (angle, pitch, -)
         VIVect3 m_orbitVel;     // +0x18
         VIVect3 m_orbitForce;   // +0x24

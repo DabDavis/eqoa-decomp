@@ -36,7 +36,7 @@ int VITimeOfDay::GetLocalTime(char *out, int n)
     int minute = (c.minute >> 4) * 10 + (c.minute & 15);
     int second = (c.second >> 4) * 10 + (c.second & 15);
 
-    VIString::snprintf(out, n, "%s, %s %d %d:%02d:%02d %d",
+    VIString::snprintf(out, n, "%s %s %d %02d:%02d:%02d 20%02d",
                        GetDayOfWeek(month, day, year), GetMonth(month),
                        day, hour, minute, second, year);
 

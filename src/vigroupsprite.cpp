@@ -162,7 +162,9 @@ int VIGroupSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollide &
     s->m_offDist = m_offDist;
     s->m_numMembers = m_numMembers;
     memcpy(s->m_members, m_members, sizeof(m_members));
-    for (int j = 0; j < m_numMembers; j++)
+    // ONE counter for both walks, at function scope (phase 61's k lever).
+    int j;
+    for (j = 0; j < m_numMembers; j++)
     {
         if (sc.Sprite(m_members[j].m_sprite)->GetInstType(sc) == 1)
         {
@@ -171,7 +173,7 @@ int VIGroupSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollide &
                 return -1;
         }
     }
-    for (int j = 0; j < m_numMembers; j++)
+    for (j = 0; j < m_numMembers; j++)
         sc.ShareSprite(s->m_members[j].m_sprite);
     return i;
 }

@@ -20,6 +20,13 @@ VICollide::VICollide()
 {
 }
 
+// The three member destructors (`li a1,2`, in reverse declaration order) are
+// gcc's; Close is the body.
+VICollide::~VICollide()
+{
+    Close();
+}
+
 int VICollide::Init()
 {
     m_world.Identity();

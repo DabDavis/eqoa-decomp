@@ -235,6 +235,8 @@ int VICollBuffer::CalcBVolumes(int n, VIVect3 *p)
             int nv = m_prims[pi].m_numVerts;
             while (nv != 0)
             {
+                // Each arm ends `pb.Bound(); fp = 0; fg = 0; break;` so the arms'
+                // tails are identical and jump2 cross-jumps them into one call.
                 switch (m_type)
                 {
                 case VICollBufferTypeV:
@@ -242,6 +244,8 @@ int VICollBuffer::CalcBVolumes(int n, VIVect3 *p)
                     VIVect3 *pv = (VIVect3 *)(m_verts + vi * 12);
                     gb.Bound(fg, *pv);
                     pb.Bound(fp, *pv);
+                    fp = 0;
+                    fg = 0;
                     break;
                 }
                 case VICollBufferTypePackV:
@@ -252,6 +256,8 @@ int VICollBuffer::CalcBVolumes(int n, VIVect3 *p)
                     v.z = (float)((VIVect3S16 *)m_verts)[vi].z * m_scale;
                     gb.Bound(fg, v);
                     pb.Bound(fp, v);
+                    fp = 0;
+                    fg = 0;
                     break;
                 }
                 case VICollBufferTypePackVGF:
@@ -264,13 +270,13 @@ int VICollBuffer::CalcBVolumes(int n, VIVect3 *p)
                     v += p[g];
                     gb.Bound(fg, v);
                     pb.Bound(fp, v);
+                    fp = 0;
+                    fg = 0;
                     break;
                 }
                 default:
                     return -1;
                 }
-                fp = 0;
-                fg = 0;
                 vi++;
                 nv--;
             }

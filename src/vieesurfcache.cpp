@@ -183,13 +183,13 @@ int VIEESurfCache::Cache(VISurface &s, VIMaterial &m, VIMaterialPass &p,
             MoveToLRUEnd(i);
         else
             RemoveFromLRU(i);
-        if (m.m_dirty == 0)
-            if (m_infos.Value(n).m_stamp == p.m_stamp)
-                return 0;
-        if (Set(s, m_infos.Value(n), p) < 0)
-            return -1;
-        m.m_dirty = 1;
-        p.m_stamp = m_infos.Value(n).m_stamp;
+        if (m.m_dirty != 0 || m_infos.Value(n).m_stamp != p.m_stamp)
+        {
+            if (Set(s, m_infos.Value(n), p) < 0)
+                return -1;
+            m.m_dirty = 1;
+            p.m_stamp = m_infos.Value(n).m_stamp;
+        }
         return 0;
     }
 
@@ -253,17 +253,23 @@ int VIEESurfCache::Decache(VISurface &s)
 // 255, which orders every virgin run after every formatted one.
 int VIEESurfCache::FindFree(VIEESurfAlloc &a)
 {
+    // Two copies of the success tail, which jump2 cross-jumps into one: each
+    // reads Value() through its own path's &m_freeMap.
     unsigned int k = ((unsigned int)a.m_psm << 24) | a.m_size;
     int i = m_freeMap.LowerBound(k);
-    if (i == m_freeMap.End() || (m_freeMap.Key(i) >> 24) != (unsigned int)a.m_psm)
+    if (i != m_freeMap.End() && (m_freeMap.Key(i) >> 24) == (unsigned int)a.m_psm)
     {
-        k = a.m_size | 0xff000000;
-        i = m_freeMap.LowerBound(k);
-        if (i == m_freeMap.End())
-            return 0;
+        a.m_bucket = m_freeMap.Value(i);
+        return 1;
     }
-    a.m_bucket = m_freeMap.Value(i);
-    return 1;
+    k = a.m_size | 0xff000000;
+    i = m_freeMap.LowerBound(k);
+    if (i != m_freeMap.End())
+    {
+        a.m_bucket = m_freeMap.Value(i);
+        return 1;
+    }
+    return 0;
 }
 
 // Evict from the head of the LRU until FindFree succeeds.
@@ -296,6 +302,7 @@ int VIEESurfCache::FindLRU(VIEESurfAlloc &a, VIRaster &r)
 int VIEESurfCache::Allocate(VIEESurfAlloc &a)
 {
     int i = a.m_bucket;
+    VIPool<VIEEBucket> *bk = &m_buckets;
     int n = m_freeMap.Key(m_buckets.Value(i).m_free) & 0x00ffffff;
     if (RemoveFromFreeMap(i) < 0)
         return -1;
@@ -325,19 +332,19 @@ int VIEESurfCache::Allocate(VIEESurfAlloc &a)
     if (a.m_size < n)
     {
         VIEEBucket b;
-        b.m_addr = m_buckets.Value(i).m_addr + a.m_size;
+        b.m_addr = bk->Value(i).m_addr + a.m_size;
         b.m_size = n - a.m_size;
         b.m_psm = a.m_psm;
         b.m_free = -1;
-        int k = m_buckets.Insert(b, m_buckets.Next(i));
+        int k = bk->Insert(b, bk->Next(i));
         if (k < 0)
             return -1;
         if (AddToFreeMap(k) < 0)
             return -1;
     }
-    m_buckets.Value(i).m_size = a.m_size;
-    m_buckets.Value(i).m_psm = a.m_psm;
-    m_buckets.Value(i).m_free = -1;
+    bk->Value(i).m_size = a.m_size;
+    bk->Value(i).m_psm = a.m_psm;
+    bk->Value(i).m_free = -1;
     m_used += a.m_size;
     return 0;
 }
@@ -638,17 +645,19 @@ int VIEESurfCache::CalcCacheInfo(VISurface &s, VIEESurfCacheInfo &c)
 // an indexed texture's buffer is two 64-pixel units wide at least.
 int VIEESurfCache::Set(VISurface &s, VIEESurfCacheInfo &c, VIMaterialPass &p)
 {
-    int clut = 1;
-    if (s.m_paletteCount == 0)
-        clut = 0;
-    int w = s.m_width;
+    int clut;
     int h = s.m_height;
+    int w = s.m_width;
+    if (s.m_paletteCount)
+        clut = 1;
+    else
+        clut = 0;
 
     int tbw;
-    if (c.m_tex.m_psm == 19 || c.m_tex.m_psm == 20)
-        tbw = VIMAX(w >> 6, 2);
-    else
+    if (c.m_tex.m_psm != 19 && c.m_tex.m_psm != 20)
         tbw = VIMAX(w >> 6, 1);
+    else
+        tbw = VIMAX(w >> 6, 2);
 
     int tw = Log2(w);
     int th = Log2(h);
@@ -679,55 +688,71 @@ int VIEESurfCache::Set(VISurface &s, VIEESurfCacheInfo &c, VIMaterialPass &p)
     // two assignments per arm, so gcc will not if-convert it to a movn.
     int mag;
     float k;
-    if (p.m_flags & 8)
-    {
-        k = -127.0f;
-        mag = 320;
-    }
-    else
+    if ((p.m_flags & 8) == 0)
     {
         k = -127.0f;
         mag = 352;
     }
+    else
+    {
+        k = -127.0f;
+        mag = 320;
+    }
+    // K is TEX1 bits 32..43: the LOD bias as a signed byte, shifted up.
     p.m_reg[2] = ((long)(c.m_numLevels - 1) << 2)
-               | ((long)(char)(int)(p.m_lodBias * k) | mag);
+               | (((long)(char)(int)(p.m_lodBias * k) << 32) | mag);
     p.m_reg[3] = 20;
 
     int lo, lo1;
-    if (c.m_tex.m_psm == 19 || c.m_tex.m_psm == 20)
-    {
-        lo = 2;
-        lo1 = 1;
-    }
-    else
+    int m1, m2, m3;
+    if (c.m_tex.m_psm != 19 && c.m_tex.m_psm != 20)
     {
         lo = 1;
         lo1 = 0;
     }
+    else
+    {
+        lo = 2;
+        lo1 = 1;
+    }
+    m1 = ((w >> 7) > lo1 ? (w >> 7) : lo);
+    m2 = ((w >> 8) > lo1 ? (w >> 8) : lo);
+    m3 = ((w >> 9) > lo1 ? (w >> 9) : lo);
     p.m_reg[4] = ((long)c.m_levelAddr[1] >> 8)
-               | ((long)((w >> 7) > lo1 ? (w >> 7) : lo) << 14)
+               | ((long)m1 << 14)
                | (((long)c.m_levelAddr[2] >> 8) << 20)
-               | ((long)((w >> 8) > lo1 ? (w >> 8) : lo) << 34)
+               | ((long)m2 << 34)
                | (((long)c.m_levelAddr[3] >> 8) << 40)
-               | ((long)((w >> 9) > lo1 ? (w >> 9) : lo) << 54);
+               | ((long)m3 << 54);
     p.m_reg[5] = 52;
 
-    // The direct arm reads levels 1..3 again instead of 4..6: MIPTBP2 repeats
-    // MIPTBP1 for every non-indexed texture.  Matched as written.
-    if (c.m_tex.m_psm == 19 || c.m_tex.m_psm == 20)
-        p.m_reg[6] = ((long)c.m_levelAddr[4] >> 8)
-                   | ((long)VIMAX(w >> 10, 2) << 14)
-                   | (((long)c.m_levelAddr[5] >> 8) << 20)
-                   | ((long)VIMAX(w >> 11, 2) << 34)
-                   | (((long)c.m_levelAddr[6] >> 8) << 40)
-                   | ((long)VIMAX(w >> 12, 2) << 54);
+    if (c.m_tex.m_psm != 19 && c.m_tex.m_psm != 20)
+    {
+        lo = 1;
+        lo1 = 0;
+    }
     else
+    {
+        lo = 2;
+        lo1 = 1;
+    }
+    m1 = ((w >> 10) > lo1 ? (w >> 10) : lo);
+    m2 = ((w >> 11) > lo1 ? (w >> 11) : lo);
+    m3 = ((w >> 12) > lo1 ? (w >> 12) : lo);
+    if (c.m_tex.m_psm != 19 && c.m_tex.m_psm != 20)
         p.m_reg[6] = ((long)c.m_levelAddr[1] >> 8)
-                   | ((long)VIMAX(w >> 10, 1) << 14)
+                   | ((long)m1 << 14)
                    | (((long)c.m_levelAddr[2] >> 8) << 20)
-                   | ((long)VIMAX(w >> 11, 1) << 34)
+                   | ((long)m2 << 34)
                    | (((long)c.m_levelAddr[3] >> 8) << 40)
-                   | ((long)VIMAX(w >> 12, 1) << 54);
+                   | ((long)m3 << 54);
+    else
+        p.m_reg[6] = ((long)c.m_levelAddr[4] >> 8)
+                   | ((long)m1 << 14)
+                   | (((long)c.m_levelAddr[5] >> 8) << 20)
+                   | ((long)m2 << 34)
+                   | (((long)c.m_levelAddr[6] >> 8) << 40)
+                   | ((long)m3 << 54);
     p.m_reg[7] = 54;
     return 0;
 }

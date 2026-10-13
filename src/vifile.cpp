@@ -67,9 +67,20 @@ int VIFile::Open(const char *path, int flags)
     char name[256];
 
     m_flags = flags;
-    if (!(flags & 1) && !(flags & 2) && !(flags & 4))
-        return -1;
-    VIString::snprintf(name, 256, "%s%s", "cdrom0:\\", path);
+    const char *dev;
+    if (!(flags & 1))
+    {
+        if (!(flags & 2))
+        {
+            if (!(flags & 4))
+                return -1;
+        }
+    }
+    if (m_flags & 8)
+        dev = "";
+    else
+        dev = "";
+    VIString::snprintf(name, 256, "%s\\%s;1", dev, path);
     VIString::strupr(name);
     char *p = name;
     if (*p)

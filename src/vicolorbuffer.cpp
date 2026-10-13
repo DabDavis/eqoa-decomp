@@ -177,3 +177,122 @@ int VIColorBuffer::Allocate()
     }
     return 0;
 }
+
+// One word into the VIF stream at m_tags, four to a quadword: m_pad1C is the
+// quadword cursor and BuildI the word within it.
+#define EMIT(w)                                                       \
+    {                                                                 \
+        *(unsigned int *)(m_tags + m_pad1C * 16 + BuildI * 4) = (w);  \
+        BuildI++;                                                     \
+        if (BuildI == 4)                                              \
+        {                                                             \
+            BuildI = 0;                                               \
+            m_pad1C++;                                                \
+        }                                                             \
+    }
+
+// A DMA tag at pBuildDMATag: the id byte, the address, the quadword count --
+// with both values computed before the first byte is stored.
+#define SetTag(id, qwc, addr)                                         \
+    {                                                                 \
+        int q_ = (qwc);                                               \
+        unsigned int a_ = (addr);                                     \
+        ((unsigned char *)pBuildDMATag)[3] = (id);                    \
+        pBuildDMATag[1] = a_;                                         \
+        ((unsigned short *)pBuildDMATag)[0] = q_;                     \
+    }
+
+// The material table at m_headers: two words per material, the material and
+// the vertex cursor its run starts at.  m_pad10 is its cursor.
+struct VIColorBufferHeader
+{
+    int m_mat;
+    int m_vert;
+};
+
+// 0x003FBAF0.  One baked vertex colour, walking the locked prim buffer's
+// materials and strips in step: a new material writes a header; a new strip
+// writes a REF tag for its vertices and one for the colours that follow, and
+// opens a GIF strip of its length; the colour itself goes in at half
+// intensity; the end of a strip closes it with an MSCAL of RStrip2Offset and
+// pads the quadword; the end of a material writes a tag of id 6 (RET).
+int VIColorBuffer::Color(VIColor32 &c)
+{
+    if (BuildMLeft == 0)
+    {
+        if (m_pad10 == pBuildSource->m_numMaterials)
+            return -1;
+        BuildM++;
+        VIPrimMaterial *mat = &pBuildSource->m_materials[BuildM];
+        BuildMLeft = mat->m_numPrims;
+        ((VIColorBufferHeader *)m_headers)[m_pad10].m_mat = mat->m_matIdx;
+        ((VIColorBufferHeader *)m_headers)[m_pad10].m_vert = m_vertCursor;
+    }
+
+    if (BuildPLeft == 0)
+    {
+        BuildP++;
+        VIPrimPrim *prim = &pBuildSource->m_prims[BuildP];
+        BuildPLeft = prim->m_numVerts;
+        if (pBuildSource->m_type != 2)
+            return -1;
+
+        SetTag(48, BuildPLeft * 2 + 2,
+               (unsigned int)(pBuildSource->m_verts + BuildVQSource * 16));
+        BuildVQSource += 2;
+        pBuildDMATag += 4;
+        m_vertCursor++;
+
+        int n = BuildPLeft + 4;
+        if ((n & 3) == 0)
+        {
+            SetTag(48, n / 4, (unsigned int)(m_tags + m_pad1C * 16));
+        }
+        else
+        {
+            SetTag(48, n / 4 + 1, (unsigned int)(m_tags + m_pad1C * 16));
+        }
+        pBuildDMATag += 4;
+        m_vertCursor++;
+
+        EMIT(0x01000104);
+        EMIT((pBuildSource->m_prims[BuildP].m_numVerts << 16) | 0x6E008004);
+    }
+
+    unsigned char *p = (unsigned char *)(m_tags + m_pad1C * 16 + BuildI * 4);
+    p[0] = c.r >> 1;
+    p[1] = c.g >> 1;
+    p[2] = c.b >> 1;
+    p[3] = c.a >> 1;
+    BuildI++;
+    if (BuildI == 4)
+    {
+        BuildI = 0;
+        m_pad1C++;
+    }
+
+    if (pBuildSource->m_type != 2)
+        return -1;
+    BuildPLeft--;
+    BuildVQSource += 2;
+    if (BuildPLeft == 0)
+    {
+        BuildMLeft--;
+        EMIT(VIRaster::RStrip2Offset | 0x14000000);
+        EMIT(0x01000404);
+        while (BuildI != 0)
+        {
+            EMIT(0);
+        }
+        BuildVQSource++;
+    }
+
+    if (BuildMLeft == 0)
+    {
+        SetTag(96, 0, 0);
+        pBuildDMATag += 4;
+        m_vertCursor++;
+        m_pad10++;
+    }
+    return 0;
+}

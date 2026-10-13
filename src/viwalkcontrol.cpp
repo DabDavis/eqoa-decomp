@@ -3,6 +3,17 @@
 VIVect3 VIWalkControl::Gravity(0.0f, -19.6f, 0.0f);
 VIVect3 VIWalkControl::WGravity(0.0f, -1.0f, 0.0f);
 
+// The flag tests that come out `ld`: one-bit fields OR'd together, which fold
+// merges into a single masked load of the 8-aligned word.  A test of the WORD
+// (`m_flags & mask`) is the `lw` form; see VIWalkPhysics in vi.h.
+#define IN_MUD(p)    ((p).m_bits.inMud || (p).m_bits.atMudSurface)
+#define IN_LIQUID(p) ((p).m_bits.inWater || (p).m_bits.atWaterSurface ||      \
+                      (p).m_bits.inLava || (p).m_bits.atLavaSurface ||        \
+                      (p).m_bits.inSlime || (p).m_bits.atSlimeSurface ||      \
+                      (p).m_bits.inMud || (p).m_bits.atMudSurface)
+#define ON_FLOOR_OR_LIQUID(p) ((p).m_bits.onFloor || (p).m_bits.b1 ||         \
+                               IN_LIQUID(p))
+
 // SUPPORT 0x00484930 .. 0x00487BB0.  VIWalkControl, tier 2.
 //
 // Every function here has a console-checked semantic twin in
@@ -37,13 +48,152 @@ VIWalkControl::~VIWalkControl()
 {
 }
 
+// 0x00484A90.
+int VIWalkControl::Init(const VIVect3 &pos, const VIVect3 &angles, VIScene &scene)
+{
+    InitParms();
+    // Written committed-first: a store pair comes out in reverse order.
+    m_committed.m_flags = 1;
+    m_phys.m_flags = 1;
+    SetLocation(pos, angles, scene);
+    return 0;
+}
+
+// 0x00484B00.  Fill the committed state, keep its 0x100 bit, and copy it
+// onto the working one.
+int VIWalkControl::SetLocation(const VIVect3 &pos, const VIVect3 &angles,
+                               VIScene &scene)
+{
+    unsigned int keep = m_committed.m_flags & 0x100;
+    m_committed.m_time = scene.GetTime();
+    m_committed.m_position = pos;
+    m_committed.m_velocity.Zero();
+    m_committed.m_force.Zero();
+    m_committed.m_angles = angles;
+    m_committed.m_angles.y = 0.0f;
+    m_committed.m_angles.z = 0.0f;
+    m_committed.m_angularVel.Zero();
+    m_committed.m_torque.Zero();
+    m_committed.m_flags = 1;
+    m_committed.m_locoState = 0;
+    m_committed.m_heightOffset = 0.0f;
+    m_committed.m_floor = pos.y;
+    m_committed.m_targetHeading = m_committed.m_angles.x;
+    m_committed.m_landscapeNormal.Set(0.0f, 1.0f, 0.0f);
+    m_committed.m_flags |= keep;
+    m_phys = m_committed;
+    InitIntermediate();
+    return 0;
+}
+
+// 0x00485DA8.  Take a whole state from outside, stamp it with the scene's
+// clock and, when it says the body is on a floor, snap it down onto one.
+int VIWalkControl::SetUpdatePhysics(VIWalkPhysics &p, VIScene &scene)
+{
+    VIVect3 from;
+    VIVect3 to;
+
+    m_committed = p;
+    m_committed.m_time = scene.GetTime();
+    m_phys = m_committed;
+    InitIntermediate();
+    if (m_committed.m_flags & 1)
+    {
+        from = m_committed.m_position;
+        from.y += m_parm38;
+        if (CalcFloor(scene, from, to) < 0)
+            return -1;
+        m_committed.m_position = to;
+        m_phys.m_position = m_committed.m_position;
+    }
+    return 0;
+}
+
+// 0x00484DB8.  Step the body to the scene's clock in fixed ticks.  A gap
+// longer than m_tickAltMS is skipped, not simulated: the clock jumps to within
+// one long tick of now and only that last stretch is integrated.
+int VIWalkControl::Process(int flags, VIScene &scene)
+{
+    unsigned int old = m_phys.m_flags;
+    long dt = scene.GetTime() - m_committed.m_time;
+    int tick;
+    if (flags)
+        tick = m_tickAltMS;
+    else
+        tick = m_tickMS;
+    while (dt > 0)
+    {
+        long step;
+        if (m_tickAltMS < dt)
+        {
+            step = dt - m_tickAltMS;
+            m_phys.m_time = m_committed.m_time + step;
+        }
+        else
+        {
+            step = VIMIN(tick, dt);
+            m_phys.m_time = m_committed.m_time + step;
+            float t = (float)(int)step * 0.001f;
+            UpdatePhysics(t);
+            AutoPitch(t);
+            Move(flags, scene);
+            UpdateDirections();
+            UpdateLocomotion(t);
+        }
+        dt -= step;
+        m_committed = m_phys;
+    }
+    if (flags == 0)
+        ClearForces();
+    m_parm118 = 0;
+    if (!(old & 1) && (m_phys.m_flags & 1) != 0 &&
+        (m_phys.m_flags & 0x854) == 0 && (old & 0x854) == 0)
+        m_parm118 = 16;
+    return 0;
+}
+
+// 0x00485EB0.  Hand the body's state to the character sprite: the
+// locomotion animation (7 while m_parm118 has 0x10), and a blend to a centre
+// transform -- pitched with the body when submerged, sunk by the part of its
+// height the sprite's scale leaves out when at a surface.
+int VIWalkControl::UpdateSprite(VICSprite &sprite, VIScene &scene)
+{
+    // The scale read into a local FIRST: that load order is what puts the
+    // product in m_parm38's register.
+    float s = sprite.m_defaultScale;
+    VIVect3 center(0.0f, m_parm38 * s, 0.0f);
+    VIVect3 hpr;
+    VIVect3 trans;
+
+    if ((m_parm118 & 0x10) == 0)
+        sprite.SetLocomotion((VICSpriteAnimID)m_committed.m_locoState, scene);
+    else
+        sprite.SetLocomotion((VICSpriteAnimID)7, scene);
+
+    if ((m_phys.m_flags & 0x854) != 0 && (m_phys.m_flags & 0x10A8) == 0)
+    {
+        hpr.Set(0.0f, m_phys.m_angles.y, 0.0f);
+        trans.Zero();
+    }
+    else
+    {
+        if (m_phys.m_flags & 0x10A8)
+            trans.Set(0.0f, m_parm38 - m_parm38 * sprite.m_defaultScale, 0.0f);
+        else
+            trans.Zero();
+        hpr.Zero();
+    }
+    sprite.BlendToCenterTransform(center, hpr, 1.0f, trans, 400, scene);
+    return 0;
+}
+
 // 0x00484F58.  `sw $zero` six times, not `swc1`, so a component holding -0.0
 // comes back +0.0.  Zero() per member rather than six stores on `this`: the
 // target gives each vector its own base register (Phase 13).
 int VIWalkControl::ClearForces()
 {
-    m_force.Zero();
-    m_torque.Zero();
+    m_phys.m_force.Zero();
+    m_phys.m_torque.Zero();
     return 0;
 }
 
@@ -51,7 +201,7 @@ int VIWalkControl::ClearForces()
 // if-converts it to xori + movn.
 int VIWalkControl::IsUnderWater()
 {
-    if ((m_flags & 0x0C) == 0x04)
+    if (m_phys.m_bits.inWater && !m_phys.m_bits.atWaterSurface)
         return 1;
     return 0;
 }
@@ -59,7 +209,7 @@ int VIWalkControl::IsUnderWater()
 // 0x00485D28.  Submerged in something and at the surface of nothing.
 int VIWalkControl::IsUnderLiquid()
 {
-    if (((int)m_flags & 0x854) != 0 && ((int)m_flags & 0x10A8) == 0)
+    if ((m_phys.m_flags & 0x854) != 0 && (m_phys.m_flags & 0x10A8) == 0)
         return 1;
     return 0;
 }
@@ -67,13 +217,13 @@ int VIWalkControl::IsUnderLiquid()
 // 0x00485D50.
 int VIWalkControl::IsAtLiquidSurface()
 {
-    return ((int)m_flags & 0x10A8) != 0;
+    return (m_phys.m_flags & 0x10A8) != 0;
 }
 
 // 0x00485D60.
 int VIWalkControl::IsInLava()
 {
-    if (m_flags & 0x30)
+    if (m_phys.m_bits.inLava || m_phys.m_bits.atLavaSurface)
         return 1;
     return 0;
 }
@@ -81,7 +231,7 @@ int VIWalkControl::IsInLava()
 // 0x00485D78.
 int VIWalkControl::IsInSlime()
 {
-    if (m_flags & 0xC0)
+    if (m_phys.m_bits.inSlime || m_phys.m_bits.atSlimeSurface)
         return 1;
     return 0;
 }
@@ -89,7 +239,7 @@ int VIWalkControl::IsInSlime()
 // 0x00485D90.
 int VIWalkControl::IsInMud()
 {
-    if (m_flags & 0x1800)
+    if (IN_MUD(m_phys))
         return 1;
     return 0;
 }
@@ -150,7 +300,7 @@ int VIWalkControl::TurnLeft(float t)
     dir.x += a * axis.x;
     dir.y += a * axis.y;
     dir.z += a * axis.z;
-    AddVec(m_torque, dir, t);
+    AddVec(m_phys.m_torque, dir, t);
     return 0;
 }
 
@@ -159,14 +309,14 @@ int VIWalkControl::TurnLeft(float t)
 // in full: gcc folds the y term's `* 1.0f` away and cannot fold the other two.
 int VIWalkControl::SwimUp(float t)
 {
-    if (m_flags & 0x18FC)
+    if (IN_LIQUID(m_phys))
     {
         float k;
 
         t = VIMIN(1.0f, VIMAX(-1.0f, t));
         k = m_swimAccel * t;
         VIVect3 up(0.0f, 1.0f, 0.0f);
-        AddVec(m_force, up, k);
+        AddVec(m_phys.m_force, up, k);
     }
     return 0;
 }
@@ -187,14 +337,14 @@ int VIWalkControl::PitchDown(float t)
     VIVect3 dir;
     VIVect3 axis;
 
-    if ((m_flags2 & 0x10A8) == 0)
+    if ((m_committed.m_flags & 0x10A8) == 0)
     {
         t = VIMIN(1.0f, VIMAX(-1.0f, t));
         axis.x = 0.0f;
         axis.y = 1.0f;
         axis.z = 0.0f;
         AddVec(dir, axis, m_pitchAccel);
-        AddVec(m_torque, dir, t);
+        AddVec(m_phys.m_torque, dir, t);
     }
     else
     {
@@ -203,7 +353,7 @@ int VIWalkControl::PitchDown(float t)
         axis.y = -1.0f;
         axis.z = 0.0f;
         AddVec(dir, axis, m_swimAccel);
-        AddVec(m_force, dir, t);
+        AddVec(m_phys.m_force, dir, t);
     }
     return 0;
 }
@@ -227,8 +377,8 @@ int VIWalkControl::UpdateDirections()
     VIVect3 *fac = &m_facing;
     VIVect3 *rgt = &m_right;
 
-    fwd->HPR(m_angles.x, 0.0f, m_angles.z);
-    fac->HPR(m_angles.x, m_angles.y, m_angles.z);
+    fwd->HPR(m_phys.m_angles.x, 0.0f, m_phys.m_angles.z);
+    fac->HPR(m_phys.m_angles.x, m_phys.m_angles.y, m_phys.m_angles.z);
 
     VIVect3 up(0.0f, 1.0f, 0.0f);
     Cross(*rgt, *fwd, up);
@@ -252,10 +402,10 @@ int VIWalkControl::SetPitchRange(float lo, float hi)
     // store is `swc1 f0,0(v0)` off a computed address, which a plain member
     // assignment cannot give, while reading `*p` instead of the member lets
     // gcc CSE the two loads and collapses the macro's double evaluation.
-    p = &m_angles.y;
-    *p = VIMIN(m_maxPitch, VIMAX(m_minPitch, m_angles.y));
-    p = &m_anglesAlt.y;
-    *p = VIMIN(m_maxPitch, VIMAX(m_minPitch, m_anglesAlt.y));
+    p = &m_phys.m_angles.y;
+    *p = VIMIN(m_maxPitch, VIMAX(m_minPitch, m_phys.m_angles.y));
+    p = &m_committed.m_angles.y;
+    *p = VIMIN(m_maxPitch, VIMAX(m_minPitch, m_committed.m_angles.y));
     return 0;
 }
 
@@ -271,15 +421,15 @@ int VIWalkControl::SetTargetHeading(float h)
 {
     float d;
 
-    m_targetHeading = h;
-    d = h - m_angles.x;
+    m_phys.m_targetHeading = h;
+    d = h - m_phys.m_angles.x;
     if (3.14159274f < d)
         h = h - 6.28318548f;
     else if (d < -3.14159274f)
         h = h + 6.28318548f;
-    if (m_angles.x < h)
+    if (m_phys.m_angles.x < h)
         TurnLeft(1.0f);
-    if (h < m_angles.x)
+    if (h < m_phys.m_angles.x)
         TurnLeft(-1.0f);
     return 0;
 }
@@ -298,28 +448,28 @@ int VIWalkControl::AutoPitch(float dt)
     float delta;
     float step;
 
-    if (((int)m_flags & 0x10A8) != 0)
+    if ((m_phys.m_flags & 0x10A8) != 0)
         target = -0.08726646f;
-    else if (((int)m_flags & 0x854) != 0)
-        target = m_angles.y;
+    else if ((m_phys.m_flags & 0x854) != 0)
+        target = m_phys.m_angles.y;
     else
-        target = VIMIN(m_maxPitch, VIMAX(m_minPitch, m_angles.y));
+        target = VIMIN(m_maxPitch, VIMAX(m_minPitch, m_phys.m_angles.y));
 
-    delta = target - m_angles.y;
+    delta = target - m_phys.m_angles.y;
     step = m_autoPitchRate * dt;
     if (0.0f <= delta)
     {
         if (delta <= step)
-            m_angles.y = target;
+            m_phys.m_angles.y = target;
         else
-            m_angles.y = m_anglesAlt.y + step;
+            m_phys.m_angles.y = m_committed.m_angles.y + step;
     }
     else
     {
         if (step <= delta)
-            m_angles.y = target;
+            m_phys.m_angles.y = target;
         else
-            m_angles.y = m_anglesAlt.y - step;
+            m_phys.m_angles.y = m_committed.m_angles.y - step;
     }
     return 0;
 }
@@ -336,7 +486,7 @@ int VIWalkControl::Walk(float x, float y)
     VIVect3 v;
     VIVect3 unused;
 
-    if (m_flags & 0x18FF)
+    if (ON_FLOOR_OR_LIQUID(m_phys))
     {
         v.x = VIMIN(1.0f, VIMAX(-1.0f, x));
         v.y = VIMIN(1.0f, VIMAX(-1.0f, y));
@@ -346,11 +496,11 @@ int VIWalkControl::Walk(float x, float y)
         // Two calls and not one through a selected pointer: a pointer picked
         // with `dir = cond ? &a : &b` if-converts to `movn`, where the guest
         // BRANCHES and duplicates the whole call into both arms.
-        if ((m_flags & 0x18FC) == 0)
-            AddVec(m_force, m_forward, m_walkAccel * v.x);
+        if (!IN_LIQUID(m_phys))
+            AddVec(m_phys.m_force, m_forward, m_walkAccel * v.x);
         else
-            AddVec(m_force, m_facing, m_walkAccel * v.x);
-        AddVec(m_force, m_right, m_walkAccel * v.y);
+            AddVec(m_phys.m_force, m_facing, m_walkAccel * v.x);
+        AddVec(m_phys.m_force, m_right, m_walkAccel * v.y);
     }
     return 0;
 }
@@ -396,7 +546,7 @@ int VIWalkControl::Run(float x, float y)
     VIVect3 v;
     VIVect3 unused;
 
-    if (m_flags & 0x18FF)
+    if (ON_FLOOR_OR_LIQUID(m_phys))
     {
         v.x = VIMIN(1.0f, VIMAX(-1.0f, x));
         v.y = VIMIN(1.0f, VIMAX(-1.0f, y));
@@ -405,26 +555,26 @@ int VIWalkControl::Run(float x, float y)
             v.Normalize();
         if (m_runThreshold < x)
         {
-            if ((m_flags & 0x18FC) == 0)
+            if (!IN_LIQUID(m_phys))
             {
-                if (((int)m_flags & 0x2000) == 0)
-                    AddVec(m_force, m_forward, m_runAccel * v.x);
+                if ((m_phys.m_flags & 0x2000) == 0)
+                    AddVec(m_phys.m_force, m_forward, m_runAccel * v.x);
                 else
-                    AddVec(m_force, m_forward, m_walkAccel * v.x);
+                    AddVec(m_phys.m_force, m_forward, m_walkAccel * v.x);
             }
-            else if ((m_flags & 0x1800) == 0)
-                AddVec(m_force, m_facing, m_runAccel * v.x);
+            else if (!IN_MUD(m_phys))
+                AddVec(m_phys.m_force, m_facing, m_runAccel * v.x);
             else
-                AddVec(m_force, m_facing, m_walkAccel * v.x);
-            AddVec(m_force, m_right, m_runAccel * v.y);
+                AddVec(m_phys.m_force, m_facing, m_walkAccel * v.x);
+            AddVec(m_phys.m_force, m_right, m_runAccel * v.y);
         }
         else
         {
-            if ((m_flags & 0x18FC) == 0)
-                AddVec(m_force, m_forward, m_walkAccel * v.x);
+            if (!IN_LIQUID(m_phys))
+                AddVec(m_phys.m_force, m_forward, m_walkAccel * v.x);
             else
-                AddVec(m_force, m_facing, m_walkAccel * v.x);
-            AddVec(m_force, m_right, m_walkAccel * v.y);
+                AddVec(m_phys.m_force, m_facing, m_walkAccel * v.x);
+            AddVec(m_phys.m_force, m_right, m_walkAccel * v.y);
         }
     }
     return 0;
@@ -489,9 +639,9 @@ int VIWalkControl::CalcPitchRollToLandscape(VIVect3 &v) const
     VIVect3 fwd;
     VIVect3 r;
 
-    if (m_flags2 & 0x400)
+    if (m_committed.m_flags & 0x400)
     {
-        n = m_landscapeNormal;
+        n = m_committed.m_landscapeNormal;
         fwd.HPR(v.x, 0.0f, 0.0f);
         r.x = n.y * fwd.z - n.z * fwd.y;
         r.y = -n.x * fwd.z + n.z * fwd.x;
@@ -529,8 +679,8 @@ int VIWalkControl::UpdateLocomotion(float dt)
 {
     VIVect3  d;
     VIVect3  d2;
-    VIVect3 *prev = &m_prevPosition;
-    VIVect3 *pos = &m_position;
+    VIVect3 *prev = &m_committed.m_position;
+    VIVect3 *pos = &m_phys.m_position;
     VIVect3 *fwd = &m_forward;
     VIVect3 *rgt = &m_right;
     float    vF, vR;
@@ -542,32 +692,32 @@ int VIWalkControl::UpdateLocomotion(float dt)
     vF = (d.x * fwd->x + d.y * fwd->y + d.z * fwd->z) / dt;
     vR = (d.x * rgt->x + d.y * rgt->y + d.z * rgt->z) / dt;
 
-    if ((m_flags & 0x18FC) == 0)
+    if (!IN_LIQUID(m_phys))
     {
-        if (((int)m_flags & 1) == 0)
-            m_locoState = 6;
+        if ((m_phys.m_flags & 1) == 0)
+            m_phys.m_locoState = 6;
         else if (m_walkSpeed + (m_runSpeed - m_walkSpeed) * 0.1f < vF)
-            m_locoState = 3;
+            m_phys.m_locoState = 3;
         else if (m_speedThreshold < vR && fabsf(vF) < fabsf(vR) &&
-                 m_moveMode != 1 && m_moveMode != 2)
-            m_locoState = 11;
+                 m_committed.m_locoState != 1 && m_committed.m_locoState != 2)
+            m_phys.m_locoState = 11;
         else if (vR < -m_speedThreshold && fabsf(vF) < fabsf(vR) &&
-                 m_moveMode != 1 && m_moveMode != 2)
-            m_locoState = 10;
+                 m_committed.m_locoState != 1 && m_committed.m_locoState != 2)
+            m_phys.m_locoState = 10;
         else if (m_speedThreshold < vR && fabsf(vF) * 1.5f < fabsf(vR))
-            m_locoState = 11;
+            m_phys.m_locoState = 11;
         else if (vR < -m_speedThreshold && fabsf(vF) * 1.5f < fabsf(vR))
-            m_locoState = 10;
+            m_phys.m_locoState = 10;
         else if (m_speedThreshold < vF)
-            m_locoState = 1;
+            m_phys.m_locoState = 1;
         else if (vF < -m_speedThreshold)
-            m_locoState = 2;
-        else if (m_turnRate * 0.5f < m_angularVel.x)
-            m_locoState = 4;
-        else if (m_angularVel.x < -(m_turnRate * 0.5f))
-            m_locoState = 5;
+            m_phys.m_locoState = 2;
+        else if (m_turnRate * 0.5f < m_phys.m_angularVel.x)
+            m_phys.m_locoState = 4;
+        else if (m_phys.m_angularVel.x < -(m_turnRate * 0.5f))
+            m_phys.m_locoState = 5;
         else
-            m_locoState = 0;
+            m_phys.m_locoState = 0;
     }
     else
     {
@@ -575,16 +725,16 @@ int VIWalkControl::UpdateLocomotion(float dt)
         // counts as well as the heading rate -- a swimmer looking up and down
         // is animating.  The last comparison is on |vR| and its two outcomes
         // differ: fast sideways drift is state 12, not 13.
-        if (m_turnRate * 0.25f < fabsf(m_angularVel.y))
-            m_locoState = 12;
-        else if (m_turnRate * 0.25f < fabsf(m_angularVel.x))
-            m_locoState = 12;
+        if (m_turnRate * 0.25f < fabsf(m_phys.m_angularVel.y))
+            m_phys.m_locoState = 12;
+        else if (m_turnRate * 0.25f < fabsf(m_phys.m_angularVel.x))
+            m_phys.m_locoState = 12;
         else if (m_speedThreshold < vF)
-            m_locoState = 12;
+            m_phys.m_locoState = 12;
         else if (m_speedThreshold < fabsf(vR))
-            m_locoState = 12;
+            m_phys.m_locoState = 12;
         else
-            m_locoState = 13;
+            m_phys.m_locoState = 13;
     }
     return 0;
 }
@@ -624,42 +774,42 @@ int VIWalkControl::UpdatePhysics(float dt)
     // not only the exact-zero case: a DENORMAL +0x18C satisfies neither
     // comparison, because the EE flushes the operand before comparing, so the
     // denormal is written through untouched.
-    m_field104 = m_field18C;
-    if (0.0f < m_field18C)
+    m_phys.m_heightOffset = m_committed.m_heightOffset;
+    if (0.0f < m_committed.m_heightOffset)
     {
         // The clamp runs on the MEMBER, not on a local: the guest stores the
         // stepped value into +0x104, reads it back for the macro's third
         // comparison and stores again.
-        m_field104 = m_field18C - dt * 6.0f;
-        m_field104 = VIMIN(m_parm28, VIMAX(0.0f, m_field104));
+        m_phys.m_heightOffset = m_committed.m_heightOffset - dt * 6.0f;
+        m_phys.m_heightOffset = VIMIN(m_parm28, VIMAX(0.0f, m_phys.m_heightOffset));
     }
-    else if (m_field18C < 0.0f)
+    else if (m_committed.m_heightOffset < 0.0f)
     {
-        m_field104 = m_field18C + dt * 6.0f;
-        m_field104 = VIMIN(0.0f, VIMAX(-m_parm28, m_field104));
+        m_phys.m_heightOffset = m_committed.m_heightOffset + dt * 6.0f;
+        m_phys.m_heightOffset = VIMIN(0.0f, VIMAX(-m_parm28, m_phys.m_heightOffset));
     }
 
     // ONE powf call with its argument selected, not three calls cross-jumped:
     // the guest loads the chosen damping into f12 in each arm's DELAY SLOT and
     // falls into a single `jal`.
-    if (m_flags & 0x18FC)
+    if (IN_LIQUID(m_phys))
         k = m_swimDamping;
-    else if (((int)m_flags & 1) == 0)
+    else if ((m_phys.m_flags & 1) == 0)
         k = m_parm44;
     else
         k = m_moveDamping;
     damp = powf(k, dt);
 
-    f = m_force;
+    f = m_phys.m_force;
     if (m_parm60)
     {
-        if ((m_flags & 0x18FC) == 0)
+        if (!IN_LIQUID(m_phys))
         {
             f.x += Gravity.x;
             f.y += Gravity.y;
             f.z += Gravity.z;
         }
-        else if (((int)m_flags & 0x10A8) == 0)
+        else if ((m_phys.m_flags & 0x10A8) == 0)
         {
             f.x += WGravity.x;
             f.y += WGravity.y;
@@ -668,10 +818,10 @@ int VIWalkControl::UpdatePhysics(float dt)
     }
 
     dt2 = dt * dt;
-    tq = m_torque;
+    tq = m_phys.m_torque;
 
-    pos = &m_position;
-    vel = &m_velocity;
+    pos = &m_phys.m_position;
+    vel = &m_phys.m_velocity;
     AddVec(*pos, f, dt2 * damp);
     AddVec(*pos, *vel, dt * damp);
     AddVec(*vel, f, dt);
@@ -680,8 +830,8 @@ int VIWalkControl::UpdatePhysics(float dt)
     vel->z *= damp;
 
     angDamp = powf(m_turnDamping, dt);
-    ang = &m_angles;
-    avel = &m_angularVel;
+    ang = &m_phys.m_angles;
+    avel = &m_phys.m_angularVel;
     AddVec(*ang, tq, dt2 * angDamp);
     AddVec(*ang, *avel, dt * angDamp);
     AddVec(*avel, tq, dt);
@@ -694,24 +844,24 @@ int VIWalkControl::UpdatePhysics(float dt)
     // comparison, but the value ASSIGNED is the unwrapped one, so a snap can
     // move the heading by a full turn.  Torque is read from the OBJECT and it
     // is the pre-step torque: nothing above writes +0xEC.
-    if ((int)m_flags & 0x100)
+    if (m_phys.m_flags & 0x100)
     {
-        heading = m_angles.x;
-        wrapped = m_targetHeading;
-        if (3.14159274f < m_targetHeading - heading)
-            wrapped = m_targetHeading - 6.28318548f;
-        else if (m_targetHeading - heading < -3.14159274f)
-            wrapped = m_targetHeading + 6.28318548f;
-        if ((0.0f < m_torque.x && wrapped < heading) ||
-            (m_torque.x < 0.0f && heading < wrapped))
+        heading = m_phys.m_angles.x;
+        wrapped = m_phys.m_targetHeading;
+        if (3.14159274f < m_phys.m_targetHeading - heading)
+            wrapped = m_phys.m_targetHeading - 6.28318548f;
+        else if (m_phys.m_targetHeading - heading < -3.14159274f)
+            wrapped = m_phys.m_targetHeading + 6.28318548f;
+        if ((0.0f < m_phys.m_torque.x && wrapped < heading) ||
+            (m_phys.m_torque.x < 0.0f && heading < wrapped))
         {
-            m_angles.x = m_targetHeading;
-            m_torque.x = 0.0f;
-            m_angularVel.x = 0.0f;
+            m_phys.m_angles.x = m_phys.m_targetHeading;
+            m_phys.m_torque.x = 0.0f;
+            m_phys.m_angularVel.x = 0.0f;
         }
     }
 
-    m_angles.x = fmodf(m_angles.x, 6.28318548f);
+    m_phys.m_angles.x = fmodf(m_phys.m_angles.x, 6.28318548f);
 
     // The pitch limit, and it reads FLAGS2 -- the second flag word -- not the
     // Flags word every test above this line reads.  The three media disagree
@@ -720,15 +870,15 @@ int VIWalkControl::UpdatePhysics(float dt)
     // ignoring MinPitch and MaxPitch entirely; dry it is clamped against them
     // but the value clamped TO is PitchAlt, and only when PitchAlt is itself
     // on the far side.
-    if (m_flags2 & 0x10A8)
-        m_angles.y = m_anglesAlt.y;
-    else if (m_flags2 & 0x854)
-        m_angles.y = VIMIN(1.5607964f, VIMAX(-1.5607964f, m_angles.y));
-    else if (m_angles.y < m_minPitch && m_angles.y < m_anglesAlt.y)
-        m_angles.y = m_anglesAlt.y;
-    else if (m_maxPitch < m_angles.y && m_anglesAlt.y < m_angles.y)
-        m_angles.y = m_anglesAlt.y;
-    m_angles.z = 0.0f;
+    if (m_committed.m_flags & 0x10A8)
+        m_phys.m_angles.y = m_committed.m_angles.y;
+    else if (m_committed.m_flags & 0x854)
+        m_phys.m_angles.y = VIMIN(1.5607964f, VIMAX(-1.5607964f, m_phys.m_angles.y));
+    else if (m_phys.m_angles.y < m_minPitch && m_phys.m_angles.y < m_committed.m_angles.y)
+        m_phys.m_angles.y = m_committed.m_angles.y;
+    else if (m_maxPitch < m_phys.m_angles.y && m_committed.m_angles.y < m_phys.m_angles.y)
+        m_phys.m_angles.y = m_committed.m_angles.y;
+    m_phys.m_angles.z = 0.0f;
     return 0;
 }
 
@@ -754,12 +904,12 @@ int VIWalkControl::ViewRelativeMove(const VIVect3 &ref, float x, float y)
     float   h, p, r;
     float   mag, accel;
 
-    if ((int)m_flags & 0x200)
+    if (m_phys.m_flags & 0x200)
     {
         Move(x, 0.0f);
         return 0;
     }
-    if ((m_flags & 0x18FF) == 0)
+    if (!ON_FLOOR_OR_LIQUID(m_phys))
         return 0;
     v.x = x;
     v.y = y;
@@ -779,15 +929,15 @@ int VIWalkControl::ViewRelativeMove(const VIVect3 &ref, float x, float y)
         dir.x = u.x * v.x + w.x * v.y;
         dir.y = u.y * v.x + w.y * v.y;
         dir.z = u.z * v.x + w.z * v.y;
-        if (m_runThreshold < mag && ((int)m_flags & 0x3800) == 0)
+        if (m_runThreshold < mag && (m_phys.m_flags & 0x3800) == 0)
             accel = m_runAccel;
         else
             accel = m_walkAccel;
-        AddVec(m_force, dir, accel);
+        AddVec(m_phys.m_force, dir, accel);
         dir.HPR(&h, &p, &r);
     }
     else
-        h = m_targetHeading;
+        h = m_phys.m_targetHeading;
     SetTargetHeading(h);
     return 0;
 }
@@ -806,12 +956,12 @@ int VIWalkControl::ViewRelativeWalk(const VIVect3 &ref, float x, float y)
     float   h, p, r;
     float   mag;
 
-    if ((int)m_flags & 0x200)
+    if (m_phys.m_flags & 0x200)
     {
         Walk(x, 0.0f);
         return 0;
     }
-    if ((m_flags & 0x18FF) == 0)
+    if (!ON_FLOOR_OR_LIQUID(m_phys))
         return 0;
     v.x = x;
     v.y = y;
@@ -831,12 +981,308 @@ int VIWalkControl::ViewRelativeWalk(const VIVect3 &ref, float x, float y)
         dir.x = u.x * v.x + w.x * v.y;
         dir.y = u.y * v.x + w.y * v.y;
         dir.z = u.z * v.x + w.z * v.y;
-        AddVec(m_force, dir, m_walkAccel);
+        AddVec(m_phys.m_force, dir, m_walkAccel);
         dir.HPR(&h, &p, &r);
     }
     else
-        h = m_targetHeading;
+        h = m_phys.m_targetHeading;
     SetTargetHeading(h);
+    return 0;
+}
+
+// 0x00486778.  Move the body from the committed position to the integrated
+// one through the scene: a liquid-surface probe, a sphere sweep that skitters
+// off what it hits (once with `flags`, twice without), the floor and headroom
+// fit, and then the environment flags re-read at the new position.
+int VIWalkControl::Move(int flags, VIScene &scene)
+{
+    int ok = 1;
+    int moving = 1;
+    int iters = flags ? 1 : 2;
+    VICollSphere sphere;
+    VITransEnvRay ray;
+    VISceneFilter filter;
+    VIVect3 from;
+    VIVect3 to;
+    VIVect3 floor;
+    VIVect3 head;
+    VIVect3 skit;
+    VIVect3 above;
+    VIVect3 below;
+    VIVect3 normal;
+    VIVect3 delta;
+
+    from = m_committed.m_position;
+    from.y += m_parm38;
+    to = m_phys.m_position;
+    to.y += m_parm38;
+
+    if (IN_LIQUID(m_phys))
+    {
+        above.x = to.x;
+        above.y = to.y + m_parm54;
+        above.z = to.z;
+        below.x = to.x;
+        below.y = to.y - m_parm54;
+        below.z = to.z;
+        if (ray.Init(above, below, 15) < 0)
+            return -1;
+        if (scene.Collide(ray))
+        {
+            if (0.5f < ray.GetHitTime())
+                to = ray.GetHitPoint();
+            // A LOCAL read first: with the member in the else arm the load
+            // traps (may_trap_p) and jump.c hoists the 0.0f arm instead.
+            float v = m_phys.m_velocity.y;
+            float r;
+            if (v > 0.0f)
+                r = 0.0f;
+            else
+                r = v;
+            m_phys.m_velocity.y = r;
+            float f = m_phys.m_force.y;
+            if (0.0f < f)
+                f = 0.0f;
+            m_phys.m_force.y = f;
+        }
+    }
+
+    if (flags)
+    {
+        delta.x = to.x - from.x;
+        delta.y = 0.0f;
+        delta.z = to.z - from.z;
+        if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z < 0.0001f)
+            moving = 0;
+    }
+
+    if (moving)
+    {
+        if (sphere.Init(from, to, m_parm34) < 0)
+            return -1;
+        filter.Init(m_parm64);
+        if (scene.Collide(sphere, filter))
+        {
+            m_phys.m_flags |= 2;
+            if (m_phys.m_flags & 1)
+                skit.Set(0.0f, 1.0f, 0.0f);
+            else
+                skit.Zero();
+            for (int i = 0; i < iters; i++)
+            {
+                sphere.Skitter(skit);
+                if (!scene.Collide(sphere, filter))
+                {
+                    ok = 0;
+                    break;
+                }
+                if (0.001f < sphere.GetHitTime())
+                    ok = 0;
+                else
+                    normal += sphere.GetHitNormal();
+            }
+            if (ok && (m_phys.m_flags & 0x855) == 0)
+            {
+                normal.Normalize();
+                normal *= m_parm34;
+                to += normal;
+                m_phys.m_force.x = 0.0f;
+                m_phys.m_force.z = 0.0f;
+                m_phys.m_velocity.x = 0.0f;
+                m_phys.m_velocity.z = 0.0f;
+                sphere.Init(from, to, m_parm34);
+                scene.Collide(sphere, filter);
+            }
+            to = sphere.GetHitPoint();
+        }
+        else
+        {
+            m_phys.m_flags &= ~2;
+            VIVect3 *e = &sphere.m_end;
+            to = *e;
+        }
+    }
+
+    if (CalcFit(flags, scene, to, floor, head) < 0)
+        return -1;
+
+    if (head.y - floor.y < m_parm30)
+        to = from;
+    else if (!IN_LIQUID(m_phys))
+    {
+        if (to.y - floor.y < m_parm38)
+        {
+            to.y = floor.y + m_parm38;
+            m_phys.m_floor = floor.y;
+            m_phys.m_flags |= 1;
+            m_phys.m_velocity.y = 0.0f;
+            if (m_committed.m_flags & 1)
+            {
+                float rise = floor.y - m_committed.m_floor;
+                if (m_parm24 < rise && 0.9f < m_phys.m_landscapeNormal.y)
+                    m_phys.m_heightOffset -= rise;
+            }
+        }
+        else if (m_phys.m_floor - floor.y < m_parm28)
+        {
+            to.y = floor.y + m_parm38;
+            m_phys.m_floor = floor.y;
+            m_phys.m_flags |= 1;
+            m_phys.m_velocity.y = 0.0f;
+            if (m_committed.m_flags & 1)
+            {
+                float rise = floor.y - m_committed.m_floor;
+                if (rise < -m_parm24 && 0.9f < m_phys.m_landscapeNormal.y)
+                    m_phys.m_heightOffset -= rise;
+            }
+        }
+        else
+            m_phys.m_flags &= ~1;
+    }
+    else if (to.y - floor.y < m_parm38)
+    {
+        to.y = floor.y + m_parm38;
+        m_phys.m_floor = floor.y;
+        m_phys.m_velocity.y = 0.0f;
+        m_phys.m_flags |= 1;
+    }
+    else
+        m_phys.m_flags &= ~1;
+
+    m_phys.m_position = to;
+
+    unsigned int env = scene.GetEnvFlags(m_phys.m_position);
+    if (env & 1)
+        m_phys.m_flags |= 0x4;
+    else
+        m_phys.m_flags &= ~0x4;
+    if (env & 4)
+        m_phys.m_flags |= 0x10;
+    else
+        m_phys.m_flags &= ~0x10;
+    if (env & 2)
+        m_phys.m_flags |= 0x40;
+    else
+        m_phys.m_flags &= ~0x40;
+    if (env & 8)
+        m_phys.m_flags |= 0x800;
+    else
+        m_phys.m_flags &= ~0x800;
+
+    above.x = to.x;
+    above.y = to.y + m_parm54;
+    above.z = to.z;
+    below.x = to.x;
+    below.y = to.y - m_parm54;
+    below.z = to.z;
+    unsigned int up = scene.GetEnvFlags(above);
+    unsigned int dn = scene.GetEnvFlags(below);
+    if (!(up & 1) && (dn & 1))
+        m_phys.m_flags |= 0x8;
+    else
+        m_phys.m_flags &= ~0x8;
+    if (!(up & 4) && (dn & 4))
+        m_phys.m_flags |= 0x20;
+    else
+        m_phys.m_flags &= ~0x20;
+    if (!(up & 2) && (dn & 2))
+        m_phys.m_flags |= 0x80;
+    else
+        m_phys.m_flags &= ~0x80;
+    if (!(up & 8) && (dn & 8))
+        m_phys.m_flags |= 0x1000;
+    else
+        m_phys.m_flags &= ~0x1000;
+
+    m_phys.m_position.y -= m_parm38;
+    if (scene.GetEnvFlags(m_phys.m_position) & 8)
+        m_phys.m_flags |= 0x2000;
+    else
+        m_phys.m_flags &= ~0x2000;
+    return 0;
+}
+
+// 0x00487438.  CalcFloor's body written out again (there is no call), then
+// a second sweep back UP from `a` to twice m_parm30 above the floor -- the
+// headroom check -- unless the caller passes non-zero `flags`, which takes the
+// clearance as given.
+int VIWalkControl::CalcFit(int flags, VIScene &scene, VIVect3 &a, VIVect3 &b,
+                           VIVect3 &c)
+{
+    VICollSphere sphere;
+    VIWalkFloorFilter filter;
+
+    filter.Init(m_parm64);
+    m_phys.m_flags &= ~0x400;
+    b = a;
+    b.y -= m_parm30;
+    if (sphere.Init(a, b, m_parm3C) < 0)
+        return -1;
+    if (scene.Collide(sphere, filter))
+    {
+        b = sphere.GetHitPoint();
+        m_phys.m_landscapeNormal = sphere.GetHitNormal();
+        if (filter.m_hitActor == -1)
+            m_phys.m_flags |= 0x400;
+    }
+    else
+    {
+        VIVect3 *e = &sphere.m_end;
+        b = *e;
+        m_phys.m_landscapeNormal.Zero();
+    }
+    if (flags == 0)
+    {
+        c = a;
+        c.y = b.y;
+        c.y += m_parm30 * 2.0f;
+        if (sphere.Init(a, c, m_parm3C) < 0)
+            return -1;
+        if (scene.Collide(sphere, filter))
+            c = sphere.GetHitPoint();
+        else
+        {
+            VIVect3 *e = &sphere.m_end;
+            c = *e;
+        }
+    }
+    else
+    {
+        c = a;
+        c.y = b.y;
+        c.y += m_parm30 * 2.0f;
+    }
+    return 0;
+}
+
+// 0x004876A0.  Drop a sphere from `from` down m_parm30 and leave the floor in
+// `to`.  The landscape bit is set only when what was hit is not an actor --
+// the terrain itself, not something standing on it.
+int VIWalkControl::CalcFloor(VIScene &scene, VIVect3 &from, VIVect3 &to)
+{
+    VICollSphere sphere;
+    VIWalkFloorFilter filter;
+
+    filter.Init(m_parm64);
+    m_phys.m_flags &= ~0x400;
+    to = from;
+    to.y -= m_parm30;
+    if (sphere.Init(from, to, m_parm3C) < 0)
+        return -1;
+    if (scene.Collide(sphere, filter))
+    {
+        to = sphere.GetHitPoint();
+        m_phys.m_landscapeNormal = sphere.GetHitNormal();
+        if (filter.m_hitActor == -1)
+            m_phys.m_flags |= 0x400;
+    }
+    else
+    {
+        // Through a pointer: +0 folds onto sp, +4/+8 come off the register.
+        VIVect3 *e = &sphere.m_end;
+        to = *e;
+        m_phys.m_landscapeNormal.Zero();
+    }
     return 0;
 }
 
@@ -845,4 +1291,13 @@ int VIWalkControl::ViewRelativeWalk(const VIVect3 &ref, float x, float y)
 int VIWalkFloorFilter::FilterActor(VIScene &scene, int actor)
 {
     return scene.GetActorSpriteType(actor) == 5;
+}
+
+// 0x00487BB0.  The render position: the body's own, raised by its height.
+VIVect3 VIWalkPhysics::GetSmoothLocation() const
+{
+    VIVect3 v;
+    v = m_position;
+    v.y += m_heightOffset;
+    return v;
 }

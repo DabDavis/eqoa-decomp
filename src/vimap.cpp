@@ -57,6 +57,7 @@ template <class K, class V> int VIMap<K, V>::Begin() const
     return i;
 }
 
+// ONE return at the bottom, as VIMultiMap's (phase 61).
 template <class K, class V> int VIMap<K, V>::Next(int i) const
 {
     if (NODE(i)->m_right != 0)
@@ -64,16 +65,17 @@ template <class K, class V> int VIMap<K, V>::Next(int i) const
         i = NODE(i)->m_right;
         while (NODE(i)->m_left != 0)
             i = NODE(i)->m_left;
-        return i;
     }
-
-    int p = NODE(i)->m_parent;
-    while (p != 0 && NODE(p)->m_right == i)
+    else
     {
+        int p = NODE(i)->m_parent;
+        while (p != 0 && NODE(p)->m_right == i)
+        {
+            i = p;
+            p = NODE(p)->m_parent;
+        }
         i = p;
-        p = NODE(p)->m_parent;
     }
-    i = p;
     return i;
 }
 
@@ -549,6 +551,7 @@ template int VIMap<unsigned int, VIDictionary::VIDictEntry>::Find(const unsigned
 VIMAP_COMMON(unsigned int, int, x)
 template VIMap<unsigned int, int>::VIMap();
 template int VIMap<unsigned int, int>::Find(const unsigned int &) const;
+template VIMap<unsigned int, int>::~VIMap();
 
 VIMAP_COMMON(int, VIEESurfCacheInfo, x)
 template VIMap<int, VIEESurfCacheInfo>::VIMap();
@@ -571,6 +574,7 @@ template int VIMap<int, int>::Next(int) const;
 template int VIMap<int, int>::Init(int);
 template int VIMap<int, int>::Insert(const int &, const int &);
 template int VIMap<int, int>::Find(const int &) const;
+template VIMap<int, int>::~VIMap();
 
 
 // ------------------------------------------------------------ VIDictionary --
@@ -578,6 +582,12 @@ template int VIMap<int, int>::Find(const int &) const;
 // and the two Finds are the only ones that read the node.
 VIDictionary::VIDictionary()
 {
+}
+
+// m_map's own destructor runs after this (`li a1,2`); the Clear is the body.
+VIDictionary::~VIDictionary()
+{
+    Clear();
 }
 
 int VIDictionary::Init(int n)

@@ -16,7 +16,7 @@ inline void *operator new(unsigned int, void *p)
 }
 
 // The largest key: the rightmost node.
-template <class K, class V> int VIMultiMap<K, V>::Last()
+template <class K, class V> int VIMultiMap<K, V>::Last() const
 {
     int i = m_root;
     if (i != 0)
@@ -45,9 +45,13 @@ template <class K, class V> VIMultiMap<K, V>::~VIMultiMap()
     }
 }
 
+// VIMap's Size, word for word: the sentinel is counted in m_size.
 template <class K, class V> int VIMultiMap<K, V>::Size() const
 {
-    return m_size;
+    int n = m_size - 1;
+    if (n < 0)
+        n = 0;
+    return n;
 }
 
 // The sentinel index IS the past-the-end iterator.
@@ -67,6 +71,9 @@ template <class K, class V> int VIMultiMap<K, V>::Begin() const
     return i;
 }
 
+// ONE return at the bottom: with the descent returning on its own, the
+// ascent's `i = p; return i;` collapses to a single move and the result
+// leaves through the other register.
 template <class K, class V> int VIMultiMap<K, V>::Next(int i) const
 {
     if (NODE(i)->m_right != 0)
@@ -74,16 +81,43 @@ template <class K, class V> int VIMultiMap<K, V>::Next(int i) const
         i = NODE(i)->m_right;
         while (NODE(i)->m_left != 0)
             i = NODE(i)->m_left;
-        return i;
     }
-
-    int p = NODE(i)->m_parent;
-    while (p != 0 && NODE(p)->m_right == i)
+    else
     {
+        int p = NODE(i)->m_parent;
+        while (p != 0 && NODE(p)->m_right == i)
+        {
+            i = p;
+            p = NODE(p)->m_parent;
+        }
         i = p;
-        p = NODE(p)->m_parent;
     }
-    i = p;
+    return i;
+}
+
+// Next mirrored, with End() as the way in from the back: Prev(End()) is the
+// largest key, which is how VIScene drops the farthest entry.
+template <class K, class V> int VIMultiMap<K, V>::Prev(int i) const
+{
+    if (i == End())
+        return Last();
+
+    if (NODE(i)->m_left != 0)
+    {
+        i = NODE(i)->m_left;
+        while (NODE(i)->m_right != 0)
+            i = NODE(i)->m_right;
+    }
+    else
+    {
+        int p = NODE(i)->m_parent;
+        while (p != 0 && NODE(p)->m_left == i)
+        {
+            i = p;
+            p = NODE(p)->m_parent;
+        }
+        i = p;
+    }
     return i;
 }
 
@@ -574,6 +608,9 @@ template int VIMultiMap<float, int>::Allocate();
 template int VIMultiMap<float, int>::Erase(int);
 template int VIMultiMap<float, int>::Insert(const float &, const int &);
 template int VIMultiMap<float, int>::EraseFixup(int);
+template int VIMultiMap<float, int>::Size() const;
+template int VIMultiMap<float, int>::Last() const;
+template int VIMultiMap<float, int>::Prev(int) const;
 
 // VIMultiMap<float, VIEmitterEntry>
 template VIMultiMap<float, VIEmitterEntry>::VIMultiMap();
@@ -589,3 +626,5 @@ template int VIMultiMap<float, VIEmitterEntry>::Allocate();
 template int VIMultiMap<float, VIEmitterEntry>::Erase(int);
 template int VIMultiMap<float, VIEmitterEntry>::Insert(const float &, const VIEmitterEntry &);
 template int VIMultiMap<float, VIEmitterEntry>::EraseFixup(int);
+template int VIMultiMap<float, VIEmitterEntry>::Size() const;
+template VIMultiMap<float, VIEmitterEntry>::~VIMultiMap();

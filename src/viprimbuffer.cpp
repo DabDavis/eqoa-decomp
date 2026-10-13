@@ -610,10 +610,12 @@ int VIPrimBuffer::CalcBVolumes(int n, VIVect3 *p)
 
     first = 1;
     pi = 0;
+    // ONE walk over the vertex data for the whole buffer: the materials' prims
+    // are contiguous, so vp is not reset per material.
+    char *vp = m_verts;
 
     for (mi = 0; mi < m_numMaterials; mi++)
     {
-        char *vp = m_verts;
         int fg = 1;
         int np = m_materials[mi].m_numPrims;
         while (np != 0)
@@ -673,9 +675,7 @@ int VIPrimBuffer::CalcBVolumes(int n, VIVect3 *p)
                     // target's multiplies all retire before the table lookup
                     short g = *(short *)(vp + 10);
                     vp += 32;
-                    v.x = v.x + p[g].x;
-                    v.y = v.y + p[g].y;
-                    v.z = v.z + p[g].z;
+                    v += p[g];
                     pb.Bound(fp, v);
                     break;
                 }

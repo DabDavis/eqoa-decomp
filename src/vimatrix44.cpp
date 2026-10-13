@@ -672,3 +672,305 @@ int VIMatrix44::Debug()
         ;
     return 0;
 }
+
+// ---------------------------------------------------------------------------
+// The VU0 macro-mode half (phase 61).  Hand-written asm, transcribed: libvu0's
+// bodies (sceVu0ApplyMatrix, sceVu0ScaleVector) inlined where SUPPORT has them
+// inline, a scaled-accumulate of the same shape, and C++ only for the scalar
+// glue around them.  Count these separately from the compiled functions.
+
+// The input BY VALUE: the caller block-copies it (lq/sq) to a stack slot of
+// its own and passes that, the shape operator*(VIVect3, VIMatrix44) shows.
+extern "C" void sceVu0ApplyMatrix(VIVect4 &out, const VIMatrix44 &m,
+                                  const VIVect4 &in);
+
+// sceVu0ScaleVector: out = in * t.
+static inline void ScaleVector(VIVect4 &out, const VIVect4 &in, float t)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf4, 0x0(%1)\n"
+        "mfc1 $t0, %2\n"
+        "qmtc2 $t0, $vf5\n"
+        "vmulx.xyzw $vf6, $vf4, $vf5x\n"
+        "sqc2 $vf6, 0x0(%0)\n"
+        : : "r"(&out), "r"(&in), "f"(t) : "$8", "memory");
+}
+
+// acc += row * t.
+static inline void AddScaledVector(VIVect4 &acc, const VIVect4 &row, float t)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf3, 0x0(%0)\n"
+        "lqc2 $vf4, 0x0(%1)\n"
+        "mfc1 $t0, %2\n"
+        "qmtc2 $t0, $vf5\n"
+        "vmulx.xyzw $vf6, $vf4, $vf5x\n"
+        "vadd.xyzw $vf3, $vf3, $vf6\n"
+        "sqc2 $vf3, 0x0(%0)\n"
+        : : "r"(&acc), "r"(&row), "f"(t) : "$8", "memory");
+}
+
+// sceVu0ApplyMatrix's body: out = in * m, row vectors.
+static inline void ApplyMatrix(VIVect4 &out, const VIMatrix44 &m,
+                               const VIVect4 &in)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf4, 0x0(%1)\n"
+        "lqc2 $vf5, 0x10(%1)\n"
+        "lqc2 $vf6, 0x20(%1)\n"
+        "lqc2 $vf7, 0x30(%1)\n"
+        "lqc2 $vf8, 0x0(%2)\n"
+        "vmulax.xyzw $ACC, $vf4, $vf8x\n"
+        "vmadday.xyzw $ACC, $vf5, $vf8y\n"
+        "vmaddaz.xyzw $ACC, $vf6, $vf8z\n"
+        "vmaddw.xyzw $vf9, $vf7, $vf8w\n"
+        "sqc2 $vf9, 0x0(%0)\n"
+        : : "r"(&out), "r"(&m), "r"(&in) : "memory");
+}
+
+// 0x003F01D0.  The class-body Zero() is inline -- VIQuat::ConvertTo expands its
+// five words -- and SUPPORT carries an out-of-line copy as well.  Taking its
+// address is what makes gcc emit one.
+void (VIMatrix44::*VIMatrix44ZeroOutOfLine)() = &VIMatrix44::Zero;
+
+// 0x003F01F0.  (0,0,0,1) rotated through the rows with VMR32.
+void VIMatrix44::Identity()
+{
+    __asm__ __volatile__(
+        "vsub.xyzw $vf4, $vf0, $vf0\n"
+        "vadd.w $vf4, $vf4, $vf0\n"
+        "vmr32.xyzw $vf5, $vf4\n"
+        "vmr32.xyzw $vf6, $vf5\n"
+        "vmr32.xyzw $vf7, $vf6\n"
+        "sqc2 $vf4, 0x30(%0)\n"
+        "sqc2 $vf5, 0x20(%0)\n"
+        "sqc2 $vf6, 0x10(%0)\n"
+        "sqc2 $vf7, 0x0(%0)\n"
+        : : "r"(m) : "memory");
+}
+
+// 0x003F0220.  this = a * b, unrolled, the next row of `a` loaded under the
+// current row's multiply.
+void VIMatrix44::Mul(const VIMatrix44 &a, const VIMatrix44 &b)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf8, 0x0(%1)\n"
+        "lqc2 $vf4, 0x0(%2)\n"
+        "lqc2 $vf5, 0x10(%2)\n"
+        "lqc2 $vf6, 0x20(%2)\n"
+        "lqc2 $vf7, 0x30(%2)\n"
+        "lqc2 $vf9, 0x10(%1)\n"
+        "vmulax.xyzw $ACC, $vf4, $vf8x\n"
+        "vmadday.xyzw $ACC, $vf5, $vf8y\n"
+        "vmaddaz.xyzw $ACC, $vf6, $vf8z\n"
+        "vmaddw.xyzw $vf12, $vf7, $vf8w\n"
+        "lqc2 $vf10, 0x20(%1)\n"
+        "vmulax.xyzw $ACC, $vf4, $vf9x\n"
+        "vmadday.xyzw $ACC, $vf5, $vf9y\n"
+        "vmaddaz.xyzw $ACC, $vf6, $vf9z\n"
+        "vmaddw.xyzw $vf13, $vf7, $vf9w\n"
+        "sqc2 $vf12, 0x0(%0)\n"
+        "lqc2 $vf11, 0x30(%1)\n"
+        "vmulax.xyzw $ACC, $vf4, $vf10x\n"
+        "vmadday.xyzw $ACC, $vf5, $vf10y\n"
+        "vmaddaz.xyzw $ACC, $vf6, $vf10z\n"
+        "vmaddw.xyzw $vf14, $vf7, $vf10w\n"
+        "sqc2 $vf13, 0x10(%0)\n"
+        "vmulax.xyzw $ACC, $vf4, $vf11x\n"
+        "vmadday.xyzw $ACC, $vf5, $vf11y\n"
+        "vmaddaz.xyzw $ACC, $vf6, $vf11z\n"
+        "vmaddw.xyzw $vf15, $vf7, $vf11w\n"
+        "sqc2 $vf14, 0x20(%0)\n"
+        "sqc2 $vf15, 0x30(%0)\n"
+        : : "r"(m), "r"(&a), "r"(&b) : "memory");
+}
+
+// 0x003F0298.
+void VIMatrix44::Mul(const VIVect4 &v, VIVect4 &out) const
+{
+    ApplyMatrix(out, *this, v);
+}
+
+// 0x003F02C8.  The product through a stack VIVect4, its w dropped.
+void VIMatrix44::Mul(const VIVect4 &v, VIVect3 &out) const
+{
+    VIVect4 r;
+
+    ApplyMatrix(r, *this, v);
+    out.x = r.x;
+    out.y = r.y;
+    out.z = r.z;
+}
+
+// 0x003F0328.  A point: w = 1.
+void VIMatrix44::Mul(const VIVect3 &v, VIVect4 &out) const
+{
+    VIVect4 t(v.x, v.y, v.z, 1.0f);
+
+    ApplyMatrix(out, *this, t);
+}
+
+// 0x003F0380.
+void VIMatrix44::Mul(const VIVect3 &v, VIVect3 &out) const
+{
+    VIVect4 t(v.x, v.y, v.z, 1.0f);
+    VIVect4 r;
+
+    ApplyMatrix(r, *this, t);
+    out.x = r.x;
+    out.y = r.y;
+    out.z = r.z;
+}
+
+// 0x003F0408.  A direction: w = 0, so the translation row drops out.
+void VIMatrix44::SubMatrixMul(const VIVect3 &v, VIVect3 &out) const
+{
+    VIVect4 t;
+    VIVect4 r;
+
+    t.x = v.x;
+    t.y = v.y;
+    t.z = v.z;
+    ApplyMatrix(r, *this, t);
+    out.x = r.x;
+    out.y = r.y;
+    out.z = r.z;
+}
+
+// 0x003F0488.  Gauss-Jordan with partial pivoting, the row operations on VU0
+// -- the same algorithm as VIMatrix44D::Invert.
+int VIMatrix44::Invert(const VIMatrix44 &a)
+{
+    VIMatrix44 w(a);
+    Identity();
+    float (*s)[4] = (float (*)[4])w.m;
+    for (int i = 0; i < 4; i++)
+    {
+        float p = s[i][i];
+        float mag = fabsf(p);
+        int row = i;
+        for (int k = i + 1; k < 4; k++)
+        {
+            float t = fabsf(s[k][i]);
+            if (mag < t)
+            {
+                p = s[k][i];
+                mag = t;
+                row = k;
+            }
+        }
+        if (p == 0.0f)
+            return -1;
+        w.SwapRows(i, row);
+        SwapRows(i, row);
+        float q = 1.0f / p;
+        ScaleVector(w.m[i], w.m[i], q);
+        ScaleVector(m[i], m[i], q);
+        for (int j = 0; j < 4; j++)
+        {
+            if (j != i)
+            {
+                float f = -s[j][i];
+                AddScaledVector(w.m[j], w.m[i], f);
+                AddScaledVector(m[j], m[i], f);
+            }
+        }
+    }
+    return 0;
+}
+
+// 0x003F0680.  The affine inverse in one block: the three cofactor rows by
+// outer product, the determinant as row 0 dotted with the first, the 3x3
+// transposed into place and scaled by 1/det, then the translation.
+void VIMatrix44::InvertAffine(const VIMatrix44 &a)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf4, 0x0(%1)\n"
+        "lqc2 $vf5, 0x10(%1)\n"
+        "lqc2 $vf6, 0x20(%1)\n"
+        "lqc2 $vf7, 0x30(%1)\n"
+        "vopmula.xyz $ACC, $vf5, $vf6\n"
+        "vopmsub.xyz $vf8, $vf6, $vf5\n"
+        "vopmula.xyz $ACC, $vf4, $vf6\n"
+        "vopmsub.xyz $vf9, $vf6, $vf4\n"
+        "vopmula.xyz $ACC, $vf4, $vf5\n"
+        "vopmsub.xyz $vf10, $vf5, $vf4\n"
+        "vmul.xyz $vf11, $vf4, $vf8\n"
+        "vaddx.x $vf14, $vf0, $vf8x\n"
+        "vsubx.y $vf14, $vf0, $vf9x\n"
+        "vaddx.z $vf14, $vf0, $vf10x\n"
+        "vmulax.w $ACC, $vf0, $vf11x\n"
+        "vmadday.w $ACC, $vf0, $vf11y\n"
+        "vmaddz.w $vf12, $vf0, $vf11z\n"
+        "vaddy.x $vf15, $vf0, $vf8y\n"
+        "vsuby.y $vf15, $vf0, $vf9y\n"
+        "vaddy.z $vf15, $vf0, $vf10y\n"
+        "vdiv $Q, $vf0w, $vf12w\n"
+        "vaddz.x $vf16, $vf0, $vf8z\n"
+        "vsubz.y $vf16, $vf0, $vf9z\n"
+        "vaddz.z $vf16, $vf0, $vf10z\n"
+        "vmulx.w $vf14, $vf0, $vf0x\n"
+        "vmulx.w $vf15, $vf0, $vf0x\n"
+        "vmulx.w $vf16, $vf0, $vf0x\n"
+        "vmulw.w $vf17, $vf0, $vf0w\n"
+        "vmulq.xyz $vf14, $vf14, $Q\n"
+        "vmulq.xyz $vf15, $vf15, $Q\n"
+        "vmulq.xyz $vf16, $vf16, $Q\n"
+        "vmulax.xyz $ACC, $vf0, $vf0x\n"
+        "vmsubax.xyz $ACC, $vf14, $vf7x\n"
+        "vmsubay.xyz $ACC, $vf15, $vf7y\n"
+        "vmsubz.xyz $vf17, $vf16, $vf7z\n"
+        "sqc2 $vf14, 0x0(%0)\n"
+        "sqc2 $vf15, 0x10(%0)\n"
+        "sqc2 $vf16, 0x20(%0)\n"
+        "sqc2 $vf17, 0x30(%0)\n"
+        : : "r"(m), "r"(&a) : "memory");
+}
+
+// 0x003F0728.
+VIVect4 operator*(const VIVect4 &v, const VIMatrix44 &m)
+{
+    VIVect4 r;
+
+    ApplyMatrix(r, m, v);
+    return VIVect4(r.x, r.y, r.z, r.w);
+}
+
+// 0x003F0790.  Through the out-of-line libvu0 call, with a copy of the
+// point as its input.
+VIVect4 operator*(const VIVect3 &v, const VIMatrix44 &m)
+{
+    VIVect4 r(v.x, v.y, v.z, 1.0f);
+    {
+        VIVect4 in = r;
+        sceVu0ApplyMatrix(r, m, in);
+    }
+    return VIVect4(r.x, r.y, r.z, r.w);
+}
+
+// 0x003F2DD0.  Every row scaled.
+void VIMatrix44::Mul(const VIMatrix44 &a, float f)
+{
+    ScaleVector(m[0], a.m[0], f);
+    ScaleVector(m[1], a.m[1], f);
+    ScaleVector(m[2], a.m[2], f);
+    ScaleVector(m[3], a.m[3], f);
+}
+
+// 0x003F2E40.  out += (v * this) * w, a row at a time.
+void VIMatrix44::BlendAccum(const VIVect4 &v, float w, VIVect4 &out) const
+{
+    AddScaledVector(out, m[0], v.x * w);
+    AddScaledVector(out, m[1], v.y * w);
+    AddScaledVector(out, m[2], v.z * w);
+    AddScaledVector(out, m[3], v.w * w);
+}
+
+// 0x003F2EE8.  The point form: the translation row at the weight itself.
+void VIMatrix44::BlendAccum(const VIVect3 &v, float w, VIVect4 &out) const
+{
+    AddScaledVector(out, m[0], v.x * w);
+    AddScaledVector(out, m[1], v.y * w);
+    AddScaledVector(out, m[2], v.z * w);
+    AddScaledVector(out, m[3], w);
+}

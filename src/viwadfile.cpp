@@ -16,23 +16,28 @@ VIWadFile::VIWadFile()
     m_entries = 0;
 }
 
+// Empty: the whole body is m_file's destructor and the delete.
+VIWadFile::~VIWadFile()
+{
+}
+
 int VIWadFile::Init(const char *path)
 {
-    if (VIFile::Open(path, 33) < 0)
+    if (m_file.Open(path, 33) < 0)
         return -1;
     return SharedInit();
 }
 
 int VIWadFile::Init(void *p, int size)
 {
-    if (VIFile::Open(p, size, 33, size) < 0)
+    if (m_file.Open(p, size, 33, size) < 0)
         return -1;
     return SharedInit();
 }
 
 void VIWadFile::Free()
 {
-    Close();
+    m_file.Close();
     if (m_entries)
         delete [] m_entries;
     m_entries = 0;
@@ -53,9 +58,9 @@ int VIWadFile::Load(const char *name, void *dst, int size)
         return -1;
     if (size < e->size)
         return 0;
-    if (Seek(e->offset + 256, Seek_Set) < 0)
+    if (m_file.Seek(e->offset + 256, VIFile::Seek_Set) < 0)
         return -1;
-    if (Read(dst, e->size) < 0)
+    if (m_file.Read(dst, e->size) < 0)
         return -1;
     return e->size;
 }
@@ -66,19 +71,19 @@ int VIWadFile::SharedInit()
     int version;
     int count;
 
-    if (Read(&id, 4) < 0)
+    if (m_file.Read(&id, 4) < 0)
         return -1;
     if (id != WadFileID)
         return -1;
-    if (Read(&version, 4) < 0)
+    if (m_file.Read(&version, 4) < 0)
         return -1;
     if (version >= 2)
         return -1;
-    if (Read(&count, 4) < 0)
+    if (m_file.Read(&count, 4) < 0)
         return -1;
     m_numEntries = count;
     m_entries = new WadEntry[count];
-    if (Read(m_entries, m_numEntries * sizeof(WadEntry)) < 0)
+    if (m_file.Read(m_entries, m_numEntries * sizeof(WadEntry)) < 0)
         return -1;
     return 0;
 }

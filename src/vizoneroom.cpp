@@ -164,9 +164,6 @@ int VIZoneRoom::CalcPortalPlane(int i)
         p.d = -(p.n.x * sum.x + p.n.y * sum.y + p.n.z * sum.z);
     }
 
-    ((VIZonePortal *)m_portals)[i].m_plane.n.x = p.n.x;
-    ((VIZonePortal *)m_portals)[i].m_plane.n.y = p.n.y;
-    ((VIZonePortal *)m_portals)[i].m_plane.n.z = p.n.z;
-    ((VIZonePortal *)m_portals)[i].m_plane.d = p.d;
+    ((VIZonePortal *)m_portals)[i].m_plane = p;
     return 0;
 }

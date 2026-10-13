@@ -259,6 +259,69 @@ void VIBBox::Scale(const VIVect3 &s)
     mx->z = mx->z + c.z;
 }
 
+// 0x003EE930.  A segment against the box: trivially out if both ends are
+// past any one face, otherwise clipped face by face -- each slab plane cuts
+// the segment where it crosses inside [0,1], replacing whichever end was
+// outside -- and out the moment both ends are past the face being cut.
+int VIBBox::Intersects(const VIVect3 &a, const VIVect3 &b) const
+{
+    VIVect3 p0;
+    VIVect3 p1;
+    VIVect3 hit;
+    VIPlane pl;
+    float t;
+    int i;
+
+    if ((a.x > max.x && b.x > max.x) || (a.y > max.y && b.y > max.y) ||
+        (a.z > max.z && b.z > max.z) || (a.x < min.x && b.x < min.x) ||
+        (a.y < min.y && b.y < min.y) || (a.z < min.z && b.z < min.z))
+        return 0;
+
+    p0 = a;
+    p1 = b;
+
+    // The normal and the far end through pointer variables: a different base
+    // from `sp`, so the loop keeps them as givs of their own instead of
+    // folding them onto p0's.
+    VIVect3 *q1 = &p1;
+    float *n = &pl.n.x;
+
+    for (i = 0; i < 3; i++)
+    {
+        pl.n.Zero();
+        n[i] = -1.0f;
+        pl.d = (&min.x)[i];
+        if (pl.LineIntersection(p0, *q1, t, hit) && 0.0f <= t && t <= 1.0f)
+        {
+            if ((&p0.x)[i] < (&min.x)[i])
+                p0 = hit;
+            else
+                p1 = hit;
+        }
+        if ((&p0.x)[i] < (&min.x)[i] && (&q1->x)[i] < (&min.x)[i])
+            return 0;
+    }
+
+    const float *mx = &max.x;
+    for (i = 0; i < 3; i++)
+    {
+        pl.n.Zero();
+        n[i] = 1.0f;
+        pl.d = -mx[i];
+        if (pl.LineIntersection(p0, *q1, t, hit) && 0.0f <= t && t <= 1.0f)
+        {
+            if ((&p0.x)[i] > mx[i])
+                p0 = hit;
+            else
+                p1 = hit;
+        }
+        if ((&p0.x)[i] > mx[i] && (&q1->x)[i] > mx[i])
+            return 0;
+    }
+
+    return 1;
+}
+
 int VIBBox::CullIntersect(const VISphere &s) const
 {
     if (s.r < min.x - s.c.x || s.r < min.y - s.c.y || s.r < min.z - s.c.z ||
