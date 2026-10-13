@@ -92,24 +92,28 @@ int VIUI::FrameFillRectangle(const VIVect2I *p)
     return FillRectangle(r, &c2);
 }
 
+// Phase 61.  Each strip's moved edge is computed from the COPY (`r[1].x =
+// r[0].x + w`), so cse reuses the value the copy just stored; written from
+// `p[...]` it reloads through a different address form (21 -> 8 words; the
+// rest is the second strip's store order).
 int VIUI::FrameRectangle(const VIVect2I *p, const VIColor32F *c, int w)
 {
     VIVect2I r[2];
     r[0] = p[0];
     r[1] = p[1];
-    r[1].x = p[0].x + w;
+    r[1].x = r[0].x + w;
     FillRectangle(r, c);
     r[0] = p[0];
     r[1] = p[1];
-    r[1].y = p[0].y + w;
+    r[1].y = r[0].y + w;
     FillRectangle(r, c);
     r[0] = p[0];
     r[1] = p[1];
-    r[0].x = p[1].x - w;
+    r[0].x = r[1].x - w;
     FillRectangle(r, c);
     r[0] = p[0];
     r[1] = p[1];
-    r[0].y = p[1].y - w;
+    r[0].y = r[1].y - w;
     return FillRectangle(r, c);
 }
 
@@ -135,14 +139,18 @@ int VIUI::Blit(int id, VIVect2I at, VIAlphaBlendMode m, float alpha,
     return 0;
 }
 
+// Phase 61.  The five atlas blitters build both rectangles with the two-int
+// constructor out of the entry's fields: both loads come before both stores
+// (and the second pair y-first after scheduling), where the copy constructor
+// gives load-store-load-store (3 to 8 words each).
 int VIUI::Blit(VIUITexId id, VIVect2I at)
 {
     char name[64];
     const VIUITexEntry *e = GetUITexture(id);
     if (e == 0)
         return -1;
-    VIVect2I a = e->m_uv0;
-    VIVect2I b = e->m_uv1;
+    VIVect2I a(e->m_uv0.x, e->m_uv0.y);
+    VIVect2I b(e->m_uv1.x, e->m_uv1.y);
     name[0] = 0;
     VIString::str16to8(name, 64,
         (const unsigned short *)m_textures.GetString(e->m_row, m_language));
@@ -157,7 +165,7 @@ int VIUI::Blit(VIUITexId id, VIVect2I at, VIVect2I size)
     if (e == 0)
         return -1;
     VIVect2I b(0, 0);
-    VIVect2I a = e->m_uv0;
+    VIVect2I a(e->m_uv0.x, e->m_uv0.y);
     int x = size.x;
     if (x == -1)
         x = e->m_uv1.x;
@@ -180,8 +188,8 @@ int VIUI::BlitEx(VIUITexId id, VIVect2I at, VIAlphaBlendMode m, float alpha,
     const VIUITexEntry *e = GetUITexture(id);
     if (e == 0)
         return -1;
-    VIVect2I a = e->m_uv0;
-    VIVect2I b = e->m_uv1;
+    VIVect2I a(e->m_uv0.x, e->m_uv0.y);
+    VIVect2I b(e->m_uv1.x, e->m_uv1.y);
     name[0] = 0;
     VIString::str16to8(name, 64,
         (const unsigned short *)m_textures.GetString(e->m_row, m_language));
@@ -196,7 +204,7 @@ int VIUI::BlitEx(VIUITexId id, VIVect2I at, VIVect2I size, VIAlphaBlendMode m,
     if (e == 0)
         return -1;
     VIVect2I b(0, 0);
-    VIVect2I a = e->m_uv0;
+    VIVect2I a(e->m_uv0.x, e->m_uv0.y);
     int x = size.x;
     if (x == -1)
         x = e->m_uv1.x;
@@ -218,8 +226,8 @@ int VIUI::StretchBlitEx(VIUITexId id, VIVect2I at, VIVect2I size,
     const VIUITexEntry *e = GetUITexture(id);
     if (e == 0)
         return -1;
-    VIVect2I a = e->m_uv0;
-    VIVect2I b = e->m_uv1;
+    VIVect2I a(e->m_uv0.x, e->m_uv0.y);
+    VIVect2I b(e->m_uv1.x, e->m_uv1.y);
     name[0] = 0;
     VIString::str16to8(name, 64,
         (const unsigned short *)m_textures.GetString(e->m_row, m_language));
@@ -655,7 +663,7 @@ int VIUI::BlitAbilityIcon(VIVect2I at, int idx, VIAlphaBlendMode m, float alpha)
 
 int VIUI::DrawStringEx(const char *s, int x, int y, VIColor32F c, int shadow)
 {
-    VIColor32F save = m_font.m_color;
+    VIColor32F save = m_font.GetTextColor();
     if (shadow)
     {
         VIColor32F sh(0.0f, 0.0f, 0.0f, c.a);
@@ -671,7 +679,7 @@ int VIUI::DrawStringEx(const char *s, int x, int y, VIColor32F c, int shadow)
 int VIUI::DrawStringEx(const unsigned short *s, int x, int y, VIColor32F c,
                        int shadow)
 {
-    VIColor32F save = m_font.m_color;
+    VIColor32F save = m_font.GetTextColor();
     if (shadow)
     {
         VIColor32F sh(0.0f, 0.0f, 0.0f, c.a);
@@ -687,7 +695,7 @@ int VIUI::DrawStringEx(const unsigned short *s, int x, int y, VIColor32F c,
 int VIUI::DrawStringEx(unsigned short id, int x, int y, VIColor32F c,
                        int shadow)
 {
-    VIColor32F save = m_font.m_color;
+    VIColor32F save = m_font.GetTextColor();
     if (shadow)
     {
         VIColor32F sh(0.0f, 0.0f, 0.0f, c.a);
@@ -707,7 +715,7 @@ int VIUI::DrawStringEx(unsigned short id, int x, int y, VIColor32F c,
 int VIUI::DrawCenteredStringEx(const char *s, int x, int y, VIColor32F c,
                                unsigned int w, int shadow)
 {
-    VIColor32F save = m_font.m_color;
+    VIColor32F save = m_font.GetTextColor();
     if (shadow)
     {
         VIColor32F sh(0.0f, 0.0f, 0.0f, c.a);
@@ -723,7 +731,7 @@ int VIUI::DrawCenteredStringEx(const char *s, int x, int y, VIColor32F c,
 int VIUI::DrawCenteredStringEx(const unsigned short *s, int x, int y,
                                VIColor32F c, unsigned int w, int shadow)
 {
-    VIColor32F save = m_font.m_color;
+    VIColor32F save = m_font.GetTextColor();
     if (shadow)
     {
         VIColor32F sh(0.0f, 0.0f, 0.0f, c.a);
@@ -739,7 +747,7 @@ int VIUI::DrawCenteredStringEx(const unsigned short *s, int x, int y,
 int VIUI::DrawCenteredStringEx(unsigned short id, int x, int y, VIColor32F c,
                                unsigned int w, int shadow)
 {
-    VIColor32F save = m_font.m_color;
+    VIColor32F save = m_font.GetTextColor();
     if (shadow)
     {
         VIColor32F sh(0.0f, 0.0f, 0.0f, c.a);
@@ -757,15 +765,18 @@ int VIUI::DrawCenteredStringEx(unsigned short id, int x, int y, VIColor32F c,
     return 0;
 }
 
+// Phase 61.  The success test goes in the `if` -- `if (e != 0) return ...;
+// return -1;` -- which puts the call out of line behind a `bnezl`; the early
+// `return -1` form lays it out in line (5 words).
 int VIUI::SoundPlay(VIUISoundId id)
 {
     char name[64];
     VIString::str16to8(name, 64,
         (const unsigned short *)m_sounds.GetString(id, 0));
     const VIUISoundEntry *e = GetUISound(id);
-    if (e == 0)
-        return -1;
-    return SoundPlay(name, e->m_volume);
+    if (e != 0)
+        return SoundPlay(name, e->m_volume);
+    return -1;
 }
 
 int VIUI::SoundPlay(const char *name, float vol)

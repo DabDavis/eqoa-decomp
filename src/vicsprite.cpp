@@ -14,12 +14,11 @@
 extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" int  rand();
 extern "C" void *memcpy(void *d, const void *s, unsigned int n);
-extern "C" unsigned int VIHashRefID(const char *s);
-extern "C" unsigned int VIHashResourceID(const char *s);
+extern "C" unsigned int VIHashRefID(const char *);
+extern "C" unsigned int VIHashResourceID(const char *);
 
-// The node and resource names a character's sound and particle attachments are
-// looked up under, hashed once by the TU's static initialiser (phase 61), in
-// the order the .data holds them.  `_GLOBAL_$I$` takes the FIRST one's name.
+// The node ref ids the animation triggers carry, hashed at static
+// initialisation (phase 61).  `_GLOBAL_$I$` takes the FIRST one's name.
 const int VICSprite::PrimSoundRefID    = VIHashRefID("Primary Sound");
 const int VICSprite::PrimSoundBPURefID = VIHashRefID("Primary Sound_BPU");
 const int VICSprite::PrimSoundBPLRefID = VIHashRefID("Primary Sound_BPL");
@@ -33,14 +32,11 @@ const int VICSprite::Particle2RefID    = VIHashRefID("Particle 2");
 const int VICSprite::Particle2BPURefID = VIHashRefID("Particle 2_BPU");
 const int VICSprite::Particle2BPLRefID = VIHashRefID("Particle 2_BPL");
 int VICSprite::FontResourceID = VIHashResourceID("Arial");
-
-// Three name-plate colours, built by VIColor32's four-byte constructor at
-// static-init time -- byte stores, not .data.
 VIColor32 VICSprite::NameColors[] =
 {
     VIColor32(212, 192, 111, 255),
     VIColor32(100, 175, 220, 255),
-    VIColor32( 90, 255,  80, 255)
+    VIColor32(90, 255, 80, 255)
 };
 
 VICSprite::VICSprite() : m_emitterTime(0)
@@ -1483,7 +1479,9 @@ int VICSprite::ProcessWeaponTrails(VICamera &cam, VIScene &sc, VIMatrix44 &m)
     int k;
     int n;
 
-    if (m_trailSlot == 0 || sc.GetTime() - m_trailTime < 50)
+    if (m_trailSlot == 0)
+        return 0;
+    if (sc.GetTime() - m_trailTime < 50)
         return 0;
 
     if (m_trail && m_deathAnim != -1 && m_deathAnim != m_action)
@@ -1536,11 +1534,9 @@ int VICSprite::ProcessWeaponTrails(VICamera &cam, VIScene &sc, VIMatrix44 &m)
 
                 VIPointSprite *ps = (VIPointSprite *)sc.Sprite(ms);
                 g->CalcMemberTransform(k, member);
-//<<W
                 int node = m_items[slot].m_node;
                 VIVector<VIHSpriteNode> *nodes = &m_nodes;
                 world.Mul(member, nodes->m_data[node].m_world);
-//W>>
                 member.Mul(world, center);
 
                 if (ps->m_pointType == 0)
@@ -1558,13 +1554,11 @@ int VICSprite::ProcessWeaponTrails(VICamera &cam, VIScene &sc, VIMatrix44 &m)
                     n++;
                 }
 
-//<<S
                 if (n == 2)
                 {
                     m_trail->AddSegment(a, b, m_trailColor, VIColor32F(0.0f, 0.0f, 0.0f, 1.0f));
-                    return 0;
+                    break;
                 }
-//S>>
             }
         }
     }

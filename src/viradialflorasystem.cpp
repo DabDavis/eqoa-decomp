@@ -139,7 +139,7 @@ int VIRadialFloraSystem::Update(const VIVect3 &v)
         loc.m_cell != m_loc.m_cell)
     {
         m_rebuild = 0;
-        for (i = 8; i >= 0; i--)
+        for (i = 0; i < 9; i++)
             grid[i] = 0;
 
         d[0] = (m_loc.m_sub[0] - loc.m_sub[0]) + (m_loc.m_cell[0] - loc.m_cell[0]) * 50;
@@ -252,14 +252,6 @@ int VIRadialFloraSystem::Render(VICamera &cam)
     return 0;
 }
 
-// A by-reference helper: the camera position's +4/+8 come off its own address
-// register while +0 folds into the camera's (phase 9's sub-object lever).
-static inline float DistanceSquared(const VIVect3 &a, const VIVect3 &b)
-{
-    return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) +
-           (a.z - b.z) * (a.z - b.z);
-}
-
 // Queues every instance of swatch i within 40 units of the camera whose sphere
 // survives the frustum, up to the 700 the sort buffer holds.
 int VIRadialFloraSystem::DrawSwatch(int i, VICamera &cam)
@@ -272,8 +264,13 @@ int VIRadialFloraSystem::DrawSwatch(int i, VICamera &cam)
         p.x = s->m_insts[j].m_world.m[3].x;
         p.y = s->m_insts[j].m_world.m[3].y;
         p.z = s->m_insts[j].m_world.m[3].z;
+        // The camera position through a REFERENCE (its +4/+8 come off their own
+        // address register, +0 folds into the camera's) into named floats: an
+        // inline by-reference helper leaves y/z below the stores (34 words).
+        const VIVect3 &c = cam.m_position;
+        float cx = c.x, cy = c.y, cz = c.z;
 
-        float d = DistanceSquared(cam.m_position, p);
+        float d = (cx - p.x) * (cx - p.x) + (cy - p.y) * (cy - p.y) + (cz - p.z) * (cz - p.z);
 
         if (d < 1600.0f && !cam.m_frustum.Cull(s->m_insts[j].m_sphere))
         {
@@ -365,7 +362,6 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
             float r = VIRAND;
             int lo = flora.m_sets[set].m_model;
             int hi = lo + flora.m_sets[set].m_dist - 1;
-            count++;
 
             while (lo <= hi)
             {
@@ -380,14 +376,13 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
 
             int model = flora.m_dists[mid].m_set;
 
-            insts[count - 1].m_prim = flora.m_models[model].m_b;
-            insts[count - 1].m_pal = flora.m_models[model].m_c;
+            insts[count].m_prim = flora.m_models[model].m_b;
+            insts[count].m_pal = flora.m_models[model].m_c;
 
-            float scale = flora.m_dists[mid].m_p14 *
-                          (flora.m_dists[mid].m_p18 + 1.0f -
-                           flora.m_dists[mid].m_p18 * VIRAND * 2.0f);
-            if (scale < 0.0f)
-                scale = 0.0f;
+            float scale = (flora.m_dists[mid].m_p18 + 1.0f -
+                           flora.m_dists[mid].m_p18 * VIRAND * 2.0f) *
+                          flora.m_dists[mid].m_p14;
+            scale = VIMAX(0.0f, scale);
 
             hpr.x = 6.2831855f * VIRAND;
             if (flora.m_dists[mid].m_id & 1)
@@ -401,8 +396,8 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
             }
             else
             {
-                hpr.z = 0.0f;
                 hpr.y = 0.0f;
+                hpr.z = 0.0f;
             }
 
             float u = VIRAND;
@@ -414,13 +409,15 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
             }
             float w = 1.0f - u - v;
 
-            Scale(pos, q.m_tris[k].m_v0, w);
-            AddVec(pos, q.m_tris[k].m_v1, u);
-            AddVec(pos, q.m_tris[k].m_v2, v);
+            VIQueryTri &t = q.m_tris[k];
+            Scale(pos, t.m_v0, w);
+            AddVec(pos, t.m_v1, u);
+            AddVec(pos, t.m_v2, v);
 
-            insts[count - 1].m_world.Transform(hpr, scale, pos);
-            insts[count - 1].m_world.Mul(flora.m_models[model].m_sphere.c, insts[count - 1].m_sphere.c);
-            insts[count - 1].m_sphere.r = scale * flora.m_models[model].m_sphere.r;
+            insts[count].m_world.Transform(hpr, scale, pos);
+            insts[count].m_world.Mul(flora.m_models[model].m_sphere.c, insts[count].m_sphere.c);
+            insts[count].m_sphere.r = scale * flora.m_models[model].m_sphere.r;
+            count++;
         }
     }
 
@@ -429,10 +426,12 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
 
     for (k = 0; k < count; k++)
     {
-        sceVu0CopyMatrix(s->m_insts[k].m_world, insts[k].m_world);
-        s->m_insts[k].m_sphere = insts[k].m_sphere;
-        s->m_insts[k].m_prim = insts[k].m_prim;
-        s->m_insts[k].m_pal = insts[k].m_pal;
+        VIRadialFloraInst &dst = s->m_insts[k];
+        VIRadialFloraInst &src = insts[k];
+        sceVu0CopyMatrix(dst.m_world, src.m_world);
+        dst.m_sphere = src.m_sphere;
+        dst.m_prim = src.m_prim;
+        dst.m_pal = src.m_pal;
     }
 
     srand((int)m_scene->GetTime());

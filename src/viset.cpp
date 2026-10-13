@@ -304,19 +304,21 @@ template <class T> int VISet<T>::Insert(const T &v)
 
     if (m_root != 0)
     {
+        Node *nodes = m_nodes;
+        T key = v;
         p = m_root;
         for (;;)
         {
             int c;
-            if (v < NODE(p)->m_data)
+            if (key < nodes[p].m_data)
             {
                 side = 1;
-                c = NODE(p)->m_left;
+                c = nodes[p].m_left;
             }
-            else if (NODE(p)->m_data < v)
+            else if (nodes[p].m_data < key)
             {
                 side = 0;
-                c = NODE(p)->m_right;
+                c = nodes[p].m_right;
             }
             else
             {
@@ -336,9 +338,7 @@ template <class T> int VISet<T>::Insert(const T &v)
 
     // The address is null-tested before it is written through, as in
     // VIPool::Add -- but the tested pointer here is node+16, not the node.
-    T *d = &NODE(n)->m_data;
-    if (d)
-        new (d) T(v);
+    new (&NODE(n)->m_data) T(v);
 
     // The parent is a LOCAL here and is NOT one in EraseFixup: with it, the
     // target keeps `q * sizeof(Node)` in one register across the whole body
@@ -477,22 +477,25 @@ template <class T> int VISet<T>::Erase(int z)
 {
     int n = Next(z);
 
-    // Not a conjunction: written `if (left && right) y = n; else y = z;` the
-    // whole choice if-converts to one `movz`, where the target BRANCHES and
-    // fills both delay slots with the two assignments.
-    // CLRS's `y = (left == nil || right == nil) ? z : successor(z)`, and the
-    // target BRANCHES where every conjunction and every two-armed spelling
-    // if-converts to one `movz`/`movn`.  Left open at 34 words.
+    // CLRS's `y = (left == nil || right == nil) ? z : successor(z)`, spelled
+    // as the DISJUNCTION with `y = z` in the then-arm.  `||` expands to
+    // "if (left == 0) goto Lthen; if (right != 0) goto Lelse; Lthen: y = z",
+    // and that label between the second jump and `y = z` is what keeps
+    // jump.c from if-converting the choice: every conjunction, the else-if
+    // chain and every `y = z` default all fold to `movz`/`movn`.
     int y;
-    if (NODE(z)->m_left == 0)
+    if (NODE(z)->m_left == 0 || NODE(z)->m_right == 0)
         y = z;
-    else if (NODE(z)->m_right != 0)
-        y = n;
     else
-        y = z;
+        y = n;
 
-    int x = NODE(y)->m_left;
-    if (x == 0)
+    // CLRS again, both arms written out: `x = left; if (x == 0) x = right;`
+    // lets cse reuse the 20 the NODE(y) index was scaled by, where the target
+    // loads a fresh one for NODE(x).
+    int x;
+    if (NODE(y)->m_left != 0)
+        x = NODE(y)->m_left;
+    else
         x = NODE(y)->m_right;
 
     NODE(x)->m_parent = NODE(y)->m_parent;

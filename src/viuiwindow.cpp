@@ -27,13 +27,14 @@ int VIUIWindow::Init(VIUI *ui, const VIVect2I &pos, const VIVect2I &center,
     int h = ui->m_font.GetHeight(ui->m_raster, ui->m_dict);
     m_pos = pos;
     m_center = center;
+    // The height is computed into a local BEFORE the stores; computed in
+    // place after them, `w` and `x` trade s4/s5 (5 words).
+    int sy = rows * (h - 4) + 36;
     m_size.x = w;
     m_rows = rows;
     m_x178 = x;
     m_titleH = 18;
-    m_size.y = rows * (h - 4) + 36;
-    m_titleH = 18;
-    m_size.y = rows * (h - 4) + 36;
+    m_size.y = sy;
     SetUiColors();
     m_inited = 1;
     return 0;
@@ -300,8 +301,8 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
         DrawFrame(x, row, w, rows, f);
 
     const unsigned short *line = s;
-    int lastw = 0;
     int skip = (f == 0xFFFFFFFF) ? 0 : f >> 24;
+    int lastw = 0;
     int i = 0;
     int space = 0;
     int fit = 0;
@@ -332,15 +333,7 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
             TEXTBOX_COPY(n)
             int pw = lastw;
             lastw = TextWidth(buf);
-            if (lastw < size.x - 8)
-            {
-                if (pw != lastw)
-                    fit = i;
-                if (s[i] == ' ')
-                    space = i;
-                i++;
-            }
-            else
+            if (lastw >= size.x - 8)
             {
                 if (space)
                 {
@@ -366,13 +359,21 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
                 space = 0;
                 fit = 0;
             }
+            else
+            {
+                if (pw != lastw)
+                    fit = i;
+                if (s[i] == ' ')
+                    space = i;
+                i++;
+            }
         }
     }
 
-    n = &s[i] - line;
-    if (n)
+    int m = &s[i] - line;
+    if (m)
     {
-        TEXTBOX_COPY(n)
+        TEXTBOX_COPY(m)
         TEXTBOX_DRAW()
     }
     return drawn;
@@ -479,12 +480,11 @@ void VIUIWindow::DrawHScroll(int x, int row, int w, float t, unsigned int flags)
 void VIUIWindow::DrawProgress(int x, int row, int w, float t)
 {
     int h = m_ui->m_font.GetHeight(m_ui->m_raster, m_ui->m_dict);
+    int sy = h - 4;
     VIVect2I pos(TopLeft().x + x, RowCenter(row).y - 4);
     VIVect2I size(w, h - 8);
     VIVect2I at(pos.x - 4, pos.y - 3);
-    VIVect2I sz;
-    sz.y = h - 4;
-    sz.x = w + 8;
+    VIVect2I sz(w + 8, sy);
     VIUIFrameParam fp;
 
     memset(&fp, 0, sizeof(fp));

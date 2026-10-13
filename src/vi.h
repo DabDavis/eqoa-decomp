@@ -136,6 +136,13 @@ public:
     // the stack and block-copies it out (ldl/ldr/sdl/sdr, 10 extra words).
     VIQuat(float _x, float _y, float _z, float _w) { x = _x; y = _y; z = _z; w = _w; }
 
+    // A user COPY constructor, earned by VIHSpriteNode's synthesized copy
+    // constructor: each of its three frames' rotations is copied as four
+    // floats off one pointer (lwc1/swc1), where the implicit one is a 16-byte
+    // ldl/ldr block move.  Assignment stays implicit (a block move), which is
+    // what VIHSpriteAnim::SetNodeFrame's `d->m_rot = f.m_rot` still does.
+    VIQuat(const VIQuat &q) { x = q.x; y = q.y; z = q.z; w = q.w; }
+
     void ConvertTo(VIVect3 &a) const;
     void ConvertFrom(const VIVect3 &v);
     void RotateX(float a);
@@ -1395,6 +1402,8 @@ public:
     int  GetLayerTexture(int i);
     int  SetLayerColor(int i, const VIColor32 &c);
     VIColor32 GetLayerColor(int i) const;
+    // Phase 61: SetNumLayers/CopyLayer (declared below) are also called off
+    // VIAtmosphere::ProcessTransitions' sky cross-fade.
     int  SetLayerModulate(int i, int on);
     int  SetLayerWrapMode(int i, VIMaterialWrapMode m);
     int  GetLayerWrapMode(int i);
@@ -2582,11 +2591,16 @@ template <class K, class V>
 class VIMultiMap
 {
 public:
+    // m_parent and m_left are each an ANONYMOUS UNION: gcc 2.95's synthesized
+    // copy ctor initialises anonymous-union members AFTER every named member,
+    // and Allocate<VIEmitterEntry> (the one non-trivial Node) copies +4 and +8
+    // after V's VIMatrix44 copy-ctor call.  They are the two words
+    // LinkFreeChain overlays with the free link (next, and the -2 mark).
     struct Node
     {
         int m_color;
-        int m_parent;
-        int m_left;
+        union { int m_parent; };
+        union { int m_left; };
         int m_right;
         K   m_key;
         V   m_value;
@@ -2887,22 +2901,31 @@ public:
         m_f54 = 0;
     }
 
-    int m_pad10[4];   // +0x10
-    int m_f20;        // +0x20
-    int m_f24;
-    int m_f28;
-    int m_f2C;
-    int m_f30;
-    int m_f34;
-    int m_f38;
-    int m_f3C;
-    int m_f40;
-    int m_f44;
-    int m_f48;
-    int m_f4C;
-    int m_f50;
-    int m_f54;        // +0x54
-    int m_pad58[4];   // +0x58, to 104
+    // Phase 61: the fields Render steps.  m_f20 is the position and m_f2C
+    // the velocity (VIVect3s in all but name -- the constructor's fourteen
+    // `sw zero`s are what keep them plain floats).
+    float m_age;      // +0x10  0 -> 1 over the life
+    float m_ageRate;  // +0x14  1 / lifespan
+    float m_friction; // +0x18
+    float m_gradRepeat; // +0x1C
+    float m_f20;      // +0x20  position
+    float m_f24;
+    float m_f28;
+    float m_f2C;      // +0x2C  velocity
+    float m_f30;
+    float m_f34;
+    float m_f38;
+    float m_f3C;
+    float m_f40;
+    float m_f44;
+    float m_f48;
+    float m_f4C;
+    float m_f50;
+    float m_f54;      // +0x54
+    float m_size;     // +0x58
+    float m_growth;   // +0x5C
+    float m_gravity;  // +0x60
+    int   m_frame;    // +0x64
 };
 
 class VIParticleSystem;
@@ -2942,7 +2965,7 @@ public:
     VIBBox StaticBounds() const;
     VIBBox DynamicBounds() const;
     VIBBox Bounds() const;
-    int   RecomputeStaticBBox();
+    void  RecomputeStaticBBox();
 
     VIVect3               m_location;     // +0x10
     VIVect3               m_lastLocation; // +0x1C
@@ -3271,6 +3294,11 @@ public:
     int  FontLoaded(VIDictionary *d);
     void SetTextColor(const VIColor32F &c);
     void SetTextColor(const VIColor32 &c);
+    // Phase 61.  The six VIUI::DrawStringEx / DrawCenteredStringEx overloads
+    // save the colour through an inline getter returning BY VALUE: copied out
+    // of the member directly, cse merges the block copy's `sp+16` with the
+    // final SetTextColor's and keeps it in a callee-saved register (14 words).
+    VIColor32F GetTextColor() const { return m_color; }
     static unsigned long SjisToJis(unsigned long c);
 };
 
@@ -4272,14 +4300,20 @@ class VIBoid
 public:
     int        m_sprite;    // +0x00
     VIVect3    m_hpr;       // +0x04
-    int        m_p10;       // +0x10
+    float      m_p10;       // +0x10  turn rate, damped by 0.94 a step
     VIVect3    m_dir;       // +0x14
     VIVect3    m_pos;       // +0x20
-    char       m_pad[0x60 - 0x2C];
+    // Phase 61: the four steering terms ProcessFlock accumulates per boid,
+    // and the neighbour count that averages them.
+    VIVect3    m_sep;       // +0x2C
+    VIVect3    m_align;     // +0x38
+    VIVect3    m_coh;       // +0x44
+    VIVect3    m_goal;      // +0x50
+    int        m_count;     // +0x5C
     VIMatrix44 m_xform;     // +0x60
-    int        m_pA0;       // +0xA0  -1
-    float      m_pA4;       // +0xA4
-    float      m_pA8;       // +0xA8
+    int        m_pA0;       // +0xA0  -1; the locomotion last set, 0 or 1
+    float      m_pA4;       // +0xA4  turn gain
+    float      m_pA8;       // +0xA8  climb gain
     char       m_tail[0xB0 - 0xAC];
 
     void Init();
@@ -4308,10 +4342,10 @@ public:
     int                m_material;     // +0x4C  -1
     int                m_numParticles; // +0x50
     void              *m_particles;    // +0x54
-    int                m_p58;          // +0x58
-    int                m_p5C;          // +0x5C
-    VIVect3            m_wind;         // +0x60
-    int                m_p6C;          // +0x6C
+    float              m_dayNight;     // +0x58  1 inside the hour window, 0 outside
+    float              m_fade;         // +0x5C  1 near, 0 past m_p30
+    VIVect3            m_wind;         // +0x60  a flock's waypoint
+    float              m_p6C;          // +0x6C  seconds to the next waypoint
 
     static VIScene *mScene;
 
@@ -4348,6 +4382,13 @@ public:
     int  ProcessGroundFog(float dt);
     int  ProcessDustStorm(float dt);
     int  ProcessFlock(float dt);
+    int  RenderFallingLeaves(VICamera &cam, VIMatrix44 &m);
+    int  RenderLightShafts(VICamera &cam, VIMatrix44 &m);
+    int  RenderGroundFog(VICamera &cam, VIMatrix44 &m);
+    int  RenderDustStorm(VICamera &cam, VIMatrix44 &m);
+    int  RenderFlock(VICamera &cam, VIMatrix44 &m);
+    VIMatrix44 PrepareBillboardTransform(const VIMatrix44 &a, const VIMatrix44 &b,
+                                         VIMatrix44 *out);
 
     int AllocParticles();
     void FreeParticles();
@@ -5525,6 +5566,12 @@ public:
     // floats -- the members' own VIVect3() first, then this body inlined.
     VICapsule()
     { m_base.Zero(); m_dir.Zero(); m_length = 0.0f; m_radius = 0.0f; }
+    // A user copy constructor that ASSIGNS in its body (phase 61): the members'
+    // VIVect3() zeroing runs first and the floats are never zeroed, which is
+    // the only shape that leaves Collide(VICollSphere &, VICapsule &)'s `ex`
+    // with exactly two surviving `sw zero` and none for m_length/m_radius.
+    VICapsule(const VICapsule &c)
+    { m_base = c.m_base; m_dir = c.m_dir; m_length = c.m_length; m_radius = c.m_radius; }
 
     int PointInSolid(const VIVect3 &p);
 
@@ -8451,10 +8498,17 @@ public:
         int     m_frame;      // +0x20
     };
 
+    // Phase 61: Init's array-new zeroes six words at +0x10, so the first 24
+    // of the 48 bytes are two VIVect3s.
     class VIFireball : public VILNode
     {
     public:
-        char              m_p10[48];   // +0x10
+        VIVect3           m_p10;       // +0x10  where it falls from, 40 up
+        VIVect3           m_p1C;       // +0x1C  where it lands
+        float             m_p28;       // +0x28  0 -> 1 down the fall
+        float             m_p2C;       // +0x2C  fall speed
+        int               m_p30;       // +0x30  1 once it has landed
+        float             m_p34[3];    // +0x34
         VIParticleEmitter m_e0;        // +0x40
         VIParticleEmitter m_e1;        // +0x420
     };
@@ -8481,8 +8535,8 @@ public:
     void  SetLavastormIntensity(float f);
     float ParticleScale() const;
     void  SetParticleScale(float f);
-    int   ProcessWeather(VIScene &sc, VICamera &cam);
-    int   ProcessTransitions(VIScene &sc, float a, float b);
+    void  ProcessWeather(VIScene &sc, VICamera &cam);
+    void  ProcessTransitions(VIScene &sc, float hour, float vol);
     void  ResetLightning();
     void  RecomputeLightningPatches();
     int   GetLightning(float *out);
@@ -8491,7 +8545,7 @@ public:
     void  AddSplash(VIVect3 &p);
     void  ClearAllSplashes();
     void  ClearAllFireballs();
-    int   ProcessLavastorm(VIScene &sc, VICamera &cam);
+    void  ProcessLavastorm(VIScene &sc, VICamera &cam);
 
     VIParticleSystem *m_p00;        // +0x0000  the scene's own
     float       m_range;            // +0x0004  200.0

@@ -74,6 +74,16 @@ inline int uns16_le(uns16 a, uns16 b)
     return (int16)(a - b) <= 0;
 }
 
+inline int uns16_ge(uns16 a, uns16 b)
+{
+    return (int16)(a - b) >= 0;
+}
+
+inline int uns16_diff(uns16 a, uns16 b)
+{
+    return (int16)(a - b);
+}
+
 // The idle period a software pair waits before it resets.
 #define CONNECTION_IDLE_RESET 120000
 
@@ -175,16 +185,6 @@ int connection_get_vnode_offset(int iIndex)
 {
     return iIndex * 16 + 4;
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1034,10 +1034,6 @@ int connection_send_best_effort(connection_t *pConnection, const uns8 *pData, in
 
 
 
-
-
-
-
 // A message list starts empty and unsorted.
 inline void message_list_init(message_list_t *pList)
 {
@@ -1048,6 +1044,10 @@ inline void message_list_init(message_list_t *pList)
 // own sequence number, so a five-megabyte send is four thousand messages.  All
 // of them are built into a local list first and only moved onto the send queue
 // when the whole set succeeded -- a half-sent message is worse than none.
+inline void message_list_add_tail(message_list_t *pList, message_t *pMessage)
+{
+    vlist_add_tail(&pList->list, pMessage);
+}
 int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int iSize,
                                int iType)
 {
@@ -1056,7 +1056,7 @@ int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int
     int iResult;
     uns32 uiOffset;
     uns32 uiChunk;
-    int ucType;
+    uns8 ucType;
     message_list_init(&messages);
     pConnection->m_uiTimeSend = endpoint_get_time(pConnection->m_pEndpoint);
     for (uiOffset = 0; uiOffset == 0 || uiOffset < (uns32)iSize; uiOffset += 1300)
@@ -1079,7 +1079,7 @@ int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int
                                  endpoint_get_time(pConnection->m_pEndpoint));
         if (iResult != 0)
             goto out;
-        vlist_add_tail(&messages.list, pMessage);
+        message_list_add_tail(&messages, pMessage);
     }
     vlist_get_size(&messages.list);
     while (vlist_peek_head(&messages.list))
@@ -3158,32 +3158,6 @@ void connection_log_parse_failure(connection_t *pConnection, const char *pFormat
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Parse one segment's body.  Nothing is applied here: the acknowledgements go
 // into the body and every message is built and queued on `pBody->m_messages`,
 // and only `connection_record_segment` touches the connection.  Every check
@@ -3204,7 +3178,6 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
     message_t *pMessage;
     message_t *pCopy;
     int iResult;
-
     if (pConnection)
         pConnection->m_uiCstat[5]++;
     iResult = 0x80000000;
@@ -3228,7 +3201,8 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
         {
             iResult = -1;
             connection_log_parse_failure(pConnection, "connection has NOT received an instance the remote instance MUST be asking for an instance ack (routers w/o UDP state?)\n");
-            goto corrupt;
+            pConnection->m_uiCstat[2]++;
+            goto out;
         }
     }
     buffer_read_uns8(pBuffer, &pBody->m_ucFlags);
@@ -3247,12 +3221,12 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
     if (pConnection)
     {
         int iIncrement = (int16)(pBody->m_usArrivalNumber - pConnection->m_usArrivalNumber);
-
         if (iIncrement <= 0)
         {
             int iBack = ~iIncrement;
-
-            if (iIncrement == 0 || (pConnection->m_uiArrivalHistory & ((uns64)1 << iBack)))
+            uns64 uiBit = 1;
+            uiBit <<= iBack;
+            if (iIncrement == 0 || (uiBit & pConnection->m_uiArrivalHistory))
             {
                 iResult = -1;
                 goto out;
@@ -3267,9 +3241,10 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
         }
         else if (iIncrement > 4096)
         {
-            connection_log_parse_failure(pConnection, "increment (%u) > CONNECTION_FLUSH_INCREMENT_MAX\n");
+            connection_log_parse_failure(pConnection, "increment (%u) > CONNECTION_FLUSH_INCREMENT_MAX\n", iIncrement);
             iResult = -1;
-            goto corrupt;
+            pConnection->m_uiCstat[2]++;
+            goto out;
         }
         else if (iIncrement > 1 && connection_get_leader(pConnection))
         {
@@ -3283,12 +3258,13 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
         if (pBody->m_ucFlags & 4)
             buffer_read_packed_uns64(pBuffer, &pBody->m_uiFlushMask);
         if (pConnection && pBody->m_iAcks
-            && (int16)(pBody->m_usFlush - pConnection->m_usFlush) >= 0)
+            && uns16_ge(pBody->m_usFlush, pConnection->m_usFlush))
         {
             iResult = -1;
             connection_log_parse_failure(pConnection, "segment is acking a segment that hasn't been sent yet segment_body->flush_ack (%u) >= connection->flush_tx (%u)\n",
                                          pBody->m_usFlush, pConnection->m_usFlush);
-            goto corrupt;
+            pConnection->m_uiCstat[2]++;
+            goto out;
         }
     }
     pBody->m_iGuaranteedAck = 0;
@@ -3302,42 +3278,43 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
         {
             int iAcked;
             uns64 uiMask;
-
-            if ((int16)(pBody->m_usSeqnum - pConnection->m_usTxSeqnum) >= 0)
+            if (uns16_ge(pBody->m_usSeqnum, pConnection->m_usTxSeqnum))
             {
                 iResult = -1;
                 connection_log_parse_failure(pConnection, "segment_body->guaranteed_ack (%u) >= connection->guaranteed_tx (%u)\n",
                                              pBody->m_usSeqnum, pConnection->m_usTxSeqnum);
-                goto corrupt;
+                pConnection->m_uiCstat[2]++;
+                goto out;
             }
-            if ((int16)(pBody->m_usSeqnum - pConnection->m_usTxAck) < 0)
+            if (uns16_lt(pBody->m_usSeqnum, pConnection->m_usTxAck))
                 pBody->m_iGuaranteedAck = 0;
-            iAcked = (int16)(pBody->m_usSeqnum - pConnection->m_usTxAck);
+            iAcked = uns16_diff(pBody->m_usSeqnum, pConnection->m_usTxAck);
             if (iAcked > 4096)
             {
                 connection_log_parse_failure(pConnection, "messages_acked (%u - %u = %u) > CONNECTION_MAX_OUTSTANDING\n",
                                              pBody->m_usSeqnum, pConnection->m_usTxAck, iAcked);
                 iResult = -1;
-                goto corrupt;
+                pConnection->m_uiCstat[2]++;
+                goto out;
             }
-            if (iAcked < 64)
-                uiMask = pConnection->m_uiTxMask >> iAcked;
-            else
+            if (iAcked >= 64)
                 uiMask = 0;
+            else
+                uiMask = pConnection->m_uiTxMask >> iAcked;
             if ((pBody->m_uiMask ^ uiMask) & uiMask)
                 pBody->m_iGuaranteedAck = 0;
             if (pBody->m_iArrival && !pBody->m_iGuaranteedAck)
             {
                 iResult = -1;
                 connection_log_parse_failure(pConnection, "segment_body->guaranteed_ack_mask: some of the previously acked packets have become \"un-acked\"\n");
-                goto corrupt;
+                pConnection->m_uiCstat[2]++;
+                goto out;
             }
         }
     }
     if (pBody->m_ucFlags & 0x10)
     {
         int i;
-
         for (i = 0; ; i++)
         {
             buffer_read_uns8(pBuffer, &pBody->m_acks[i].m_ucChannel);
@@ -3346,17 +3323,22 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
             if (pBody->m_acks[i].m_ucChannel > CONNECTION_STATE_CHANNEL_COUNT)
             {
                 connection_log_parse_failure(pConnection, "segment_body->state_ack[i].channel > STATE_CHANNEL_COUNT\n");
-                goto ack_fail;
+                if (pConnection)
+                    pConnection->m_uiCstat[2]++;
+                iResult = -1;
+                goto out;
             }
             if (i > 0 && pBody->m_acks[i - 1].m_ucChannel >= pBody->m_acks[i].m_ucChannel)
             {
                 connection_log_parse_failure(pConnection, "state acks must come in increasing order\n");
-                goto ack_fail;
+                if (pConnection)
+                    pConnection->m_uiCstat[2]++;
+                iResult = -1;
+                goto out;
             }
             if (i == CONNECTION_STATE_CHANNEL_COUNT)
             {
                 connection_log_parse_failure(pConnection, "this should've been the terminator\n");
-ack_fail:
                 if (pConnection)
                     pConnection->m_uiCstat[2]++;
                 iResult = -1;
@@ -3366,31 +3348,34 @@ ack_fail:
         }
         if (pConnection && pBody->m_iAcks)
         {
-            state_ack_t *pAck;
-
+            int j;
             if (!pConnection->m_pChannels)
             {
                 iResult = -1;
                 connection_log_parse_failure(pConnection, "there are no state channels on this connection, how could we be getting state acks\n");
-                goto corrupt;
+                pConnection->m_uiCstat[2]++;
+                goto out;
             }
-            for (pAck = pBody->m_acks; pAck->m_ucChannel != CONNECTION_STATE_CHANNEL_COUNT; pAck++)
-            {
-                state_channel_t *pChannel = &pConnection->m_pChannels[pAck->m_ucChannel];
+            uns8 ucChannel;
 
-                if ((int16)(pAck->m_usSeqnum - pChannel->m_usTx) >= 0)
+            for (j = 0; (ucChannel = pBody->m_acks[j].m_ucChannel) != CONNECTION_STATE_CHANNEL_COUNT; j++)
+            {
+                state_channel_t *pChannel = &pConnection->m_pChannels[ucChannel];
+                if (uns16_ge(pBody->m_acks[j].m_usSeqnum, pChannel->m_usTx))
                 {
                     iResult = -1;
                     connection_log_parse_failure(pConnection, "can't ack more than we've sent, yo: seqnum (%u) >= connection->state_channel[channel].tx (%u)\n",
-                                                 pAck->m_usSeqnum, pChannel->m_usTx);
-                    goto corrupt;
+                                                 pBody->m_acks[j].m_usSeqnum, pChannel->m_usTx);
+                    pConnection->m_uiCstat[2]++;
+                    goto out;
                 }
-                if (pBody->m_iArrival && (int16)(pAck->m_usSeqnum - pChannel->m_usTxAck) < 0)
+                if (pBody->m_iArrival && uns16_lt(pBody->m_acks[j].m_usSeqnum, pChannel->m_usTxAck))
                 {
                     iResult = -1;
                     connection_log_parse_failure(pConnection, "can't ack less than we've already acked: seqnum (%u) < connection->state_channel[channel].ack (%u)\n",
-                                                 pAck->m_usSeqnum, pChannel->m_usTxAck);
-                    goto corrupt;
+                                                 pBody->m_acks[j].m_usSeqnum, pChannel->m_usTxAck);
+                    pConnection->m_uiCstat[2]++;
+                    goto out;
                 }
             }
         }
@@ -3405,7 +3390,8 @@ ack_fail:
         if (iResult)
         {
             iResult = -1;
-            goto no_memory;
+            pConnection->m_uiCstat[1]++;
+            goto out;
         }
         vlist_add_tail(&pBody->m_messages.list, pReset);
     }
@@ -3425,10 +3411,12 @@ ack_fail:
             pBody->m_usConnFlags |= 3;
             if (pConnection)
             {
-                if ((int16)(usSeqnum - (uns16)(pConnection->m_usRxSeqnum + 4096)) > 0)
+                if (uns16_gt(usSeqnum, pConnection->m_usRxSeqnum + 4096))
                 {
-                    connection_log_parse_failure(pConnection, "seqnum (%u) > (uns16)( connection->guaranteed_rx + CONNECTION_MAX_OUTSTANDING ) (%u)\n");
-                    goto corrupt;
+                    connection_log_parse_failure(pConnection, "seqnum (%u) > (uns16)( connection->guaranteed_rx + CONNECTION_MAX_OUTSTANDING ) (%u)\n",
+                                                 usSeqnum, (uns16)(pConnection->m_usRxSeqnum + 4096));
+                    pConnection->m_uiCstat[2]++;
+                    goto out;
                 }
                 if (connection_has_reliable(pConnection, usSeqnum))
                 {
@@ -3440,12 +3428,19 @@ ack_fail:
             if (message_list_contains_type_seqnum(&pBody->m_messages, ucType, usSeqnum))
             {
                 connection_log_parse_failure(pConnection, "this message appears twice in the same segment (%u)\n", usSeqnum);
-                goto corrupt;
+                if (pConnection)
+                    pConnection->m_uiCstat[2]++;
+                goto out;
             }
             if (message_create(&pMessage, pConnection ? pConnection->m_pEndpoint : 0, pConnection,
                                pHeader->m_uiSrc, pHeader->m_uiDst, 0, usSize, ucType, usSeqnum,
                                pConnection ? endpoint_get_time(pConnection->m_pEndpoint) : 0))
-                goto create_failed;
+            {
+                connection_log_parse_failure(pConnection, "message_create failed\n");
+                if (pConnection)
+                    pConnection->m_uiCstat[1]++;
+                goto out;
+            }
             if (pConnection)
                 pConnection->m_uiCstat[8]++;
             buffer_readm_uns8(pBuffer, (uns8 *)message_get_data(pMessage), usSize);
@@ -3460,9 +3455,10 @@ ack_fail:
                                    pHeader->m_uiSrc, pHeader->m_uiDst, 0, usSize, ucType, 0xffff,
                                    pConnection ? endpoint_get_time(pConnection->m_pEndpoint) : 0))
                 {
-create_failed:
                     connection_log_parse_failure(pConnection, "message_create failed\n");
-                    goto no_memory;
+                    if (pConnection)
+                        pConnection->m_uiCstat[1]++;
+                    goto out;
                 }
                 buffer_readm_uns8(pBuffer, (uns8 *)message_get_data(pMessage), usSize);
                 vlist_add_tail(&pBody->m_messages.list, pMessage);
@@ -3472,21 +3468,24 @@ create_failed:
         }
         else if (ucType < CONNECTION_STATE_CHANNEL_COUNT)
         {
-            state_channel_t *pChannel = 0;
-
+            state_channel_t *pChannel;
             pBody->m_usConnFlags |= 5;
             if (ucType >= CONNECTION_STATE_CHANNEL_COUNT)
             {
                 connection_log_parse_failure(pConnection, "type (%u) >= STATE_CHANNEL_COUNT (%u)\n",
                                              ucType, CONNECTION_STATE_CHANNEL_COUNT);
-                goto corrupt;
+                if (pConnection)
+                    pConnection->m_uiCstat[2]++;
+                goto out;
             }
+            pChannel = 0;
             if (pConnection)
             {
                 if (connection_allocate_state_channels(pConnection))
                 {
                     connection_log_parse_failure(pConnection, "connection_allocate_state_channels failed\n");
-                    goto corrupt;
+                    pConnection->m_uiCstat[2]++;
+                    goto out;
                 }
                 pChannel = &pConnection->m_pChannels[ucType];
             }
@@ -3496,22 +3495,23 @@ create_failed:
             {
                 connection_log_parse_failure(pConnection, "refnum_offset (%u) > REFNUM_OFFSET_MAX (%u)\n",
                                              ucRefnumOffset, 32);
-                goto corrupt;
+                if (pConnection)
+                    pConnection->m_uiCstat[2]++;
+                goto out;
             }
             if (!pConnection)
             {
                 uns8 data[1300];
-
                 VASSERT(usSize <= DRDP_SEND_SIZE_MAX_STATE);   // 3505
                 run_length_decode(pBuffer, data, usSize);
                 pBody->m_ucChannels[pBody->m_iChannelCount++] = ucType;
                 continue;
             }
-            if ((int16)(usSeqnum - pChannel->m_usRx) <= 0)
+            if (uns16_le(usSeqnum, pChannel->m_usRx))
             {
                 uns8 data[1300];
-
                 pConnection->m_uiCstat[9]++;
+
 
 
                 VASSERT(usSize <= DRDP_SEND_SIZE_MAX_STATE);   // 3517
@@ -3520,13 +3520,17 @@ create_failed:
                 continue;
             }
             if ((int16)(usSeqnum - pChannel->m_usRx) > 4096)
-                goto corrupt;
+            {
+                pConnection->m_uiCstat[2]++;
+                goto out;
+            }
             if (message_create(&pMessage, pConnection->m_pEndpoint, pConnection, pHeader->m_uiSrc,
                                pHeader->m_uiDst, 0, usSize, ucType, usSeqnum,
                                endpoint_get_time(pConnection->m_pEndpoint)))
             {
                 connection_log_parse_failure(pConnection, "message_create failed\n");
-                goto no_memory;
+                pConnection->m_uiCstat[1]++;
+                goto out;
             }
             message_set_refnum_offset(pMessage, ucRefnumOffset);
             vlist_add_tail(&pBody->m_messages.list, pMessage);
@@ -3535,13 +3539,13 @@ create_failed:
             {
                 message_t *pReference;
                 uns16 usRefnum;
-
                 usRefnum = usSeqnum - ucRefnumOffset;
                 pReference = (message_t *)vlist_lookup(&pChannel->m_rxList.list, &usRefnum);
                 if (!pReference)
                 {
                     connection_log_parse_failure(pConnection, "refnum does not exist\n");
-                    goto corrupt;
+                    pConnection->m_uiCstat[2]++;
+                    goto out;
                 }
                 xor_in_place((uns8 *)message_get_data(pMessage),
                              (const uns8 *)message_get_data(pReference),
@@ -3550,7 +3554,8 @@ create_failed:
             if (message_duplicate(&pCopy, pMessage))
             {
                 connection_log_parse_failure(pConnection, "message_duplicate failed\n");
-                goto no_memory;
+                pConnection->m_uiCstat[1]++;
+                goto out;
             }
             pConnection->m_uiCstat[10]++;
             vlist_add_tail(&pBody->m_messages.list, pCopy);
@@ -3564,14 +3569,6 @@ create_failed:
     if (pConnection && !pBody->m_iArrival)
         pConnection->m_uiCstat[4]++;
     iResult = 0;
-    goto out;
-no_memory:
-    if (pConnection)
-        pConnection->m_uiCstat[1]++;
-    goto out;
-corrupt:
-    if (pConnection)
-        pConnection->m_uiCstat[2]++;
 out:
     return iResult;
 }
@@ -3675,6 +3672,9 @@ uns32 connection_get_instance_local(connection_t *pConnection)
 {
     return pConnection->m_uiInstanceLocal;
 }
+
+
+
 
 
 

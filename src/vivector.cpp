@@ -8,10 +8,12 @@
 // weak, so a named symbol's derived span swallows an unnamed twin.
 #include "vi.h"
 
-// Placement new, as in viarray.cpp: the allocation is a RAW char block and the
-// elements are constructed into it one at a time, with the null test written
-// out.
-inline void *operator new(unsigned int, void *p)
+// Placement new, DECLARED `throw()` as in vipool.cpp: the allocation is a RAW
+// char block and the elements are constructed into it one at a time, and the
+// null test on each element is gcc 2.95's own -- it null-checks the result of
+// a nothrow operator new.  Written out by hand as `if (d) *d = ...` instead,
+// Allocate's two induction pointers come out in the other order.
+inline void *operator new(unsigned int, void *p) throw()
 {
     return p;
 }
@@ -86,11 +88,7 @@ template <class T> int VIVector<T>::Allocate()
         if (p == 0)
             return -1;
         for (int i = 0; i < m_size; i++)
-        {
-            T *d = (T *)(i * sizeof(T) + (unsigned int)p);
-            if (d)
-                new (d) T(m_data[i]);
-        }
+            new (&p[i]) T(m_data[i]);
         if (DestroyPool() < 0)
             return -1;
         delete [] (char *)m_data;
@@ -119,8 +117,7 @@ template <class T> int VIVector<T>::Init(const VIVector<T> &a)
     for (int i = 0; i < a.m_size; i++)
     {
         T *p = (T *)(i * sizeof(T) + (unsigned int)m_data);
-        if (p)
-            new (p) T(a.m_data[i]);
+        new (p) T(a.m_data[i]);
     }
     m_size = a.m_size;
     return 0;
@@ -141,8 +138,7 @@ template <class T> int VIVector<T>::Add()
             return -1;
     }
     T *p = (T *)(m_size * sizeof(T) + (unsigned int)m_data);
-    if (p)
-        new (p) T();
+    new (p) T();
     int n = m_size;
     m_size = n + 1;
     return n;
@@ -160,8 +156,7 @@ template <class T> int VIVector<T>::Add(const T &v)
             return -1;
     }
     T *p = (T *)(m_size * sizeof(T) + (unsigned int)m_data);
-    if (p)
-        new (p) T(v);
+    new (p) T(v);
     int n = m_size;
     m_size = n + 1;
     return n;

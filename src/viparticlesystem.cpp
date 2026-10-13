@@ -157,3 +157,115 @@ float VIParticleSystem::DeltaTime() const
 {
     return m_deltaTime;
 }
+
+// One frame of every emitter: the frame delta is the clock difference capped
+// at 0.1 s and smoothed over the last eight frames.  Each live particle is
+// handed to the raster as a billboard (coloured off the gradient by its age),
+// then moved, slowed by its friction, pulled by the emitter's attractor and
+// gravity, aged and grown; it is freed once its age reaches 1.  The dynamic
+// bounds are rebuilt along the way.
+int VIParticleSystem::Render(long time, VIRaster &r)
+{
+    int i;
+    float dt = (float)(int)(time - m_time) * 0.001f;
+
+    m_time = time;
+    dt = VIMIN(0.1f, dt);
+
+    float sum = 0.0f;
+
+    for (i = 0; i < 7; i++)
+        sum += m_dtHistory[i];
+    sum = (sum + dt) * 0.125f;
+    for (i = 0; i < 7; i++)
+        m_dtHistory[7 - i] = m_dtHistory[6 - i];
+    m_dtHistory[0] = dt;
+    m_deltaTime = sum;
+
+    VIParticleEmitter *e = (VIParticleEmitter *)m_emitters.m_head;
+
+    while (e->m_next)
+    {
+        if (e->m_particles.m_head->m_next)
+        {
+            r.SetMaterial(e->m_definition->m_material);
+
+            VIVect3      v;
+            VIVect4      c;
+            VIBillboard *bb = 0;
+            int          left;
+
+            int n = e->m_numParticles;
+
+            e->m_dynBounds.min.Set(1.0e7f, 1.0e7f, 1.0e7f);
+            e->m_dynBounds.max.Set(-1.0e7f, -1.0e7f, -1.0e7f);
+
+            VIParticle *p = (VIParticle *)e->m_particles.m_head;
+
+            while (p->m_next)
+            {
+                VIVect3    &vel = (VIVect3 &)p->m_f2C;
+                VIParticle *next = (VIParticle *)p->m_next;
+
+                v = vel;
+                v *= m_deltaTime;
+                vel *= 1.0f - p->m_friction * m_deltaTime;
+                if (bb == 0)
+                    left = r.BeginBillboards(&bb, n);
+
+                VIVect3 &pos = (VIVect3 &)p->m_f20;
+
+                e->m_space.Mul(pos, bb->m_location);
+                bb->m_width = p->m_size;
+                bb->m_height = p->m_size;
+                bb->m_frame = p->m_frame << 2;
+                bb->m_color = e->m_attributes.m_gradient[(int)(p->m_age * 31.0f * p->m_gradRepeat) & 31];
+                pos += v;
+                if (p->m_f20 < e->m_dynBounds.min.x)
+                    e->m_dynBounds.min.x = p->m_f20;
+                if (p->m_f24 < e->m_dynBounds.min.y)
+                    e->m_dynBounds.min.y = p->m_f24;
+                if (p->m_f28 < e->m_dynBounds.min.z)
+                    e->m_dynBounds.min.z = p->m_f28;
+                if (p->m_f20 > e->m_dynBounds.max.x)
+                    e->m_dynBounds.max.x = p->m_f20;
+                if (p->m_f24 > e->m_dynBounds.max.y)
+                    e->m_dynBounds.max.y = p->m_f24;
+                if (p->m_f28 > e->m_dynBounds.max.z)
+                    e->m_dynBounds.max.z = p->m_f28;
+                bb++;
+                n--;
+                if (--left == 0)
+                {
+                    r.EndBillboards();
+                    bb = 0;
+                }
+                if (e->m_attractorOn)
+                {
+                    v = e->m_attractor;
+                    v -= pos;
+                    v.Normalize();
+                    v *= e->m_attractorK * m_deltaTime;
+                    vel += v;
+                }
+                p->m_f30 += p->m_gravity * m_deltaTime;
+                p->m_age += p->m_ageRate * m_deltaTime;
+                p->m_size += p->m_growth * m_deltaTime;
+                if (1.0f <= p->m_age)
+                {
+                    p->Remove();
+                    e->m_numParticles--;
+                    m_freeParticles.AddTail(p);
+                }
+                p = next;
+            }
+            if (bb)
+            {
+                r.EndBillboards();
+                bb = 0;
+            }
+        }
+        e = (VIParticleEmitter *)e->m_next;
+    }
+    return 0;
+}

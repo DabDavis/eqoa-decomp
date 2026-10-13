@@ -14,7 +14,15 @@ static inline VIVect3 operator+(const VIVect3 &a, const VIVect3 &b)
     return VIVect3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
+static inline VIVect3 operator-(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
 extern "C" float sinf(float);
+
+// Two draws, differenced and scaled by 2^-31: a signed unit random.
+#define VIRAND (((float)rand() - (float)rand()) * 4.65661287e-10f)
 extern "C" float cosf(float);
 extern "C" unsigned int VIHashResourceID(const char *);
 extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
@@ -27,6 +35,98 @@ int WeatherFilter::FilterActor(VIScene &sc, int actor)
     return 0;
 }
 
+// Noise baked into the module: Init reads the weather field's start
+// positions out of 200 triples and the star field's angles out of 128 more.
+static unsigned char sNoise[600] =
+{
+    0x47, 0xEB, 0xAE, 0x15, 0xA5, 0xA4, 0xD0, 0xA6, 0x32, 0xAF, 0x34, 0x04,
+    0x62, 0xEB, 0x0F, 0x70, 0xF2, 0x87, 0x3D, 0x1F, 0xA5, 0xCA, 0x45, 0x49,
+    0x6B, 0xBA, 0xA6, 0xF6, 0xEF, 0x89, 0x84, 0xC1, 0x88, 0xE9, 0x17, 0x27,
+    0x49, 0x5C, 0xBE, 0xC6, 0x64, 0x53, 0xA3, 0x15, 0x90, 0xEC, 0x03, 0x90,
+    0xBA, 0x20, 0x85, 0x3C, 0x8B, 0xAA, 0x39, 0x9A, 0xED, 0x7F, 0xD7, 0x23,
+    0xBC, 0x8D, 0x54, 0xC1, 0xBD, 0x94, 0x71, 0x3F, 0xCB, 0x5F, 0x5C, 0x9B,
+    0x96, 0x52, 0xB4, 0x64, 0xF1, 0x16, 0xE6, 0x70, 0x11, 0x43, 0xC7, 0xB6,
+    0x8D, 0x0A, 0x6F, 0x66, 0x98, 0x10, 0x57, 0x3A, 0x17, 0xE6, 0xB4, 0x32,
+    0x36, 0xC0, 0x46, 0xB1, 0xBC, 0x5A, 0x43, 0x27, 0x6E, 0x8B, 0x75, 0x6E,
+    0x12, 0x37, 0xB3, 0x04, 0xE4, 0xF5, 0xDB, 0x6C, 0x9B, 0xB8, 0x48, 0x3B,
+    0x81, 0x54, 0xB7, 0xF6, 0x87, 0x0E, 0x1F, 0x6A, 0x32, 0x91, 0x23, 0x74,
+    0x28, 0xAB, 0xEC, 0x1C, 0x1C, 0xF1, 0x80, 0x94, 0x52, 0x03, 0xEE, 0xB9,
+    0x80, 0xC4, 0x91, 0xFD, 0xE8, 0x06, 0x88, 0xE8, 0xF8, 0x41, 0xA0, 0xE1,
+    0x65, 0xFD, 0x35, 0x54, 0x37, 0x73, 0x34, 0x05, 0x72, 0x6D, 0x60, 0xBF,
+    0xD2, 0x22, 0x2C, 0x15, 0xAE, 0xCA, 0x05, 0x59, 0x98, 0x11, 0xBF, 0x01,
+    0x7E, 0x1F, 0xB2, 0x7E, 0x6F, 0xA8, 0x26, 0x2A, 0xD2, 0x2B, 0xB5, 0x2E,
+    0xB5, 0x86, 0xFE, 0x19, 0x21, 0x43, 0x4F, 0xD4, 0xE3, 0x58, 0x2C, 0xE6,
+    0xF0, 0x25, 0xB0, 0x6D, 0xDE, 0xE9, 0x23, 0x3D, 0xC4, 0x20, 0x32, 0xE4,
+    0x1E, 0x42, 0xB3, 0x2A, 0x66, 0x37, 0x1F, 0xD3, 0x61, 0x16, 0x7B, 0xFF,
+    0xBF, 0x02, 0x1B, 0xF7, 0x01, 0x36, 0xE6, 0x67, 0x5A, 0x92, 0x6C, 0x3C,
+    0x64, 0x55, 0x67, 0xBE, 0x52, 0x1A, 0x34, 0x6B, 0x36, 0x05, 0xFE, 0xD1,
+    0xBC, 0x2E, 0xE5, 0x0B, 0x5F, 0x8E, 0xB8, 0x18, 0x41, 0xFD, 0x1E, 0xC3,
+    0x7E, 0x2B, 0x67, 0xD6, 0x48, 0xAD, 0x9B, 0xE8, 0xB8, 0x94, 0xEE, 0xD6,
+    0x10, 0xA4, 0x98, 0xA8, 0x90, 0x0A, 0x70, 0xF4, 0x7F, 0x41, 0x91, 0xD6,
+    0x67, 0x3E, 0xA6, 0xA7, 0x58, 0x30, 0x3B, 0x6E, 0x7F, 0x42, 0x47, 0xA9,
+    0x39, 0x58, 0xB7, 0x87, 0x9E, 0xB2, 0xAA, 0xFD, 0x42, 0x98, 0xFC, 0xF2,
+    0xFE, 0x4A, 0x4E, 0x1F, 0x62, 0x4F, 0xCA, 0x85, 0xF3, 0x6E, 0x93, 0x2D,
+    0xE0, 0xDE, 0x3D, 0x7E, 0x76, 0x7E, 0xB3, 0x5A, 0x22, 0x83, 0x22, 0x43,
+    0xA5, 0x93, 0xCD, 0x78, 0xD5, 0x3F, 0xCB, 0x45, 0x95, 0x33, 0x6C, 0x97,
+    0x00, 0x18, 0x3A, 0xA6, 0x3C, 0xC4, 0x3A, 0x07, 0x7E, 0x1D, 0xD3, 0xE5,
+    0x5D, 0x5D, 0x0A, 0x9E, 0x4D, 0x36, 0xEC, 0xD6, 0x69, 0x44, 0xD0, 0x30,
+    0xBC, 0x7D, 0xF8, 0x89, 0xEE, 0xBE, 0x52, 0xA7, 0xBE, 0xBF, 0xE6, 0xCC,
+    0x99, 0xC5, 0xC6, 0x85, 0xC3, 0x98, 0xAF, 0x73, 0x8C, 0x4A, 0x66, 0x37,
+    0x9A, 0xC0, 0x40, 0xBE, 0xFC, 0x4E, 0x5C, 0x5C, 0x31, 0x79, 0x30, 0x05,
+    0xA7, 0x77, 0x37, 0xC6, 0xEE, 0x9C, 0x11, 0x77, 0xA6, 0x80, 0x5A, 0x9D,
+    0x55, 0xB4, 0x67, 0x2F, 0x50, 0x9C, 0xA3, 0x4C, 0x7E, 0x9B, 0x77, 0x4D,
+    0x3F, 0xF6, 0x7F, 0xB5, 0x26, 0xC0, 0x0B, 0xDC, 0x2E, 0xE2, 0x64, 0xA7,
+    0x58, 0xEF, 0xDC, 0x1F, 0x87, 0x58, 0x8B, 0x43, 0xFC, 0xE7, 0x7C, 0x90,
+    0x2C, 0x6C, 0x8D, 0x1A, 0xE2, 0xBA, 0x5C, 0x8C, 0xEC, 0x84, 0xD8, 0x0F,
+    0xFF, 0x8F, 0x06, 0x82, 0xAF, 0x33, 0x92, 0x99, 0x3F, 0xAA, 0xCB, 0x5C,
+    0xBA, 0x55, 0xE9, 0xE0, 0x07, 0xD5, 0xB0, 0x72, 0x0B, 0x34, 0xC7, 0x48,
+    0xD1, 0xBE, 0xE0, 0xBA, 0xCB, 0xA9, 0x3C, 0x4C, 0x1F, 0x58, 0xF8, 0xDC,
+    0x2D, 0xDA, 0x97, 0x6A, 0x42, 0x59, 0xC0, 0x43, 0x24, 0x64, 0x6C, 0x81,
+    0xC7, 0xDE, 0xEA, 0xEF, 0x92, 0x83, 0x1A, 0x60, 0x4E, 0x57, 0x54, 0x7D,
+    0xEF, 0xBB, 0x06, 0xB4, 0x94, 0x79, 0xF9, 0x43, 0x20, 0x46, 0x6C, 0xDE,
+    0x59, 0xCD, 0x2D, 0x83, 0x1E, 0x63, 0x38, 0x1F, 0x13, 0xB6, 0xD0, 0x0F,
+    0x75, 0x17, 0xC3, 0x23, 0x5F, 0x63, 0xB4, 0xAE, 0x63, 0x68, 0x8D, 0xBC,
+    0xB5, 0x3F, 0x5D, 0x34, 0x6E, 0xE2, 0x7E, 0xAD, 0x06, 0xD2, 0x34, 0x4B,
+    0xCD, 0x8F, 0x59, 0x15, 0xF4, 0xE4, 0x9C, 0x6B, 0x09, 0x10, 0x4A, 0xDF,
+    0xAD, 0x54, 0x2E, 0xB2, 0xF6, 0x12, 0xEE, 0xF8, 0x6C, 0xAF, 0x2D, 0x88,
+};
+
+static unsigned char sStarNoise[384] =
+{
+    0xF9, 0xF6, 0xA3, 0x48, 0xC7, 0xDB, 0x76, 0x15, 0x91, 0x35, 0x67, 0xE7,
+    0xDA, 0xA9, 0x1A, 0x55, 0x02, 0x62, 0x81, 0x22, 0x71, 0x3E, 0x62, 0x4E,
+    0x58, 0x46, 0x7B, 0xBF, 0x5D, 0x8F, 0x75, 0xA3, 0x9B, 0xC8, 0xF1, 0x51,
+    0x79, 0xDA, 0x39, 0x60, 0xAF, 0x22, 0x78, 0xAB, 0x1B, 0xFE, 0xA8, 0x94,
+    0x2D, 0xFD, 0x18, 0x48, 0xC6, 0xC3, 0x0D, 0x88, 0x5F, 0x19, 0x08, 0x53,
+    0x15, 0x9C, 0x9C, 0x9B, 0x69, 0x41, 0xFA, 0x45, 0xD7, 0xFE, 0x21, 0xF0,
+    0xD6, 0xFE, 0x0C, 0x07, 0x30, 0x41, 0x59, 0x09, 0xA4, 0x0A, 0xDB, 0xF4,
+    0x01, 0x70, 0xC2, 0x16, 0x49, 0x3B, 0x1B, 0x6B, 0x08, 0xD1, 0x2A, 0xC1,
+    0x15, 0x16, 0xD3, 0xEA, 0x74, 0x92, 0xAC, 0x10, 0xDC, 0x98, 0x20, 0xB5,
+    0x12, 0xC3, 0x78, 0xC0, 0x86, 0x67, 0x92, 0x13, 0x9B, 0x71, 0x28, 0x9B,
+    0xED, 0x9D, 0x06, 0x84, 0x32, 0x98, 0x77, 0x5E, 0xFB, 0x19, 0x84, 0xD7,
+    0xED, 0x73, 0xD9, 0x18, 0x40, 0x78, 0x20, 0x73, 0xC1, 0xE1, 0xAA, 0xD3,
+    0x6A, 0x70, 0x71, 0xA6, 0xF9, 0xE6, 0x89, 0xD3, 0xA9, 0xBB, 0xDB, 0xD1,
+    0x1C, 0x40, 0x52, 0x2F, 0xBE, 0x93, 0xEC, 0xB0, 0xD0, 0x15, 0x93, 0xAD,
+    0x7A, 0x0A, 0x28, 0xFA, 0xA1, 0xA3, 0xD6, 0x42, 0x58, 0x6B, 0x06, 0xE6,
+    0xB7, 0x1D, 0x75, 0x69, 0x8E, 0xFB, 0xB9, 0x43, 0x19, 0xD6, 0x37, 0xDC,
+    0x20, 0x34, 0x53, 0xDD, 0xFC, 0x66, 0x4C, 0x30, 0xD3, 0x37, 0xAF, 0xF2,
+    0xF7, 0x90, 0xF1, 0x71, 0x52, 0x78, 0xB7, 0x2D, 0xF8, 0x69, 0x1A, 0xD5,
+    0xE2, 0x05, 0x03, 0xEF, 0xB7, 0xE1, 0x24, 0xE3, 0x41, 0x08, 0xEC, 0xF9,
+    0x4F, 0x82, 0x63, 0xB5, 0x4F, 0x53, 0x03, 0xEB, 0x28, 0xE8, 0xAD, 0x4F,
+    0xC9, 0x84, 0x5F, 0xA0, 0xD8, 0xDE, 0xB8, 0x25, 0x20, 0x51, 0x54, 0x45,
+    0x3D, 0xD8, 0x25, 0x6A, 0x94, 0x38, 0x27, 0x3F, 0x4C, 0x6F, 0x28, 0xB2,
+    0xED, 0x0C, 0x23, 0xA0, 0xF7, 0x67, 0x1B, 0xC7, 0x69, 0x3E, 0x49, 0xC2,
+    0x48, 0x05, 0x6A, 0xCB, 0xEA, 0x8C, 0xBD, 0xC9, 0x07, 0x54, 0x6A, 0xDD,
+    0xB3, 0x05, 0xCF, 0x8F, 0x35, 0xC3, 0x82, 0xE8, 0xD7, 0x51, 0x5B, 0x63,
+    0x55, 0xD7, 0xFD, 0x7A, 0x94, 0xBC, 0xF0, 0xC9, 0x59, 0x6C, 0x09, 0x63,
+    0xD9, 0xB7, 0x1D, 0x70, 0xF9, 0x22, 0xCA, 0x5D, 0xFF, 0x53, 0x78, 0xC5,
+    0x74, 0xCC, 0x68, 0xA5, 0xC2, 0x24, 0x17, 0xC8, 0x7F, 0x27, 0x8B, 0x43,
+    0x22, 0x7F, 0x0F, 0xE2, 0x58, 0x4E, 0x01, 0xF2, 0xE4, 0xB8, 0x18, 0x60,
+    0xF5, 0x33, 0x32, 0xFE, 0x1C, 0xBB, 0xAB, 0x5C, 0x3D, 0xE8, 0x2E, 0x87,
+    0xCF, 0xD3, 0x75, 0x0A, 0x60, 0xBC, 0xDC, 0xED, 0xB6, 0x07, 0xD7, 0x44,
+    0x35, 0x08, 0x52, 0xBE, 0xD2, 0x69, 0xC6, 0xB2, 0x48, 0x9F, 0xF3, 0x0F,
+};
+
 VIAtmosphere::VIAtmosphere()
 {
     m_initialised = 0;
@@ -37,6 +137,551 @@ VIAtmosphere::VIAtmosphere()
 
 VIAtmosphere::~VIAtmosphere()
 {
+}
+
+int VIAtmosphere::Init(long time, VIRaster &r, int n)
+{
+    int i;
+
+    m_range = 10.0f;
+    m_numParticles = 200;
+    m_p5D0 = m_p5C8 = time;
+    for (i = 0; i < 8; i++)
+        m_p4AC[i] = 1.0f / 30.0f;
+    m_camera.Zero();
+    SetEffectMix(0.0f);
+    SetIntensity(0.0f);
+    m_lavastorm = 0.0f;
+    SetLavastormIntensity(0.0f);
+    m_overcast = 1;
+    m_p88[0] = 0.1f;
+    m_particleScale = 1.0f;
+    m_p60C = 1;
+    m_p610 = 1;
+    m_p61C = 1.0f;
+    m_p614 = 1;
+    m_p88[1] = 0.1f;
+    m_skyScale = 1.0f;
+    m_p84 = 0.0f;
+    m_p5C8 = 0;
+    m_effectMix = 0.0f;
+    m_skySprite = -1;
+    m_p5E0 = -1;
+    m_p5E4 = -1;
+    m_p5E8 = -1;
+    m_p5EC = 0;
+    m_p5F0 = 0;
+    m_p5F4 = -1;
+    m_p5F8 = -1;
+    m_p608 = 0.0f;
+    m_p5FC = 0;
+    m_p600 = 0;
+    m_p604 = 0;
+    m_sun = -1;
+    m_corona = -1;
+    m_moon = -1;
+    m_starTex = -1;
+    m_starMat = -1;
+    m_pF50 = -1;
+    m_pF24 = 0.0f;
+    m_pF28 = 0.0f;
+    m_pF2C = 0.0f;
+    m_particles = 0;
+    m_splashNodes = 0;
+    m_fireballNodes = 0;
+    m_p1188 = -1;
+    m_p1190 = -1;
+    m_p1194 = -1;
+    m_p1198 = 0.0f;
+    m_p119C = 0.0f;
+    m_p11A0 = 0.0f;
+    m_p618 = 0;
+    m_particles = new VIWeatherParticle[m_numParticles];
+
+    for (i = 0; i < 64; i++)
+    {
+        float a = (float)i * 6.2831855f / 64.0f * 2.0f;
+
+        m_pA8[i].x = sinf(a);
+        m_pA8[i].y = cosf(a);
+        m_pA8[i].z = cosf(a);
+        m_p3A8[i] = (float)((rand() * 131) & 0xFF) / 255.0f + 1.0f;
+    }
+
+    for (i = 0; i < 2; i++)
+    {
+        m_mat[i] = r.CreateMaterial(0);
+        if (m_mat[i] < 0)
+            return -1;
+        VIMaterial *m = r.Material(m_mat[i]);
+        m->Init(1);
+        m->SetLayerFillType(0, VIMaterialFillTypeTexture);
+        m->SetLayerModulate(0, 1);
+        m->SetLayerBlendMode(0, VIAlphaBlendMode3);
+        m->SetZWrite(0);
+        m->SetZTest(1);
+        m->SetDither(0);
+    }
+
+    m_splashMat = r.CreateMaterial(0);
+    if (m_splashMat < 0)
+        return -1;
+    VIMaterial *m = r.Material(m_splashMat);
+    m->Init(1);
+    m->SetLayerFillType(0, VIMaterialFillTypeTexture);
+    m->SetLayerModulate(0, 1);
+    m->SetLayerBlendMode(0, VIAlphaBlendMode1);
+    m->SetZWrite(0);
+    m->SetZTest(1);
+    m->SetDither(0);
+
+    m_starMat = r.CreateMaterial(0);
+    if (m_starMat < 0)
+        return -1;
+    m = r.Material(m_starMat);
+    m->Init(1);
+    m->SetLayerFillType(0, VIMaterialFillTypeTexture);
+    m->SetLayerModulate(0, 1);
+    m->SetLayerBlendMode(0, VIAlphaBlendMode1);
+    m->SetLayerTextureLODBias(0, 1.0f);
+    m->SetZWrite(0);
+    m->SetZTest(0);
+    m->SetDither(0);
+
+    m_pF50 = r.CreateMaterial(0);
+    if (m_pF50 < 0)
+        return -1;
+    m = r.Material(m_pF50);
+    m->Init(1);
+    m->SetLayerFillType(0, VIMaterialFillTypeTexture);
+    m->SetLayerModulate(0, 1);
+    m->SetLayerBlendMode(0, VIAlphaBlendMode1);
+    m->SetLayerTextureLODBias(0, 1.0f);
+    m->SetZWrite(0);
+    m->SetZTest(0);
+    m->SetDither(0);
+
+    for (i = 0; i < m_numParticles; i++)
+    {
+        float a = VIRAND * 0.08f + 0.1f;
+        float x = (float)sNoise[i * 3 + 0] / 255.0f;
+        float y = (float)sNoise[i * 3 + 1] / 255.0f;
+        float z = (float)sNoise[i * 3 + 2] / 255.0f;
+
+        m_particles[i].m_location.x = x * m_range - m_range * 0.5f;
+        m_particles[i].m_location.y = y * m_range - m_range * 0.5f;
+        m_particles[i].m_location.z = z * m_range - m_range * 0.5f;
+        m_particles[i].m_p20 = 0;
+        m_particles[i].m_color.Set(1.0f, 1.0f, 1.0f, a);
+    }
+
+    for (i = 0; i < 128; i++)
+    {
+        VIMatrix44 s;
+
+        s.RotateHPR(VIVect3((float)(128 - sStarNoise[i * 3 + 0]) / 128.0f * 3.1415927f * 2.3f,
+                            (float)(128 - sStarNoise[i * 3 + 1]) / 128.0f * 0.49f * 3.1415927f,
+                            (float)(128 - sStarNoise[i * 3 + 2]) / 128.0f * 0.49f * 3.1415927f));
+        s.Mul(VIVect4(0.0f, 100.0f, 0.0f, 1.0f), m_stars[i]);
+        m_stars[i].w = (float)((rand() / 131) & 0xFF) / 255.0f * 0.5f + 0.3f;
+        m_pE20[i] = (rand() / 131) & 0x1F;
+    }
+
+    for (i = 0; i < 32; i++)
+        m_pEA0[i] = (sinf((float)i / 16.0f * 3.1415927f) * 0.5f + 0.5f) * 0.4f + 0.5f;
+
+    m_splashNodes = (char *)new VISplash[m_numParticles];
+    m_numSplashes = 0;
+    m_splashList.Init();
+    m_splashFree.Init();
+    for (i = 0; i < m_numParticles; i++)
+        m_splashFree.AddTail((VILNode *)(m_splashNodes + i * 36));
+
+    m_fireballNodes = new VIFireball[32];
+    m_numFireballs = 0;
+    m_fireballList.Init();
+    m_fireballFree.Init();
+    for (i = 0; i < 32; i++)
+        m_fireballFree.AddTail((VILNode *)((char *)m_fireballNodes + (i << 11)));
+
+    m_p88[0] = 0.095f;
+    m_p98[0] = 0.8f;
+    m_p90[0] = 0.0f;
+    m_p50[0].Set(0.0025f, 0.008f, 0.0025f);
+    m_p68[0].Set(0.0f, -0.21042f, 0.0f);
+    m_p88[1] = 0.05f;
+    m_p90[1] = 0.0f;
+    m_p98[1] = 0.0f;
+    m_p50[1].Set(0.0106f, 0.01723f, 0.0106f);
+    m_p68[1].Set(0.0f, -0.02199f, 0.0f);
+    return 0;
+}
+
+// One tick of the sky and weather cross-fades.  m_p608 runs 0 -> 1 over 30
+// ticks of m_p4A8 while a change is under way: the sun, corona and moon fade
+// with it, the sky dome blends a second layer in and out, rain and snow mix by
+// state (0 none, 1 rain, 2 snow) and the intensity follows the seven-step
+// table.  At 1 the pending state becomes the current one.  Rain sounds and
+// thunder are kept going whenever there is rain to hear.
+void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
+{
+    VIRaster      *r = sc.m_raster;
+    VIDictionary  *d = sc.m_dict;
+    VISoundDevice *snd = sc.m_sound;
+    VIColor32      c;
+    int            i, j;
+    int            alpha;
+
+    if (m_p608 != 0.0f)
+    {
+        if (hour < 6.0f)
+            m_p61C = 1.0f - hour / 6.0f;
+        else if (18.0f < hour)
+            m_p61C = (hour - 18.0f) / 6.0f;
+        else
+            m_p61C = 0.0f;
+        m_p608 += m_p4A8 * (1.0f / 30.0f);
+        m_p608 = VIMIN(m_p608, 1.0f);
+
+        if (m_p5EC == 0 && m_p5F0 == 1)
+        {
+            alpha = 255 - (int)(m_p608 * 255.0f);
+            m_p61C *= 1.0f - m_p608;
+        }
+        else if (m_p5EC == 1 && m_p5F0 == 0)
+        {
+            alpha = (int)(m_p608 * 255.0f);
+            m_p61C *= m_p608;
+        }
+        else if (m_p5EC != 0 && m_p5F0 != 0)
+        {
+            alpha = 0;
+            m_p61C = 0.0f;
+        }
+        else
+            alpha = 255;
+        if (alpha)
+            m_overcast = 1;
+        else
+            m_overcast = 0;
+
+        float fa = (float)alpha;
+        int   pal = ((VISimpleSprite *)sc.Sprite(m_sun))->GetMaterialPal();
+        int   n = r->GetMaterialPalSize(pal);
+
+        for (i = 0; i < n; i++)
+        {
+            VIMaterial *m = r->GetMaterialPalEntry(pal, i);
+
+            for (j = 0; j < m->m_numLayers; j++)
+            {
+                c = m->GetLayerColor(j);
+                c.a = alpha;
+                m->SetLayerColor(j, c);
+            }
+        }
+        pal = ((VISimpleSprite *)sc.Sprite(m_corona))->GetMaterialPal();
+        n = r->GetMaterialPalSize(pal);
+        for (i = 0; i < n; i++)
+        {
+            VIMaterial *m = r->GetMaterialPalEntry(pal, i);
+
+            int a = VIMAX(255 - (255 - alpha) * 2, 0);
+
+            for (j = 0; j < m->m_numLayers; j++)
+            {
+                c = m->GetLayerColor(j);
+                c.a = a;
+                m->SetLayerColor(j, c);
+            }
+        }
+        pal = ((VISimpleSprite *)sc.Sprite(m_moon))->GetMaterialPal();
+        n = r->GetMaterialPalSize(pal);
+        for (i = 0; i < n; i++)
+        {
+            VIMaterial *m = r->GetMaterialPalEntry(pal, i);
+
+            for (j = 0; j < m->m_numLayers; j++)
+            {
+                c = m->GetLayerColor(j);
+                c.a = alpha;
+                m->SetLayerColor(j, c);
+            }
+        }
+        m_skyScale = fa / 255.0f;
+
+        if (m_p5FC > 0 || m_p600 > 0)
+        {
+            float lv[7] = { 0.0f, 0.15f, 0.5f, 1.0f, 0.15f, 0.5f, 1.0f };
+            int   st[2] = { 0 };
+
+            if (m_p5FC > 0)
+                st[0] = 1;
+            if (m_p5FC >= 4)
+                st[0] = 2;
+            if (m_p600 > 0)
+                st[1] = 1;
+            if (m_p600 >= 4)
+                st[1] = 2;
+            if (st[0] == 1 && st[1] == 2)
+                SetEffectMix(m_p608);
+            else if (st[0] == 2 && st[1] == 1)
+                SetEffectMix(1.0f - m_p608);
+            else if (st[0] == 1 && st[1] == 1)
+                SetEffectMix(0.0f);
+            else if (st[0] == 2 && st[1] == 2)
+                SetEffectMix(1.0f);
+            else if (st[0] == 0)
+            {
+                if (st[1] == 1)
+                    SetEffectMix(0.0f);
+                else
+                    SetEffectMix(1.0f);
+            }
+            else if (st[0] == 1)
+                SetEffectMix(0.0f);
+            else
+                SetEffectMix(1.0f);
+            SetIntensity(lv[m_p5FC] + (lv[m_p600] - lv[m_p5FC]) * m_p608);
+            if (m_p1190 == -1)
+            {
+                m_p1190 = snd->Play(m_p1188, 127, (VISOUNDCLASS)0);
+                ResetLightning();
+            }
+            if (m_p1194 == -1)
+            {
+                snd->SetPan(m_p1190, -1.0f);
+                m_p1194 = snd->Play(m_p1188, 127, (VISOUNDCLASS)0);
+                snd->SetPan(m_p1194, 1.0f);
+                snd->SetPitch(m_p1194, 4176);
+            }
+            if (m_p1190)
+                snd->SetVolume(m_p1190, Intensity() * (1.0f - EffectMix()) * 0.5f * vol);
+            if (m_p1194)
+                snd->SetVolume(m_p1194, Intensity() * (1.0f - EffectMix()) * 0.5f * vol);
+        }
+        else
+        {
+            SetIntensity(0.0f);
+            if (m_p1190)
+            {
+                snd->Stop(m_p1190);
+                m_p1190 = -1;
+            }
+            if (m_p1194)
+            {
+                snd->Stop(m_p1194);
+                m_p1194 = -1;
+            }
+        }
+
+        if (m_p608 < 0.5f)
+        {
+            VIMaterial *m = r->GetMaterialPalEntry(
+                ((VISimpleSprite *)sc.Sprite(m_skySprite))->GetMaterialPal(), 0);
+
+            m->SetLayerBlendMode(0, VIAlphaBlendMode3);
+            if (m->m_numLayers != 3)
+            {
+                m->SetNumLayers(3, *r, *d);
+                m->CopyLayer(1, 2, *r, *d);
+                m->CopyLayer(0, 1, *r, *d);
+                m->SetLayerTexture(1, m_p5F8, *r, *d);
+            }
+            c = m->GetLayerColor(1);
+            c.a = (int)(m_p608 * 2.0f * 255.0f);
+            m->SetLayerColor(1, c);
+            c = m->GetLayerColor(2);
+            c.a = (int)((0.5f - m_p608) * 2.0f * 64.0f);
+            m->SetLayerColor(2, c);
+        }
+        else if (m_p608 < 1.0f)
+        {
+            VIMaterial *m = r->GetMaterialPalEntry(
+                ((VISimpleSprite *)sc.Sprite(m_skySprite))->GetMaterialPal(), 0);
+
+            if (m->m_numLayers != 2)
+            {
+                m->CopyLayer(1, 0, *r, *d);
+                m->CopyLayer(2, 1, *r, *d);
+                m->SetNumLayers(2, *r, *d);
+                m->SetLayerTexture(1, m_p5F8, *r, *d);
+            }
+            c = m->GetLayerColor(1);
+            c.a = (int)((m_p608 - 0.5f) * 2.0f * 64.0f);
+            m->SetLayerColor(1, c);
+        }
+        if (m_p608 == 1.0f)
+        {
+            VIMaterial *m = r->GetMaterialPalEntry(
+                ((VISimpleSprite *)sc.Sprite(m_skySprite))->GetMaterialPal(), 0);
+
+            m->SetLayerTexture(0, m_p5F8, *r, *d);
+            m->SetLayerTexture(1, m_p5F8, *r, *d);
+            c = m->GetLayerColor(0);
+            c.a = 255;
+            m->SetLayerColor(0, c);
+            c = m->GetLayerColor(1);
+            c.a = 64;
+            m->SetLayerColor(1, c);
+            m_p5EC = m_p5F0;
+            m_p5F4 = m_p5F8;
+            m_p5FC = m_p600;
+            m_p608 = 0.0f;
+            m_p60C = m_p610;
+            if (m_p614 != m_p60C)
+                SetDefaultSky((SKYTYPE)m_p614, false);
+            if (m_p604 != m_p5FC)
+                SetWeather((WXTYPE)m_p604, false);
+        }
+    }
+    else if (m_p5EC == 0)
+    {
+        if (hour < 6.0f)
+            m_p61C = 1.0f - hour / 6.0f;
+        else if (18.0f < hour)
+            m_p61C = (hour - 18.0f) / 6.0f;
+        else
+            m_p61C = 0.0f;
+        m_skyScale = 1.0f;
+    }
+    else
+    {
+        m_skyScale = 0.0f;
+        m_p61C = 0.0f;
+    }
+
+    if (Intensity() != 0.0f && EffectMix() < 1.0f)
+    {
+        if (m_p1198 < m_p119C)
+        {
+            m_p119C = 0.0f;
+            m_p11A0 = 1.0e-5f;
+        }
+        m_p1198 -= m_p4A8;
+        if (m_p1198 <= 0.0f)
+        {
+            int h = snd->Play(m_p118C, 127, (VISOUNDCLASS)0);
+
+            snd->SetVolume(h, (1.0f - m_p11A8) * Intensity() * (1.0f - EffectMix()) * 0.9f * vol);
+            snd->SetPan(h, -1.0f);
+            h = snd->Play(m_p118C, 127, (VISOUNDCLASS)0);
+            snd->SetVolume(h, (1.0f - m_p11A8) * Intensity() * (1.0f - EffectMix()) * 0.9f * vol);
+            snd->SetPan(h, 1.0f);
+            snd->SetPitch(h, 2496);
+            ResetLightning();
+        }
+        if (m_p1190)
+            snd->SetVolume(m_p1190, Intensity() * (1.0f - EffectMix()) * 0.5f * vol);
+        if (m_p1194)
+            snd->SetVolume(m_p1194, Intensity() * (1.0f - EffectMix()) * 0.5f * vol);
+    }
+    else if (Intensity() == 0.0f)
+        m_p1198 = m_p119C = m_p11A0 = 0.0f;
+}
+
+// The Lavastorm: while there are fewer fireballs than m_lavastorm calls for,
+// one is dropped at a random spot 50 m around the camera (pushed out of the
+// 10 m the camera stands in) and traced to the ground, with one emitter riding
+// down from 40 m above the landing point and a second waiting on it.  The
+// first emitter lerps down over the fall; on landing the second fires once,
+// and when its particles are spent the fireball goes back to the free list.
+void VIAtmosphere::ProcessLavastorm(VIScene &sc, VICamera &cam)
+{
+    if (m_numFireballs < (int)(m_lavastorm * 32.0f))
+    {
+        VIVect3 a;
+        VIVect3 b;
+
+        a.x = VIRAND * 50.0f;
+        a.y = 5000.0f;
+        a.z = VIRAND * 50.0f;
+        if (fabs(a.x) < 10.0 && fabs(a.z) < 10.0)
+        {
+            a.x += a.x < 0.0f ? -30.0f : 30.0f;
+            a.z += a.z < 0.0f ? -30.0f : 30.0f;
+        }
+        const VIVect3 &cp = cam.m_position;
+
+        a.Set(a.x + cp.x, a.y + cp.y, a.z + cp.z);
+        b = a;
+        b.y -= 10000.0f;
+
+        VICollRay     ray;
+        WeatherFilter filter;
+        VIEnvRay      env;
+
+        ray.Init(a, b);
+        env.Init(a, b, 15);
+        if (sc.Collide(ray, filter))
+        {
+            VIVect3 h = ray.GetHitPoint();
+
+            if (sc.Collide(env))
+            {
+                VIVect3 e = env.GetHitPoint();
+
+                if (h.y < e.y)
+                    h = e;
+            }
+
+            VIFireball *f = (VIFireball *)m_fireballFree.RemHead();
+
+            if (f)
+            {
+                m_fireballList.AddTail(f);
+                m_numFireballs++;
+                f->m_p1C = h;
+                f->m_p10 = h;
+                f->m_p28 = 0.0f;
+                f->m_p10.y += 40.0f;
+                f->m_p2C = ((float)((rand() * 131) & 0xFF) / 255.0f * 0.6f + 0.7f) * 2.5f;
+                f->m_p30 = 0;
+                f->m_e0.Create(m_p00, m_p00->ParticleDefinition(m_p1180));
+                f->m_e0.SetLocation(f->m_p10);
+                f->m_e0.SetLocation(f->m_p10);
+                f->m_e1.Create(m_p00, m_p00->ParticleDefinition(m_p1184));
+                f->m_e1.SetLocation(f->m_p1C);
+                f->m_e1.SetLocation(f->m_p1C);
+            }
+        }
+    }
+
+    VIFireball *f = (VIFireball *)m_fireballList.m_head;
+
+    while (f->m_next)
+    {
+        VIFireball *next = (VIFireball *)f->m_next;
+
+        f->m_e0.ParticleCount();
+        f->m_p28 += m_p00->DeltaTime() * 0.15f * f->m_p2C;
+        if (1.0f <= f->m_p28)
+        {
+            if (f->m_p30 == 0)
+            {
+                f->m_p30 = 1;
+                f->m_e1.Update();
+            }
+            else if (f->m_e1.ParticleCount() == 0)
+            {
+                f->m_e0.Destroy();
+                f->m_e1.Destroy();
+                f->Remove();
+                m_fireballFree.AddTail(f);
+                m_numFireballs--;
+            }
+        }
+        else
+        {
+            VIVect3 d = f->m_p1C - f->m_p10;
+
+            d *= f->m_p28;
+            d += f->m_p10;
+            f->m_e0.SetLocation(d);
+            f->m_e0.Update();
+        }
+        f = next;
+    }
 }
 
 float VIAtmosphere::EffectMix() const
@@ -923,11 +1568,7 @@ int VIAtmosphere::SetResources(VIScene &sc)
     return 0;
 }
 
-// OPEN, and a DRAFT: 278 of 626 words.  The shape is right -- two passes over
-// the particle field, a downward VICollRay and a VIEnvRay per particle, the
-// wrap at +-range/2 and the splash at the ground -- but the expression forms
-// are not settled, so read this for semantics and not as a matched function.
-int VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
+void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
 {
     int i;
     int j;
@@ -939,7 +1580,7 @@ int VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
     if (0.0f < m_lavastorm)
         ProcessLavastorm(sc, cam);
     if (m_intensity == 0.0f)
-        return -1;
+        return;
 
     VIVect3       d;
     VICollRay     ray;
@@ -951,15 +1592,12 @@ int VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
     VIVect3      &cm = m_camera;
 
     c = cam.m_dir * 5.0f;
-    a = cam.m_position + c;
+    a = c + cam.m_position;
     d = a;
     d -= cm;
     n = (int)(m_intensity * m_numParticles);
     k = (int)(n * m_effectMix);
-    cm.x = a.x;
-    cm.y = a.y;
-    cm.z = a.z;
-
+    cm = a;
     if (m_range < d.x || m_range < d.y || m_range < d.z)
     {
         d.x = 0.0f;
@@ -985,9 +1623,9 @@ int VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
             env.Init(a, b, 15);
             if (sc.Collide(ray, filter))
             {
-                m_particles[i].m_p20 = 0;
-
                 VIVect3 h = ray.GetHitPoint();
+
+                m_particles[i].m_p20 = 0;
 
                 if (sc.Collide(env))
                 {
@@ -1013,13 +1651,15 @@ int VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
 
     j = (int)m_p84;
     m_p84 = m_p84 + m_p4A8 * 10.0f;
+
+    float rate = m_p4A8 / (1.0f / 60.0f);
+
     if (64.0f < m_p84)
         m_p84 = m_p84 - 64.0f;
 
     float half = m_range * 0.5f;
-    float rate = m_p4A8 / (1.0f / 60.0f);
 
-    for (i = 0; i < m_numParticles; i++)
+    for (i = 0; i < m_numParticles; i++, j += 29)
     {
         sel = (i < k);
         m_particles[i].m_location.x =
@@ -1082,9 +1722,9 @@ int VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
             env.Init(a, b, 15);
             if (sc.Collide(ray, filter))
             {
-                m_particles[i].m_p20 = 0;
-
                 VIVect3 h = ray.GetHitPoint();
+
+                m_particles[i].m_p20 = 0;
 
                 if (sc.Collide(env))
                 {
@@ -1132,5 +1772,4 @@ int VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
                 VIMAX(m_particles[i].m_p1C - cm.y, half);
         }
     }
-    return 0;
 }

@@ -10,7 +10,7 @@
 #define NODE(i) ((Node *)((i) * sizeof(Node) + (unsigned int)m_nodes))
 
 // Placement new, as in vipool.cpp.
-inline void *operator new(unsigned int, void *p)
+inline void *operator new(unsigned int, void *p) throw()
 {
     return p;
 }
@@ -177,11 +177,7 @@ template <class K, class V> int VIMultiMap<K, V>::Allocate()
             // guard is `blez m_size` against VISet's `slt 1, m_size`, and the
             // walking pointer starts at n rather than at n + 1.
             for (int i = 0; i < m_size; i++)
-            {
-                Node *d = &n[i];
-                if (d)
-                    *d = m_nodes[i];
-            }
+                new (&n[i]) Node(m_nodes[i]);
             if (DestroyPool() < 0)
                 return -1;
             delete [] (char *)m_nodes;
@@ -350,15 +346,11 @@ template <class K, class V> int VIMultiMap<K, V>::Insert(const K &k, const V &v)
 
     int n = x;
 
-    // The address is null-tested before it is written through, as in
-    // VIPool::Add -- but the tested pointer here is node+16, not the node.
-    K *dk = &NODE(n)->m_key;
-    if (dk)
-        new (dk) K(k);
-
-    V *dv = &NODE(n)->m_value;
-    if (dv)
-        new (dv) V(v);
+    // Placement new DECLARED `throw()`: gcc 2.95 null-tests a nothrow
+    // operator new's result, so each element is null-tested before the copy
+    // is written through it -- node+16, then node+20, never the node.
+    new (&NODE(n)->m_key) K(k);
+    new (&NODE(n)->m_value) V(v);
 
     // The parent is a LOCAL here and is NOT one in EraseFixup: with it, the
     // target keeps `q * sizeof(Node)` in one register across the whole body
@@ -497,22 +489,25 @@ template <class K, class V> int VIMultiMap<K, V>::Erase(int z)
 {
     int n = Next(z);
 
-    // Not a conjunction: written `if (left && right) y = n; else y = z;` the
-    // whole choice if-converts to one `movz`, where the target BRANCHES and
-    // fills both delay slots with the two assignments.
-    // CLRS's `y = (left == nil || right == nil) ? z : successor(z)`, and the
-    // target BRANCHES where every conjunction and every two-armed spelling
-    // if-converts to one `movz`/`movn`.  Left open at 34 words.
+    // CLRS's `y = (left == nil || right == nil) ? z : successor(z)`, spelled
+    // as the DISJUNCTION with `y = z` in the then-arm.  `||` expands to
+    // "if (left == 0) goto Lthen; if (right != 0) goto Lelse; Lthen: y = z",
+    // and that label between the second jump and `y = z` is what keeps
+    // jump.c from if-converting the choice: every conjunction, the else-if
+    // chain and every `y = z` default all fold to `movz`/`movn`.
     int y;
-    if (NODE(z)->m_left == 0)
+    if (NODE(z)->m_left == 0 || NODE(z)->m_right == 0)
         y = z;
-    else if (NODE(z)->m_right != 0)
-        y = n;
     else
-        y = z;
+        y = n;
 
-    int x = NODE(y)->m_left;
-    if (x == 0)
+    // CLRS again, both arms written out: `x = left; if (x == 0) x = right;`
+    // lets cse reuse the 20 the NODE(y) index was scaled by, where the target
+    // loads a fresh one for NODE(x).
+    int x;
+    if (NODE(y)->m_left != 0)
+        x = NODE(y)->m_left;
+    else
         x = NODE(y)->m_right;
 
     NODE(x)->m_parent = NODE(y)->m_parent;

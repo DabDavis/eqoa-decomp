@@ -76,6 +76,15 @@ int VIStreamAudioSprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc,
     return 0;
 }
 
+// Phase 61.  VIMatrix44's assignment is an inline sceVu0CopyMatrix -- see
+// visprite.cpp's copy of this definition for the evidence and for why it is
+// not in vi.h.
+inline VIMatrix44 &VIMatrix44::operator=(const VIMatrix44 &a)
+{
+    sceVu0CopyMatrix(*this, a);
+    return *this;
+}
+
 int VIStreamAudioSprite::QueryEmitters(VIScene &sc, const VIMatrix44 &m,
                                        VIEmitterQuery &q)
 {
@@ -109,10 +118,10 @@ int VIStreamAudioSprite::QueryEmitters(VIScene &sc, const VIMatrix44 &m,
             p.x = p.x - (m_bbox.min.x + m_bbox.max.x) * 0.5f;
             p.y = p.y - (m_bbox.min.y + m_bbox.max.y) * 0.5f;
             p.z = p.z - (m_bbox.min.z + m_bbox.max.z) * 0.5f;
+            k = k - p.Magnitude() * 0.0001f;
             e.m_a = q.m_a;
             e.m_b = q.m_b;
-            k = k - p.Magnitude() * 0.0001f;
-            sceVu0CopyMatrix(e.m_matrix, m);
+            e.m_matrix = m;
             q.m_map.Insert(k, e);
             if (q.m_limit < q.m_map.Size())
                 q.m_map.Erase(q.m_map.Begin());

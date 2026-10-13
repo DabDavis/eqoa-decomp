@@ -58,8 +58,21 @@ def merge(name):
             print(f"  merged {f}")
     return 1 if bad else 0
 
-def sync(name):
+def _caps(path):
+    """The SPAN_CAP / SPAN_IGNORE entries a copy of eqdecomp.py holds."""
+    import re
+    t = path.read_text()
+    return set(re.findall(r'^\s*"([^"]+)":\s*(\d+)', t, re.M)) | \
+           set(re.findall(r'^\s*"([^"]+)",\s*$', t, re.M))
+
+def sync(name, force=False):
     d = lane(name)
+    # A lane's eqdecomp.py is copied over below, and the 3-way merge never
+    # carries SPAN_CAPs back -- so refuse while the lane holds one main lacks.
+    extra = _caps(d / "eqdecomp.py") - _caps(HERE / "eqdecomp.py")
+    if extra and not force:
+        raise SystemExit(f"lane {name} has SPAN entries main lacks -- port them "
+                         f"first (or --force):\n  " + "\n  ".join(map(str, sorted(extra))))
     for sub in ("src", ".base"):
         shutil.rmtree(d / sub); shutil.copytree(HERE / "src", d / sub)
     for p in HERE.glob("*.py"):
@@ -71,5 +84,5 @@ if __name__ == "__main__":
     if cmd == "new": new(name)
     elif cmd == "diff": print("\n".join(changed(name)))
     elif cmd == "merge": sys.exit(merge(name))
-    elif cmd == "sync": sync(name)
+    elif cmd == "sync": sync(name, "--force" in sys.argv)
     else: raise SystemExit(__doc__)

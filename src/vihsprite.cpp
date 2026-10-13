@@ -256,15 +256,19 @@ VIHSprite::VIHSprite()
     m_refMap = -1;
     m_defaultAnim = -1;
     m_center[1].Zero();
-    m_center[0] = m_center[1];
-    m_transform[1].m_rot.x = 0.0f;
-    m_transform[1].m_rot.y = 0.0f;
-    m_transform[1].m_rot.z = 0.0f;
-    m_transform[1].m_rot.w = 1.0f;
+
+    VIHSpriteFrame *f0 = &m_transform[0];
+    VIHSpriteFrame *f1 = &m_transform[1];
+
+    f1->m_rot.x = 0.0f;
+    f1->m_rot.y = 0.0f;
+    f1->m_rot.z = 0.0f;
+    f1->m_rot.w = 1.0f;
     m_transform[1].m_scale = m_defaultScale;
     m_transform[1].m_trans.Zero();
+    m_center[0] = m_center[1];
     m_transform[0].m_rot = m_transform[1].m_rot;
-    m_transform[0].m_scale = m_transform[1].m_scale;
+    f0->m_scale = f1->m_scale;
     m_transform[0].m_trans = m_transform[1].m_trans;
     m_blendMS = 0;
     m_blendStart = 0;
@@ -667,10 +671,16 @@ int VIHSprite::PrecalcPlayback(int i)
     float s = p->m_speed;
     if (s != 0.0f)
     {
-        if (!(0.0f < s))
-            s = -s;
-        p->m_frameRate = p->m_rate * s / 1000.0f;
-        pool->Value(i).m_frameDuration = 1.0f / pool->Value(i).m_frameRate;
+        if (0.0f < s)
+        {
+            p->m_frameRate = p->m_rate * s / 1000.0f;
+            pool->Value(i).m_frameDuration = 1.0f / pool->Value(i).m_frameRate;
+        }
+        else
+        {
+            p->m_frameRate = p->m_rate * -s / 1000.0f;
+            pool->Value(i).m_frameDuration = 1.0f / pool->Value(i).m_frameRate;
+        }
     }
     else
     {
@@ -719,7 +729,8 @@ int VIHSprite::StopCenterTransformBlend(VIScene &sc)
     m_center[1] = v;
     m_transform[1].m_rot = f.m_rot;
     m_transform[1].m_scale = f.m_scale;
-    m_transform[1].m_trans = f.m_trans;
+    VIVect3 &t = f.m_trans;
+    m_transform[1].m_trans = t;
     m_blendMS = 0;
     return 0;
 }
@@ -773,12 +784,14 @@ int VIHSprite::BlendToCenterTransform(VIVect3 &center, const VIVect3 &hpr, float
 {
     if (m_blendMS == 0 || sc.GetTime() - m_blendStart > m_blendMS)
     {
+        VIHSpriteFrame *f1 = &m_transform[1];
+
         m_center[0] = m_center[1];
         m_transform[0].m_rot = m_transform[1].m_rot;
-        m_transform[0].m_scale = m_transform[1].m_scale;
+        m_transform[0].m_scale = f1->m_scale;
         m_transform[0].m_trans = m_transform[1].m_trans;
         m_center[1] = center;
-        m_transform[1].m_rot.ConvertFrom(hpr);
+        f1->m_rot.ConvertFrom(hpr);
         m_transform[1].m_scale = s;
         m_transform[1].m_trans = t;
         m_blendMS = ms;
@@ -843,7 +856,8 @@ int VIHSprite::ProcessHierarchy(int i, VIMatrix44 &m)
     {
         if (ProcessHierarchy(c, n->m_world) < 0)
             return -1;
-        c = a->m_data[c].m_sibling;
+        VIVector<VIHSpriteNode> *b = &m_nodes;
+        c = b->m_data[c].m_sibling;
     }
     return 0;
 }
@@ -852,7 +866,8 @@ int VIHSprite::ProcessUpHierarchy(int i)
 {
     VIMatrix44 t;
     VIVect3 v;
-    VIHSpriteNode *n = &m_nodes.m_data[i];
+    VIHSpriteNode *nodes = m_nodes.m_data;
+    VIHSpriteNode *n = &nodes[i];
     if (n->m_parent == -1)
     {
         v = n->m_fixScale;
@@ -861,11 +876,12 @@ int VIHSprite::ProcessUpHierarchy(int i)
     }
     else
     {
+        VIHSpriteNode *p = &nodes[n->m_parent];
         ProcessUpHierarchy(n->m_parent);
         v = n->m_fixScale;
         v *= n->m_frame.m_scale;
         t.Transform(n->m_frame.m_rot, v, n->m_frame.m_trans);
-        n->m_world.Mul(t, m_nodes.m_data[n->m_parent].m_world);
+        n->m_world.Mul(t, p->m_world);
     }
     return 0;
 }
@@ -874,7 +890,9 @@ int VIHSprite::SetBlendMatrices(VIRaster &r)
 {
     VIMatrix44 t;
     int found = 0;
-    for (int i = m_attach.Begin(); i != m_attach.End(); i = m_attach.Next(i))
+    int i;
+
+    for (i = m_attach.Begin(); i != m_attach.End(); i = m_attach.Next(i))
     {
         if (m_attach.Value(i).m_node == -1)
         {
@@ -884,13 +902,14 @@ int VIHSprite::SetBlendMatrices(VIRaster &r)
     }
     if (found)
     {
-        for (int j = 0; j < m_nodes.m_size; j++)
+        for (i = 0; i < m_nodes.m_size; i++)
         {
             VIVector<VIMatrix44> *b = &m_blend;
             VIVector<VIHSpriteNode> *a = &m_nodes;
-            b->m_data[j].Mul(a->m_data[j].m_invBindWorld, a->m_data[j].m_world);
+            b->m_data[i].Mul(a->m_data[i].m_invBindWorld, a->m_data[i].m_world);
         }
-        r.SetObjectBlends(m_nodes.m_size, m_blend.m_data);
+        VIVector<VIMatrix44> *b = &m_blend;
+        r.SetObjectBlends(m_nodes.m_size, b->m_data);
     }
     return 0;
 }

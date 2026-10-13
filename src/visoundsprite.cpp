@@ -1,6 +1,8 @@
 // VISoundSprite -- SUPPORT 0x004739C8 .. 0x00474BD0.  A positional sound.  It
 // draws (and picks) the scene's sound UI sprite at its own transform, with
-// VIPointSprite::ClampScale written out INLINE in both Raster and Pick.
+// VIPointSprite::ClampScale written out INLINE in both Raster and Pick -- with
+// the rows scaled through `((float *)&m)[k]`, whose stores cse can skip without
+// forgetting `s.z` (see VIParticleSprite::Pick).
 #include "vi.h"
 
 extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
@@ -27,39 +29,39 @@ int VISoundSprite::GetInstType(VIScene &sc) const
 
 int VISoundSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned int flags)
 {
-    if (sc.GetSoundUISprite() == -1)
-        return 0;
-
-    VIMatrix44 m;
-    VIVect3 s;
-
-    sceVu0CopyMatrix(m, *r.GetModelView());
-
-    s.x = 1.0f / sqrtf(m.m[0].x * m.m[0].x + m.m[0].y * m.m[0].y + m.m[0].z * m.m[0].z);
-    s.y = 1.0f / sqrtf(m.m[1].x * m.m[1].x + m.m[1].y * m.m[1].y + m.m[1].z * m.m[1].z);
-    s.z = 1.0f / sqrtf(m.m[2].x * m.m[2].x + m.m[2].y * m.m[2].y + m.m[2].z * m.m[2].z);
-
-    if (s.x < 0.25f)
+    if (sc.GetSoundUISprite() != -1)
     {
-        m.m[0].x = m.m[0].x * s.x * 4.0f;
-        m.m[0].y = m.m[0].y * s.x * 4.0f;
-        m.m[0].z = m.m[0].z * s.x * 4.0f;
-    }
-    if (s.y < 0.25f)
-    {
-        m.m[1].x = m.m[1].x * s.y * 4.0f;
-        m.m[1].y = m.m[1].y * s.y * 4.0f;
-        m.m[1].z = m.m[1].z * s.y * 4.0f;
-    }
-    if (s.z < 0.25f)
-    {
-        m.m[2].x = m.m[2].x * s.z * 4.0f;
-        m.m[2].y = m.m[2].y * s.z * 4.0f;
-        m.m[2].z = m.m[2].z * s.z * 4.0f;
-    }
+        VIMatrix44 m;
+        VIVect3 s;
 
-    r.SetModelView(m);
-    sc.RasterUISprite(cam, sc.GetSoundUISprite(), flags);
+        sceVu0CopyMatrix(m, *r.GetModelView());
+
+        s.x = 1.0f / sqrtf(m.m[0].x * m.m[0].x + m.m[0].y * m.m[0].y + m.m[0].z * m.m[0].z);
+        s.y = 1.0f / sqrtf(m.m[1].x * m.m[1].x + m.m[1].y * m.m[1].y + m.m[1].z * m.m[1].z);
+        s.z = 1.0f / sqrtf(m.m[2].x * m.m[2].x + m.m[2].y * m.m[2].y + m.m[2].z * m.m[2].z);
+
+        if (s.x < 0.25f)
+        {
+            ((float *)&m)[0] = ((float *)&m)[0] * s.x * 4.0f;
+            ((float *)&m)[1] = ((float *)&m)[1] * s.x * 4.0f;
+            ((float *)&m)[2] = ((float *)&m)[2] * s.x * 4.0f;
+        }
+        if (s.y < 0.25f)
+        {
+            ((float *)&m)[4] = ((float *)&m)[4] * s.y * 4.0f;
+            ((float *)&m)[5] = ((float *)&m)[5] * s.y * 4.0f;
+            ((float *)&m)[6] = ((float *)&m)[6] * s.y * 4.0f;
+        }
+        if (s.z < 0.25f)
+        {
+            ((float *)&m)[8] = ((float *)&m)[8] * s.z * 4.0f;
+            ((float *)&m)[9] = ((float *)&m)[9] * s.z * 4.0f;
+            ((float *)&m)[10] = ((float *)&m)[10] * s.z * 4.0f;
+        }
+
+        r.SetModelView(m);
+        sc.RasterUISprite(cam, sc.GetSoundUISprite(), flags);
+    }
     return 0;
 }
 
@@ -88,21 +90,21 @@ int VISoundSprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc, VIRas
 
     if (s.x < 0.25f)
     {
-        m.m[0].x = m.m[0].x * s.x * 4.0f;
-        m.m[0].y = m.m[0].y * s.x * 4.0f;
-        m.m[0].z = m.m[0].z * s.x * 4.0f;
+        ((float *)&m)[0] = ((float *)&m)[0] * s.x * 4.0f;
+        ((float *)&m)[1] = ((float *)&m)[1] * s.x * 4.0f;
+        ((float *)&m)[2] = ((float *)&m)[2] * s.x * 4.0f;
     }
     if (s.y < 0.25f)
     {
-        m.m[1].x = m.m[1].x * s.y * 4.0f;
-        m.m[1].y = m.m[1].y * s.y * 4.0f;
-        m.m[1].z = m.m[1].z * s.y * 4.0f;
+        ((float *)&m)[4] = ((float *)&m)[4] * s.y * 4.0f;
+        ((float *)&m)[5] = ((float *)&m)[5] * s.y * 4.0f;
+        ((float *)&m)[6] = ((float *)&m)[6] * s.y * 4.0f;
     }
     if (s.z < 0.25f)
     {
-        m.m[2].x = m.m[2].x * s.z * 4.0f;
-        m.m[2].y = m.m[2].y * s.z * 4.0f;
-        m.m[2].z = m.m[2].z * s.z * 4.0f;
+        ((float *)&m)[8] = ((float *)&m)[8] * s.z * 4.0f;
+        ((float *)&m)[9] = ((float *)&m)[9] * s.z * 4.0f;
+        ((float *)&m)[10] = ((float *)&m)[10] * s.z * 4.0f;
     }
 
     r.SetModelView(m);

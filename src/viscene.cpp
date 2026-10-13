@@ -2732,6 +2732,7 @@ int VIScene::Stream(const VIVect3 &at, VILoader &l, int i)
 // own static sprite, drawn in the zone's world-space frame with no baked
 // lighting.  The zone's pre-translations are re-applied whenever the zone
 // changes along the list.  `actors` and `rooms` select which half is drawn.
+//@V
 int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
 {
     VIMatrix44 m;
@@ -2744,7 +2745,7 @@ int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
         VISceneDisplayElem &e0 = list.m_data[i];
         int z = e0.m_a;
 
-        if (z != zone && z != -1)
+        if (z != -1 && z != zone)
             m_world.m_zones[z].SetPretranslations(*m_raster, cam);
 
         zone = z;
@@ -2785,6 +2786,7 @@ int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
 
     return 0;
 }
+//@E
 
 // The frame.  Lights, atmosphere and the time-of-day blend first, then the
 // world through portals (or by frustum, when bit 0 of m_p00 says the scene has

@@ -5,6 +5,10 @@ extern "C" unsigned int VIHashResourceID(const char *);
 extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 extern "C" float fabsf(float);
+extern "C" int   rand();
+
+// Two draws, differenced and scaled by 2^-31: a signed unit random.
+#define VIRAND (((float)rand() - (float)rand()) * 4.65661287e-10f)
 
 // The cross product, returned BY VALUE: `up = Cross(v, a)` builds its result in
 // a stack temporary and copies it out through VIVect3::operator=, which is what
@@ -249,6 +253,169 @@ int VIParticleEmitter::BlendMotifs()
     }
 }
 
+static inline VIVect3 operator-(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+// One frame of emission.  The birth count is the birthrate (plus its
+// variance) over the frame, plus one per unit the emitter moved times the
+// delta-spawn rate, plus the fraction carried from last frame; the births are
+// spread evenly along the path the emitter took.  Each particle is placed (on
+// a random pattern point if there is a pattern), given its life, friction,
+// gravity, frame, size and growth, and launched down the nozzle swung by the
+// three spread angles and offsets, at its speed, plus the inherited velocity.
+int VIParticleEmitter::Update()
+{
+    int i;
+
+    if (m_system == 0)
+        return -1;
+    if (m_definition == 0)
+        return -1;
+
+    BlendMotifs();
+
+    float dt = m_system->m_deltaTime;
+    float invDt = 1.0f / dt;
+    float n = (m_attributes.m_birthrate + VIRAND * m_attributes.m_birthrateVar) * dt;
+
+    if (m_attributes.m_deltaSpawn != 0.0f)
+        n += m_location.Distance(m_lastLocation) * m_attributes.m_deltaSpawn;
+    n += *(float *)&m_unk4C;
+
+    int count = (int)n;
+
+    *(float *)&m_unk4C = n - (float)count;
+
+    float step = 1.0f / (float)count;
+    VIVect3 at = m_lastLocation;
+    VIVect3 d = m_location - m_lastLocation;
+
+    d *= step;
+    VIMatrix44 m;
+    VIVect3 off;
+    VIVect3 dir;
+    VIVect3 a;
+    VIVect3 b;
+    int first;
+    int num;
+
+    switch (m_definition->TextureConfiguration())
+    {
+    case 1:
+        first = 0;
+        num = 1;
+        break;
+    case 2:
+        first = 5;
+        num = 2;
+        break;
+    case 3:
+        first = 1;
+        num = 3;
+        break;
+    case 4:
+        first = 1;
+        num = 4;
+        break;
+    }
+
+    VIParticle *p;
+
+    for (i = 0; i < count && (p = (VIParticle *)m_system->m_freeParticles.RemHead()) != 0; i++)
+    {
+        if (m_attributes.m_pattern)
+        {
+            (VIVect3 &)p->m_f20 = m_attributes.m_pattern[rand() % m_attributes.m_patternSize];
+            (VIVect3 &)p->m_f20 = (VIVect3 &)p->m_f20 * m_direction;
+            (VIVect3 &)p->m_f20 += at;
+        }
+        else
+            (VIVect3 &)p->m_f20 = at;
+        at += d;
+        m_particles.AddTail(p);
+        m_numParticles++;
+        p->m_age = 0.0f;
+        p->m_ageRate = m_attributes.m_lifespan + VIRAND * m_attributes.m_lifespanVar;
+        float life;
+
+        if (p->m_ageRate < 0.0f)
+            life = 0.0f;
+        else if (p->m_ageRate < 1000.0f)
+            life = p->m_ageRate;
+        else
+            life = 1000.0f;
+
+        p->m_ageRate = 1.0f / life;
+        p->m_friction = m_attributes.m_friction;
+        p->m_gravity = m_attributes.m_gravity;
+        if (first)
+            p->m_frame = first + rand() % num;
+        else
+            p->m_frame = 0;
+        p->m_gradRepeat = m_attributes.m_gradientRepeat;
+        p->m_size = (m_attributes.m_startSize + VIRAND * m_attributes.m_startSizeVar) * 0.5f;
+        p->m_growth = ((m_attributes.m_endSize + VIRAND * m_attributes.m_endSizeVar) * 0.5f -
+                       p->m_size) * p->m_ageRate;
+        off.Zero();
+        dir = m_attributes.m_nozzleAxis;
+        if (m_attributes.m_nozzleHprVarSet)
+        {
+            b = dir;
+
+            float h = m_attributes.m_nozzleHprVar.x * VIRAND;
+            float t = m_attributes.m_nozzleHprVar.y * VIRAND;
+            float r = m_attributes.m_nozzleHprVar.z * VIRAND;
+
+            m.RotateHPR(VIVect3(h, t, r));
+            m.Mul(b, dir);
+        }
+        if (m_attributes.m_outerHprVarSet | m_attributes.m_outerOffsetSet)
+        {
+            a = off;
+            a += m_attributes.m_outerOffset;
+            b = dir;
+
+            float h = m_attributes.m_outerHprVar.x * VIRAND;
+            float t = m_attributes.m_outerHprVar.y * VIRAND;
+            float r = m_attributes.m_outerHprVar.z * VIRAND;
+
+            m.RotateHPR(VIVect3(h, t, r));
+            m.Mul(a, off);
+            m.Mul(b, dir);
+        }
+        if (m_attributes.m_innerHprVarSet | m_attributes.m_innerOffsetSet)
+        {
+            a = off;
+            a += m_attributes.m_innerOffset;
+            b = dir;
+
+            float h = m_attributes.m_innerHprVar.x * VIRAND;
+            float t = m_attributes.m_innerHprVar.y * VIRAND;
+            float r = m_attributes.m_innerHprVar.z * VIRAND;
+
+            m.RotateHPR(VIVect3(h, t, r));
+            m.Mul(a, off);
+            m.Mul(b, dir);
+        }
+        dir = dir * m_direction;
+        off = off * m_direction;
+        (VIVect3 &)p->m_f20 += off;
+        dir *= m_attributes.m_velocity + VIRAND * m_attributes.m_velocityVar;
+        (VIVect3 &)p->m_f2C = dir;
+        if (m_attributes.m_inheritVelocity != 0.0f)
+        {
+            b = m_location;
+            b -= m_lastLocation;
+            b *= invDt;
+            b *= m_attributes.m_inheritVelocity;
+            (VIVect3 &)p->m_f2C += b;
+        }
+    }
+    return 0;
+}
+
 VIBBox VIParticleEmitter::StaticBounds() const
 {
     VIBBox b;
@@ -277,4 +444,122 @@ VIBBox VIParticleEmitter::Bounds() const
 
     b.Union(m_dynBounds);
     return b;
+}
+
+static inline VIVect3 operator+(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+// The static box is swept out by twelve test particles: each is aimed down
+// the nozzle axis at its full reach (lifespan x speed, both at their extreme),
+// swung to one of four fractions of each spread angle in turn, and offset by
+// the outer and inner emit offsets.  Every start and end point is bounded, and
+// the box is grown by half the largest particle.
+void VIParticleEmitter::RecomputeStaticBBox()
+{
+    int i;
+
+    m_staticBounds.min.Zero();
+    m_staticBounds.max.Zero();
+
+    float s0 = m_attributes.m_startSize + fabsf(m_attributes.m_startSizeVar);
+    float s1 = m_attributes.m_endSize + fabsf(m_attributes.m_endSizeVar);
+    float life = m_attributes.m_lifespan + fabsf(m_attributes.m_lifespanVar);
+    float speed = m_attributes.m_velocity + fabsf(m_attributes.m_velocityVar);
+    float half = VIMAX(s0, s1) * 0.5f;
+
+    VIMatrix44 m;
+    VIVect3    base;
+    VIVect3    dir;
+    VIVect3    p;
+    VIVect3    q;
+    float      ang[4] = { -1.0f, -0.33f, 0.33f, 1.0f };
+
+    // The nozzle clamps take pi as a LITERAL and the outer/inner ones as this
+    // in-loop local: fold swaps a constant to the right of `*`, so the nozzle
+    // arms read `ang * pi` and the others `pi * ang`, and loop.c matches the
+    // two equal movables into the one hoisted $f20.
+    for (i = 0; i < 12; i++)
+    {
+        float pi = 3.1415927f;
+
+        base.Zero();
+        dir = m_attributes.m_nozzleAxis;
+        dir *= life * speed;
+        if (m_attributes.m_nozzleHprVarSet)
+        {
+            q = dir;
+            switch (i % 3)
+            {
+            case 0:
+                m.RotateHPR(VIVect3(VIMIN(m_attributes.m_nozzleHprVar.x, 3.1415927f) * ang[i & 3], 0.0f, 0.0f));
+                break;
+            case 1:
+                m.RotateHPR(VIVect3(0.0f, VIMIN(m_attributes.m_nozzleHprVar.y, 3.1415927f) * ang[i & 3], 0.0f));
+                break;
+            case 2:
+                m.RotateHPR(VIVect3(0.0f, 0.0f, VIMIN(m_attributes.m_nozzleHprVar.z, 3.1415927f) * ang[i & 3]));
+                break;
+            }
+            m.Mul(q, dir);
+        }
+        if (m_attributes.m_outerHprVarSet | m_attributes.m_outerOffsetSet)
+        {
+            p = base;
+            p += m_attributes.m_outerOffset;
+            q = dir;
+            switch ((i + 4) % 3)
+            {
+            case 0:
+                m.RotateHPR(VIVect3(VIMIN(m_attributes.m_outerHprVar.x, pi) * ang[i & 3], 0.0f, 0.0f));
+                break;
+            case 1:
+                m.RotateHPR(VIVect3(0.0f, VIMIN(m_attributes.m_outerHprVar.y, pi) * ang[i & 3], 0.0f));
+                break;
+            case 2:
+                m.RotateHPR(VIVect3(0.0f, 0.0f, VIMIN(m_attributes.m_outerHprVar.z, pi) * ang[i & 3]));
+                break;
+            }
+            m.Mul(p, base);
+            m.Mul(q, dir);
+        }
+        if (m_attributes.m_innerHprVarSet | m_attributes.m_innerOffsetSet)
+        {
+            p = base;
+            p += m_attributes.m_innerOffset;
+            q = dir;
+            switch ((i + 8) % 3)
+            {
+            case 0:
+                m.RotateHPR(VIVect3(VIMIN(m_attributes.m_innerHprVar.x, pi) * ang[i & 3], 0.0f, 0.0f));
+                break;
+            case 1:
+                m.RotateHPR(VIVect3(0.0f, VIMIN(m_attributes.m_innerHprVar.y, pi) * ang[i & 3], 0.0f));
+                break;
+            case 2:
+                m.RotateHPR(VIVect3(0.0f, 0.0f, VIMIN(m_attributes.m_innerHprVar.z, pi) * ang[i & 3]));
+                break;
+            }
+            m.Mul(p, base);
+            m.Mul(q, dir);
+        }
+
+        VIVect3 e = base + dir;
+
+        m_staticBounds.min.x = VIMIN(e.x, m_staticBounds.min.x);
+        m_staticBounds.min.y = VIMIN(e.y, m_staticBounds.min.y);
+        m_staticBounds.min.z = VIMIN(e.z, m_staticBounds.min.z);
+        m_staticBounds.max.x = VIMAX(m_staticBounds.max.x, e.x);
+        m_staticBounds.max.y = VIMAX(m_staticBounds.max.y, e.y);
+        m_staticBounds.max.z = VIMAX(m_staticBounds.max.z, e.z);
+        m_staticBounds.min.x = VIMIN(base.x, m_staticBounds.min.x);
+        m_staticBounds.min.y = VIMIN(base.y, m_staticBounds.min.y);
+        m_staticBounds.min.z = VIMIN(base.z, m_staticBounds.min.z);
+        m_staticBounds.max.x = VIMAX(m_staticBounds.max.x, base.x);
+        m_staticBounds.max.y = VIMAX(m_staticBounds.max.y, base.y);
+        m_staticBounds.max.z = VIMAX(m_staticBounds.max.z, base.z);
+    }
+    m_staticBounds.min -= half;
+    m_staticBounds.max += half;
 }

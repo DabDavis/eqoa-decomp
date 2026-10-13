@@ -698,16 +698,16 @@ int VICollide::CollideBufferV(VICollSphere &s, VICollBuffer &b)
                     int n = b.m_prims[prim].m_numVerts;
                     n = n - 2;
 
-                    c = *(VIVect3 *)(vp + vert * 12);
+                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); c.Set(p->x, p->y, p->z); }
                     vert++;
-                    d = *(VIVect3 *)(vp + vert * 12);
+                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
                     vert++;
                     int flip = 0;
                     while (n != 0)
                     {
                         a = c;
                         c = d;
-                        d = *(VIVect3 *)(vp + vert * 12);
+                        { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
                         if (flip == 0)
                         {
                             if (Collide(s, mat, a, c, d))
@@ -861,36 +861,47 @@ int VICollide::CollideObj(VICollSphere &s, VICapsule &c)
 // picks exactly one test, and answers 0 outright if the start is inside the
 // capsule's TRUE cylinder -- a sweep that begins buried in the body reports no
 // hit at all rather than an escape vector.
-// OPEN, 142/236.  The three locals, the four calls and the branch structure
-// all line up; the target carries &cyl.m_dir and &c.m_dir in callee-saved
-// registers for the whole function where ours rematerialises them, and it has
-// one more saved register to do it with.
+// Byte-exact, and every piece of it is an INLINE CALL boundary, not a
+// statement.  &cyl.m_dir and &c.m_dir live in s1/s4 for the whole function
+// because the cylinder is filled through a helper whose `const VIVect3 &`
+// parameters gcse unifies into one pseudo -- written as member assignments the
+// frame address folds and one saved register goes (142 wrong).  The dot
+// products and the cap-centre step are helpers for the same reason: an inline
+// reference parameter is NOT a pointer-flagged pseudo, so loads through it may
+// alias the stack and stay serialised between the stores.  The two cap calls
+// are one per arm, cross-jumped, which is why `move a1,s3` sits in the bc1f
+// delay slot.  And `ex` is COPY-CONSTRUCTED then grown: VICapsule's copy
+// constructor assigns in its body, so the members' VIVect3() zeroing runs and
+// flow deletes the dead ones -- 64/68 survive only because a load through
+// &c.m_dir sits between each zero and its overwrite, and m_length/m_radius are
+// never zeroed at all (a default ctor plus four assignments leaves two extra
+// `sw zero`).
+static inline float Dot3(const VIVect3 &a, const VIVect3 &b)
+{ return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+static inline void AddScaled(VIVect3 &o, const VIVect3 &d, float t)
+{ o.x = o.x + d.x * t; o.y = o.y + d.y * t; o.z = o.z + d.z * t; }
+
+static inline void SetCyl(VICylinder &cy, const VIVect3 &b, const VIVect3 &d, float l, float r)
+{ cy.m_base = b; cy.m_dir = d; cy.m_length = l; cy.m_radius = r; }
+
 int VICollide::Collide(VICollSphere &s, VICapsule &c)
 {
     VICollRay &ray = s;
     VICylinder cyl;
     VISphere   end;
-    VICapsule  ex;
     int        hit = 0;
 
-    ex.m_base = c.m_base;
-    ex.m_dir = c.m_dir;
-    ex.m_length = c.m_length;
-    ex.m_radius = c.m_radius + s.m_radius;
+    VICapsule ex(c);
+    ex.m_radius += s.m_radius;
 
     if (ex.PointInSolid(s.m_start))
     {
-        cyl.m_base = c.m_base;
-        cyl.m_dir = c.m_dir;
-        cyl.m_length = c.m_length;
-        cyl.m_radius = c.m_radius;
+        SetCyl(cyl, c.m_base, c.m_dir, c.m_length, c.m_radius);
         if (cyl.PointInSolid(s.m_start))
-            return hit;
+            goto done;
 
-        cyl.m_base = c.m_base;
-        cyl.m_dir = c.m_dir;
-        cyl.m_length = c.m_length;
-        cyl.m_radius = c.m_radius + s.m_radius;
+        SetCyl(cyl, c.m_base, c.m_dir, c.m_length, c.m_radius + s.m_radius);
         if (cyl.PointInSolid(s.m_start))
         {
             hit = CollideNoCaps(ray, cyl) != 0;
@@ -898,32 +909,26 @@ int VICollide::Collide(VICollSphere &s, VICapsule &c)
         }
 
         {
-            float ds = s.m_start.x * c.m_dir.x + s.m_start.y * c.m_dir.y +
-                       s.m_start.z * c.m_dir.z;
-            float db = c.m_base.x * c.m_dir.x + c.m_base.y * c.m_dir.y +
-                       c.m_base.z * c.m_dir.z;
+            float ds = Dot3(s.m_start, c.m_dir);
+            float db = Dot3(c.m_base, c.m_dir);
             if (ds - db < 0.0f)
             {
                 end.c = c.m_base;
                 end.r = c.m_radius + s.m_radius;
+                hit = Collide(ray, end) != 0;
             }
             else
             {
                 end.c = c.m_base;
-                end.c.x = end.c.x + c.m_dir.x * c.m_length;
-                end.c.y = end.c.y + c.m_dir.y * c.m_length;
-                end.c.z = end.c.z + c.m_dir.z * c.m_length;
                 end.r = c.m_radius + s.m_radius;
+                AddScaled(end.c, c.m_dir, c.m_length);
+                hit = Collide(ray, end) != 0;
             }
         }
-        hit = Collide(ray, end) != 0;
         goto done;
     }
 
-    cyl.m_base = c.m_base;
-    cyl.m_dir = c.m_dir;
-    cyl.m_length = c.m_length;
-    cyl.m_radius = c.m_radius + s.m_radius;
+    SetCyl(cyl, c.m_base, c.m_dir, c.m_length, c.m_radius + s.m_radius);
     if (CollideNoCaps(ray, cyl))
         hit = 1;
 
@@ -932,9 +937,7 @@ int VICollide::Collide(VICollSphere &s, VICapsule &c)
     if (Collide(ray, end))
         hit = 1;
 
-    end.c.x = end.c.x + c.m_dir.x * c.m_length;
-    end.c.y = end.c.y + c.m_dir.y * c.m_length;
-    end.c.z = end.c.z + c.m_dir.z * c.m_length;
+    AddScaled(end.c, c.m_dir, c.m_length);
     if (Collide(ray, end))
         hit = 1;
 
@@ -946,9 +949,25 @@ done:
 // runs the two cap spheres itself.  Three details are not guessable -- t is
 // CLAMPED UP to zero rather than rejected, the sqrt term is ADDED so this finds
 // the FAR intersection with the tube, and m_hitIdx is never written.
-// OPEN, 211/284.  The VIPlane local and the accumulator took it 238 -> 211.
-// The target has four stack locals to our three and is 29 words longer, so at
-// least one vector we keep in registers is a named local there.
+// OPEN, 9/284, and all nine are one FP register swap: the target holds k in
+// $f12 and c.m_radius in $f14, ours the other way round -- equal refs, and the
+// live lengths (62 vs 65 insns) put the radius first.  It came from 211 on the
+// same lens as the capsule above: every cross product, dot product and the
+// normal's projection is an INLINE helper taking `const VIVect3 &`, so loads
+// through &r.m_dir / &c.m_dir are unflagged pseudos that may alias the stack
+// and stay between the stores.  The second cross product lands in `v`, the hit
+// point is `v = r.m_delta; v *= t; v += r.m_start;`, and the normal is built
+// IN PLACE in r.m_hitNormal and normalised there.
+static inline void Cross3(VIVect3 &o, const VIVect3 &a, const VIVect3 &b)
+{
+    o.x = a.y * b.z - a.z * b.y;
+    o.y = -a.x * b.z + a.z * b.x;
+    o.z = a.x * b.y - a.y * b.x;
+}
+
+static inline void SubScaled(VIVect3 &o, const VIVect3 &d, float t)
+{ o.x = o.x - d.x * t; o.y = o.y - d.y * t; o.z = o.z - d.z * t; }
+
 int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
 {
     int      hit = 0;
@@ -963,14 +982,8 @@ int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
     float    u;
     float    along;
 
-    VIVect3       *rd = &r.m_dir;
-    const VIVect3 *cd = &c.m_dir;
-
-    pl.n.x = rd->y * cd->z - rd->z * cd->y;
-    pl.n.y = -rd->x * cd->z + rd->z * cd->x;
-    pl.n.z = rd->x * cd->y - rd->y * cd->x;
-
-    lsq = pl.n.x * pl.n.x + pl.n.y * pl.n.y + pl.n.z * pl.n.z;
+    Cross3(pl.n, r.m_dir, c.m_dir);
+    lsq = Dot3(pl.n, pl.n);
     if (!(0.0f < lsq))
         goto done;
 
@@ -978,7 +991,7 @@ int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
     pl.n.x = pl.n.x * k;
     pl.n.y = pl.n.y * k;
     pl.n.z = pl.n.z * k;
-    pl.d = -(pl.n.x * c.m_base.x + pl.n.y * c.m_base.y + pl.n.z * c.m_base.z);
+    pl.d = -Dot3(pl.n, c.m_base);
 
     d = pl.Distance(r.m_start);
     if (!(-c.m_radius < d))
@@ -990,20 +1003,16 @@ int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
     v.y = r.m_start.y - c.m_base.y;
     v.z = r.m_start.z - c.m_base.z;
 
-    h.x = v.y * cd->z - v.z * cd->y;
-    h.y = -v.x * cd->z + v.z * cd->x;
-    h.z = v.x * cd->y - v.y * cd->x;
+    Cross3(h, v, c.m_dir);
 
-    t = -(h.x * pl.n.x + h.y * pl.n.y + h.z * pl.n.z) * k;
+    t = -Dot3(h, pl.n) * k;
     if (!(0.0f < t))
         goto done;
 
-    h.x = pl.n.y * cd->z - pl.n.z * cd->y;
-    h.y = -pl.n.x * cd->z + pl.n.z * cd->x;
-    h.z = pl.n.x * cd->y - pl.n.y * cd->x;
+    Cross3(v, pl.n, c.m_dir);
 
     half = sqrtf(c.m_radius * c.m_radius - d * d);
-    t = t + half / (rd->x * h.x + rd->y * h.y + rd->z * h.z);
+    t = t + half / Dot3(r.m_dir, v);
     if (t < 0.0f)
         t = 0.0f;
 
@@ -1011,27 +1020,21 @@ int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
     if (!(t < r.m_hitTime))
         goto done;
 
-    h.x = r.m_delta.x * t + r.m_start.x;
-    h.y = r.m_delta.y * t + r.m_start.y;
-    h.z = r.m_delta.z * t + r.m_start.z;
+    v = r.m_delta;
+    v *= t;
+    v += r.m_start;
 
-    u = (h.x * cd->x + h.y * cd->y + h.z * cd->z) -
-        (c.m_base.x * cd->x + c.m_base.y * cd->y + c.m_base.z * cd->z);
+    u = Dot3(v, c.m_dir) - Dot3(c.m_base, c.m_dir);
     if (!(0.0f <= u))
         goto done;
     if (!(u <= c.m_length))
         goto done;
 
-    v.x = h.x - c.m_base.x;
-    v.y = h.y - c.m_base.y;
-    v.z = h.z - c.m_base.z;
-    along = v.x * cd->x + v.y * cd->y + v.z * cd->z;
-    v.x = v.x - cd->x * along;
-    v.y = v.y - cd->y * along;
-    v.z = v.z - cd->z * along;
-    v.Normalize();
-
     r.m_hitNormal = v;
+    r.m_hitNormal -= c.m_base;
+    along = Dot3(r.m_hitNormal, c.m_dir);
+    SubScaled(r.m_hitNormal, c.m_dir, along);
+    r.m_hitNormal.Normalize();
     r.m_hitTime = t;
     hit = 1;
 done:
@@ -1143,17 +1146,23 @@ int VICollide::CollideBufferPackV(VICollSphere &s, VICollBuffer &b)
     return hit;
 }
 
-// OPEN, 77/277, and so are its ray twin and the query walker.  The address of
-// the per-vertex-group translation is settled (see the grouping note in the
-// body); what is left is that the target serialises the three offset adds --
-// load, add, store, three times over one register -- where ours loads all three
-// first.
+// Byte-exact, and so are its ray twin and the query walker, on two facts.
+// `pt` is ONE function-scope pointer assigned three times: a pseudo set more
+// than once has no alias base, so a load through it may alias the stack
+// vertices and the scheduler serialises load/add/store three times over one
+// register -- block-scoped pointers each have `this` as their base and all
+// three loads hoist above the stores (77 wrong words).  And the `+ 12` is its
+// own statement, or cse folds the 144 into the first load's offset (8 -> 2).
+// The vertex address is integer arithmetic with the index FIRST,
+// `vert * 8 + (int)vp`: every pointer spelling gives `addu vp,shift` and the
+// target has `addu shift,vp` (2 -> 0).
 int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
 {
     VIVect3 a;
     VIVect3 c;
     VIVect3 d;
     char *vp;
+    VIVect3 *pt;
     int hit = 0;
 
     if (Cull(s, b.m_bbox))
@@ -1179,7 +1188,7 @@ int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
                     n = n - 2;
 
                     {
-                        short *q = (short *)(vp + vert * 8);
+                        short *q = (short *)(vert * 8 + (int)vp);
                         c.x = (float)q[0] * b.m_scale;
                         c.y = (float)q[1] * b.m_scale;
                         c.z = (float)q[2] * b.m_scale;
@@ -1187,15 +1196,15 @@ int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
                         // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                         c.x = c.x + pt->x;
                         c.y = c.y + pt->y;
                         c.z = c.z + pt->z;
                     }
                     vert++;
                     {
-                        short *q = (short *)(vp + vert * 8);
+                        short *q = (short *)(vert * 8 + (int)vp);
                         d.x = (float)q[0] * b.m_scale;
                         d.y = (float)q[1] * b.m_scale;
                         d.z = (float)q[2] * b.m_scale;
@@ -1203,8 +1212,8 @@ int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
                         // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                         d.x = d.x + pt->x;
                         d.y = d.y + pt->y;
                         d.z = d.z + pt->z;
@@ -1217,7 +1226,7 @@ int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
                         a = c;
                         c = d;
                         {
-                            short *q = (short *)(vp + vert * 8);
+                            short *q = (short *)(vert * 8 + (int)vp);
                             d.x = (float)q[0] * b.m_scale;
                             d.y = (float)q[1] * b.m_scale;
                             d.z = (float)q[2] * b.m_scale;
@@ -1225,8 +1234,8 @@ int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
                             // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                             d.x = d.x + pt->x;
                             d.y = d.y + pt->y;
                             d.z = d.z + pt->z;
@@ -1294,9 +1303,9 @@ int VICollide::CollideBufferV(VICollRay &r, VICollBuffer &b)
                     int n = b.m_prims[prim].m_numVerts;
                     n = n - 2;
 
-                    c = *(VIVect3 *)(vp + vert * 12);
+                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); c.Set(p->x, p->y, p->z); }
                     vert++;
-                    d = *(VIVect3 *)(vp + vert * 12);
+                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
                     vert++;
 
                     int flip = 0;
@@ -1304,7 +1313,7 @@ int VICollide::CollideBufferV(VICollRay &r, VICollBuffer &b)
                     {
                         a = c;
                         c = d;
-                        d = *(VIVect3 *)(vp + vert * 12);
+                        { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
                         if (flip == 0)
                         {
                             if (Collide(r, mat, a, c, d))
@@ -1423,13 +1432,14 @@ int VICollide::CollideBufferPackV(VICollRay &r, VICollBuffer &b)
     return hit;
 }
 
-// OPEN, 77/277 -- see the sphere twin.
+// Byte-exact -- see the sphere twin.
 int VICollide::CollideBufferPackVGF(VICollRay &r, VICollBuffer &b)
 {
     VIVect3 a;
     VIVect3 c;
     VIVect3 d;
     char *vp;
+    VIVect3 *pt;
     int hit = 0;
 
     if (Cull(r, b.m_bbox))
@@ -1455,7 +1465,7 @@ int VICollide::CollideBufferPackVGF(VICollRay &r, VICollBuffer &b)
                     n = n - 2;
 
                     {
-                        short *q = (short *)(vp + vert * 8);
+                        short *q = (short *)(vert * 8 + (int)vp);
                         c.x = (float)q[0] * b.m_scale;
                         c.y = (float)q[1] * b.m_scale;
                         c.z = (float)q[2] * b.m_scale;
@@ -1463,15 +1473,15 @@ int VICollide::CollideBufferPackVGF(VICollRay &r, VICollBuffer &b)
                         // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                         c.x = c.x + pt->x;
                         c.y = c.y + pt->y;
                         c.z = c.z + pt->z;
                     }
                     vert++;
                     {
-                        short *q = (short *)(vp + vert * 8);
+                        short *q = (short *)(vert * 8 + (int)vp);
                         d.x = (float)q[0] * b.m_scale;
                         d.y = (float)q[1] * b.m_scale;
                         d.z = (float)q[2] * b.m_scale;
@@ -1479,8 +1489,8 @@ int VICollide::CollideBufferPackVGF(VICollRay &r, VICollBuffer &b)
                         // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                         d.x = d.x + pt->x;
                         d.y = d.y + pt->y;
                         d.z = d.z + pt->z;
@@ -1493,7 +1503,7 @@ int VICollide::CollideBufferPackVGF(VICollRay &r, VICollBuffer &b)
                         a = c;
                         c = d;
                         {
-                            short *q = (short *)(vp + vert * 8);
+                            short *q = (short *)(vert * 8 + (int)vp);
                             d.x = (float)q[0] * b.m_scale;
                             d.y = (float)q[1] * b.m_scale;
                             d.z = (float)q[2] * b.m_scale;
@@ -1501,8 +1511,8 @@ int VICollide::CollideBufferPackVGF(VICollRay &r, VICollBuffer &b)
                             // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                             d.x = d.x + pt->x;
                             d.y = d.y + pt->y;
                             d.z = d.z + pt->z;
@@ -1702,7 +1712,7 @@ int VICollide::QueryBufferPackV(const VIBBox &w, const VIBBox &o,
     return 0;
 }
 
-// OPEN, 81/260 -- the same offset-add serialisation as the collide walkers.
+// Byte-exact -- the same two levers as the collide walkers.
 int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
                                  VIQueryTriList &l, VICollBuffer &b)
 {
@@ -1715,6 +1725,7 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
     int prim = 0;
     int g;
     char *vp = b.m_verts;
+    VIVect3 *pt;
 
     for (g = 0; g < b.m_numGroups; g++)
     {
@@ -1729,7 +1740,7 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
                     n = n - 2;
 
                     {
-                        short *q = (short *)(vp + vert * 8);
+                        short *q = (short *)(vert * 8 + (int)vp);
                         raw.x = (float)q[0] * b.m_scale;
                         raw.y = (float)q[1] * b.m_scale;
                         raw.z = (float)q[2] * b.m_scale;
@@ -1737,8 +1748,8 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
                         // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                         raw.x = raw.x + pt->x;
                         raw.y = raw.y + pt->y;
                         raw.z = raw.z + pt->z;
@@ -1746,7 +1757,7 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
                     m_world.Mul(raw, c);
                     vert++;
                     {
-                        short *q = (short *)(vp + vert * 8);
+                        short *q = (short *)(vert * 8 + (int)vp);
                         raw.x = (float)q[0] * b.m_scale;
                         raw.y = (float)q[1] * b.m_scale;
                         raw.z = (float)q[2] * b.m_scale;
@@ -1754,8 +1765,8 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
                         // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                         raw.x = raw.x + pt->x;
                         raw.y = raw.y + pt->y;
                         raw.z = raw.z + pt->z;
@@ -1769,7 +1780,7 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
                         a = c;
                         c = d;
                         {
-                            short *q = (short *)(vp + vert * 8);
+                            short *q = (short *)(vert * 8 + (int)vp);
                             raw.x = (float)q[0] * b.m_scale;
                             raw.y = (float)q[1] * b.m_scale;
                             raw.z = (float)q[2] * b.m_scale;
@@ -1777,14 +1788,14 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
                             // The GROUPING is the target's: (this + pg*12) + 144,
                         // where `&m_preTranslations[pg]` folds the other way
                         // round to this + (144 + pg*12) and costs 26 words.
-                        VIVect3 *pt = (VIVect3 *)((char *)this +
-                                                  pg * sizeof(VIVect3)) + 12;
+                        pt = (VIVect3 *)((char *)this + pg * sizeof(VIVect3));
+                        pt += 12;
                             raw.x = raw.x + pt->x;
                             raw.y = raw.y + pt->y;
                             raw.z = raw.z + pt->z;
                         }
                         m_world.Mul(raw, d);
-                        int idx = ((signed char *)(vp + vert * 8))[7];
+                        int idx = ((signed char *)(vert * 8 + (int)vp))[7];
                         if (flip == 0)
                         {
                             if (l.Intersect(idx, a, c, d) < 0)
