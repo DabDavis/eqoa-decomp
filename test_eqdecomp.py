@@ -150,6 +150,32 @@ def test_span_caps_only_ever_shrink():
            f"function and the cap is unjustified")
 
 
+def test_span_alias_names_shadow_a_real_function():
+    """
+    SPAN_ALIAS claims a map entry is a non-code value that equals a real
+    function's entry point.  Held to: (a) the alias and the named function are
+    at the SAME address, (b) the alias has span 0 and is in SymbolTable.alias,
+    (c) the function keeps a non-zero span ending one word past a `jr ra`.
+
+    Negative control: a name that is NOT at its partner's address must fail (a)
+    -- VIRStrip5 against VIEEUnloadIrx__Fi.
+    """
+    ck(len(E.SPAN_ALIAS) > 0, "SPAN_ALIAS is empty; this test is inert")
+    _, st, img = E.load()
+    ck({s.name for s in st.alias} == set(E.SPAN_ALIAS),
+       "SymbolTable.alias does not match SPAN_ALIAS")
+    for name, real in E.SPAN_ALIAS.items():
+        a, f = st.get(name), st.get(real)
+        ck(a is not None and f is not None, f"{name}/{real}: not in the map")
+        ck(a.addr == f.addr, f"{name} is at {a.addr:#x}, {real} at {f.addr:#x}")
+        ck(a.span == 0, f"{name}: span {a.span} != 0")
+        ck(f.span > 0, f"{real}: span 0 -- the alias swallowed it")
+        tail = _words(img.read(f.addr + f.span - 8, 4))
+        ck(E.JR_RA in tail, f"{real}: its span does not end after a jr ra")
+    ck(st.get("VIRStrip5").addr != st.get("VIEEUnloadIrx__Fi").addr,
+       "control: VIRStrip5 shares VIEEUnloadIrx's address; check (a) cannot discriminate")
+
+
 def test_span_ignore_names_land_inside_a_function():
     """
     SPAN_IGNORE claims a map entry is NOT a function start.  That is a strong
@@ -606,7 +632,17 @@ def test_engine_fingerprint_profile():
     and 2 select a compiler and a flag set from; if any of them moves, the
     conclusions drawn from them need revisiting rather than reusing.
     """
-    _, st, img = E.load()
+    # The build profile covers ALL compiled code, so it is read with SPAN_CAP
+    # off: a cap stops a TU's unnamed local code counting as part of the named
+    # function before it, which is right for scoring and wrong here (phase 61's
+    # caps took the scan from 219,896 to 189,583 instructions and the
+    # branch-likely count from 2,486 to 1,822).
+    caps = dict(E.SPAN_CAP)
+    E.SPAN_CAP.clear()
+    try:
+        _, st, img = E.load()
+    finally:
+        E.SPAN_CAP.update(caps)
     engine = [s for s in st.sized if s.tag == "SUPPORT_DATA"]
     fp = F.fingerprint(img.func(s) for s in engine)
     ck(fp["insns"] > 200000, f"only {fp['insns']} instructions scanned")

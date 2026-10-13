@@ -3099,6 +3099,18 @@ words short" forever — `EraseFixup` came back as 178 words instead of 238.
 checks two known function starts FAIL the same test so it cannot pass
 vacuously.  Three new `SPAN_CAP` entries as well.
 
+**Phase 61 added the other case, `SPAN_ALIAS`.** The `VIRStrip*` names are VU1
+microprogram labels, and `VIRStrip6`'s value happens to EQUAL a real entry
+point, `VIEEUnloadIrx`'s. In SPAN_IGNORE it would drop that address and take
+the function's span with it, so an alias keeps the address and only the alias
+gets span 0. Until then the census counted it as the last unwritten
+SUPPORT function. `test_span_alias_names_shadow_a_real_function` checks
+three things: the two share an address, the real function keeps a span that
+ends after a `jr ra`, and `VIRStrip5` fails the address check as a control.
+The same phase moved `test_engine_fingerprint_profile` onto UNCAPPED spans. A
+build profile covers all compiled code, and phase 61's 110 caps had cut the scan
+from 219,896 instructions to 189,583, under its own 200,000 floor.
+
 ### Open
 
 `Insert` in every instantiation (95–105 wrong of ~180): the shape is right to

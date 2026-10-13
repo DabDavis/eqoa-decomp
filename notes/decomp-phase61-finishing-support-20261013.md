@@ -82,3 +82,26 @@ which jump2's cross-jump keeps the moved copy. The target behaves as if the moti
 ran — its last in-loop block stays inline and earlier failures cross-jump into it. The
 motion is skipped when something else jumps into the block, but a `goto` into the loop
 also invalidates the loop (strength reduction disappears), so that is not the source.
+
+## Tier 1 complete (2026-10-13, ~23:55 UTC)
+
+After every lane was merged and synced (fx for the first time, flora a second time),
+the whole tree read **3,508 of 3,756 byte-exact, nothing lost**, and the census found
+exactly one unwritten SUPPORT function: `VIRStrip6`, 14 instructions. It is not code.
+The `VIRStrip*` names are VU1 microprogram labels (`VIRaster::RStrip*Offset` subtracts
+them from `VIRInit`), and `VIRStrip6`'s value equals the entry point of
+`VIEEUnloadIrx`, which has been byte-exact since phase 27. Putting it in `SPAN_IGNORE`
+would have removed the shared address and the function's span with it, so the harness
+gained a second table, `SPAN_ALIAS` (name → the real function it shadows), with its own
+test and a control. **Every SUPPORT function is now written**; 178 remain open
+(140 KB), and the rest of the phase is the grind.
+
+`test_engine_fingerprint_profile` had been failing since the caps landed: 110 SPAN_CAPs
+stop a TU's unnamed local code counting as part of the named function before it, which
+cut the scan from 219,896 instructions to 189,583 and branch-likely from 2,486 to
+1,822, both under the test's floors. The test now reads the profile with SPAN_CAP off,
+since a build profile covers all compiled code.
+
+`_lane.py sync` copies the tools over a lane's own, and the 3-way merge never carries
+SPAN entries back, so `sync` now refuses when a lane's `eqdecomp.py` holds a SPAN entry
+main lacks (negative control: a fake cap is refused, and the restore syncs).

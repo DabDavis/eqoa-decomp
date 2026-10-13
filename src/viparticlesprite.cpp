@@ -82,17 +82,20 @@ int VIParticleSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollid
     return i;
 }
 
+// The VU0 copy goes through an inline wrapper: called directly, cse merges the
+// destination's stack address with the constructor's and hands the call a
+// callee-saved register, where the target rematerialises `addiu a0,sp,N`.
+static inline void CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s)
+{
+    sceVu0CopyMatrix(d, s);
+}
+
 // The emitter lives in the sprite's frame: the camera's view is inverted by
 // hand (transpose, translation rebuilt) and composed with the model-view to
 // find where the sprite sits.  A free emitter (m_unk430 == 0) is placed and
 // aimed there; a local one is pinned at the origin, aimed down +z and given
 // the whole transform as its space.  Past 100 m it is purged rather than
 // updated.  The particle marker is drawn as in Pick.
-static inline void CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s)
-{
-    sceVu0CopyMatrix(d, s);
-}
-
 int VIParticleSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned int flags)
 {
     const VIVect3 &cp = cam.m_position;

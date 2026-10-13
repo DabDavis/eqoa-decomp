@@ -81,6 +81,18 @@ SPAN_IGNORE = {
     "VIRStrip5",   # inside VIGetCurrentDiscId__Fv (phase 61: its destructor tail)
 }
 
+# Phase 61.  A map entry that is not code but whose value happens to EQUAL a
+# real function's entry point: the `VIRStrip*` names are VU1 microprogram
+# labels, and VIRStrip6's value is VIEEUnloadIrx's address.  It cannot go in
+# SPAN_IGNORE -- dropping the address would truncate the function's
+# predecessor and leave the function itself with no span -- so the address
+# stays and only the alias gets span 0 (SymbolTable.alias).  Each entry names
+# the function it shadows; `test_span_alias_names_shadow_a_real_function`
+# holds it to that.
+SPAN_ALIAS = {
+    "VIRStrip6": "VIEEUnloadIrx__Fi",
+}
+
 
 @dataclass(frozen=True)
 class Module:
@@ -451,6 +463,7 @@ class SymbolTable:
         self._by_name: dict[str, Symbol] = {}
         self.foreign: list[Symbol] = []   # outside this module's image
         self.interior: list[Symbol] = []  # SPAN_IGNORE: not a function start
+        self.alias: list[Symbol] = []     # SPAN_ALIAS: shadows a real function
         self.oversize: list[Symbol] = []  # derived span crossed a region gap
         self.capped: list[Symbol] = []    # SPAN_CAP: the map omits the next function
         for addr, tag, name in rows:
@@ -458,6 +471,8 @@ class SymbolTable:
             reason = None
             if name in SPAN_IGNORE:
                 reason, span = "interior", 0
+            elif name in SPAN_ALIAS:
+                reason, span = "alias", 0
             if bounds is not None and not (bounds[0] <= addr < bounds[1]):
                 reason, span = "foreign", 0
             elif span > self.MAX_SPAN:
@@ -470,6 +485,8 @@ class SymbolTable:
                 self.capped.append(sym)
             if reason == "interior":
                 self.interior.append(sym)
+            elif reason == "alias":
+                self.alias.append(sym)
             elif reason == "foreign":
                 self.foreign.append(sym)
             elif reason == "oversize":
