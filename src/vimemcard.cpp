@@ -448,6 +448,13 @@ int VIMemCardUnpad()
 }
 
 // The game's own files: everything but ".", "..", the marker and pad.dat.
+// Two register-allocation facts in the spelling.  Each rejection is its own
+// `count--` arm: jump2 cross-jumps them into one AFTER allocation, so
+// global-alloc counts four decrements and `count` outranks the name pointer
+// for s0.  And the output is `out[j]` with `j++`: loop.c strength-reduces it
+// and puts `p = out` in the loop PREHEADER, so it is not in the clamp's block
+// between the two `slt`s -- there it widens the gap past local-alloc's fake
+// lifetime and the second `slt` takes v0 instead of a0.
 int VIMemCardGetDir(VIMemCardDirEntry *out, int max)
 {
     char path[256];
@@ -475,17 +482,22 @@ int VIMemCardGetDir(VIMemCardDirEntry *out, int max)
     n = result < 19 ? result : 18;
     n = max < n ? max : n;
     count = n;
-    VIMemCardDirEntry *p = out;
+    int j = 0;
     for (i = 0; i < n; i++)
     {
         name = (char *)dir[i].EntryName;
-        if (!strcmp(name, ".") || !strcmp(name, "..")
-            || !strcmp(name, VIMemCardProductId()) || !strcmp(name, "pad.dat"))
+        if (!strcmp(name, "."))
+            count--;
+        else if (!strcmp(name, ".."))
+            count--;
+        else if (!strcmp(name, VIMemCardProductId()))
+            count--;
+        else if (!strcmp(name, "pad.dat"))
             count--;
         else
         {
-            strcpy(p->m_name, name);
-            p++;
+            strcpy(out[j].m_name, name);
+            j++;
         }
     }
     free(dir);

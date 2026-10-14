@@ -2390,15 +2390,17 @@ int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
         // register -- which is what spills `c` to the stack.
         VIVect2I *pp1 = &p1;
         Color(c);
-        int off = slot * (int)sizeof(VIRFontSlot);
+        // `mode` is dead after the switch and is REUSED for the slot offset:
+        // the target keeps both in s1.
+        mode = slot * (int)sizeof(VIRFontSlot);
         p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[0]);
         Vertex(p0);
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[1]);
         Vertex(VIVect2I(p1.x, p0.y));
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[2]);
         Vertex(*pp1);
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[3]);
         Vertex(VIVect2I(p0.x, p1.y));
         EndTriFan();
         p0.x = p1.x + 1;
@@ -2451,15 +2453,17 @@ int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
         // register -- which is what spills `c` to the stack.
         VIVect2I *pp1 = &p1;
         Color(c);
-        int off = slot * (int)sizeof(VIRFontSlot);
+        // `mode` is dead after the switch and is REUSED for the slot offset:
+        // the target keeps both in s1.
+        mode = slot * (int)sizeof(VIRFontSlot);
         p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[0]);
         Vertex(p0);
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[1]);
         Vertex(VIVect2I(p1.x, p0.y));
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[2]);
         Vertex(*pp1);
-        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
+        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[3]);
         Vertex(VIVect2I(p0.x, p1.y));
         EndTriFan();
         p0.x = p1.x + 1;

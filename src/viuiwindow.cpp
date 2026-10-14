@@ -305,8 +305,14 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
     // whose short life ranks it for a callee-saved register (s4, the
     // target's) where a separate `space` loses to `row` and `row` keeps
     // one.  Declaration order fixes the spill slots (lastw, fit, skip,
-    // count).  OPEN: i/the -1 constant/s come out s7/s5/s6 for the
-    // target's s5/s6/s7 (global-alloc ranks the constant above i).
+    // count).  OPEN, 32/467, STEPPING STONE: global-alloc ranks the -1
+    // constant (19 refs / 285 insns) and `s` above `i` (30 / 498), so the
+    // three come out s7/s5/s6 for the target's s5/s6/s7 (103 words).  The
+    // space arm's `line = &s[x + 1]` (not `&s[i]`) keeps x*2 live across the
+    // copy calls in a call-saved pseudo that takes s5 in pass 2 first; `i`,
+    // dead there, then shares s5 in pass 1 and the rotation is the target's
+    // -- but the target computes `line` from `i` (no saved x*2), so the real
+    // source raises i's priority some other way (+1 in-loop ref would do).
     const unsigned short *line = s;
     int lastw = 0;
     int i = 0;
@@ -347,7 +353,7 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
                     n = &s[x + 1] - line;
                     TEXTBOX_COPY(n)
                     i = x + 1;
-                    line = &s[i];
+                    line = &s[x + 1];
                 }
                 else
                 {

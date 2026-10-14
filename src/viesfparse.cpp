@@ -4270,6 +4270,11 @@ int VIESFParse::ParseFontObj()
 // effect's index, and every Find in the event loop -- and the function returns
 // it, so an effect with any resolved event returns that event's index, not its
 // own.  Every caller only tests the sign.
+// The particle case tests the raster and the id in NESTED ifs, each with its
+// own `ev->m_id = -1` else: jump2 cross-jumps the three -1 stores into one
+// AFTER register allocation, so global-alloc counts all three and the hoisted
+// -1 outranks `l` for s5 (as one `&&` with one else it is two stores, and l,
+// -1, 1 and ver rotate through s5..s8: 22 words).
 int VIESFParse::ParseSpellEffectObj()
 {
     unsigned short type, version;
@@ -4369,11 +4374,16 @@ int VIESFParse::ParseSpellEffectObj()
             {
             case 3:
             case 8:
-                if (m_scene->m_raster && (ev->m_id != -1 && ev->m_id != 0))
+                if (m_scene->m_raster)
                 {
-                    if (m_dict->Find(ev->m_id, rt, j) == 0) return -1;
-                    ev->m_id = j;
-                    m_scene->ParticleSystem()->ShareParticleDefinition(j);
+                    if (ev->m_id != -1 && ev->m_id != 0)
+                    {
+                        if (m_dict->Find(ev->m_id, rt, j) == 0) return -1;
+                        ev->m_id = j;
+                        m_scene->ParticleSystem()->ShareParticleDefinition(j);
+                    }
+                    else
+                        ev->m_id = -1;
                 }
                 else
                     ev->m_id = -1;

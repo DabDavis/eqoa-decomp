@@ -405,7 +405,10 @@ int VIClipStack::PushPortal(VICamera &cam, int n, VIVect3 *p)
 
 // 0x0041F258.  The same for an arbitrary eye: the near plane is the caller's,
 // flipped and moved out to `dist`, and the corners are pushed out to `dist`
-// measured along that plane's normal.
+// measured along that plane's normal.  ONE `t` for the eye's distance and
+// every corner's: a pseudo set in two blocks is never local, so local-alloc
+// cannot tie the eye-distance chain to `dist - t` (one $f0 chain, 25 words);
+// t stays global and the chain runs in $f1 as the target's does.
 int VIClipStack::PushPortal(VIVect3 &eye, float dist, int n, VIVect3 *p,
                             VIPlane &near)
 {
@@ -434,7 +437,7 @@ int VIClipStack::PushPortal(VIVect3 &eye, float dist, int n, VIVect3 *p,
 
         d = p[i];
         d -= eye;
-        float t = Dot(d, near.n);
+        t = Dot(d, near.n);
         m_verts[m_numVerts] = d;
         m_verts[m_numVerts] *= dist / t;
         m_verts[m_numVerts] += eye;
