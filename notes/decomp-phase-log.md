@@ -167,6 +167,29 @@ byte-exact (`ParseObject` 7/230, both `Parse*LODSpriteLevels` 12/72,
 over their failure sites was swept and none moves it.
 Finding: `decomp-phase60-the-asset-parsers-20260829.md`.
 
+**Phase 61 — FINISHING SUPPORT (in progress).**  "Keep going until SUPPORT is finished",
+worked by up to ten agents in isolated LANES (`_lane.py`: own `src/`+`build/`, a `.base/`
+snapshot, three-way `git merge-file` back into main). **Every named SUPPORT function is
+written** (the last "unwritten" one, `VIRStrip6`, is a VU1 label equal to `VIEEUnloadIrx`'s
+entry -- `SPAN_ALIAS`), and **2,891 -> 3,636 of 3,751 byte-exact** so far. The phase's real
+finding is that **byte-exact is not correct**: the scorer masks every relocated field, so
+`eqcallcheck.py` (jal targets against the relocated dump) found 84 "matched" functions calling
+the WRONG function -- every `DestroyPool` walked with `Erase` instead of `Next`, VIXm's spu/xm
+fields were swapped, a static sprite's extra argument is its actor's baked colour buffer --
+and `eqrefcheck.py` (%hi/%lo pairs) found 261 data-reference findings: the original strings,
+tables, `C:/code-frontiers-gm/` `__FILE__` paths and the DRDP identifiers the asserts reveal;
+both now gate the score. `eqlocal.py` scores the code the map does not name (125 KB: 107 KB
+per-TU template copies, the rest our statics) -- **all 65 unnamed functions are exact and no
+unique code is unmatched**. **Every compiler-knob hypothesis was refuted on a patched copy of
+the real cc1plus** (four latencies, five scheduler tie-breaks, the cross-jump USE barrier:
+each closes 0 opens and breaks 51..2,217 matches), so every open function is SOURCE SHAPE --
+and the large late gains came from deriving gcc's own rules from its 990721 source: inline
+reference parameters lose the POINTER flag (alias.c), loop.c's hoisting COUNT, gcse's
+computable hash order, cse's skip-blocks and struct-member invalidation, strict aliasing on at
+-O2, cross-jumping after sched2, the Insert family's copy-preference rule, plus simulators of
+global and local allocation (`decomp/regalloc/`). Findings:
+`decomp-phase61-finishing-support-20261013.md`, `decomp-alias-rule-inline-ref-params-20261014.md`.
+
 **Phase 57 — the RASTER'S DMA HALF.**  `viraster.cpp` again: 24 more of `VIRaster`'s
 167 functions written and 16 byte-exact, taking the file to 128 written.  Phase 56 wrote
 the object; this takes the half that talks to the hardware — the three microcode uploads,

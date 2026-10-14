@@ -6354,3 +6354,68 @@ which is now the only thing between four functions and byte-exact
 
 Long form, with the not-written list:
 `claude-notes/decomp-phase60-the-asset-parsers-20260829.md`.
+
+## Phase 61 result: finishing SUPPORT (in progress)
+
+**2,891/3,284 → 3,636/3,751 byte-exact, plus all 65 unnamed functions.** Every named
+SUPPORT function is written. The denominator grew as the census learnt to see more
+(written-but-unscored functions, `SPAN_CAP`s, phantom instantiations removed). Worked by up
+to ten agents in isolated lanes (`_lane.py`), each merged three-way into main and checked
+whole-tree before every publish. The long form is
+`claude-notes/decomp-phase61-finishing-support-20261013.md`; the levers, by lane and wave, are
+in the memory file `feedback_phase61_esf_levers.md`.
+
+**Byte-exact is not correct.** The scorer masks every field the candidate's own relocations
+name, so a `jal` matches any `jal` and a `%hi/%lo` pair matches any address. Three new checks
+close that gap, and the first is now part of `eqcheck.score` itself:
+
+| tool | what it compares | first run |
+|---|---|---|
+| `eqcallcheck.py` | every `jal` against the callee the relocated in-world dump names | 84 matched functions called the WRONG function |
+| `eqrefcheck.py` | every `%hi/%lo` pair, traced through the CFG: strings by text, floats by value, jump tables by target, globals by name, unnamed objects by consistency | 261 findings; 2 left |
+| `eqlocal.py` | the functions the map does not name (statics, local helpers), found in the unnamed code | 41/65 found → **65/65**; 0 unique bytes unmatched |
+
+Real behaviour they exposed in "exact" functions:
+- every template `DestroyPool` walks with `Next`, not `Erase`;
+- VIXm's SPU and XM fields were swapped;
+- a static sprite's extra draw argument is its actor's baked COLOUR BUFFER (`VIScene::GetNextColorBuffer`);
+- `VIRaster::EndScene` ends in `ReleaseDeferred`;
+- `VIPixelStore3` shares the RGBA32 stride;
+- the memory-card product id is `BASLUS-20470EQONLINE`;
+- the options file is `game.opt`;
+- `~VISound` is pure;
+- the original was built from `C:/code-frontiers-gm/{core,drdp,game}/`, and its DRDP layer's
+  identifiers are the ones the asserts print.
+
+**No compiler knob explains anything.** Ten hypotheses were patched into a copy of the real
+`cc1plus.exe` and scored whole-tree (Phase 8c addenda): four latencies, five scheduler
+tie-breaks and the cross-jump USE barrier. Each closed 0 open functions and broke 51 to 2,217
+matched ones. The settled compiler IS the target's, so every open function is a
+source-shape problem.
+
+**The rules that closed the hard ones were read out of gcc's own source**, not guessed:
+- an inline helper's reference parameter loses the POINTER flag, so its +4/+8 accesses
+  may-alias every addressable stack local (alias.c `find_base_term`;
+  `claude-notes/decomp-alias-rule-inline-ref-params-20261014.md`);
+- loop.c hoists by a COUNT against a threshold (64 with calls, and a `const T &` parameter
+  adds a preheader copy);
+- gcse's expression hash bucket is computable: `(13258 + N + K) mod S`;
+- cse skips simple if-blocks and invalidates all memory on a struct-member store;
+- STRICT ALIASING is on at `-O2`;
+- cross-jumping runs AFTER sched2, and jump threading runs both early and late;
+- a store at offset 0 through a cast pointer is not marked as a struct element;
+- fold never distributes a MULT_EXPR;
+- local-alloc takes only single-block, single-death pseudos;
+- a copy preference beats a plain one, which is the whole `Insert` family's rule;
+- cross-jumped code is counted twice by the allocator.
+
+`regalloc/gsim.py` and `regalloc/lsim.py` replay global and local allocation from `-da`
+dumps, with what-ifs.
+
+Harness changes:
+- `SPAN_ALIAS`;
+- the fingerprint test reads uncapped spans;
+- `_lane.py sync` refuses to drop lane-only `SPAN` entries;
+- `_tu.py` reports a matched function that stops being emitted;
+- the duplicate test masks relocations;
+- TU-local symbols are keyed per TU.
