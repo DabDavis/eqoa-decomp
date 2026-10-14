@@ -838,27 +838,32 @@ int VIEESurfCache::ConstructDMAPacket(VISurface &s, VIEESurfCacheInfo &c,
         VIEEXferPacket *x = (VIEEXferPacket *)(d + 1);
         x->m_vif[0] = 0;
         x->m_vif[1] = 0;
-        int f = 1;
-        if (s.m_paletteCount == 0)
-            f = 0;
-        if (f)
-            x->m_vif[2] = 0;
-        else
+        // The flag survives as a register (`movz` on the count) and the test
+        // is on it, false arm first; `f = 1; if (!count) f = 0;` is threaded
+        // away instead.
+        int f = 0;
+        if (s.m_paletteCount)
+            f = 1;
+        if (!f)
             x->m_vif[2] = 0x11000000;
+        else
+            x->m_vif[2] = 0;
         x->m_vif[3] = 0x50000004;
         x->m_gif = 0x1000000000008003;
         x->m_regs = 14;
         // The A+D walker is set before the TBW choice: the target computes
-        // it in that branch's delay slot.
+        // it in that branch's delay slot.  The whole TEX0 value is written
+        // in BOTH arms: each arm loads its own level address and compares,
+        // and jump2 cross-jumps the identical tails from the `movn` on.
         VIGifAD *ad = x->m_ad;
-        int tbw;
-        if (c.m_tex.m_psm == 19 || c.m_tex.m_psm == 20)
-            tbw = VIMAX(w >> 6, 2);
+        if (c.m_tex.m_psm != 19 && c.m_tex.m_psm != 20)
+            ad->m_value = (((long)c.m_levelAddr[k] >> 8) << 32)
+                        | ((long)VIMAX(w >> 6, 1) << 48)
+                        | ((long)c.m_tex.m_psm << 56);
         else
-            tbw = VIMAX(w >> 6, 1);
-        ad->m_value = (((long)c.m_levelAddr[k] >> 8) << 32)
-                    | ((long)tbw << 48)
-                    | ((long)c.m_tex.m_psm << 56);
+            ad->m_value = (((long)c.m_levelAddr[k] >> 8) << 32)
+                        | ((long)VIMAX(w >> 6, 2) << 48)
+                        | ((long)c.m_tex.m_psm << 56);
         ad->m_reg = 80;
         ad++;
         ad->m_value = 0;

@@ -65,7 +65,13 @@ int VIUI::End2D()
     return m_raster->End2D();
 }
 
-int VIUI::FillRectangle(const VIVect2I *p, const VIColor32F *c)
+// Phase 61, wave 3.  The three rectangle fills return VOID: an ignored `int`
+// call still sets v0, so the copy load into v0 before it has one dependent
+// fewer than its neighbours and the scheduler's dependents-count tie-break
+// puts it last.  With a void callee the post-call reload into v0 is that
+// dependent (FrameFillRectangle 7 -> 0, FrameRectangle 8 -> 0).  The return
+// types are free here: no caller in SUPPORT reads one.
+void VIUI::FillRectangle(const VIVect2I *p, const VIColor32F *c)
 {
     m_raster->SetSolidFillUIMaterial();
     VIVect2I a(p[1].x, p[0].y);
@@ -76,10 +82,10 @@ int VIUI::FillRectangle(const VIVect2I *p, const VIColor32F *c)
     m_raster->Vertex(a);
     m_raster->Vertex(p[1]);
     m_raster->Vertex(b);
-    return m_raster->EndTriFan();
+    m_raster->EndTriFan();
 }
 
-int VIUI::FrameFillRectangle(const VIVect2I *p)
+void VIUI::FrameFillRectangle(const VIVect2I *p)
 {
     VIVect2I r[2];
     r[0] = p[0];
@@ -89,14 +95,14 @@ int VIUI::FrameFillRectangle(const VIVect2I *p)
     FillRectangle(r, &c1);
     r[0] += VIVect2I(2, 2);
     r[1] -= VIVect2I(2, 2);
-    return FillRectangle(r, &c2);
+    FillRectangle(r, &c2);
 }
 
 // Phase 61.  Each strip's moved edge is computed from the COPY (`r[1].x =
 // r[0].x + w`), so cse reuses the value the copy just stored; written from
 // `p[...]` it reloads through a different address form (21 -> 8 words; the
-// rest is the second strip's store order).
-int VIUI::FrameRectangle(const VIVect2I *p, const VIColor32F *c, int w)
+// last 8 were the void return above).
+void VIUI::FrameRectangle(const VIVect2I *p, const VIColor32F *c, int w)
 {
     VIVect2I r[2];
     r[0] = p[0];
@@ -114,7 +120,7 @@ int VIUI::FrameRectangle(const VIVect2I *p, const VIColor32F *c, int w)
     r[0] = p[0];
     r[1] = p[1];
     r[0].y = r[1].y - w;
-    return FillRectangle(r, c);
+    FillRectangle(r, c);
 }
 
 int VIUI::Blit(int id, VIVect2I at, VIVect2I a, VIVect2I b,
@@ -238,11 +244,17 @@ int VIUI::StretchBlitEx(VIUITexId id, VIVect2I at, VIVect2I size,
     return m_raster->StretchBlit(i, 0, at, size, a, b, m, alpha);
 }
 
-// Phase 61.  Four edges tiled between four corners.  `br` is `size + at` --
+// Phase 61.  `size` is a CONST by-value parameter (top-level const does not
+// mangle): its loads are then RTX_UNCHANGING, which true_dependence never lets
+// conflict with a stack store, so after reload -- where the pointer register
+// is set twice and has no alias base -- they still schedule freely.  Non-const,
+// every size load waits behind the stack stores above it (21 -> 0 here; the
+// two Fill frames 12 -> 0 and 6 -> 0 on the same edit).
+// Four edges tiled between four corners.  `br` is `size + at` --
 // the operand order survives into the two addu's -- and the top and left
 // edges start at `tl + VIVect2I(dx, 0)`, an operator+ whose operand gets its
 // own stack temp beside the result.
-int VIUI::BlitFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+int VIUI::BlitFrame(VIVect2I at, const VIVect2I size, VIUIFrameParam fp,
                     VIAlphaBlendMode m, float alpha, unsigned char left)
 {
     VIVect2I tl;
@@ -353,7 +365,7 @@ int VIUI::BlitStuddedFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
 
 // Phase 61.  The fill is tiled inside the corner insets, then the frame goes
 // over it.
-int VIUI::BlitFillFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+int VIUI::BlitFillFrame(VIVect2I at, const VIVect2I size, VIUIFrameParam fp,
                         VIUITexId fill, VIAlphaBlendMode m, float alpha,
                         unsigned char left)
 {
@@ -372,7 +384,7 @@ int VIUI::BlitFillFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
     return BlitFrame(at, VIVect2I(w, h), fp, m, alpha, left);
 }
 
-int VIUI::BlitFillStuddedFrame(VIVect2I at, VIVect2I size, VIUIFrameParam fp,
+int VIUI::BlitFillStuddedFrame(VIVect2I at, const VIVect2I size, VIUIFrameParam fp,
                                VIUIFrameParam studs, VIUITexId fill, int nx,
                                int ny, VIAlphaBlendMode m, float alpha,
                                unsigned char left)

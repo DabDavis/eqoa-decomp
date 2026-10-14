@@ -302,10 +302,10 @@ int VIString::Deallocate()
     return 0;
 }
 
-// No `return`: the target is the call and nothing else, so the int the
-// snprintf family hands back is whatever the template left in v0 -- the address
-// of the terminating NUL.  Shipped.
-int VIString::vsnprintf(char *d, int n, const char *f, char *ap)
+// No `return`: the snprintf family hands back whatever the template left in v0
+// -- the address of the terminating NUL.  Shipped.  Declared VOID, or the first
+// pseudo after the call in viglobalee's _VIAssertf/_VIAlert cannot take $v0.
+void VIString::vsnprintf(char *d, int n, const char *f, char *ap)
 {
     VI_vsnprintf(d, n, f, ap);
 }
@@ -822,11 +822,14 @@ int VIString::vsnprintf16(unsigned short *d, int n, const unsigned short *f, cha
     VI_vsnprintf(d, n, f, ap);
 }
 
-int VIString::snprintf(char *d, int n, const char *f, ...)
+// Phase 61, wave 3: VOID (no caller reads a result, and the tail call leaves
+// vsnprintf's v0 either way).  The return type is visible only at the
+// callers: VITimeOfDay::GetLocalTime's schedule needs the call not to set v0.
+void VIString::snprintf(char *d, int n, const char *f, ...)
 {
     va_list ap;
     va_start(ap, f);
-    return vsnprintf(d, n, f, ap);
+    vsnprintf(d, n, f, ap);
 }
 
 int VIString::snprintf16(unsigned short *d, int n, const char *f, ...)

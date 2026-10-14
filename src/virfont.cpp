@@ -158,18 +158,18 @@ int VIRFont::CreateResources(VIRaster &r, VIDictionary &d, int numChars, int hei
         return -1;
 
     m_pixelStore = s->m_pixelStore;
-    // The target's guard is `beqz` with a hoisted `li a0,1` -- the I8
-    // comparand -- in its delay slot, and a separate `m_paletteCount = 0`
-    // block after the arms.  Ours annuls instead (`beqzl`, the store in the
-    // slot) and materialises the 1 inside the second test.  Same words, four
-    // of them in different places; writing the zero case as the `if` aligns
-    // more of them and gets the block order WRONG, so it is not the source.
+    // Phase 61, wave 3.  The guard's delay slot holds `li a0,1`, the I8
+    // comparand, so the 1 is set at the TOP of the arm, before the I4 test:
+    // a named local.  Materialised inside the second test instead, reorg
+    // finds nothing in the fall-through thread and annuls the `= 0` store
+    // into the slot (beqzl), 25 -> 0.
     if (s->m_paletteCount)
     {
+        int i8 = VIPixelStoreI8;
         m_palettePixelStore = s->m_paletteStore;
         if (m_pixelStore == VIPixelStoreI4)
             m_paletteCount = 16;
-        else if (m_pixelStore == VIPixelStoreI8)
+        else if (m_pixelStore == i8)
             m_paletteCount = 256;
         else
             return -1;
@@ -376,11 +376,21 @@ int VIRFont::InitSlots(VIRaster &r)
 
     switch (ps)
     {
+    // Phase 61, wave 3: one arm per value in enum order.  jump2 cross-jumps
+    // the three `* 4` arms into the LAST one (the table sends 2, 3 and 6 to
+    // one body after RGBA16's), but global-alloc counted seven sets of
+    // rowBytes, which is what ranks it above the hoisted 56 for t1.
     case VIPixelStoreI4:
         rowBytes = cell >> 1;
         break;
     case VIPixelStoreI8:
         rowBytes = cell;
+        break;
+    case VIPixelStoreRGBA32:
+        rowBytes = cell * 4;
+        break;
+    case VIPixelStore3:
+        rowBytes = cell * 4;
         break;
     case VIPixelStoreRGB24:
         rowBytes = cell * 3;
@@ -388,8 +398,6 @@ int VIRFont::InitSlots(VIRaster &r)
     case VIPixelStoreRGBA16:
         rowBytes = cell * 2;
         break;
-    case VIPixelStoreRGBA32:
-    case VIPixelStore3:
     case VIPixelStore6:
         rowBytes = cell * 4;
         break;
@@ -406,10 +414,12 @@ int VIRFont::InitSlots(VIRaster &r)
 
         for (int x = 0; x + cell <= sw; x += cell)
         {
-            VIVect2I *pos = &Slot(i)->m_pos;
-
-            pos->y = y;
-            pos->x = x;
+            // The slot address is advanced IN PLACE to its m_pos: no other
+            // register keeps the slot base, so cse cannot fold the +16 into
+            // the two stores and the target's `addiu ...,16` survives.
+            VIVect2I *pos = (VIVect2I *)(i * (int)sizeof(VIRFontSlot) + m_slots);
+            pos = (VIVect2I *)((char *)pos + 16);
+            pos->Set(x, y);
             Slot(i)->m_offset = row;
             Slot(i)->m_char = 0xFFFF;
             if (i)

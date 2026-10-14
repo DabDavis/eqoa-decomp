@@ -18,10 +18,9 @@ struct sceCdCLOCK
 extern "C" int sceCdReadClock(sceCdCLOCK *c);
 extern "C" int sceScfGetLocalTimefromRTC(sceCdCLOCK *c);
 
-// OPEN at 9 of 80: every register agrees and the one difference is whether
-// `move t0,v0` (the GetMonth result) is emitted right after its call or ends up
-// in the snprintf `jal`'s delay slot.  Two spellings with the results in locals
-// do not move it.
+// Phase 61, wave 3: VIString::snprintf returns VOID.  Declared `int`, the call
+// sets v0, so `move t0,v0` (the GetMonth result) loses its anti-dependent
+// `move v0,zero` and the scheduler leaves it for the jal's delay slot (9 -> 0).
 int VITimeOfDay::GetLocalTime(char *out, int n)
 {
     sceCdCLOCK c;

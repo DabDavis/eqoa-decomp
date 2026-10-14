@@ -257,3 +257,16 @@ The last pass found:
 - the 396 "unknown" bytes after `uns64_range_t_cmp` are buffer.cpp's first two statics;
 - function order within a TU is a source fact (sce_playpss);
 - store order through one pointer is a source fact (`connection_init`).
+
+### Unnamed code: complete
+
+As of 2026-10-14, **all 65 of our unnamed functions are byte-exact**, the last being
+`_setLoadImageTags` in the PSS player. loop.c's hoisting threshold decided it: a
+post-increment argument costs a copy per call, so `t++` as its own statement grows the loop
+past the count. **SUPPORT has no unique unmatched code left:** every one of the 124,832
+unnamed bytes is either matched by one of our functions (18,636), a byte-identical copy of a
+named function (106,440), or alignment padding (292).
+
+eqrefcheck's MERGED class also caught a structural slip. `gSndXm` (the XM channel table) and
+`gSndStatus` are ONE target object, because the channel pairs are words 8.. of the RPC status
+buffer. It is now a view: `#define gSndXm (*(VISndXmState *)gSndStatus)`.

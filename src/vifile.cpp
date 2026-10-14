@@ -67,7 +67,6 @@ int VIFile::Open(const char *path, int flags)
     char name[256];
 
     m_flags = flags;
-    const char *dev;
     if (!(flags & 1))
     {
         if (!(flags & 2))
@@ -76,23 +75,18 @@ int VIFile::Open(const char *path, int flags)
                 return -1;
         }
     }
+    const char *dev;
     if (m_flags & 8)
         dev = "";
     else
         dev = "";
     VIString::snprintf(name, 256, "%s\\%s;1", dev, path);
     VIString::strupr(name);
-    if (name[0])
-    {
-        char *p = name;
-        do
-        {
-            if (*p == '/')
-                *p = '\\';
-            p++;
-        }
-        while (*p);
-    }
+    // INDEXED: loop.c's reduced pointer is set up after the hoisted 47/92
+    // (`move v1,sp` last); a `char *p` walker sets it up first.
+    for (int i = 0; name[i]; i++)
+        if (name[i] == '/')
+            name[i] = '\\';
     CDDiskReady(0);
     if (CDSearchFile(&m_cdFile, name) == 0)
     {

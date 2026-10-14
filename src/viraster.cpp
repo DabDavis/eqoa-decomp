@@ -2123,7 +2123,10 @@ int VIRaster::Flip()
 {
     sceGsSyncV(0);
     sceGsSwapDBuffDc(DBuffer, m_frame);
-    unsigned char odd = ~m_frame & 1;
+    // Through an int copy: read straight off the member, fold narrows the
+    // load to `lbu`; the target loads the whole word.
+    int frame = m_frame;
+    unsigned char odd = ~frame & 1;
     long fb0 = (int)(DBuffer[12] & 0x1FF);
     long fb1 = (int)(DBuffer[58] & 0x1FF);
     *(volatile long *)0x12000000 = 32547;

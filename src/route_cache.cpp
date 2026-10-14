@@ -92,7 +92,12 @@ void route_cache_touch(route_cache_t *pCache, const drdp_addr_t *pAddress,
     }
     else
     {
-        if (pByAddress && pByRoute && pByAddress != pByRoute)
+        // The inequality FIRST: with `pByAddress &&` leading, thread_jumps
+        // redirects both else-entries past the re-test (the first if already
+        // decided it) and global-alloc then hands pAddress/pRoute/&m_byRoute
+        // other registers -- 54 words.  OPEN, 3/165: the target re-tests in
+        // the written order (address, route, inequality) and is not threaded.
+        if (pByAddress != pByRoute && pByAddress && pByRoute)
         {
             vtree_remove(&pCache->m_byAddress, pByRoute);
             vtree_remove(&pCache->m_byRoute, pByRoute);

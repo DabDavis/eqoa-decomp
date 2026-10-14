@@ -300,12 +300,19 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
     if (f != 0xFFFFFFFF && (f & 4))
         DrawFrame(x, row, w, rows, f);
 
+    // Phase 61, wave 3 (245 -> 103): the column offset `x` is dead once the
+    // frame is drawn and is REUSED as the last-space index -- one pseudo,
+    // whose short life ranks it for a callee-saved register (s4, the
+    // target's) where a separate `space` loses to `row` and `row` keeps
+    // one.  Declaration order fixes the spill slots (lastw, fit, skip,
+    // count).  OPEN: i/the -1 constant/s come out s7/s5/s6 for the
+    // target's s5/s6/s7 (global-alloc ranks the constant above i).
     const unsigned short *line = s;
-    int skip = (f == 0xFFFFFFFF) ? 0 : f >> 24;
     int lastw = 0;
     int i = 0;
-    int space = 0;
+    x = 0;
     int fit = 0;
+    int skip = (f == 0xFFFFFFFF) ? 0 : f >> 24;
     int drawn = 0;
     int count = 0;
 
@@ -322,7 +329,7 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
             count++;
             i++;
             line = &s[i];
-            space = 0;
+            x = 0;
             fit = 0;
             if (drawn >= rows)
                 break;
@@ -335,11 +342,11 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
             lastw = TextWidth(buf);
             if (lastw >= size.x - 8)
             {
-                if (space)
+                if (x)
                 {
-                    n = &s[space + 1] - line;
+                    n = &s[x + 1] - line;
                     TEXTBOX_COPY(n)
-                    i = space + 1;
+                    i = x + 1;
                     line = &s[i];
                 }
                 else
@@ -358,7 +365,7 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
                 count++;
                 if (drawn >= rows)
                     break;
-                space = 0;
+                x = 0;
                 fit = 0;
             }
             else
@@ -366,7 +373,7 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
                 if (pw != lastw)
                     fit = i;
                 if (s[i] == ' ')
-                    space = i;
+                    x = i;
                 i++;
             }
         }

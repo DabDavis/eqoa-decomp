@@ -753,10 +753,10 @@ public:
     int Allocate();
     int Deallocate();
 
-    static int vsnprintf(char *d, int n, const char *f, char *ap);
+    static void vsnprintf(char *d, int n, const char *f, char *ap);
     static int vsnprintf16(unsigned short *d, int n, const char *f, char *ap);
     static int vsnprintf16(unsigned short *d, int n, const unsigned short *f, char *ap);
-    static int snprintf(char *d, int n, const char *f, ...);
+    static void snprintf(char *d, int n, const char *f, ...);
     static int snprintf16(unsigned short *d, int n, const char *f, ...);
     static int snprintf16(unsigned short *d, int n, const unsigned short *f, ...);
 
@@ -7685,9 +7685,9 @@ public:
     int Begin2D();
     int End2D();
 
-    int FillRectangle(const VIVect2I *r, const VIColor32F *c);
-    int FrameFillRectangle(const VIVect2I *r);
-    int FrameRectangle(const VIVect2I *r, const VIColor32F *c, int w);
+    void FillRectangle(const VIVect2I *r, const VIColor32F *c);
+    void FrameFillRectangle(const VIVect2I *r);
+    void FrameRectangle(const VIVect2I *r, const VIColor32F *c, int w);
 
     int Blit(int id, VIVect2I at, VIVect2I a, VIVect2I b,
              VIAlphaBlendMode m, float alpha, unsigned int flags);

@@ -422,7 +422,10 @@ int VIRaster::PickPrimBufferPackVUNC(VIPickSegment &seg, VIPrimBuffer &pb,
     for (i = 0; i < pb.m_numMaterials; i++)
     {
         int mat = pb.m_materials[i].m_matIdx;
-        mat = pal.m_mats.m_data[mat];
+        // A named element pointer: the address is MATERIALISED, base first
+        // and into the base's register, where a subscript is index-first.
+        int *mp = &pal.m_mats.m_data[mat];
+        mat = *mp;
         for (n = pb.m_materials[i].m_numPrims; n; )
         {
             if (!Cull(seg, pb.m_prims[prim].m_bbox))
@@ -486,8 +489,14 @@ int VIRaster::PickPrimBufferPackVUNC(VIPickSegment &seg, VIPrimBuffer &pb,
                     q -= 4;
                     cq += 16;
                 }
+                // `q = 0` is dead (flow deletes it), but at the first jump
+                // pass it makes the arm two insns, so jump.c does not turn
+                // it into a conditional move: reorg's bnezl instead.
                 if (q)
+                {
                     cq += 16;
+                    q = 0;
+                }
                 verts += 16;
                 prim++;
                 n--;
@@ -714,15 +723,13 @@ int VIRaster::CalcHitColor(VIPickSegment &seg, VIVect3 &a, VIVect3 &b,
             seg.m_hitColor.a = c0.a + (u.x * k3.x + u.y * k3.y + u.z * k3.z);
             return 1;
         }
+        // The fallback is written in BOTH failing arms: each copy ends its
+        // own block, so the join's destructor calls cannot be scheduled into
+        // the stores, and jump2 cross-jumps the two copies into one after
+        // sched2 -- the surviving copy is the last in source order.
+        PickColorTo(seg.m_hitColor, ca);
     }
-    // The fallback's stores are fenced off from the destructor calls: the
-    // target issues `move a0`/`li a1,2` only after the last store, which only
-    // a loop note (a scheduling barrier) gives.  The reference is taken
-    // outside it so `seg`'s use there is not loop-weighted (seg keeps s4).
-    VIColor32F &hc = seg.m_hitColor;
-    do
-    {
-        PickColorTo(hc, ca);
-    } while (0);
+    else
+        PickColorTo(seg.m_hitColor, ca);
     return 0;
 }

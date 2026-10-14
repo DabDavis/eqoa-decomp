@@ -179,11 +179,12 @@ int VIColorBuffer::Allocate()
 }
 
 // One word into the VIF stream at m_tags, four to a quadword: m_pad1C is the
-// quadword cursor and BuildI the word within it.
+// quadword cursor and BuildI the word within it.  A POST-increment in the
+// address: BuildI is loaded once and `BuildI + 1` is computed before the
+// word's store, where a separate `BuildI++` reloads it after the store.
 #define EMIT(w)                                                       \
     {                                                                 \
-        *(unsigned int *)(m_tags + m_pad1C * 16 + BuildI * 4) = (w);  \
-        BuildI++;                                                     \
+        *(unsigned int *)(m_tags + m_pad1C * 16 + BuildI++ * 4) = (w);\
         if (BuildI == 4)                                              \
         {                                                             \
             BuildI = 0;                                               \
@@ -243,17 +244,22 @@ int VIColorBuffer::Color(VIColor32 &c)
         pBuildDMATag += 4;
         m_vertCursor++;
 
+        // The tag step is written in BOTH arms (jump2 cross-jumps them after
+        // scheduling): as one join the hi parts of pBuildDMATag live across
+        // the if/else in a gcse copy, and the extra register costs a frame.
         int n = BuildPLeft + 4;
         if ((n & 3) == 0)
         {
             SetTag(48, n / 4, (unsigned int)(m_tags + m_pad1C * 16));
+            pBuildDMATag += 4;
+            m_vertCursor++;
         }
         else
         {
             SetTag(48, n / 4 + 1, (unsigned int)(m_tags + m_pad1C * 16));
+            pBuildDMATag += 4;
+            m_vertCursor++;
         }
-        pBuildDMATag += 4;
-        m_vertCursor++;
 
         EMIT(0x01000104);
         EMIT((pBuildSource->m_prims[BuildP].m_numVerts << 16) | 0x6E008004);

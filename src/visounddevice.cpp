@@ -29,14 +29,16 @@ extern "C" int    sceSifCheckStatRpc(void *client);
 static unsigned int gSndStatus[128];
 
 // The XM modules the IOP currently has playing -- eight {lo, hi} channel-mask
-// pairs.  The two halves share one address base, which is what puts the whole
-// search on a single walking pointer with a -4 displacement -- loop.c's, from
-// an indexed source loop.
-static struct VISndXmState
+// pairs at words 8.. of the status buffer (eqrefcheck: the target has ONE
+// object here, not two).  The two halves share one address base, which is
+// what puts the whole search on a single walking pointer with a -4
+// displacement -- loop.c's, from an indexed source loop.
+struct VISndXmState
 {
     int m_pad[8];
     int m_ch[8][2];
-} gSndXm;
+};
+#define gSndXm (*(VISndXmState *)gSndStatus)
 
 // One command's arguments, filled by the caller and copied into the packet.
 static int gSndArgs[16];
@@ -217,13 +219,23 @@ int VISoundDevice::Close()
 // One transfer is started per call and the scan stops there, so a big wave
 // takes as many frames as it takes.  The 128-entry sweep restarts from zero
 // every frame, which is why a sound low in the table can starve.
-// OPEN, 57/189 (65 before).  The XM search is INDEXED, not a walking pointer:
-// loop.c's strength reduction makes the pointer, and the giv's initial value
-// is `&gSndXm + 36` built from a hoisted full address -- the target's
-// `addiu v1,s4,36` -- where a source pointer hoists only the `lui`.  What is
-// left is loop.c hoisting the `== XM` constant 1 into s5 on its second pass:
-// the move is decided at exactly threshold (62 real insns vs 62), and the
-// target's loop is evidently one insn longer there.
+// The XM search is INDEXED, not a walking pointer: loop.c's strength
+// reduction makes the pointer, and the giv's initial value is `&gSndXm + 36`
+// built from a hoisted full address -- the target's `addiu v1,s4,36`.
+// Phase 61, wave 3 (57 -> 0): the target does NOT hoist the `== XM` constant
+// 1, so on loop.c's second pass the playback loop has more than its
+// threshold of 64 real insns (with calls, 1 + n_non_fixed_regs; measured by
+// padding the loop).  The source had three insns more than a plain spelling
+// that later passes delete: the two tests that are VALUES of inline
+// predicates (an sltu each, which combine folds back into the branch; Idle
+// is `long` so no truncation blocks the fold), and the channel halves read
+// inside the search's compares (two loads loop.c hoists, cse2 merges).
+static inline int IsWave(VISound *s) { return s->Type() == VISound::WAVE; }
+static inline long Idle(VIPlayback *pb, unsigned long playing)
+{
+    return (pb->m_channels & playing) == 0;
+}
+
 int VISoundDevice::Process()
 {
     int started = 0;
@@ -282,9 +294,9 @@ int VISoundDevice::Process()
         VIPlayback *next = NextPlayback(pb);
         VISound *s = Sound(pb->m_sound);
 
-        if (s->Type() == VISound::WAVE)
+        if (IsWave(s))
         {
-            if ((pb->m_channels & playing) == 0)
+            if (Idle(pb, playing))
             {
                 if (m_frame - pb->m_frame >= 3)
                     Stop(pb->m_handle);
@@ -292,14 +304,13 @@ int VISoundDevice::Process()
         }
         if (s->Type() == VISound::XM)
         {
-            int lo = (int)(pb->m_channels & 0xffffff);
-            int hi = (int)(pb->m_channels >> 24);
             int found = 0;
             int j;
 
             j = 0;
             do {
-                if (gSndXm.m_ch[j][0] == lo && gSndXm.m_ch[j][1] == hi)
+                if (gSndXm.m_ch[j][0] == (int)(pb->m_channels & 0xffffff) &&
+                    gSndXm.m_ch[j][1] == (int)(pb->m_channels >> 24))
                 {
                     found = 1;
                     break;
@@ -916,19 +927,20 @@ int VISoundDevice::ReleaseDevice()
 
 // Two passes over the playback list: the first only counts what could be
 // stolen, the second actually stops it, so a request that cannot be met leaves
-// every running sound alone.
+// every running sound alone.  Phase 61, wave 3: each pass RECOMPUTES `count -
+// free`; the saved copy in s7 is gcse's PRE reaching register, inserted after
+// FirstPlayback's result copy, where a source `want = need` is scheduled
+// beside the call and lets jump2 cross-jump `pb = v0` into the loop (3 -> 0).
 unsigned long VISoundDevice::AllocateChannels(int count, int priority)
 {
     unsigned long got = 0;
     int free = 46 - ChannelCount(m_channels);
     int need;
-    int want = 0;
     VIPlayback *pb;
 
     if (free < count)
     {
         need = count - free;
-        want = need;
         pb = FirstPlayback();
         while (pb)
         {
@@ -945,7 +957,7 @@ unsigned long VISoundDevice::AllocateChannels(int count, int priority)
 
         if (free < count)
         {
-            need = want;
+            need = count - free;
             pb = FirstPlayback();
             while (pb)
             {
@@ -1411,16 +1423,22 @@ int VISoundDevice::DebugResources()
             }
             else
             {
+                // Phase 61, wave 3: a named pointer (no reload of the slot
+                // after the first join) and the sum built in its own
+                // variable, copied into `bytes` at the join (15 -> 0).
+                VIXm *x = (VIXm *)m_sounds[i];
                 int n;
+                int total;
                 xms++;
-                if (((VIXm *)m_sounds[i])->m_xm)
-                    n = ((VIXm *)m_sounds[i])->m_xmSize + 64;
+                if (x->m_xm)
+                    n = x->m_xmSize + 64;
                 else
                     n = 64;
-                if (((VIXm *)m_sounds[i])->m_sample)
-                    bytes = bytes + (n + ((VIXm *)m_sounds[i])->m_spuSize);
+                if (x->m_sample)
+                    total = bytes + (n + x->m_spuSize);
                 else
-                    bytes = bytes + n;
+                    total = bytes + n;
+                bytes = total;
             }
         }
     }
