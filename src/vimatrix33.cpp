@@ -291,6 +291,13 @@ void VIMatrix33::Mul(const VIMatrix33 &a, const VIMatrix33 &b)
     d2[2] += t2[2] * f22;
 }
 
+static inline void M33AddScaled(VIVect3 &a, const VIVect3 &b, float k)
+{
+    a.x += b.x * k;
+    a.y += b.y * k;
+    a.z += b.z * k;
+}
+
 // Gauss-Jordan with partial pivoting on a stack COPY of `a`, with `this` seeded
 // to the identity and swapped/eliminated in lockstep -- the same algorithm as
 // VIMatrix44::Invert, and the one go-eqoa-vi/vimath/invert.go documents.
@@ -300,11 +307,18 @@ void VIMatrix33::Mul(const VIMatrix33 &a, const VIMatrix33 &b)
 // `float (*)[3]` view: the view is a pseudo copy of sp held in a callee-saved
 // register, and folds s[i][i] to i*16 where the target adds i*4 to the row.
 // The pivot search reads through an inline taking the row by reference, so
-// the |t| read and the `p` read are two pointers, as in the target.  67 wrong
-// words (108 through the view); the rest is the scale step's two mults per
-// row and the 12-constant registers.  The scale goes through a reference per
-// row, and the elimination factor REUSES `q` -- the target keeps both in $f8
-// (64 -> 57).
+// the |t| read and the `p` read are two pointers, as in the target.  The
+// elimination factor REUSES `q` -- the target keeps both in $f8.
+// The scale (`row *= q`) and the elimination (M33AddScaled) are inline calls
+// handed the ROWS, so each row is an unflagged parameter pseudo
+// (claude-notes/decomp-alias-rule-inline-ref-params-20261014.md): the m[i]
+// loads at +4/+8 then stay behind the stores to w[j] the way the guest has
+// them, and the scale gets its own i*12 per row -- the four `mult`s.  Written
+// out through `(&row.x)[k]` and named row references: 57 wrong.  And the
+// elimination loop REUSES the pivot search's `k`: a fresh `int j` has half the
+// references over a similar live range, so global alloc ranks it below the
+// strength-reduced row pointers and it gets the last argument register where
+// the guest gives it the first -- 15 wrong words of register rotation.
 int VIMatrix33::Invert(const VIMatrix33 &a)
 {
     VIMatrix33 w(a);
@@ -314,7 +328,8 @@ int VIMatrix33::Invert(const VIMatrix33 &a)
         float mag = fabsf(M33At(w.m[i], i));
         float p = M33At(w.m[i], i);
         int row = i;
-        for (int k = i + 1; k < 3; k++)
+        int k;
+        for (k = i + 1; k < 3; k++)
         {
             float t = fabsf(M33At(w.m[k], i));
             if (mag < t)
@@ -329,25 +344,15 @@ int VIMatrix33::Invert(const VIMatrix33 &a)
         w.SwapRows(i, row);
         SwapRows(i, row);
         float q = 1.0f / p;
-        VIVect3 &wi = w.m[i];
-        wi.x *= q;
-        wi.y *= q;
-        wi.z *= q;
-        VIVect3 &mi = m[i];
-        mi.x *= q;
-        mi.y *= q;
-        mi.z *= q;
-        for (int j = 0; j < 3; j++)
+        w.m[i] *= q;
+        m[i] *= q;
+        for (k = 0; k < 3; k++)
         {
-            if (j != i)
+            if (k != i)
             {
-                q = -(&w.m[j].x)[i];
-                (&w.m[j].x)[0] += (&w.m[i].x)[0] * q;
-                (&w.m[j].x)[1] += (&w.m[i].x)[1] * q;
-                (&w.m[j].x)[2] += (&w.m[i].x)[2] * q;
-                (&m[j].x)[0] += (&m[i].x)[0] * q;
-                (&m[j].x)[1] += (&m[i].x)[1] * q;
-                (&m[j].x)[2] += (&m[i].x)[2] * q;
+                q = -M33At(w.m[k], i);
+                M33AddScaled(w.m[k], w.m[i], q);
+                M33AddScaled(m[k], m[i], q);
             }
         }
     }

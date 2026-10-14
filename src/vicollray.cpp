@@ -78,6 +78,11 @@ int VICollRay::Init(const VICollRay &src, const VIMatrix44 &mat)
     return 0;
 }
 
+static inline float Dot(const VIVect3 &a, const VIVect3 &b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
 int VICollRay::Skitter(VIVect3 &v)
 {
     int hit = 0;
@@ -85,19 +90,21 @@ int VICollRay::Skitter(VIVect3 &v)
     if (m_hitTime < 1.0f)
     {
         // Every stage is `out = in; d = -dot(axis,in); out = in + axis*d;`
-        // -- the dead copy survives because `out` is address-taken, and the
-        // dot reads the SOURCE, not the copy: the target reloads y and z off
-        // &m_hitNormal after the stores to the copy invalidate them.
+        // and the dot reads the SOURCE MEMBER through an inline helper, not
+        // the copy: the helper's reference to m_hitNormal / m_dir2 is an
+        // unflagged pseudo, so its y and z are re-read after every store to
+        // the stack copy, and the last dot's loads stay behind t0's stores
+        // (claude-notes/decomp-alias-rule-inline-ref-params-20261014.md).
+        // A named `const VIVect3 &` or a dot over the copy folds them: 91/201.
         t1 = m_hitNormal;
-        float d1 = -(v.x * t1.x + v.y * t1.y + v.z * t1.z);
+        float d1 = -Dot(v, m_hitNormal);
         t1.x += v.x * d1;
         t1.y += v.y * d1;
         t1.z += v.z * d1;
         if (t1.Normalize())
         {
-            const VIVect3 &e = m_dir2;
-            t0 = e;
-            float d2 = -(t1.x * t0.x + t1.y * t0.y + t1.z * t0.z);
+            t0 = m_dir2;
+            float d2 = -Dot(t1, m_dir2);
             t0.x += t1.x * d2;
             t0.y += t1.y * d2;
             t0.z += t1.z * d2;
@@ -108,18 +115,21 @@ int VICollRay::Skitter(VIVect3 &v)
                 t0.z += t1.z * 0.01f;
                 if (t0.Normalize())
                 {
-                    float d3 = -(v.x * t0.x + v.y * t0.y + v.z * t0.z);
+                    float d3 = -Dot(v, t0);
                     t0.x += v.x * d3;
                     t0.y += v.y * d3;
                     t0.z += v.z * d3;
-                    float dist = (1.0f - m_hitTime) *
-                        (t0.x * e.x + t0.y * e.y + t0.z * e.z) * m_length;
+                    float dist = (1.0f - m_hitTime) * Dot(t0, m_dir2) * m_length;
                     if (0.0f < dist)
                     {
                         VIVect3 hp = GetHitPoint();
                         hit = 1;
-                        m_end = t0;
+                        // m_start first: m_end's +4/+8 stores go through
+                        // operator='s unflagged `this` and may alias m_start,
+                        // so only this order lets sched pull m_start's stores
+                        // ahead of m_end.y the way the guest has them.
                         m_start = hp;
+                        m_end = t0;
                         m_end *= dist;
                         m_end += m_start;
                         Precalc();

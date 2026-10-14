@@ -902,6 +902,17 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
 // past a load), from 152 with the `double (*)[4]` view and separate
 // variables.
 static inline double &M44DAt(VIVect4D &v, int k) { return (&v.x)[k]; }
+// The elimination step as an inline handed the ROWS, as VIMatrix33::Invert's
+// M33AddScaled: written out on `(&w.m[k].x)[n]` the next row's first load is
+// scheduled above the `q = -w[k][i]` result copy (2 wrong words).
+static inline void M44DAddScaled(VIVect4D &a, const VIVect4D &b, double q)
+{
+    (&a.x)[0] += (&b.x)[0] * q;
+    (&a.x)[1] += (&b.x)[1] * q;
+    (&a.x)[2] += (&b.x)[2] * q;
+    (&a.x)[3] += (&b.x)[3] * q;
+}
+
 int VIMatrix44D::Invert(const VIMatrix44D &a)
 {
     VIMatrix44D w(a);
@@ -940,14 +951,8 @@ int VIMatrix44D::Invert(const VIMatrix44D &a)
             if (k != i)
             {
                 q = -(&w.m[k].x)[i];
-                (&w.m[k].x)[0] += (&w.m[i].x)[0] * q;
-                (&w.m[k].x)[1] += (&w.m[i].x)[1] * q;
-                (&w.m[k].x)[2] += (&w.m[i].x)[2] * q;
-                (&w.m[k].x)[3] += (&w.m[i].x)[3] * q;
-                (&m[k].x)[0] += (&m[i].x)[0] * q;
-                (&m[k].x)[1] += (&m[i].x)[1] * q;
-                (&m[k].x)[2] += (&m[i].x)[2] * q;
-                (&m[k].x)[3] += (&m[i].x)[3] * q;
+                M44DAddScaled(w.m[k], w.m[i], q);
+                M44DAddScaled(m[k], m[i], q);
             }
         }
     }

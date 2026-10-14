@@ -841,24 +841,32 @@ void VIMatrix44::SubMatrixMul(const VIVect3 &v, VIVect3 &out) const
 }
 
 // 0x003F0488.  Gauss-Jordan with partial pivoting, the row operations on VU0
-// -- the same algorithm as VIMatrix44D::Invert.
+// -- the same algorithm as VIMatrix44D::Invert.  Every element is read off its
+// ROW through M44At, as VIMatrix33::Invert does: a `float (*)[4]` view of w
+// folds w[i][i] into one i*20, where the guest forms i*16 and adds i*4 (47
+// wrong words; 15 after).  The pivot update stores `mag` before `p` (15 -> 13),
+// and the elimination loop REUSES `k` (13 -> 0): with its own `int j` the
+// counter ranks below the strength-reduced row pointers in global alloc and
+// gets the last argument register, as in VIMatrix33::Invert.
+static inline float &M44At(VIVect4 &v, int k) { return (&v.x)[k]; }
+
 int VIMatrix44::Invert(const VIMatrix44 &a)
 {
     VIMatrix44 w(a);
     Identity();
-    float (*s)[4] = (float (*)[4])w.m;
     for (int i = 0; i < 4; i++)
     {
-        float p = s[i][i];
+        float p = M44At(w.m[i], i);
         float mag = fabsf(p);
         int row = i;
-        for (int k = i + 1; k < 4; k++)
+        int k;
+        for (k = i + 1; k < 4; k++)
         {
-            float t = fabsf(s[k][i]);
+            float t = fabsf(M44At(w.m[k], i));
             if (mag < t)
             {
-                p = s[k][i];
                 mag = t;
+                p = M44At(w.m[k], i);
                 row = k;
             }
         }
@@ -869,13 +877,13 @@ int VIMatrix44::Invert(const VIMatrix44 &a)
         float q = 1.0f / p;
         ScaleVector(w.m[i], w.m[i], q);
         ScaleVector(m[i], m[i], q);
-        for (int j = 0; j < 4; j++)
+        for (k = 0; k < 4; k++)
         {
-            if (j != i)
+            if (k != i)
             {
-                float f = -s[j][i];
-                AddScaledVector(w.m[j], w.m[i], f);
-                AddScaledVector(m[j], m[i], f);
+                float f = -M44At(w.m[k], i);
+                AddScaledVector(w.m[k], w.m[i], f);
+                AddScaledVector(m[k], m[i], f);
             }
         }
     }

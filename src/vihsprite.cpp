@@ -846,19 +846,28 @@ int VIHSprite::ProcessHierarchy()
     return 0;
 }
 
+// The element through an inline helper handed the MEMBER m_nodes: its `a` is
+// an unflagged pseudo, so the m_data load at +8 may alias the stack and stays
+// behind v's zeroing stores, as in the guest.  A named `VIVector *` lets sched
+// hoist it above them: 13/94 (claude-notes/decomp-alias-rule-inline-ref-
+// params-20261014.md).
+static inline VIHSpriteNode &NodeAt(VIVector<VIHSpriteNode> &a, int i)
+{
+    return a.m_data[i];
+}
+
 int VIHSprite::ProcessHierarchy(int i, VIMatrix44 &m)
 {
     VIMatrix44 t;
     VIVect3 v;
-    VIVector<VIHSpriteNode> *a = &m_nodes;
-    VIHSpriteNode *n = &a->m_data[i];
+    VIHSpriteNode *n = &NodeAt(m_nodes, i);
     v = n->m_fixScale;
     v *= n->m_frame.m_scale;
     t.Transform(n->m_frame.m_rot, v, n->m_frame.m_trans);
     n->m_world.Mul(t, m);
     // A fresh element pointer for the child, and another (off a second
     // array pointer) for each sibling: 23 wrong words as subscripts.
-    VIHSpriteNode *n2 = &a->m_data[i];
+    VIHSpriteNode *n2 = &NodeAt(m_nodes, i);
     int c = n2->m_child;
     while (c != -1)
     {

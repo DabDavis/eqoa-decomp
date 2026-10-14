@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,555 of 3,751 byte-exact**, phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,562 of 3,751 byte-exact**, phase 61 in progress)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -1162,6 +1162,16 @@ The decisive observation is that the target emits BOTH `jal; move <v0 copy>; ld`
 unpatched compiler reproduces both. The order comes down to the dependents-count tie-break,
 which is decided by the source. **Every open function is a source-shape problem until
 shown otherwise.**
+
+**Round 3: the cross-jump barrier is the target's too.** Two identical lone calls in an
+if/else (`BufferedWrite`'s two `memcpy`s, `VIHSprite::Raster`/`Pick`'s two `SetModelView`s)
+merge into one `jal` in the target but not in ours. The cause is flow.c's
+`find_basic_blocks_1`, which appends a `(use (const_int 0))` when a block ends in a call
+followed by a label, and `find_cross_jump` stops at it. A copy patched to skip that USE
+breaks **51 matched functions and closes none of the three**: `BufferedReadCopy`,
+`VIEEDMASend`/`SendN`, `SetSky` and 47 more keep two `jal`s in the target. So the barrier
+is the target's too, and those three were written so that the falling-through arm did not
+end in the call at the first flow pass. The statement that does that is not found yet.
 
 Tools (in the private tree only, not in the public export): `rig_lat/` (`patch_lat1.py`, `verify_variant.py`, the interpreter `emu.py`,
 `cmp_runs.py`) and the regression lists in `rig_lat/logs/`. They patch a COPY under a

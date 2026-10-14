@@ -52,6 +52,38 @@ closed all four open functions: 35/40 → 39/40.
 - `ViewRelativeMove`: dir.z reloaded after `AddVec(m_phys.m_force, ...)`'s +4
   store in the target, and in the matched build.
 
+## It works in both directions (second pass, same day)
+
+A STACK store also kills a known value that was LOADED through an unflagged
+pseudo at +4/+8, and sched holds such a load behind stack stores. Predicted
+from the rule, then confirmed:
+
+| Function | Variant | Before → after |
+|---|---|---|
+| `VICylinder::PointInSolid` | dots and `d -= dir*t` through inline helpers handed `m_dir` (dir.y/dir.z re-read after every store to `d`; dir.x, `m_base` and the argument `p` stay in registers) | 66/72 → exact |
+| `VICapsule::PointInSolid` | same, plus `d = m_base; AddScaled(d, m_dir, len)`: the copy-in stores of d.y/d.z survive flow, d.x's does not | 116/125 → exact |
+| `VICollRay::Skitter` | each stage's dot reads the SOURCE member through `Dot(v, m_hitNormal)`, not the stack copy | 91/201 → exact |
+| `VIHSprite::ProcessHierarchy` | the element through `NodeAt(m_nodes, i)`: the m_data load at +8 stays behind v's zeroing stores | 13/94 → exact |
+| `VIMatrix33::Invert` | scale with `row *= q`, eliminate with `M33AddScaled(m[k], m[i], q)`: m[i]'s +4/+8 loads stay behind w[k]'s stores | 57/160 → 15 (→ exact with the `k` lever below) |
+| `VIMatrix44D::Invert` | `M44DAddScaled(w.m[k], w.m[i], q)` | 2/218 → exact |
+
+The parameter `p` of `PointInSolid` (a `const VIVect3 &` ARGUMENT) is flagged
+by `assign_parms`, so its loads are never killed: "this-derived loads re-read,
+argument loads kept" is exactly the rule.
+
+Not the rule (tested, no address-taken stack locals involved): `VIFile::
+BufferedRead/BufferedWrite` (register choice, a cross-jumped memcpy),
+`VICSFFile::Compress/Decompress` (the second copy of `endian` is a live-range
+split, not an alias reload), `VIMatrix44(D)::ConvertTo` (spill slots and an
+extra pointer copy in the prologue), `VIMatrix44`'s copy constructor and
+`operator*(VIVect3, VIMatrix44)` (register choice, frame order).
+
+A side lever from the Inverts: the elimination loop REUSES the pivot search's
+`k`. A fresh `int j` has half the references over a similar live range, so
+global alloc ranks it below the strength-reduced row pointers and gives it the
+last argument register: `VIMatrix33::Invert` 15 → 0, `VIMatrix44::Invert`
+13 → 0 (after `M44At` row reads, 47 → 15 → 13).
+
 ## How to use it
 
 A target that **re-reads a stack local** (or keeps a dead-looking stack store)
