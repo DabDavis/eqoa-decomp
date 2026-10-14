@@ -15,10 +15,8 @@
 // pixel layout depends on the psm, which is why every split and every merge
 // in here is page-aware.
 //
-// Open: Set 78/204, CalcCacheInfo 23/192, Cache 7/179 and FindFree 7/57 are
-// each one instruction of placement; Allocate 99/135 and Deallocate 186/289
-// are instruction-for-instruction identical to the target and differ only by
-// one callee-saved register; ConstructDMAPacket 160/228.
+// Open: Set, CalcCacheInfo and ConstructDMAPacket; Deallocate is registers
+// only (see its comment).  Allocate is byte-exact.
 #include "vi.h"
 
 int VIEESurfCache::Key;
@@ -359,6 +357,15 @@ int VIEESurfCache::Allocate(VIEESurfAlloc &a)
 // -- once with the run's own psm, and again after the page arithmetic has
 // turned the whole pages inside it back into virgin memory, where neighbours
 // that were not mergeable before now are.
+//
+// OPEN, 14/288, registers only (phase 61 wave 6, gsim): in the second page
+// test the target has -8192 in a0, `addr & ~8191` in a2 and `s & 8191` in a1;
+// we give a2/a1/a0.  gsim reproduces the target exactly when the -8192
+// allocno (or `i * 24`, the bucket scale) carries an a0 PREFERENCE: then the
+// two higher-priority allocnos skip a0 as "preferred by someone" and the
+// constant takes it.  Nothing in the final code can supply that preference --
+// both are only ever the SECOND operand, and set_preference reads the first
+// -- so the original has an insn involving a0 that a later pass deletes.
 int VIEESurfCache::Deallocate(VIEESurfAlloc &a)
 {
     int i = a.m_bucket;

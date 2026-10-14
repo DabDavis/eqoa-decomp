@@ -1435,16 +1435,24 @@ int VIWorld::StreamLeaf(int leaf, VISceneBBoxStreamVars &v)
 // The four terrain sub-cells around a point and their bilinear weights.  The
 // point is shifted by half a sub-cell so that it falls between four cell
 // CENTRES; on the far edge of the grid a missing neighbour repeats the cell.
+//
+// `s` is computed AFTER the half-cell adds (phase 61 wave 6, 37 -> 0): then
+// m_cellSize's last use is the div, so the div kills two inputs like the
+// `v.x` sub it ties with at sched1's t=7 (priority 44 each); equal register
+// weight hands the tie to the div's six dependents.  Every later memory op
+// slips a cycle, which puts an insn between the two r5900 `mult`s (their
+// hi/lo scratches no longer overlap, `this` gets t4) and gives local-alloc
+// the target's f1/f2/f4.  With `s` first the sub wins on weight.
 int VIWorld::CalcProfileBlend(const VIVect3 &at, VITerrainProfileBlend &b)
 {
     int     idx[4];
     VIVect3 v = at;
-    float   s = (float)m_subdiv / m_cellSize;
 
     v -= m_origin;
     v.x += m_cellSize * 0.5f;
     v.z += m_cellSize * 0.5f;
 
+    float   s = (float)m_subdiv / m_cellSize;
     float c = 1.0f / s;
     float x = v.x - c * 0.5f;
     float z = v.z - c * 0.5f;

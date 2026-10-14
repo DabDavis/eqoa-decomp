@@ -335,6 +335,18 @@ int VIObjFile::WriteBegin(unsigned short type, unsigned short version)
     return WriteBegin(type, version, offset) > -1 ? 0 : -1;
 }
 
+// OPEN, 25/145, registers only (phase 61 wave 6).  The target holds the
+// constant 1 in TWO registers: s4 for the first endian test and m_writeOpen,
+// s1 for the second test, m_canWrite and m_dirty.  That is cse, and its rule
+// is exact: along one extended-block path every `1` joins the first pseudo,
+// rewrites are permanent in the FIRST path processed, and every path that
+// reaches the m_writeOpen store passes the second test.  So the split needs
+// (a) the cse path broken between the two tests and (b) m_writeOpen stored
+// from a VALUE the first test merged with, not a fresh literal.  Measured: a
+// local `one` used by test 1 and m_writeOpen, plus a second jump into the
+// first join, gives the target's s4/s1 shape exactly (18/146, one extra
+// insn).  No natural spelling found: inline swap helpers, do/while(0),
+// early returns, `long endian` and tail orders all keep one register.
 int VIObjFile::WriteBegin(unsigned short type, unsigned short version, unsigned long &offset)
 {
     if (m_write && !m_readOpen && m_level != 9)

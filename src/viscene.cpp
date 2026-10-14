@@ -3455,6 +3455,16 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
 // fades over m_p10 ms, a slot that has finished fading out is retired, and a
 // loaded one starts playing.  Under water (env flags 0xF) the music is muted
 // and the underwater ambience plays instead.
+//
+// OPEN, 6/394, registers only, in two blocks (phase 61 wave 6).  The target
+// keeps m_time in a1 in both.  Block 9 (`m_p10 < m_time - m_p18`): local-alloc
+// gives the target's a1/a0 only if sched1 issues the m_time load before the
+// two track-index shifts; at t=1 all three have priority 5 and the scheduler's
+// register-weight test (a load +1, a shift whose input dies 0) always picks the
+// shifts, so no source ORDER can do it -- the load needs a longer chain or the
+// shifts a shorter one (e.g. the track load outside this block).  Block 36
+// (`m_time - m_p08` for __floatdisf): no order of its four insns gives a1;
+// v1 must be occupied there, so its RTL differs too.
 int VIScene::SetSoundTrack(VICamera &cam, VILoader &l, int file)
 {
     VITerrainProfileBlend b;

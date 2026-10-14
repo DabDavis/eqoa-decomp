@@ -313,6 +313,12 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
     // dead there, then shares s5 in pass 1 and the rotation is the target's
     // -- but the target computes `line` from `i` (no saved x*2), so the real
     // source raises i's priority some other way (+1 in-loop ref would do).
+    // Wave 6: with `line = &s[i]` the FINAL code references `i` exactly as
+    // the target does (18 sites each), so the extra weight is in RTL that
+    // flow counts and a later pass deletes (combine, reload_cse, a
+    // cross-jumped copy), or i's life is 49+ insns shorter.  Thirteen
+    // spellings of the loop body (++i, s + i, &s[i] + 1, ternary x/fit,
+    // swapped tests, != 0, ...) leave the RTL unchanged at 103.
     const unsigned short *line = s;
     int lastw = 0;
     int i = 0;

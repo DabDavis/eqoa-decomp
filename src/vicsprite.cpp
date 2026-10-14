@@ -1967,6 +1967,21 @@ done:
 // copies of the attachments that cannot be shared -- the name plate and the
 // skins, a LOD's skin levels too, each re-palettised -- before everything else
 // is shared.
+//
+// OPEN, 182/534, registers only (phase 61 wave 6).  Two findings:
+// 1. The target's `lw a0,408; sw t4,416; sw a0,408; lw v0,420` needs the
+//    -1 store AFTER m_race's load in sched1 (lsim), and with `this`/`d`
+//    may-aliasing that order exists only if `d->m_race = m_race;` comes
+//    BEFORE `d->m_materialPal = -1;` in source.  With that swap the first
+//    memcpy loop's pointers become the target's t5/t6/t7 -- but the score
+//    rises to 230 until (2) is solved, so it is not applied here.
+// 2. The second loop's pointers (target s0/s1/s2, copied into a0/a1) need
+//    global-alloc to keep the loop's src copy out of v1: gsim reproduces the
+//    target (and n in s3, and the prologue) when v1 is "preferred by someone"
+//    or occupied by a local in the block before the loop.  Splitting the
+//    24-byte m_attach copy into a 16- and an 8-byte move (by-pieces locals in
+//    v0/v1; MOVE_RATIO 2 makes the 24-byte one a BLK insn with reload
+//    scratches) does exactly that, but m_attach is one int[6] array.
 int VICSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollide &c, int n)
 {
     int idx = sc.CreateSprite((VISpriteType)m_type, n);
