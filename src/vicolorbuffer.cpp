@@ -181,17 +181,19 @@ int VIColorBuffer::Allocate()
 // One word into the VIF stream at m_tags, four to a quadword: m_pad1C is the
 // quadword cursor and BuildI the word within it.  Indexed through VIQWord
 // (160 -> 104): the cast-and-add spelling expands the three address terms in
-// another order and the first EMIT's registers swap.  OPEN (the last 14
-// words): in the two tail EMITs the target gives BuildI*4 the lower register
-// than the m_tags load -- local-alloc ranks them equal (2 refs, 3-insn life
-// each) and breaks the tie by birth, so the target's sched1 must load m_tags
-// before BuildI there; ours loads BuildI first (5 dependents to m_tags' 4,
-// haifa's depend-count tie-break).  A POST-increment in the
-// address: BuildI is loaded once and `BuildI + 1` is computed before the
-// word's store, where a separate `BuildI++` reloads it after the store.
+// another order and the first EMIT's registers swap.  The increment is its
+// OWN statement (phase 61 wave 6, 14 -> 6): the store is in-struct at a
+// varying address, which never conflicts with a fixed scalar global in cse,
+// so BuildI is not reloaded, and `BuildI + 1` lands in a NEW pseudo.  A
+// post-increment in the subscript instead reuses the loaded register, so the
+// add anti-depends on the shift that reads it; sched1 then issues it beside
+// the m_tags sum and local-alloc ranks BuildI*4 and the m_tags load equal --
+// the two tail EMITs' registers swapped.  (With the old cast store, which is
+// NOT in-struct, a separate increment did reload BuildI.)
 #define EMIT(w)                                                       \
     {                                                                 \
-        ((VIQWord *)m_tags)[m_pad1C].m_w[BuildI++] = (w);             \
+        ((VIQWord *)m_tags)[m_pad1C].m_w[BuildI] = (w);               \
+        BuildI++;                                                     \
         if (BuildI == 4)                                              \
         {                                                             \
             BuildI = 0;                                               \
@@ -276,15 +278,16 @@ int VIColorBuffer::Color(VIColor32 &c)
         // The tag step is written in BOTH arms (jump2 cross-jumps them after
         // scheduling): as one join the hi parts of pBuildDMATag live across
         // the if/else in a gcse copy, and the extra register costs a frame.
+        // Integer-first here as well (6 -> 0), for the same tie as m_verts.
         int n = BuildPLeft + 4;
         if ((n & 3) == 0)
         {
-            SetTag(48, n / 4, (unsigned int)(m_tags + m_pad1C * 16));
+            SetTag(48, n / 4, m_pad1C * 16 + (unsigned int)m_tags);
             BTAG++;
         }
         else
         {
-            SetTag(48, n / 4 + 1, (unsigned int)(m_tags + m_pad1C * 16));
+            SetTag(48, n / 4 + 1, m_pad1C * 16 + (unsigned int)m_tags);
             BTAG++;
         }
         m_vertCursor++;

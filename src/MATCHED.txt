@@ -500,6 +500,7 @@ Collide__9VIHSpriteR12VICollSphereR13VISceneFilterR7VISceneR9VICollide
 Collide__9VIHSpriteR9VICollRayR13VISceneFilterR7VISceneR9VICollide
 ColorBuffer__8VIRasteri
 Color__12VIPrimBufferR9VIColor32
+Color__13VIColorBufferR9VIColor32
 Color__8VIRasterRC10VIColor32F
 CombineDeadkey__10VIKeyboardUc
 Compare__18VISceneDisplayElemPCvT1
@@ -3479,6 +3480,7 @@ message_set_time__FP9message_tUi
 pf
 pf_data
 pf_mask
+playPss
 playPssFree
 playPssInit
 rce_get_key_offset__Fi

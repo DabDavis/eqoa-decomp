@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,654 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,656 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; phase 61 in progress)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -6357,7 +6357,7 @@ Long form, with the not-written list:
 
 ## Phase 61 result: finishing SUPPORT (in progress)
 
-**2,891/3,284 → 3,654/3,751 byte-exact, plus all 65 unnamed functions.** Every named
+**2,891/3,284 → 3,656/3,751 byte-exact, plus all 65 unnamed functions.** Every named
 SUPPORT function is written. The denominator grew as the census learnt to see more
 (written-but-unscored functions, `SPAN_CAP`s, phantom instantiations removed). Worked by up
 to ten agents in isolated lanes (`_lane.py`), each merged three-way into main and checked
