@@ -1528,19 +1528,26 @@ int VIHSprite::ProcessPlayList(int lod, VIScene &sc)
                     {
                         if (an->m_format == VIHSpriteAnimFormatFrame)
                         {
-                            VIHSpriteFrame *fa =
-                                &((VIHSpriteFrame *)an->m_frames)[fc + frameA];
-                            VIHSpriteFrame *fb =
-                                &((VIHSpriteFrame *)an->m_frames)[fc + frameB];
+                            // fa/fb/pa/pb: the target's sum has the SCALED INDEX
+                            // first and the base (a MEM operand, `an->m_frames`)
+                            // last; `&base[i]` gives (plus base idx), and that
+                            // order flows through sched and the allocator:
+                            // 130 -> 17.  (-fno-force-mem on the array spelling
+                            // had scored 36: it flips these same four RTL
+                            // operand orders, plus 15 the target keeps.)
+                            VIHSpriteFrame *fa = (VIHSpriteFrame *)(
+                                (fc + frameA) * sizeof(VIHSpriteFrame) + (int)an->m_frames);
+                            VIHSpriteFrame *fb = (VIHSpriteFrame *)(
+                                (fc + frameB) * sizeof(VIHSpriteFrame) + (int)an->m_frames);
                             CopyFrame(a, *fa);
                             CopyFrame(b, *fb);
                         }
                         else
                         {
-                            VIHSpritePackFrame *pa =
-                                &((VIHSpritePackFrame *)an->m_frames)[fc + frameA];
-                            VIHSpritePackFrame *pb =
-                                &((VIHSpritePackFrame *)an->m_frames)[fc + frameB];
+                            VIHSpritePackFrame *pa = (VIHSpritePackFrame *)(
+                                (fc + frameA) * sizeof(VIHSpritePackFrame) + (int)an->m_frames);
+                            VIHSpritePackFrame *pb = (VIHSpritePackFrame *)(
+                                (fc + frameB) * sizeof(VIHSpritePackFrame) + (int)an->m_frames);
                             short *sa = &pa->m_scaleTrans.x;
                             short *sb = &pb->m_scaleTrans.x;
                             float *st = &a.m_scale;

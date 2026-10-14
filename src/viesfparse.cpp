@@ -2575,14 +2575,19 @@ int VIESFParse::ParseGroupSpriteMembers(VIGroupSprite &g)
     if (m_file->ReadBegin(type, version) < 0) return -1;
     if (type != 0x2C30) return -1;
 
-    // OPEN (29/114).  The target steps TWO registers for m_sprite: Find's
-    // out-param is a single-use DEST_REG giv, which loop.c's combine_givs
-    // never uses as a combiner, and ShareSprite's load is a DEST_ADDR giv,
-    // which never absorbs a DEST_REG one -- so they stay apart only if cse
-    // has not merged the two addresses.  Through `m` (set outside the loop,
-    // an opaque invariant to express_from) they do stay apart; still open:
-    // where `m` is computed, and the 72/76 and 88/92 register swaps (the
-    // preheader init order sets each giv's live length, hence its priority).
+    // OPEN (14/114, was 29).  The target steps TWO registers for m_sprite:
+    // Find's out-param is a single-use DEST_REG giv, which loop.c's
+    // combine_givs never uses as a combiner, and ShareSprite's load is a
+    // DEST_ADDR giv, which never absorbs a DEST_REG one -- so they stay apart
+    // only if cse has not merged the two addresses.  Through `m` (set outside
+    // the loop, an opaque invariant to express_from) they do stay apart.
+    // The seven Read targets are NAMED POINTERS declared in the order
+    // y, x, z, scale, hpr.y, hpr.x, hpr.z: the declaration order is the order
+    // loop.c discovers the givs, the preheader inits come out in reverse
+    // discovery order, and that order hands the registers out (29 -> 23 for
+    // y-before-x, -> 14 for hpr.y-before-hpr.x; sweeps of the last four and
+    // of every single move found nothing better).  Still open: the m_sprite
+    // init (the target emits 68 between 96 and 92) and the jal's delay slot.
     VIGroupMember *m = g.m_members;
     m_file->Read(g.m_numMembers);
 
@@ -2594,13 +2599,20 @@ int VIESFParse::ParseGroupSpriteMembers(VIGroupSprite &g)
             || m_scene->ShareSprite(g.m_members[i].m_sprite) < 0)
             return -1;
 
-        m_file->Read(g.m_members[i].m_loc.x);
-        m_file->Read(g.m_members[i].m_loc.y);
-        m_file->Read(g.m_members[i].m_loc.z);
-        m_file->Read(g.m_members[i].m_scale);
-        m_file->Read(g.m_members[i].m_hpr.x);
-        m_file->Read(g.m_members[i].m_hpr.y);
-        m_file->Read(g.m_members[i].m_hpr.z);
+        float *p_ly = &g.m_members[i].m_loc.y;
+        float *p_lx = &g.m_members[i].m_loc.x;
+        float *p_lz = &g.m_members[i].m_loc.z;
+        float *p_sc = &g.m_members[i].m_scale;
+        float *p_hy = &g.m_members[i].m_hpr.y;
+        float *p_hx = &g.m_members[i].m_hpr.x;
+        float *p_hz = &g.m_members[i].m_hpr.z;
+        m_file->Read(*p_lx);
+        m_file->Read(*p_ly);
+        m_file->Read(*p_lz);
+        m_file->Read(*p_sc);
+        m_file->Read(*p_hx);
+        m_file->Read(*p_hy);
+        m_file->Read(*p_hz);
     }
 
     if (m_file->ReadEnd() < 0) return -1;

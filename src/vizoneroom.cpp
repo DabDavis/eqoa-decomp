@@ -122,6 +122,12 @@ int VIZoneRoom::End()
 // in the same loop: the plane's distance is the normal dotted into the average
 // vertex, negated.  A degenerate ring -- Normalize returning zero -- gets d = 0
 // and keeps whatever normal Normalize left behind.
+// OPEN, 22/139 (wave 6).  The target zeroes prev, last, sum and THEN p (sched1
+// ties go by source order after prev's WAW dependents), yet p sits at sp+0 and
+// last/prev/sum at 16/32/48 -- declared first, constructed last.  Declaration
+// order moves the slots (p first scores best of all 24), the ctor insns
+// follow it; `(VIZonePortal *)(i * 32 + (int)m_portals)` fixes the portals/
+// verts load order but nets 24.
 int VIZoneRoom::CalcPortalPlane(int i)
 {
     VIPlane p;

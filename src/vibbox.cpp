@@ -266,17 +266,21 @@ int VIBBox::Intersects(const VIVect3 &a, const VIVect3 &b) const
             return 0;
     }
 
-    // n is set AGAIN for the max faces.  OPEN: the target keeps that second
-    // set as a COPY (`move s4,s6`) and takes this loop's `this` and walker off
-    // it; here cprop folds the copy away (23 words).
+    // The second loop's normal pointer is assigned INSIDE the loop.  Assigned
+    // once before it, gcse's copy propagation (pass 2, after PRE turns the
+    // `addiu` into a copy of its reaching register) folds the copy into every
+    // use; a set in the loop kills the copy's availability around the back
+    // edge, loop.c hoists the invariant `n2 = n` to the preheader as a COPY,
+    // and `this` and the walker are taken off it (`move s4,s6`): 23 -> 0.
     const float *mx = &max.x;
-    n = &pl.n.x;
+    float *n2;
     for (i = 0; i < 3; i++)
     {
+        n2 = &pl.n.x;
         pl.n.Zero();
-        n[i] = 1.0f;
+        n2[i] = 1.0f;
         pl.d = -mx[i];
-        if (pl.LineIntersection(p0, *q1, t, hit) && 0.0f <= t && t <= 1.0f)
+        if (((VIPlane *)n2)->LineIntersection(p0, *q1, t, hit) && 0.0f <= t && t <= 1.0f)
         {
             if ((&p0.x)[i] > mx[i])
                 p0 = hit;

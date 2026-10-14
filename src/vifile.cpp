@@ -62,6 +62,13 @@ VIFile::~VIFile()
     Close();
 }
 
+// OPEN, 19/93 (wave 6).  Two sites: the first flag test (`!(flags & 1)` is
+// xori/andi/beqz; `(flags & 1) == 0` is the target's andi/bnez but then the
+// third test and the return -1 copies cost 11 more), and the `dev` literal --
+// the target builds it in a3 with its own lui (`dev` folded to a constant, yet
+// the dead `andi` survives to jump2, so the arms were not empty at flow);
+// `const char *dev = ""; if (m_flags & 8) dev = "";` deletes the arm and the
+// andi with it (32).
 int VIFile::Open(const char *path, int flags)
 {
     char name[256];
@@ -574,8 +581,9 @@ int VIFile::BufferedRead(void *dst, int n)
         m_bufPos = m_position - sector * 2048;
         m_bufBase = sector * 2048;
         need = need > 0 ? need : 1;
-        need = need < 17 ? need : 16;
-        sectors = (int) need;
+        // The second clamp is a temporary, not a store back into `need`: one
+        // fewer tie on `need`'s quantity (BufferedRead 21 -> 20).
+        sectors = (int) (need < 17 ? need : 16);
         if (CDSync(0))
             goto fail;
         if (CDRead(sector + m_cdFile.lsn, sectors, m_bufferAligned, &m_cdMode) == 0)

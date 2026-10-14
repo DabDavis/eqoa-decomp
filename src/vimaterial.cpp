@@ -372,6 +372,15 @@ static inline void WrapY(VIVect2 &v)
 
 // 0x003FCC70.  Scroll every textured layer's UV offset by its rate over the
 // time since the last call, and wrap each component back into (-1, 1).
+// OPEN, 39/82 (wave 6, loop/cse).  The target's WrapY block recomputes
+// `i*144` and `this + i*144` and RELOADS v.y (a separate cse extended block);
+// ours merges it into the compare's chain because cse's -fcse-skip-blocks
+// follows `bc1t W` AROUND the second compare (W's label has ONE use once the
+// first jump pass has inverted the second branch).  loop.c then reduces the
+// merged chain, where the target leaves it as mult/addu in the loop.  No
+// flag changes it (-fno-cse-skip-blocks: 60); about thirty spellings of the
+// y test, of WrapY (value arg, pointer, inline) and of the base (Layer(),
+// `i*144 + (int)this`) leave it at 39.
 int VIMaterial::Process(long time)
 {
     if (m_time != time)
