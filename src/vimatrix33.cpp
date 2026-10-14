@@ -2,7 +2,7 @@
 
 VIMatrix33::VIMatrix33()
 {
-    Identity();
+    Zero();
 }
 
 // The three rows are assigned one at a time in the SOURCE.  gcc's synthesized

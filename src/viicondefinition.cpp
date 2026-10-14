@@ -78,11 +78,12 @@ void VIIconDefinition::AsciiString2Sjis(char *src, unsigned short *dst)
 int VIIconDefinition::SetTitle(const char *title)
 {
     char buf[48];
+    int  i;     // ONE counter for both loops; two scoped ones swap a0 and a1
     int  nl = -1;
     int  n = 0;
     int  len = strlen(title);
 
-    for (int i = 0; i < len; i++)
+    for (i = 0; i < len; i++)
     {
         if (title[i] == '\n')
         {
@@ -101,7 +102,7 @@ int VIIconDefinition::SetTitle(const char *title)
     {
         if (len >= 34)
             return -1;
-        for (int i = nl; i < len; i++)
+        for (i = nl; i < len; i++)
             buf[i] = buf[i + 1];
         buf[len - 1] = 0;
     }

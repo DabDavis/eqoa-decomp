@@ -6,8 +6,8 @@ VIXm::VIXm()
 {
     m_xm = 0;
     m_sample = 0;
-    m_xmAddr = 0;
     m_spuAddr = 0;
+    m_xmAddr = 0;
     m_repeat = 0;
     m_type = XM;
 }
@@ -17,22 +17,22 @@ VIXm::~VIXm()
     Destroy();
 }
 
-int VIXm::Create(VISoundDevice &dev, void *xm, int spuSize, void *sample, int xmSize)
+int VIXm::Create(VISoundDevice &dev, void *xm, int xmSize, void *sample, int spuSize)
 {
     m_device = &dev;
     m_xm = (VIXmHeader *)xm;
-    m_spuSize = spuSize;
-    m_sample = sample;
     m_xmSize = xmSize;
+    m_sample = sample;
+    m_spuSize = spuSize;
 
-    m_xmAddr = dev.AllocXmMem(xmSize);
-    if (!m_xmAddr)
+    m_spuAddr = dev.AllocSpuMem(spuSize);
+    if (!m_spuAddr)
     {
         Destroy();
         return -1;
     }
-    m_spuAddr = m_device->AllocSpuMem(m_spuSize);
-    if (!m_spuAddr)
+    m_xmAddr = m_device->AllocXmMem(m_xmSize);
+    if (!m_xmAddr)
     {
         Destroy();
         return -1;
@@ -45,13 +45,13 @@ int VIXm::Create(VISoundDevice &dev, void *xm, int spuSize, void *sample, int xm
 void VIXm::Destroy()
 {
     if (m_xm)
-        VIMemFree(m_xm);
+        delete [] (char *)m_xm;
     if (m_sample)
-        VIMemFree(m_sample);
-    if (m_spuAddr)
-        m_device->FreeSpuMem(m_spuAddr, m_spuSize);
+        delete [] (char *)m_sample;
     if (m_xmAddr)
         m_device->FreeXmMem(m_xmAddr, m_xmSize);
+    if (m_spuAddr)
+        m_device->FreeSpuMem(m_spuAddr, m_spuSize);
 }
 
 float VIXm::Volume() const

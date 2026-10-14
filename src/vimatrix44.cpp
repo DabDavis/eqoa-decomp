@@ -130,14 +130,14 @@ void VIMatrix44::RotateZ(float a)
 void VIMatrix44::ConvertTo(VIVect3 &a, VIVect3 &b, VIVect3 &c) const
 {
     VIQuat q;
-    ConvertTo(q);
+    ConvertTo(q, b, c);
     q.ConvertTo(a);
 }
 
 void VIMatrix44::ConvertTo(VIVect3 &a, float &b, VIVect3 &c) const
 {
     VIQuat q;
-    ConvertTo(q);
+    ConvertTo(q, b, c);
     q.ConvertTo(a);
 }
 

@@ -51,9 +51,9 @@ int VIFloraSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollide &
     s->m_primBuffer = m_primBuffer;
     if (r)
     {
-        if (r->AddRefMaterialPal(m_materialPal) < 0)
+        if (r->ShareMaterialPal(m_materialPal) < 0)
             return -1;
-        if (r->AddRefPrimBuffer(m_primBuffer) < 0)
+        if (r->SharePrimBuffer(m_primBuffer) < 0)
             return -1;
     }
     return i;
@@ -87,7 +87,7 @@ int VIFloraSprite::GetMaterialPal() const
 
 int VIFloraSprite::SetMaterialPal(int pal, VIDictionary &d, VIRaster &r)
 {
-    r.ReleaseMaterialPal(m_materialPal);
+    r.ReleaseMaterialPal(m_materialPal, d);
     m_materialPal = pal;
     r.ShareMaterialPal(pal);
     return 0;
@@ -95,7 +95,7 @@ int VIFloraSprite::SetMaterialPal(int pal, VIDictionary &d, VIRaster &r)
 
 int VIFloraSprite::SetMaterialPalDither(int dither, VIRaster &r)
 {
-    for (int i = 0; i < r.MaterialPalCount(m_materialPal); i++)
-        r.MaterialPalEntry(m_materialPal, i)->SetDither(dither);
+    for (int i = 0; i < r.GetMaterialPalSize(m_materialPal); i++)
+        r.GetMaterialPalEntry(m_materialPal, i)->SetDither(dither);
     return 0;
 }

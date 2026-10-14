@@ -30,7 +30,8 @@ static unsigned int gSndStatus[8];
 
 // The XM modules the IOP currently has playing -- eight {lo, hi} channel-mask
 // pairs.  The two halves share one address base, which is what puts the whole
-// search on a single walking pointer with a -4 displacement.
+// search on a single walking pointer with a -4 displacement -- loop.c's, from
+// an indexed source loop.
 static struct VISndXmState
 {
     int m_pad[8];
@@ -216,6 +217,13 @@ int VISoundDevice::Close()
 // One transfer is started per call and the scan stops there, so a big wave
 // takes as many frames as it takes.  The 128-entry sweep restarts from zero
 // every frame, which is why a sound low in the table can starve.
+// OPEN, 57/189 (65 before).  The XM search is INDEXED, not a walking pointer:
+// loop.c's strength reduction makes the pointer, and the giv's initial value
+// is `&gSndXm + 36` built from a hoisted full address -- the target's
+// `addiu v1,s4,36` -- where a source pointer hoists only the `lui`.  What is
+// left is loop.c hoisting the `== XM` constant 1 into s5 on its second pass:
+// the move is decided at exactly threshold (62 real insns vs 62), and the
+// target's loop is evidently one insn longer there.
 int VISoundDevice::Process()
 {
     int started = 0;
@@ -250,15 +258,15 @@ int VISoundDevice::Process()
                     {
                         started = 1;
                         VIXm *x = s->AsXm();
-                        BeginAdpcmTransfer((void **)&x->m_sample, x->m_xmAddr,
-                                           x->m_xmSize, &x->m_sampleCached);
+                        BeginAdpcmTransfer((void **)&x->m_sample, x->m_spuAddr,
+                                           x->m_spuSize, &x->m_sampleCached);
                     }
                     else if (s->AsXm()->m_xmCached == 0)
                     {
                         started = 1;
                         VIXm *x = s->AsXm();
-                        BeginXmTransfer((void **)&x->m_xm, x->m_spuAddr,
-                                        x->m_xmAddr, x->m_spuSize, &x->m_xmCached);
+                        BeginXmTransfer((void **)&x->m_xm, x->m_xmAddr,
+                                        x->m_spuAddr, x->m_xmSize, &x->m_xmCached);
                     }
                     break;
                 }
@@ -289,16 +297,13 @@ int VISoundDevice::Process()
             int found = 0;
             int j;
 
-            int *p = &gSndXm.m_ch[0][1];
-
             j = 0;
             do {
-                if (p[-1] == lo && p[0] == hi)
+                if (gSndXm.m_ch[j][0] == lo && gSndXm.m_ch[j][1] == hi)
                 {
                     found = 1;
                     break;
                 }
-                p += 2;
                 j++;
             } while (j < 8);
             if (!found)
@@ -451,12 +456,16 @@ int VISoundDevice::StreamBgm()
 {
     if (m_bgmPlaying[0])
     {
-        if (m_bgmFadeDir == 0)
+        // A guard and then a SWITCH with no case 0: the guard is the
+        // `beqz`, and two leaf cases are two `beq`s straight to bodies laid
+        // out after the dispatch.  An if/else-if chain inverts the tests and
+        // keeps the bodies in line; a switch WITH `case 0` is a balanced tree
+        // rooted at 0 and gives a `bgtz`.
+        if (m_bgmFadeDir)
         {
-        }
-        else if (m_bgmFadeDir == -1)
-        {
+            switch (m_bgmFadeDir)
             {
+            case -1:
                 m_bgmFade -= 0.05f;
                 if (m_bgmFade <= 0.0f)
                 {
@@ -467,17 +476,15 @@ int VISoundDevice::StreamBgm()
                     m_bgmPlaying[0] = 0;
                     return 0;
                 }
-            }
-        }
-        else if (m_bgmFadeDir == 1)
-        {
-            {
+                break;
+            case 1:
                 m_bgmFade += 0.05f;
                 if (m_bgmFade >= 1.0f)
                 {
                     m_bgmFade = 1.0f;
                     m_bgmFadeDir = 0;
                 }
+                break;
             }
         }
     }
@@ -523,6 +530,11 @@ int VISoundDevice::BgmBufferSize()
     return n * 2;
 }
 
+// OPEN, 28/249.  The target CROSS-JUMPS the two SoundCmd calls -- the WAVE arm
+// ends `b <XM arm's jal>` -- and keeps the shared `return -1` block at the very
+// end, just above the epilogue.  `else if (XM) ... else return -1`, a `goto
+// fail` at the bottom, and folding the first two tests into one `||` all
+// leave both untouched (27-28).
 int VISoundDevice::Play(int sound, int priority, VISOUNDCLASS cls)
 {
     if (cls >= 2)
@@ -612,7 +624,7 @@ int VISoundDevice::Play(int sound, int priority, VISOUNDCLASS cls)
 
         gSndArgs[0] = (int)(channels & 0xffffff);
         gSndArgs[1] = (int)(channels >> 24);
-        gSndArgs[2] = x->m_spuAddr;
+        gSndArgs[2] = x->m_xmAddr;
         gSndArgs[3] = x->m_repeat;
         gSndArgs[4] = pb->m_pitch;
         gSndArgs[5] = (unsigned int)(pb->m_volume * x->Volume() * m_classVolume[cls] * 255.0f);
@@ -838,15 +850,15 @@ int VISoundDevice::Flush()
                         {
                             done = 0;
                             VIXm *x = s->AsXm();
-                            BeginAdpcmTransfer((void **)&x->m_sample, x->m_xmAddr,
-                                               x->m_xmSize, &x->m_sampleCached);
+                            BeginAdpcmTransfer((void **)&x->m_sample, x->m_spuAddr,
+                                               x->m_spuSize, &x->m_sampleCached);
                         }
                         else if (s->AsXm()->m_xmCached == 0)
                         {
                             done = 0;
                             VIXm *x = s->AsXm();
-                            BeginXmTransfer((void **)&x->m_xm, x->m_spuAddr,
-                                            x->m_xmAddr, x->m_spuSize, &x->m_xmCached);
+                            BeginXmTransfer((void **)&x->m_xm, x->m_xmAddr,
+                                            x->m_spuAddr, x->m_xmSize, &x->m_xmCached);
                         }
                         break;
                     }
@@ -1400,11 +1412,11 @@ int VISoundDevice::DebugResources()
                 int n;
                 xms++;
                 if (((VIXm *)m_sounds[i])->m_xm)
-                    n = ((VIXm *)m_sounds[i])->m_spuSize + 64;
+                    n = ((VIXm *)m_sounds[i])->m_xmSize + 64;
                 else
                     n = 64;
                 if (((VIXm *)m_sounds[i])->m_sample)
-                    bytes = bytes + (n + ((VIXm *)m_sounds[i])->m_xmSize);
+                    bytes = bytes + (n + ((VIXm *)m_sounds[i])->m_spuSize);
                 else
                     bytes = bytes + n;
             }

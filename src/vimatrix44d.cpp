@@ -12,7 +12,7 @@
 // would be redundant with the member construction that just ran.
 VIMatrix44D::VIMatrix44D()
 {
-    Identity();
+    Zero();
 }
 
 // Same three-part shape as VIMatrix33: a user operator= assigning the rows one

@@ -25,7 +25,6 @@ extern "C" float sinf(float);
 #define VIRAND (((float)rand() - (float)rand()) * 4.65661287e-10f)
 extern "C" float cosf(float);
 extern "C" unsigned int VIHashResourceID(const char *);
-extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 // The scene filter the weather rays go through: it accepts everything.  Its
 // vtable and typeinfo are the TU's first and last symbols, which is what puts

@@ -12,7 +12,6 @@
 // own `li a0,92` into __builtin_new, and it closes the declared layout exactly.
 #include "vi.h"
 
-extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" void *memcpy(void *, const void *, unsigned int);
 extern "C" int   printf(const char *, ...);
 
@@ -26,6 +25,33 @@ VICollide::~VICollide()
 {
     Close();
 }
+
+// The vector helpers.  Every one takes `const VIVect3 &` (and writes through a
+// `VIVect3 &`), and that is the point: an inline function's REFERENCE
+// parameter becomes a pseudo with no pointer flag, so alias analysis cannot
+// give a load through it a base, it may alias any stack store, and the loads
+// stay serialised between the stores -- exactly the target's shape in every
+// capsule/cylinder/segment test.  Written as member expressions the same
+// loads fold to frame or `this` offsets and the scheduler hoists them.  These
+// are not in vi.h because nothing outside this TU is known to use them.
+static inline float Dot3(const VIVect3 &a, const VIVect3 &b)
+{ return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+static inline void Cross3(VIVect3 &o, const VIVect3 &a, const VIVect3 &b)
+{
+    o.x = a.y * b.z - a.z * b.y;
+    o.y = -a.x * b.z + a.z * b.x;
+    o.z = a.x * b.y - a.y * b.x;
+}
+
+static inline void AddScaled(VIVect3 &o, const VIVect3 &d, float t)
+{ o.x = o.x + d.x * t; o.y = o.y + d.y * t; o.z = o.z + d.z * t; }
+
+static inline void SubScaled(VIVect3 &o, const VIVect3 &d, float t)
+{ o.x = o.x - d.x * t; o.y = o.y - d.y * t; o.z = o.z - d.z * t; }
+
+static inline void SetCyl(VICylinder &cy, const VIVect3 &b, const VIVect3 &d, float l, float r)
+{ cy.m_base = b; cy.m_dir = d; cy.m_length = l; cy.m_radius = r; }
 
 int VICollide::Init()
 {
@@ -252,13 +278,7 @@ int VICollide::CollideObj(VICollRay &r, int obj)
 // The three MAX tests come first and the three MIN tests after, not
 // interleaved per axis.
 //
-// OPEN, 30/68.  The shape is settled and it is not the source: `&&`, the
-// nested `if`, an accumulator, and pointer variables for either vector pair
-// all give the same 30 words, and the function has NO STACK FRAME so there are
-// no locals to spell differently.  What differs is the standing phenomenon --
-// the target keeps m_start.x/y/z in $f4/$f3/$f2 for the whole function and
-// puts the shared `return 1` LAST, where ours rematerialises the loads and
-// leaves the first `return 1` in line.
+// Byte-exact since phase 46: the six rejections are ONE `||`.
 int VICollide::Cull(VICollRay &r, VIBBox &b)
 {
     if ((r.m_start.x > b.max.x && r.m_end.x > b.max.x) ||
@@ -501,24 +521,18 @@ int VICollide::Cull(VICollSphere &s, VIBBox &b)
 // Collide(VICollRay &, const VISphere &) with the radius sourced differently.
 // Nothing calls anything else; the body is repeated, exactly as the two
 // Cull(..., VISphere &) overloads repeat each other.
-// OPEN, 32/153.  The shape and the registers are settled -- what differs is
-// the ENTRY BLOCK's schedule: the target issues all six loads before the first
-// subtract and stores `l` before the direction loads, where ours interleaves
-// them, and the accumulator's `hit = 0` lands in the first branch's delay slot
-// there and in the prologue here.  Its two siblings below have the same 20-odd
-// words in the same place, and Collide(VICollSphere &, VISphere &) shows why it
-// is not the source: hoisting one statement out of the `if` moved it 37 -> 23
-// and changed nothing else.
+// Byte-exact, and so are both siblings, on the entry block: `l` is a copy then
+// an in-place `-=`, and `b` is Dot3(l, s.m_dir) -- through an inline reference
+// parameter, so the direction loads may alias the stored `l` and wait for it.
+// That is the whole 32/20/33-word entry-block difference the three shared.
 int VICollide::Collide(VICollSphere &s, VIVect3 &p)
 {
     VIVect3 l;
 
-    l.x = s.m_start.x - p.x;
-    l.y = s.m_start.y - p.y;
-    l.z = s.m_start.z - p.z;
+    l = s.m_start;
+    l -= p;
 
-    VIVect3 *dir = &s.m_dir;
-    float b = l.x * dir->x + l.y * dir->y + l.z * dir->z;
+    float b = Dot3(l, s.m_dir);
     int hit = 0;
     if (b < 0.0f)
     {
@@ -533,7 +547,7 @@ int VICollide::Collide(VICollSphere &s, VIVect3 &p)
                 if (0.0f < t)
                 {
                     s.m_hitTime = t;
-                    s.m_hitNormal = *dir;
+                    s.m_hitNormal = s.m_dir;
                     s.m_hitNormal *= tn;
                     s.m_hitNormal += s.m_start;
                     s.m_hitNormal -= p;
@@ -556,9 +570,8 @@ int VICollide::Collide(VICollSphere &s, VIVect3 &p)
 // The same body against a static VISphere: the two radii are summed BEFORE
 // squaring -- the Minkowski trick -- and the reciprocal that scales the contact
 // normal is computed inline rather than read from m_invRadius.
-// OPEN, 20/159.  `rad` is computed BEFORE the guard -- the delay slot of the
-// first `bc1f` carries it, so it is unconditional (Phase 34's lever) -- and
-// that is worth 14 words.  The rest is the entry block again.
+// Byte-exact.  `rad` is computed BEFORE the guard -- the delay slot of the
+// first `bc1f` carries it, so it is unconditional (Phase 34's lever).
 int VICollide::Collide(VICollSphere &s, VISphere &v)
 {
     int hit = 0;
@@ -567,8 +580,7 @@ int VICollide::Collide(VICollSphere &s, VISphere &v)
     l = s.m_start;
     l -= v.c;
 
-    VIVect3 *dir = &s.m_dir;
-    float b = l.x * dir->x + l.y * dir->y + l.z * dir->z;
+    float b = Dot3(l, s.m_dir);
     float rad = s.m_radius + v.r;
     if (b < 0.0f)
     {
@@ -583,7 +595,7 @@ int VICollide::Collide(VICollSphere &s, VISphere &v)
                 if (0.0f < t)
                 {
                     s.m_hitTime = t;
-                    s.m_hitNormal = *dir;
+                    s.m_hitNormal = s.m_dir;
                     s.m_hitNormal *= tn;
                     s.m_hitNormal += s.m_start;
                     s.m_hitNormal -= v.c;
@@ -604,8 +616,7 @@ int VICollide::Collide(VICollSphere &s, VISphere &v)
 }
 
 // And once more for a ray against a static sphere.
-// OPEN, 33/156.  Same entry block as CollideVertex; there is no `rad` here to
-// hoist.
+// Byte-exact -- the same entry block as the vertex test.
 int VICollide::Collide(VICollRay &r, const VISphere &v)
 {
     int hit = 0;
@@ -614,8 +625,7 @@ int VICollide::Collide(VICollRay &r, const VISphere &v)
     l = r.m_start;
     l -= v.c;
 
-    VIVect3 *dir = &r.m_dir;
-    float b = l.x * dir->x + l.y * dir->y + l.z * dir->z;
+    float b = Dot3(l, r.m_dir);
     if (b < 0.0f)
     {
         float c = l.x * l.x + l.y * l.y + l.z * l.z - v.r * v.r;
@@ -629,7 +639,7 @@ int VICollide::Collide(VICollRay &r, const VISphere &v)
                 if (0.0f < t)
                 {
                     r.m_hitTime = t;
-                    r.m_hitNormal = *dir;
+                    r.m_hitNormal = r.m_dir;
                     r.m_hitNormal *= tn;
                     r.m_hitNormal += r.m_start;
                     r.m_hitNormal -= v.c;
@@ -664,11 +674,18 @@ int VICollide::Collide(VICollRay &r, const VISphere &v)
 // The inner count is `numVerts - 2` tested against ZERO, so a prim written with
 // fewer than two vertices underflows and runs about four billion times.  Only
 // Begin+End with no Vertex can produce one; nothing that draws does.
-// OPEN, 121/208, and so is its ray twin.  Every other walker in the family is
+// OPEN, 118/208, and so is its ray twin.  Every other walker in the family is
 // byte-exact from the same body, so this is not the shape: under packing 0 the
 // target keeps b.m_verts in a callee-saved register and multiplies by 12 with
 // `mult`+`addu`, where ours spills it and gcc folds the reload into `mtlo`
-// +`madd`.  One register, and every callee-saved name after it shifts.
+// +`madd`.  That is regclass, not reload: every use of vp is the addend of an
+// r5900 madd, whose constraint prefers LO, so the pseudo's preferred class is
+// LO01_REG and it never competes for a GPR.  The target's three loads of each
+// vertex also go through three copies of the address (`move a1,v1; move
+// a0,v1`), which looks like reload_cse rewriting two of three identical
+// address computations as moves -- a guess, untested: no spelling tried here
+// gets cse to leave three.  The fetch is `Set(p->x, p->y, p->z)` because the target
+// issues all three loads before the stores (121 -> 118).
 int VICollide::CollideBufferV(VICollSphere &s, VICollBuffer &b)
 {
     VIVect3 a;
@@ -876,15 +893,6 @@ int VICollide::CollideObj(VICollSphere &s, VICapsule &c)
 // &c.m_dir sits between each zero and its overwrite, and m_length/m_radius are
 // never zeroed at all (a default ctor plus four assignments leaves two extra
 // `sw zero`).
-static inline float Dot3(const VIVect3 &a, const VIVect3 &b)
-{ return a.x * b.x + a.y * b.y + a.z * b.z; }
-
-static inline void AddScaled(VIVect3 &o, const VIVect3 &d, float t)
-{ o.x = o.x + d.x * t; o.y = o.y + d.y * t; o.z = o.z + d.z * t; }
-
-static inline void SetCyl(VICylinder &cy, const VIVect3 &b, const VIVect3 &d, float l, float r)
-{ cy.m_base = b; cy.m_dir = d; cy.m_length = l; cy.m_radius = r; }
-
 int VICollide::Collide(VICollSphere &s, VICapsule &c)
 {
     VICollRay &ray = s;
@@ -958,16 +966,6 @@ done:
 // and stay between the stores.  The second cross product lands in `v`, the hit
 // point is `v = r.m_delta; v *= t; v += r.m_start;`, and the normal is built
 // IN PLACE in r.m_hitNormal and normalised there.
-static inline void Cross3(VIVect3 &o, const VIVect3 &a, const VIVect3 &b)
-{
-    o.x = a.y * b.z - a.z * b.y;
-    o.y = -a.x * b.z + a.z * b.x;
-    o.z = a.x * b.y - a.y * b.x;
-}
-
-static inline void SubScaled(VIVect3 &o, const VIVect3 &d, float t)
-{ o.x = o.x - d.x * t; o.y = o.y - d.y * t; o.z = o.z - d.z * t; }
-
 int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
 {
     int      hit = 0;
@@ -1273,7 +1271,7 @@ int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
 
 // And the three ray walkers.
 
-// OPEN, 121/208 -- the same one register as the sphere twin above.
+// OPEN, 118/208 -- the same one register as the sphere twin above.
 int VICollide::CollideBufferV(VICollRay &r, VICollBuffer &b)
 {
     VIVect3 a;
@@ -1836,16 +1834,21 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
 // gets tested exactly once.  And the two slab rejections are the ONLY exits
 // that skip that fallback: if the sphere centre is further than its radius
 // from the edge's plane, v0 is not tested at all.
-// OPEN, 189/334.  The plane local is settled -- the four zeroed words at the
-// top of the frame are a VIPlane, and `dist` is its Distance() -- and so is the
-// &m_dir pointer variable, which together took it 252 -> 189.  What is left is
-// one more stack local than we have (224 vs 208 bytes) and the callee-saved
-// register that goes with it.
+// OPEN, 27/334, from 189 on the CollideNoCaps lens: the cross and dot
+// products and the normal's projection are inline `const VIVect3 &` helpers,
+// `e` is COPY-constructed from v1 (it is the one vector the target never
+// zeroes), the second cross product comes BEFORE the sqrtf (its stores sit
+// ahead of the sqrt's NaN branch), the whole body is the `0 < lsq` arm with
+// the degenerate case in the else, the hit point is built in `q`, the normal
+// in place in m_hitNormal, and `if (!over)` scales first.  What is left: the
+// target reads its 0.0f out of pl.d (60) where ours reads q.x (16) -- cse
+// picks the memory copy by ctor order -- and one local-alloc FP swap in the
+// normal's projection.
 int VICollide::Collide(VICollSphere &s, VIVect3 &v0, VIVect3 &v1)
 {
     int     hit = 0;
     int     over = 0;
-    VIVect3 e;
+    VIVect3 e(v1);
     VIVect3 q;
     VIVect3 cp;
     VIPlane pl;
@@ -1855,98 +1858,81 @@ int VICollide::Collide(VICollSphere &s, VIVect3 &v0, VIVect3 &v1)
     float   f;
     float   t;
     float   chord;
-    float   along;
     float   k;
 
-    VIVect3 *dir = &s.m_dir;
+    e -= v0;
 
-    e.x = v1.x - v0.x;
-    e.y = v1.y - v0.y;
-    e.z = v1.z - v0.z;
-
-    pl.n.x = dir->y * e.z - dir->z * e.y;
-    pl.n.y = -dir->x * e.z + dir->z * e.x;
-    pl.n.z = dir->x * e.y - dir->y * e.x;
-
-    lsq = pl.n.x * pl.n.x + pl.n.y * pl.n.y + pl.n.z * pl.n.z;
-    if (!(0.0f < lsq))
-        return Collide(s, v0);
-
-    invC = 1.0f / sqrtf(lsq);
-    pl.n.x = pl.n.x * invC;
-    pl.n.y = pl.n.y * invC;
-    pl.n.z = pl.n.z * invC;
-
-    pl.d = -(pl.n.x * v0.x + pl.n.y * v0.y + pl.n.z * v0.z);
-    dist = pl.Distance(s.m_start);
-    if (!(-s.m_radius < dist))
-        return hit;
-    if (!(dist < s.m_radius))
-        return hit;
-
-    q.x = s.m_start.x - v0.x;
-    q.y = s.m_start.y - v0.y;
-    q.z = s.m_start.z - v0.z;
-
-    cp.x = q.y * e.z - q.z * e.y;
-    cp.y = -q.x * e.z + q.z * e.x;
-    cp.z = q.x * e.y - q.y * e.x;
-
-    f = -(cp.x * pl.n.x + cp.y * pl.n.y + cp.z * pl.n.z) * invC;
-    if (!(0.0f < f))
-        goto vertex;
-    if (e.Normalize() == 0)
-        goto vertex;
-
-    chord = sqrtf(s.m_radius * s.m_radius - dist * dist);
-    q.x = pl.n.y * e.z - pl.n.z * e.y;
-    q.y = -pl.n.x * e.z + pl.n.z * e.x;
-    q.z = pl.n.x * e.y - pl.n.y * e.x;
-    f = f + chord / (dir->x * q.x + dir->y * q.y + dir->z * q.z);
-
-    if (f < 0.0f)
+    Cross3(pl.n, s.m_dir, e);
+    lsq = Dot3(pl.n, pl.n);
+    if (0.0f < lsq)
     {
-        over = 1;
-        f = 0.0f;
-    }
 
-    t = f * s.m_invLength;
-    if (!(t < s.m_hitTime))
-        goto vertex;
+        invC = 1.0f / sqrtf(lsq);
+        pl.n.x = pl.n.x * invC;
+        pl.n.y = pl.n.y * invC;
+        pl.n.z = pl.n.z * invC;
 
-    cp.x = s.m_delta.x * t + s.m_start.x;
-    cp.y = s.m_delta.y * t + s.m_start.y;
-    cp.z = s.m_delta.z * t + s.m_start.z;
+        pl.d = -Dot3(pl.n, v0);
+        dist = pl.Distance(s.m_start);
+        if (!(-s.m_radius < dist))
+            goto done;
+        if (!(dist < s.m_radius))
+            goto done;
 
-    along = e.x * cp.x + e.y * cp.y + e.z * cp.z;
-    if (!(0.0f < along - (e.x * v0.x + e.y * v0.y + e.z * v0.z)))
-        goto vertex;
-    if (!(along - (e.x * v1.x + e.y * v1.y + e.z * v1.z) < 0.0f))
-        goto vertex;
+        q.x = s.m_start.x - v0.x;
+        q.y = s.m_start.y - v0.y;
+        q.z = s.m_start.z - v0.z;
 
-    q.x = cp.x - v0.x;
-    q.y = cp.y - v0.y;
-    q.z = cp.z - v0.z;
-    k = q.x * e.x + q.y * e.y + q.z * e.z;
-    q.x = q.x - e.x * k;
-    q.y = q.y - e.y * k;
-    q.z = q.z - e.z * k;
-    if (over)
-    {
-        q.Normalize();
+        Cross3(cp, q, e);
+
+        f = -Dot3(cp, pl.n) * invC;
+        if (!(0.0f < f))
+            goto vertex;
+        if (e.Normalize() == 0)
+            goto vertex;
+
+        Cross3(q, pl.n, e);
+        chord = sqrtf(s.m_radius * s.m_radius - dist * dist);
+        f = f + chord / Dot3(s.m_dir, q);
+
+        if (f < 0.0f)
+        {
+            over = 1;
+            f = 0.0f;
+        }
+
+        t = f * s.m_invLength;
+        if (!(t < s.m_hitTime))
+            goto vertex;
+
+        q = s.m_delta;
+        q *= t;
+        q += s.m_start;
+
+        if (!(0.0f < Dot3(e, q) - Dot3(v0, e)))
+            goto vertex;
+        if (!(Dot3(e, q) - Dot3(v1, e) < 0.0f))
+            goto vertex;
+
+        s.m_hitNormal = q;
+        s.m_hitNormal -= v0;
+        k = Dot3(s.m_hitNormal, e);
+        SubScaled(s.m_hitNormal, e, k);
+        if (!over)
+            s.m_hitNormal *= s.m_invRadius;
+        else
+            s.m_hitNormal.Normalize();
+        s.m_hitTime = t;
+        hit = 1;
+
+vertex:
+        if (Collide(s, v0))
+            hit = 1;
     }
     else
     {
-        q.x = q.x * s.m_invRadius;
-        q.y = q.y * s.m_invRadius;
-        q.z = q.z * s.m_invRadius;
+        hit = Collide(s, v0) != 0;
     }
-    s.m_hitNormal = q;
-    s.m_hitTime = t;
-    hit = 1;
-
-vertex:
-    if (Collide(s, v0))
-        hit = 1;
+done:
     return hit;
 }

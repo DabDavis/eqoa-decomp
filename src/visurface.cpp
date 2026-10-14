@@ -138,7 +138,7 @@ int VISurface::Allocate()
 {
     if (m_dataSize)
     {
-        m_data = (unsigned char *)VIMemAlloc(m_dataSize);
+        m_data = new unsigned char[m_dataSize];
         if (m_data == 0)
             return -1;
     }
@@ -149,7 +149,7 @@ int VISurface::Deallocate()
 {
     if (m_data)
     {
-        VIMemFree(m_data);
+        delete [] m_data;
         // Field order, and the two closing stores the other way round.  What
         // decides it is the value-hoist: gcc emits the LAST store of each
         // distinct constant first, in source order, and the rest after it in

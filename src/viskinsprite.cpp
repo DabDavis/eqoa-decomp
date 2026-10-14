@@ -67,9 +67,9 @@ int VISkinSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollide &c
     s->m_primBuffer = m_primBuffer;
     if (r)
     {
-        if (r->AddRefMaterialPal(m_materialPal) < 0)
+        if (r->ShareMaterialPal(m_materialPal) < 0)
             return -1;
-        if (r->AddRefPrimBuffer(m_primBuffer) < 0)
+        if (r->SharePrimBuffer(m_primBuffer) < 0)
             return -1;
     }
     return i;

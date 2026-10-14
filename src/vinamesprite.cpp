@@ -5,7 +5,6 @@
 // screen rectangle overlaps one already kept, and draws the survivors.
 #include "vi.h"
 
-extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" char *strncpy(char *d, const char *s, unsigned int n);
 extern "C" char *strcpy(char *d, const char *s);
 extern "C" void  qsort(void *base, unsigned int n, unsigned int size,
@@ -75,6 +74,12 @@ int VINameSprite::SetColor(const VIColor32F &c)
     return 0;
 }
 
+// The VU0 copy goes through an inline wrapper, as in VIParticleSprite.
+static inline void CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s)
+{
+    sceVu0CopyMatrix(d, s);
+}
+
 int VINameSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned int flags)
 {
     VIVect4 p;
@@ -101,7 +106,7 @@ int VINameSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned int f
         NameDefers[NumNameDefers].m_color = m_color;
         NameDefers[NumNameDefers].m_font = m_font;
         strcpy(NameDefers[NumNameDefers].m_name, m_name);
-        sceVu0CopyMatrix(NameDefers[NumNameDefers].m_mat, *r.GetModelView());
+        CopyMatrix(NameDefers[NumNameDefers].m_mat, *r.GetModelView());
         r.CalcCenteredStringScreenRect(m_font, at, m_name,
                                        NameDefers[NumNameDefers].m_rect);
         NumNameDefers++;

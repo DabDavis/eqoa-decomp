@@ -9,7 +9,6 @@
 // clamped to 4, so a marker on a hugely scaled actor stays a readable size.
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 VIPointSprite::VIPointSprite()
 {

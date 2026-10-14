@@ -136,15 +136,16 @@ void VIBolt::Update(int dt, VIVect3 &a, VIVect3 &b, VIMatrix44 &m)
 {
     VIVect3 d;
     VIVect3 t;
-    int     i, j, start, end;
+    int     i, j;
 
     m_harmonics[0].Update(dt);
     m_harmonics[1].Update(dt);
     m_harmonics[2].Update(dt);
 
-    d.x = b.x - a.x;
-    d.y = b.y - a.y;
-    d.z = b.z - a.z;
+    // Copy then subtract in place: written per component the three
+    // differences are loaded and stored x-first, where the target goes z-first.
+    d = b;
+    d -= a;
 
     for (i = 0; i < 17; i++) {
         m_points[i] = d;
@@ -155,8 +156,10 @@ void VIBolt::Update(int dt, VIVect3 &a, VIVect3 &b, VIMatrix44 &m)
     VIVect3 p;
 
     for (i = 0; i < 4; i++) {
-        start = i * 4;
-        end = start + 4;
+        // start/end are per-loop locals: shared at function scope they are one
+        // pseudo each and swap callee-saved registers with the loop counters.
+        int start = i * 4;
+        int end = start + 4;
 
         VIVect3 s = m_harmonics[0].Sample(i);
         m.Mul(s, t);
@@ -175,8 +178,8 @@ void VIBolt::Update(int dt, VIVect3 &a, VIVect3 &b, VIMatrix44 &m)
     }
 
     for (i = 0; i < 8; i++) {
-        start = i * 2;
-        end = start + 2;
+        int start = i * 2;
+        int end = start + 2;
 
         VIVect3 s = m_harmonics[1].Sample(i);
         m.Mul(s, t);

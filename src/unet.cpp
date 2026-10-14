@@ -58,8 +58,8 @@ extern "C" int sceInetName2Address(void *cd, void *buf, int flags, sceInetAddres
 
 extern "C" int _gp;
 
-extern "C" void VIInitUSocketExApi();
-extern "C" void VIFreeUSocketExApi();
+void VIInitUSocketExApi();
+void VIFreeUSocketExApi();
 
 // The gap to the next named data symbol says `cd` is 64 bytes.
 char *net_buf;

@@ -302,10 +302,10 @@ int VIEESurfCache::FindLRU(VIEESurfAlloc &a, VIRaster &r)
 int VIEESurfCache::Allocate(VIEESurfAlloc &a)
 {
     int i = a.m_bucket;
-    VIPool<VIEEBucket> *bk = &m_buckets;
     int n = m_freeMap.Key(m_buckets.Value(i).m_free) & 0x00ffffff;
     if (RemoveFromFreeMap(i) < 0)
         return -1;
+    VIPool<VIEEBucket> *bk = &m_buckets;
     if (m_buckets.Value(i).m_psm == 255)
     {
         if (n - a.m_size >= 8192)
@@ -318,10 +318,11 @@ int VIEESurfCache::Allocate(VIEESurfAlloc &a)
             }
             VIEEBucket b;
             b.m_addr = p;
-            b.m_size = n - (p - m_buckets.Value(i).m_addr);
+            bk = &m_buckets;
+            b.m_size = n - (p - bk->Value(i).m_addr);
             b.m_psm = 255;
             b.m_free = -1;
-            int k = m_buckets.Insert(b, m_buckets.Next(i));
+            int k = bk->Insert(b, bk->Next(i));
             if (k < 0)
                 return -1;
             if (AddToFreeMap(k) < 0)
@@ -686,7 +687,7 @@ int VIEESurfCache::Set(VISurface &s, VIEESurfCacheInfo &c, VIMaterialPass &p)
 
     // Both arms load the same -127.0f, which is what keeps this a BRANCH:
     // two assignments per arm, so gcc will not if-convert it to a movn.
-    int mag;
+    long mag;
     float k;
     if ((p.m_flags & 8) == 0)
     {

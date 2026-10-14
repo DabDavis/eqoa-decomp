@@ -562,7 +562,11 @@ int VIMaterial::ConstructSolidFillPass(int i, VIRaster &r, VIQWord *q)
     q->m_d[1] = 71;
     q++;
 
-    long alpha;
+    // The target's shape is ONE `alpha` assigned in every case and stored
+    // after the switch (`li v1,66` lands in each case's delay slot); spelled
+    // that way the branch structure is exact but the case registers swap
+    // (v0/v1) and the join schedules the store pair after the GetZBufferReg
+    // call, 60 words against 44.  Left as the stores-in-the-cases spelling.
     switch (Layer(this, i)->m_blendMode)
     {
     case 1:

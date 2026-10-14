@@ -105,3 +105,57 @@ since a build profile covers all compiled code.
 `_lane.py sync` copies the tools over a lane's own, and the 3-way merge never carries
 SPAN entries back, so `sync` now refuses when a lane's `eqdecomp.py` holds a SPAN entry
 main lacks (negative control: a fake cap is refused, and the restore syncs).
+
+## Byte-exact is not correct: the callee check
+
+The scorer masks every field the candidate's own relocation table names, so any `jal`
+matches any `jal`. The UI lane found the first case by accident: `VICamera::Update` was
+"exact" while calling `VIMatrix44::operator=`, which does not exist in SUPPORT. The target
+calls `sceVu0CopyMatrix`. `eqcallcheck.py` lines up every R_MIPS_26 in our objects with the
+callee the relocated dump names at the same offset (`eqcalls.calls`). Its first
+whole-tree run found **110 mismatched call sites in 84 matched functions**: 59 call a
+different SUPPORT function, and 51 call a name the map does not have. All are fixed and
+still byte-exact. The real errors:
+
+- **Every template `DestroyPool` walked the pool with `Erase`.** The original walks with
+  `Next` and destroys in place. Three `Erase`/`EraseFixup` instantiations we emitted were
+  NO-TGT (the target never had them), and they vanished with the fix, which confirms it
+  independently.
+- **VIXm's `spu`/`xm` fields were swapped.** `Create` allocates SPU memory first; +16 is
+  freed by `FreeSpuMem`, and the device's `BeginAdpcmTransfer` sends the sample there.
+- **`VISimpleSprite::Raster`/`Pick`'s extra argument is a colour buffer**, the scene's
+  next STATIC-LIGHTING buffer (`VIScene::GetNextColorBuffer`). It was read as a LOD/dither
+  level through a function that does not exist.
+- **VIRaster:**
+  - `EndScene` ends in `ReleaseDeferred`, not `BeginScene`, and its second call is
+    `Flush`, not `Flip`;
+  - `Flush` is `FlushCache(0)` + `VIEEDMASend`;
+  - `Viewport` ends in `SetGSScissoring`;
+  - `BeginTriStrip`/`Fan` recompute and upload the matrices, not the fog;
+  - `CalcClipToScreen`'s identity is `VIMatrix44::Identity`;
+  - `DrawPrimBuffer`'s PackVU arm calls `DrawPrimBufferPackVU`;
+  - three `delete`s are `delete []`.
+- `VIQuat(D)::ConvertTo(euler)` is `Rotate` + `ConvertToEulerZXY`, not `UnitRotate` + XYZ.
+  `VIMatrix33`/`44D`'s default ctors call `Zero`. `VIPickSegment::Init` uses `SubMatrixMul`.
+- **`new []`/`delete []`** (`__builtin_vec_new/delete`) where we had an invented
+  `VIMemAlloc`/`VIMemFree`. The old comment said `delete []` would add a second null test;
+  it does not.
+- `VIString`: `strncpy` not `memcpy` (three sites), `strcat` in `Concat(const VIString &)`,
+  `malloc` in `strdup16`, and the libc names without the `_` prefix.
+- Smaller fixes:
+  - `ChooseOrbitAngle` calls `FindBestOrbitAngle`.
+  - `SetCamera` calls `CalcFarPlane`; `GetViewDistance` does not exist.
+  - `~VIWave` calls `Deallocate`.
+  - `VILNode`'s hash is `VIHashRefID`.
+  - `ParseSoundSpriteObj` reads an `int`.
+  - `VIHashResourceID_Icon` and `VI(Init|Free)USocketExApi` have C++ linkage.
+  - The sprites' palette calls are `Share*`/`GetMaterialPal*`, and `ReleaseMaterialPal`
+    takes the dictionary, which is already in `a2`.
+
+A call's extra arguments can cost nothing. `ConvertTo(q)` was really `ConvertTo(q, b, c)`:
+`b` and `c` arrive in `a2`/`a3` and are never moved, so the bytes cannot tell the two
+apart. Only the relocation can.
+
+`_tu.py` now also reports a matched function that stops being EMITTED. A template member
+is only instantiated when it is used, so a source change can silently drop a matched
+function that the row loop never sees.

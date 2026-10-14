@@ -556,7 +556,6 @@ int VIWorld::FindLeaf(const VIVect3 &at, int &zone, int &leaf) const
     const VIArray<VIWorldLeaf> &leaves = m_tree.m_leaves;
     const VIArray<VIZone>      &zones  = m_zones;
     int node = 0;
-    int r    = 0;
 
     if (m_tree.m_nodes.m_size != 0)
     {
@@ -580,9 +579,8 @@ int VIWorld::FindLeaf(const VIVect3 &at, int &zone, int &leaf) const
     leaf = zones[zone].FindLeaf(at);
 
     if (leaf < 0)
-        r = -1;
-
-    return r;
+        return -1;
+    return 0;
 }
 
 int VIWorld::Collide(VIEnvRay &r)

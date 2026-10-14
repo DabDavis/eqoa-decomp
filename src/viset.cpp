@@ -118,7 +118,7 @@ template <class T> int VISet<T>::DestroyPool()
     for (int i = Begin(); i != End(); )
     {
         int j = i;
-        i = Erase(i);
+        i = Next(i);
         NODE(j)->m_data.~T();
     }
     return 0;
@@ -336,8 +336,8 @@ template <class T> int VISet<T>::Insert(const T &v)
 
     int n = x;
 
-    // The address is null-tested before it is written through, as in
-    // VIPool::Add -- but the tested pointer here is node+16, not the node.
+    // The null test on node+16 is gcc's own: placement new is declared
+    // `throw()`, and gcc 2.95 null-checks a nothrow operator new's result.
     new (&NODE(n)->m_data) T(v);
 
     // The parent is a LOCAL here and is NOT one in EraseFixup: with it, the
@@ -349,9 +349,21 @@ template <class T> int VISet<T>::Insert(const T &v)
     while (x != m_root && NODE(NODE(x)->m_parent)->m_color != 0)
     {
         int q = NODE(x)->m_parent;
+        // STEPPING STONE, not believed to be the original spelling: the
+        // uncle `y` is one variable for the loop body and is REUSED below for
+        // the first half's post-rotate parent.  That asymmetry is what moves
+        // global-alloc's priorities so q lands in a1 (q stays the post-rotate
+        // parent in the second half, which is now byte-exact).  Spelled
+        // symmetrically -- q, or a fresh local, in both halves -- the arm is
+        // 73 words wrong instead of 24, with q in a2 by its preference for
+        // the post-rotate `q * sizeof(Node)` pseudo.  What is left is
+        // register choice at the loop top and in the first half (nodes,
+        // q*20, NODE(q), the uncle's scale) plus the preheader's li/move
+        // pair, which sched1 orders by register weight.
+        int y;
         if (q == NODE(NODE(q)->m_parent)->m_left)
         {
-            int y = NODE(NODE(q)->m_parent)->m_right;
+            y = NODE(NODE(q)->m_parent)->m_right;
             if (NODE(y)->m_color != 0)
             {
                 NODE(q)->m_color = 0;
@@ -366,15 +378,15 @@ template <class T> int VISet<T>::Insert(const T &v)
                     x = q;
                     LeftRotate(x);
                 }
-                q = NODE(x)->m_parent;
-                NODE(q)->m_color = 0;
-                NODE(NODE(q)->m_parent)->m_color = 1;
-                RightRotate(NODE(q)->m_parent);
+                y = NODE(x)->m_parent;
+                NODE(y)->m_color = 0;
+                NODE(NODE(y)->m_parent)->m_color = 1;
+                RightRotate(NODE(y)->m_parent);
             }
         }
         else
         {
-            int y = NODE(NODE(q)->m_parent)->m_left;
+            y = NODE(NODE(q)->m_parent)->m_left;
             if (NODE(y)->m_color != 0)
             {
                 NODE(q)->m_color = 0;

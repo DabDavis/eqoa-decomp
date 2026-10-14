@@ -126,6 +126,33 @@ def obj_functions(obj: Path) -> list[str]:
     return names
 
 
+_CALLEE = {"dump": None, "warned": False, "syms": {}}
+
+
+def callee_mismatches(st, img, obj: Path, symbol: str, sym) -> list[tuple[int, str, str]]:
+    """(offset, target callee, our callee) for every jal that names a different
+    function from the target's -- empty when they agree, or when there is no
+    relocated dump to read the target's callees from (then warned once)."""
+    import eqcalls as K
+    import eqcallcheck as CC
+    if _CALLEE["dump"] is None:
+        if not K.DUMP.is_file():
+            if not _CALLEE["warned"]:
+                print(f"note: no {K.DUMP.name}; callees are NOT checked", file=sys.stderr)
+                _CALLEE["warned"] = True
+            return []
+        _CALLEE["dump"] = K.load_dump(K.DUMP)
+    key = (str(obj), obj.stat().st_mtime_ns)
+    syms = _CALLEE["syms"].get(key)
+    if syms is None:
+        syms = _CALLEE["syms"][key] = CC.obj_symbols(obj)
+    want = {va - sym.addr: n for va, kind, n in K.calls(st, img, _CALLEE["dump"], sym)
+            if kind in ("jal", "j")}
+    have = CC.candidate_calls(obj, symbol, syms)
+    return [(off, t, have[off]) for off, t in sorted(want.items())
+            if off in have and "+0x" not in t and not t.startswith("0x") and have[off] != t]
+
+
 def score(st, img, obj: Path, symbol: str):
     """('match'|'wrong'|'no-target', wrong, total, diffreport)"""
     try:
@@ -141,6 +168,13 @@ def score(st, img, obj: Path, symbol: str):
     res = D.diff(target, cand, symbol, sym.addr, modes={"j26"},
                  relocs=relocs, span=(at, at + len(cand)))
     if res.ok:
+        # Byte-exact is not enough: the masked jal fields hide WHICH function
+        # is called, and phase 61 found 84 "exact" functions calling the wrong
+        # one.  The relocated dump names the target's callees (eqcallcheck).
+        bad = callee_mismatches(st, img, obj, symbol, sym)
+        if bad:
+            res.callee = bad
+            return ("callee", len(bad), res.insns_target, res)
         return ("match", 0, res.insns_target, res)
     a = [w for _, w, _ in E.disasm(target, sym.addr)]
     b = [w for _, w, _ in E.disasm(cand, sym.addr)]
@@ -220,6 +254,9 @@ def main(argv=None):
             print(f"  BUILD FAILED  {name}")
         elif kind == "duplicate":
             print(f"  DUPLICATE     {name}   (two TUs emit different bytes)")
+        elif kind == "callee":
+            calls = ", ".join(f"+{o:#x} {c} != {t}" for o, t, c in res.callee)
+            print(f"  CALLEE  {wrong:>3}/{tot:<3}  {name}   (bytes exact; {calls})")
         else:
             # `~` marks a length drift, so the count is diff-aligned not positional
             drift = "~" if res is not None and res.cand_len != res.target_len else " "

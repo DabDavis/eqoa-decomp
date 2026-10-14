@@ -377,15 +377,14 @@ int VIClipStack::PushPortal(VICamera &cam, int n, VIVect3 *p)
 
     for (int i = 0; i < n; i++)
     {
-        pl(*prev, *p, cam.m_position);
-        prev = p;
+        VIVect3 *a = prev;
+        prev = &p[i];
+        pl(*a, p[i], cam.m_position);
         m_planes[m_numPlanes] = pl;
         m_numPlanes++;
 
-        d.x = p->x - cam.m_position.x;
-        d.y = p->y - cam.m_position.y;
-        d.z = p->z - cam.m_position.z;
-        p++;
+        d = p[i];
+        d -= cam.m_position;
         float t = Dot(d, cam.m_dir);
         m_verts[m_numVerts] = d;
         m_verts[m_numVerts] *= cam.m_far / t;
@@ -423,15 +422,14 @@ int VIClipStack::PushPortal(VIVect3 &eye, float dist, int n, VIVect3 *p,
 
     for (int i = 0; i < n; i++)
     {
-        pl(*prev, *p, eye);
-        prev = p;
+        VIVect3 *a = prev;
+        prev = &p[i];
+        pl(*a, p[i], eye);
         m_planes[m_numPlanes] = pl;
         m_numPlanes++;
 
-        d.x = p->x - eye.x;
-        d.y = p->y - eye.y;
-        d.z = p->z - eye.z;
-        p++;
+        d = p[i];
+        d -= eye;
         float t = Dot(d, near.n);
         m_verts[m_numVerts] = d;
         m_verts[m_numVerts] *= dist / t;

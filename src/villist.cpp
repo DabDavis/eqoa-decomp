@@ -6,7 +6,7 @@
 // terminates on a null that the header itself provides.
 #include "vi.h"
 
-extern "C" unsigned int VIHashResourceID(const char *);
+extern "C" unsigned int VIHashRefID(const char *);
 
 VILNode::VILNode()
 {
@@ -59,7 +59,7 @@ VILList *VILNode::List() const
 
 void VILNode::SetName(const char *name)
 {
-    m_id = VIHashResourceID(name);
+    m_id = VIHashRefID(name);
 }
 
 VILList::VILList()
@@ -168,7 +168,7 @@ VILNode *VILList::Node(int index) const
 
 VILNode *VILList::Find(const char *name) const
 {
-    return Find(VIHashResourceID(name));
+    return Find(VIHashRefID(name));
 }
 
 VILNode *VILList::Find(unsigned int id) const

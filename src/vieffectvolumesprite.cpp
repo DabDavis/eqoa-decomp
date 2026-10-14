@@ -6,7 +6,6 @@
 // hand, composed with the model-view and transposed again.
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 VIEffectVolumeSprite::VIEffectVolumeSprite()
 {
@@ -31,6 +30,14 @@ int VIEffectVolumeSprite::GetInstType(VIScene &sc) const
     return 1;
 }
 
+// The VU0 copy goes through an inline wrapper: called directly, cse merges the
+// destination's stack address with the constructor's and hands the call a
+// callee-saved register, where the target rematerialises `addiu a0,sp,N`.
+static inline void CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s)
+{
+    sceVu0CopyMatrix(d, s);
+}
+
 int VIEffectVolumeSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r,
                                  unsigned int flags)
 {
@@ -52,7 +59,7 @@ int VIEffectVolumeSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r,
 
     if (sc.GetStreamAudioUISprite() != -1)
     {
-        sceVu0CopyMatrix(mv, *r.GetModelView());
+        CopyMatrix(mv, *r.GetModelView());
         r.SetModelView(mv);
         sc.RasterUISprite(cam, sc.GetStreamAudioUISprite(), flags);
     }
@@ -63,7 +70,7 @@ int VIEffectVolumeSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r,
         VIMatrix44 q;
         VIMatrix44 w;
 
-        sceVu0CopyMatrix(t, cam.m_view);
+        CopyMatrix(t, cam.m_view);
         q.Transpose(t);
         {
             float x = -(q.m[0].w * q.m[0].x + q.m[1].w * q.m[1].x + q.m[2].w * q.m[2].x);
@@ -74,7 +81,7 @@ int VIEffectVolumeSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r,
             q.m[3].y = y;
             q.m[3].z = z;
         }
-        sceVu0CopyMatrix(t, *r.GetModelView());
+        CopyMatrix(t, *r.GetModelView());
         w.Mul(t, q);
         q.Transpose(w);
         {

@@ -10,7 +10,7 @@ VIWave::VIWave()
 
 VIWave::~VIWave()
 {
-    Destroy();
+    Deallocate();
 }
 
 int VIWave::Create(VISoundDevice &dev, int channels, int format, int frames, int loop)
@@ -125,7 +125,7 @@ int VIWave::Allocate(VISoundDevice &dev)
     if (!m_spuAddr)
         return -1;
 
-    m_buffer = (unsigned char *)VIMemAlloc(m_size);
+    m_buffer = new unsigned char[m_size];
     m_p68 = 0;
     m_p80 = 0;
     m_p76 = 0;
@@ -138,7 +138,7 @@ int VIWave::Allocate(VISoundDevice &dev)
 int VIWave::Deallocate()
 {
     if (m_buffer)
-        VIMemFree(m_buffer);
+        delete [] m_buffer;
     if (m_spuAddr)
         m_device->FreeSpuMem(m_spuAddr, m_size);
     m_buffer = 0;

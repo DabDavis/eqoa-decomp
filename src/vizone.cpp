@@ -24,7 +24,6 @@
 //     and terminated by -1, not by null.
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 VIMatrix44 VIZone::IdentityMatrix;
 
@@ -215,13 +214,6 @@ int VIZone::RenderLeaf(int leaf, VISceneRendVars &v)
     return 0;
 }
 
-// A difference returned by value: the result is built straight into the
-// caller's VIVect3, so its three stores come once, after the arithmetic.
-static inline VIVect3 Diff(const VIVect3 &a, const VIVect3 &b)
-{
-    return VIVect3(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
 int VIZone::SetPretranslations(VIRaster &r, VICamera &cam)
 {
     int     rc = -1;
@@ -229,7 +221,11 @@ int VIZone::SetPretranslations(VIRaster &r, VICamera &cam)
 
     for (i = 0; i < m_pretrans.m_size; i++)
     {
-        VIVect3 t = Diff(m_pretrans[i], cam.m_position);
+        // Both operands through named references: `c.x` folds into the
+        // camera's own base while .y/.z go through `c`, the target's mix.
+        const VIVect3 &a = m_pretrans[i];
+        const VIVect3 &c = cam.m_position;
+        VIVect3 t(a.x - c.x, a.y - c.y, a.z - c.z);
         m_p[i] = t;
     }
 

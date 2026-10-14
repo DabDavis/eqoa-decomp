@@ -92,7 +92,7 @@ int VIPickSegment::Init(const VIPickSegment &src, const VIMatrix44 &mat)
     m_end.x = b.x;
     m_end.y = b.y;
     m_end.z = b.z;
-    mat.Mul(src.m_hitNormal, m_hitNormal);
+    mat.SubMatrixMul(src.m_hitNormal, m_hitNormal);
     m_hitNormal.Normalize();
     m_hitColor = src.m_hitColor;
     if (Precalc() < 0)

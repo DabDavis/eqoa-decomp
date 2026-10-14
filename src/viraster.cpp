@@ -23,17 +23,16 @@ extern "C" int   sceGsSyncV(int mode);
 extern "C" int   sceGsSyncPath(int mode, unsigned short timeout);
 extern "C" void *sceDmaGetChan(int ch);
 extern int   VIEEDMASync(int wait);
-extern int   VIEEDMAStart(int ch);
-extern int   VIEEDMASend(void *chan, int tag);
-extern int   VIEEDMAKick(int ch, _sceDmaTag *tag);
-extern "C" void sceVu0CopyMatrix(VIMatrix44 *d, const VIMatrix44 &s);
+extern "C" int FlushCache(int mode);
+void VIEEDMASend(int chan, void *tag);
+// (Phase 61: `VIEEDMAStart`/`VIEEDMAKick` were guesses -- Flush calls these two.)
 extern "C" void VIVu0MulMatrix(void *d, const void *a, const void *b);
 extern "C" void VIVu0InverseMatrix(void *d, const void *m);
 extern "C" void VIVu0ApplyMatrix(void *m, const void *v, void *d);
 extern "C" void VIVu0Normalize(void *v);
-extern "C" void VIVu0UnitMatrix(void *m);
-extern "C" void VIVu0CopyMatrix(void *d, const void *s);
-extern int VIEEMicroDump(int a, int b);
+// (Phase 61: `VIVu0UnitMatrix`/`VIVu0CopyMatrix` were guesses -- CalcClipToScreen
+// calls VIMatrix44::Identity, Store2D/Restore2D sceVu0CopyMatrix.)
+int VIEEDebugVU1Memory(int a, int b);
 extern "C" void *memcpy(void *, const void *, unsigned int);
 
 // The DMAC handler the raster installs on channel 1 (VIF1).  The handler body
@@ -630,7 +629,7 @@ int VIRaster::Vertex(const VIVect3 &v)
 
 int VIRaster::SetModelView(const VIMatrix44 &m)
 {
-    sceVu0CopyMatrix(&VIRASTER_SPR->m_modelView, m);
+    sceVu0CopyMatrix(VIRASTER_SPR->m_modelView, m);
     m_dirtyLights = 1;
     m_dirtyMatrices = 1;
     return 0;
@@ -638,7 +637,7 @@ int VIRaster::SetModelView(const VIMatrix44 &m)
 
 int VIRaster::SetProjection(const VIMatrix44 &m)
 {
-    sceVu0CopyMatrix(&VIRASTER_SPR->m_projection, m);
+    sceVu0CopyMatrix(VIRASTER_SPR->m_projection, m);
     m_dirtyLights = 1;
     m_dirtyMatrices = 1;
     return 0;
@@ -662,9 +661,9 @@ int VIRaster::Flush()
         m_dmaTag->m_addr = 0;
         m_dmaTag->m_qwc = 0;
         m_dmaTag++;
-        VIEEDMAStart(0);
+        FlushCache(0);
         VIEEDMASync(1);
-        VIEEDMAKick(1, m_dmaStart);
+        VIEEDMASend(1, m_dmaStart);
         if (m_dmaStart == m_dmaBuffer0)
         {
             m_dmaTag = m_dmaBuffer1;
@@ -708,8 +707,8 @@ int VIRaster::BeginTriStrip()
         UploadRasterMicro(&m_dmaTag);
     if (m_dirtyLights)
     {
-        SetFogRegisters();
-        UploadPerMaterial(&m_dmaTag);
+        CalcMatrices();
+        UploadMatrices(&m_dmaTag);
     }
     m_primType = 1;
     m_numVerts = 0;
@@ -724,8 +723,8 @@ int VIRaster::BeginTriFan()
         UploadRasterMicro(&m_dmaTag);
     if (m_dirtyLights)
     {
-        SetFogRegisters();
-        UploadPerMaterial(&m_dmaTag);
+        CalcMatrices();
+        UploadMatrices(&m_dmaTag);
     }
     m_primType = 2;
     m_numVerts = 0;
@@ -831,7 +830,7 @@ int VIRaster::Viewport(int x1, int y1, int x2, int y2)
     m_aspectX = 2048.0f - (m_screenWF - ((float)x1 + hw));
     m_aspectY = 2048.0f - (m_screenHF - ((float)y1 + hh));
     CalcClipToScreen();
-    CalcMatrices();
+    SetGSScissoring();
     m_dirtyLights = 1;
     m_dirtyMatrices = 1;
     return 0;
@@ -925,7 +924,7 @@ int VIRaster::CalcMatrices()
 
 int VIRaster::CalcClipToScreen()
 {
-    VIVu0UnitMatrix((void *)0x700000C0);
+    ((VIMatrix44 *)0x700000C0)->Identity();
     *(float *)0x700000C0 = (float)m_viewportW * 0.5f;
     *(float *)0x700000D4 = -(float)m_viewportH * 0.5f;
     *(float *)0x700000F0 = 2048.0f - (float)m_screenW * 0.5f
@@ -949,8 +948,8 @@ void VIRaster::SetZBias(int z)
 
 int VIRaster::Store2D()
 {
-    VIVu0CopyMatrix(&m_m44B0, (void *)0x70000000);
-    VIVu0CopyMatrix(&m_m44F0, (void *)0x70000040);
+    sceVu0CopyMatrix(m_m44B0, *(VIMatrix44 *)0x70000000);
+    sceVu0CopyMatrix(m_m44F0, *(VIMatrix44 *)0x70000040);
     unsigned char *amb = (unsigned char *)0x70000220;
     unsigned char *sun = (unsigned char *)0x70000221;
     m_b4530 = *amb;
@@ -963,8 +962,8 @@ int VIRaster::Store2D()
 
 int VIRaster::Restore2D()
 {
-    VIVu0CopyMatrix((void *)0x70000000, &m_m44B0);
-    VIVu0CopyMatrix((void *)0x70000040, &m_m44F0);
+    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000000, m_m44B0);
+    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000040, m_m44F0);
     *(unsigned char *)0x70000220 = m_b4530;
     *(unsigned char *)0x70000221 = m_b4531;
     m_dirtyLights = 1;
@@ -999,7 +998,7 @@ int VIRaster::ClearMaterialLRU()
 {
     if (m_p4C14)
     {
-        delete m_p4C14;
+        delete [] m_p4C14;
         m_p4C14 = 0;
     }
     if (m_materialLRU.Clear() < 0)
@@ -1037,12 +1036,12 @@ int VIRaster::ClearDMADoubleBuffer()
 {
     if (m_dmaBuffer0)
     {
-        delete (char *)m_dmaBuffer0;
+        delete [] (char *)m_dmaBuffer0;
         m_dmaBuffer0 = 0;
     }
     if (m_dmaBuffer1)
     {
-        delete (char *)m_dmaBuffer1;
+        delete [] (char *)m_dmaBuffer1;
         m_dmaBuffer1 = 0;
     }
     return 0;
@@ -1127,29 +1126,29 @@ int VIRaster::EndScene()
         Flip();
     }
     if (m_sceneState == 0)
-        Flip();
+        Flush();
     if (m_sceneState == 1)
         m_sceneState = 2;
     else
         m_sceneState = 0;
     m_blitBlend = 0;
     m_blitSurface = -1;
-    if (BeginScene() < 0)
+    if (ReleaseDeferred() < 0)
         return -1;
     return 0;
 }
 
 int VIRaster::DebugEEMicro()
 {
-    VIEEMicroDump(18, 35);
-    VIEEMicroDump(342, 359);
-    VIEEMicroDump(100, 130);
-    VIEEMicroDump(131, 134);
-    VIEEMicroDump(146, 176);
-    VIEEMicroDump(607, 637);
-    VIEEMicroDump(470, 502);
-    VIEEMicroDump(242, 281);
-    VIEEMicroDump(292, 331);
+    VIEEDebugVU1Memory(18, 35);
+    VIEEDebugVU1Memory(342, 359);
+    VIEEDebugVU1Memory(100, 130);
+    VIEEDebugVU1Memory(131, 134);
+    VIEEDebugVU1Memory(146, 176);
+    VIEEDebugVU1Memory(607, 637);
+    VIEEDebugVU1Memory(470, 502);
+    VIEEDebugVU1Memory(242, 281);
+    VIEEDebugVU1Memory(292, 331);
     return 0;
 }
 
@@ -1240,7 +1239,7 @@ int VIRaster::DrawPrimBuffer(int prim, int pal, unsigned int flags)
     case VIPrimBufferTypePackVUNBW:
         return DrawPrimBufferPackVUNBW(prim, pal, flags);
     case VIPrimBufferTypePackVU:
-        return DrawPrimBuffer(prim, pal, 1.0f, flags);
+        return DrawPrimBufferPackVU(prim, pal, 1.0f, flags);
     }
     return -1;
 }
@@ -1430,9 +1429,9 @@ int VIRaster::Begin2D()
         UploadRasterMicro(&m_dmaTag);
     Store2D();
     m.Identity();
-    sceVu0CopyMatrix((VIMatrix44 *)0x70000000, m);
+    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000000, m);
     m.m[3].z = -0.9999989867f;
-    sceVu0CopyMatrix((VIMatrix44 *)0x70000040, m);
+    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000040, m);
     m_dirtyLights = 1;
     return 0;
 }
@@ -2621,9 +2620,9 @@ int VIRaster::UploadMatrices(_sceDmaTag **tag)
     ((unsigned int *)p)[2] = 0x13000000;
     ((unsigned int *)p)[1] = 0;
     ((unsigned int *)p)[3] = 0x6C150000;
-    sceVu0CopyMatrix((VIMatrix44 *)(base + 32), *(VIMatrix44 *)0x70000140);
-    sceVu0CopyMatrix((VIMatrix44 *)(base + 96), *(VIMatrix44 *)0x70000080);
-    sceVu0CopyMatrix((VIMatrix44 *)(base + 160), *(VIMatrix44 *)0x700000C0);
+    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 32), *(VIMatrix44 *)0x70000140);
+    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 96), *(VIMatrix44 *)0x70000080);
+    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 160), *(VIMatrix44 *)0x700000C0);
     p = base + 224;
     ((float *)p)[0] = *(float *)0x70000180;
     ((float *)p)[1] = -*(float *)0x70000188;

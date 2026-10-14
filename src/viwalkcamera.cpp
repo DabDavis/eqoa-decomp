@@ -20,6 +20,18 @@ static inline void MulVec(VIVect3 &v, const VIVect3 &k)
     v.z *= k.z;
 }
 
+// AddVec's mirror, for mode 2's eye BEHIND the target.  MoveCamera's two
+// non-orbit arms build `to` through these and not member by member: the
+// helper's `k` is its own pseudo, and that is what puts the arms' FP registers
+// where the target has them (25 wrong words to byte-exact, both together;
+// either one alone is worse than neither).
+static inline void SubVec(VIVect3 &accum, const VIVect3 &dir, float k)
+{
+    accum.x -= dir.x * k;
+    accum.y -= dir.y * k;
+    accum.z -= dir.z * k;
+}
+
 // 0x00483780.
 int VIWalkCamera::ClearCameraForces()
 {
@@ -70,7 +82,7 @@ int VIWalkCamera::ChooseOrbitAngle(float a, VIScene &scene)
 {
     float best;
 
-    FindOrbitAngle(fmodf(a, 6.28318548f), scene, best);
+    FindBestOrbitAngle(fmodf(a, 6.28318548f), scene, best);
     SetOrbitAngle(best);
     return 0;
 }
@@ -403,15 +415,20 @@ int VIWalkCamera::UpdateCameraPhysics(float dt)
 
     if (m_cur.m_flags & 1)
     {
-        float cur = m_cur.m_orbit.x;
         float tgt = m_cur.m_snapAngle;
 
-        // Phase 18's overshoot shape, verbatim: the MEMBER carries the
-        // arithmetic and the local only ever holds the wrapped result.
-        if (3.14159274f < m_cur.m_snapAngle - cur)
+        // Phase 18's overshoot shape, verbatim: the MEMBERS carry the
+        // arithmetic and the local only ever holds the wrapped result.  And
+        // `cur` is taken AFTER the wrap: the wrap's subtraction then reads
+        // the loaded value and `cur` is a COPY of it that lives on (the
+        // target's `mov.s $f3,$f1`); declared first, cur IS the load and
+        // every register after it shifts (52 wrong words to 2).
+        if (3.14159274f < m_cur.m_snapAngle - m_cur.m_orbit.x)
             tgt = m_cur.m_snapAngle - 6.28318548f;
-        else if (m_cur.m_snapAngle - cur < -3.14159274f)
+        else if (m_cur.m_snapAngle - m_cur.m_orbit.x < -3.14159274f)
             tgt = m_cur.m_snapAngle + 6.28318548f;
+
+        float cur = m_cur.m_orbit.x;
 
         if (cur < tgt)
         {
@@ -439,8 +456,10 @@ int VIWalkCamera::UpdateCameraPhysics(float dt)
 
     if (m_cur.m_flags & 8)
     {
-        float cur = m_cur.m_orbit.y;
+        // The target first, then the current pitch: the two loads come out
+        // in declaration order (the last 2 words).
         float tgt = m_cur.m_snapPitch;
+        float cur = m_cur.m_orbit.y;
 
         if (cur < tgt)
         {
@@ -518,9 +537,8 @@ int VIWalkCamera::MoveCamera(VIScene &scene)
             dir.HPR(m_cur.m_orbit.x, -m_defOrbitPitch, roll);
 
             to = m_phys.m_position;
-            to.x = to.x + dir.x * m_cur.m_dist;
-            to.y = to.y + m_targetHeight + dir.y * m_cur.m_dist;
-            to.z = to.z + dir.z * m_cur.m_dist;
+            to.y = to.y + m_targetHeight;
+            AddVec(to, dir, m_cur.m_dist);
             from.y = from.y + m_phys.m_heightOffset;
             to.y = to.y + m_phys.m_heightOffset;
 
@@ -587,9 +605,8 @@ int VIWalkCamera::MoveCamera(VIScene &scene)
             dir.HPR(m_phys.m_angles.x, m_phys.m_angles.y, dir.z);
 
             to = m_phys.m_position;
-            to.x = to.x - dir.x * m_cur.m_dist;
-            to.y = to.y + m_targetHeight - dir.y * m_cur.m_dist;
-            to.z = to.z - dir.z * m_cur.m_dist;
+            to.y = to.y + m_targetHeight;
+            SubVec(to, dir, m_cur.m_dist);
         }
         else
         {
@@ -598,9 +615,8 @@ int VIWalkCamera::MoveCamera(VIScene &scene)
             dir.HPR(m_cur.m_orbit.x, -m_cur.m_orbit.y, dir.z);
 
             to = m_phys.m_position;
-            to.x = to.x + dir.x * m_cur.m_dist;
-            to.y = to.y + m_targetHeight + dir.y * m_cur.m_dist;
-            to.z = to.z + dir.z * m_cur.m_dist;
+            to.y = to.y + m_targetHeight;
+            AddVec(to, dir, m_cur.m_dist);
         }
         from.y = from.y + m_phys.m_heightOffset;
         to.y = to.y + m_phys.m_heightOffset;
@@ -652,7 +668,7 @@ int VIWalkCamera::SetCamera(VICamera &cam, VIScene &scene, int flags)
 
         m_effect.Apply(p, d);
         if (flags)
-            cam(*scene.m_raster, p, d, scene.GetViewDistance(pos));
+            cam(*scene.m_raster, p, d, scene.CalcFarPlane(pos));
         else
             cam(p, d);
     }

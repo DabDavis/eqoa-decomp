@@ -295,6 +295,23 @@ public:
     VIMatrix44 &operator=(const VIMatrix44D &a);
 } __attribute__((aligned(16)));
 
+// The VU0 library's matrix copy (four lqc2/sqc2), declared ONCE here with the
+// destination as a REFERENCE; every TU that calls it shares this declaration.
+extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
+
+// VIMatrix44's assignment is an INLINE sceVu0CopyMatrix.  SUPPORT carries no
+// out-of-line `__as__10VIMatrix44RC10VIMatrix44` at all, and every target that
+// assigns one matrix to another (VICamera::Update first) calls
+// sceVu0CopyMatrix in its place -- a declared-only operator= "matched" there
+// only because jal targets are masked.  Through the inline, each use
+// rematerialises its own destination address, which a direct call written out
+// does not (visprite.cpp's QueryEmitters, 36 words).
+inline VIMatrix44 &VIMatrix44::operator=(const VIMatrix44 &a)
+{
+    sceVu0CopyMatrix(*this, a);
+    return *this;
+}
+
 
 class VIVect2
 {
@@ -1611,12 +1628,11 @@ public:
     int            m_qwc;       // +0x14
 };
 
-// Allocate's call takes the byte count in a0 and returns the block in v0, and
-// Deallocate's takes the block -- with the source's own null test and NO
-// second one, which is what rules out `delete []` (Phase 10: delete emits its
-// own check, and VIString::Deallocate shows it as the only test there).
-void *VIMemAlloc(int n);
-void  VIMemFree(void *p);
+// Phase 61: VISurface/VIWave's Allocate and Deallocate call `__builtin_vec_new`
+// and `__builtin_vec_delete` (eqcallcheck, off the relocated dump) -- plain
+// `new unsigned char[n]` / `delete [] p`, byte-exact with the source's own
+// null test.  The `VIMemAlloc`/`VIMemFree` pair that stood here does not exist
+// in SUPPORT; the "delete [] would add a second test" reading was wrong.
 
 class VISurface : public VIBuffer
 {
@@ -1956,18 +1972,21 @@ struct VIXmHeader
     short m_channelCount;
 };
 
+// Phase 61: the spu/xm names were swapped until eqcallcheck read Create's
+// callees -- +16 is AllocSpuMem's result, freed by FreeSpuMem, and it is where
+// the device's BeginAdpcmTransfer sends the SAMPLE; +20 holds the XM image.
 class VIXm : public VISound
 {
 public:
     VISoundDevice *m_device;
-    unsigned int   m_xmAddr;
     unsigned int   m_spuAddr;
+    unsigned int   m_xmAddr;
     int            m_xmCached;    // +28
     int            m_sampleCached; // +32
     VIXmHeader    *m_xm;
-    int            m_spuSize;
-    void          *m_sample;
     int            m_xmSize;
+    void          *m_sample;
+    int            m_spuSize;
     int            m_repeat;
     float          m_volume;
     float          m_pan;
@@ -1975,7 +1994,7 @@ public:
     VIXm();
     virtual ~VIXm();
 
-    int  Create(VISoundDevice &dev, void *xm, int spuSize, void *sample, int xmSize);
+    int  Create(VISoundDevice &dev, void *xm, int xmSize, void *sample, int spuSize);
     void Destroy();
     void SetRepeat(int r);
 
@@ -8710,7 +8729,6 @@ public:
 
     int   SetFarPlane(VICamera &cam);
     float CalcFarPlane(const VIVect3 &at);
-    float GetViewDistance(const VIVect3 &at) const;
 
     int   SetSky(VICamera &cam, int i);
     int   SetSky();
@@ -8733,7 +8751,6 @@ public:
     // target out of a resident SUPPORT and looks it up in the same symbol map.
     // Two of these were guessed wrong for four phases -- `GetSprite` is
     // `Sprite`, and VIDictionary's is `Remove`, not `Release`.
-    int       DitherLevel();
     // Phase 41, off VILoader: a resource the loader parsed is handed to the
     // scene by DictID, and released the same way.
     int       ShareResource(unsigned int id);
@@ -9180,18 +9197,13 @@ public:
     // this TU, and the image is un-relocated, so only the ARGUMENT SHAPE is
     // being asserted here -- which register carries what, and how many.
     int DrawPrimBuffer(int prim, int pal, unsigned int flags);
-    int DrawPrimBuffer(int prim, int lod, int pal, unsigned int flags);
+    int DrawPrimBuffer(int prim, int cb, int pal, unsigned int flags);
     int PickPrimBuffer(VIPickSegment &seg, int prim, int pal);
-    int PickPrimBuffer(VIPickSegment &seg, int prim, int lod, int pal);
-    int AddRefMaterialPal(int pal);
-    int AddRefPrimBuffer(int prim);
+    int PickPrimBuffer(VIPickSegment &seg, int prim, int cb, int pal);
     int ReleasePrimBuffer(int prim, VIDictionary &d);
     int ReleaseMaterialPal(int pal, VIDictionary &d);
     int ReleaseColorBuffer(int buf, VIDictionary &d);
-    int ReleaseMaterialPal(int pal);
     int ShareMaterialPal(int pal);
-    int MaterialPalCount(int pal);
-    VIMaterial *MaterialPalEntry(int pal, int i);
     VIMaterial *GetMaterialPalEntry(int pal, int i);
     int         CopyMaterialPal(int pal, int n);
     // Phase 53, off VICSprite::SetHelm: the pal by index and its entry count.

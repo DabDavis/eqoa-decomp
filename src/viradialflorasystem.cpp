@@ -1,16 +1,13 @@
-// VIRadialFloraSystem -- SUPPORT 0x0045E000 .. 0x0045F7A0, its own TU.
+// VIRadialFloraSystem -- SUPPORT 0x0045E000 .. 0x0045FAF0, its own TU, with
+// VIZoneRadialFlora's Init/Clear/Precalc at the end.
 //
-// The 3x3 swatch grid of ground flora.  Only the frame around the two big
-// functions is written here: the constructor, the two teardowns, the single
-// release, the zone lookup and the sort predicate.  Update (282 instructions),
-// Render, DrawSwatch, CreateSwatch, CalcRadialLoc and CreateFloraInsts (552)
-// are not attempted.
+// The 3x3 swatch grid of ground flora: every function written, all exact
+// (phase 61).
 #include "vi.h"
 
 extern "C" void qsort(void *, unsigned int, unsigned int, int (*)(const void *, const void *));
 extern "C" int  rand(void);
 extern "C" void srand(unsigned int);
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 // A random fraction in [0, 1], ten bits of rand() -- and no outer parentheses:
 // `k * VIRAND` multiplies by the raw ten bits first and the scale after.
@@ -323,14 +320,13 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
     VIVect3 e1, e2, c, n;
     VIArray<VIRadialFloraInst> insts;
     VIRadialFloraSwatch *s = m_swatches[i];
-    int count, k, m, mid;
+    int k, count, m, mid;
 
     srand(s->m_loc.m_sub.x * 100 + s->m_loc.m_sub.y);
 
-    VIZone &zone = m_scene->m_world.m_zones[s->m_loc.m_zone];
-    if (zone.m_flora.m_sets.m_size == 0)
+    VIZoneRadialFlora &flora = m_scene->m_world.m_zones[s->m_loc.m_zone].m_flora;
+    if (m_scene->m_world.m_zones[s->m_loc.m_zone].m_flora.m_sets.m_size == 0)
         return 0;
-    VIZoneRadialFlora &flora = zone.m_flora;
 
     if (insts.Init(500) < 0)
         return -1;
@@ -342,15 +338,16 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
 
     for (k = 0; k < q.m_numTris && count < 500; k++)
     {
-        int set = q.m_tris[k].m_actor;
+        VIQueryTri &t = q.m_tris[k];
+        int set = t.m_actor;
 
         if (set == -1)
             continue;
 
-        e1 = q.m_tris[k].m_v1;
-        e1 -= q.m_tris[k].m_v0;
-        e2 = q.m_tris[k].m_v2;
-        e2 -= q.m_tris[k].m_v0;
+        e1 = t.m_v1;
+        e1 -= t.m_v0;
+        e2 = t.m_v2;
+        e2 -= t.m_v0;
         c = Cross(e2, e1);
         n = c;
         n.Normalize();
@@ -379,9 +376,9 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
             insts[count].m_prim = flora.m_models[model].m_b;
             insts[count].m_pal = flora.m_models[model].m_c;
 
-            float scale = (flora.m_dists[mid].m_p18 + 1.0f -
-                           flora.m_dists[mid].m_p18 * VIRAND * 2.0f) *
-                          flora.m_dists[mid].m_p14;
+            float jitter = flora.m_dists[mid].m_p18 + 1.0f -
+                           flora.m_dists[mid].m_p18 * VIRAND * 2.0f;
+            float scale = flora.m_dists[mid].m_p14 * jitter;
             scale = VIMAX(0.0f, scale);
 
             hpr.x = 6.2831855f * VIRAND;
@@ -409,6 +406,8 @@ int VIRadialFloraSystem::CreateFloraInsts(int i)
             }
             float w = 1.0f - u - v;
 
+            // A second reference, not the outer one: the outer `t` is dead
+            // across the inner loop and the target re-derives the address here.
             VIQueryTri &t = q.m_tris[k];
             Scale(pos, t.m_v0, w);
             AddVec(pos, t.m_v1, u);

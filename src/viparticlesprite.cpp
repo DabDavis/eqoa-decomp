@@ -1,7 +1,6 @@
 // VIParticleSprite -- SUPPORT 0x00454E38 .. 0x004564E0.
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 VIParticleSprite::VIParticleSprite()
 {
@@ -82,14 +81,6 @@ int VIParticleSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollid
     return i;
 }
 
-// The VU0 copy goes through an inline wrapper: called directly, cse merges the
-// destination's stack address with the constructor's and hands the call a
-// callee-saved register, where the target rematerialises `addiu a0,sp,N`.
-static inline void CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s)
-{
-    sceVu0CopyMatrix(d, s);
-}
-
 // The emitter lives in the sprite's frame: the camera's view is inverted by
 // hand (transpose, translation rebuilt) and composed with the model-view to
 // find where the sprite sits.  A free emitter (m_unk430 == 0) is placed and
@@ -105,7 +96,7 @@ int VIParticleSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned i
     VIMatrix44 b;
     VIMatrix44 c;
 
-    CopyMatrix(a, cam.m_view);
+    a = cam.m_view;
     b.Transpose(a);
     {
         float x = -(b.m[0].w * b.m[0].x + b.m[1].w * b.m[1].x + b.m[2].w * b.m[2].x);
@@ -116,7 +107,7 @@ int VIParticleSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned i
         b.m[3].y = y;
         b.m[3].z = z;
     }
-    CopyMatrix(a, *r.GetModelView());
+    a = *r.GetModelView();
     c.Mul(a, b);
     d.x = c.m[3].x;
     d.y = c.m[3].y;
@@ -156,7 +147,7 @@ int VIParticleSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned i
         VIMatrix44 m;
         VIVect3 s;
 
-        CopyMatrix(m, *r.GetModelView());
+        m = *r.GetModelView();
         s.x = 1.0f / sqrtf(m.m[0].x * m.m[0].x + m.m[0].y * m.m[0].y + m.m[0].z * m.m[0].z);
         s.y = 1.0f / sqrtf(m.m[1].x * m.m[1].x + m.m[1].y * m.m[1].y + m.m[1].z * m.m[1].z);
         s.z = 1.0f / sqrtf(m.m[2].x * m.m[2].x + m.m[2].y * m.m[2].y + m.m[2].z * m.m[2].z);

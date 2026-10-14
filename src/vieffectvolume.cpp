@@ -9,7 +9,6 @@ extern "C" void  free(void *p);
 extern "C" void *memset(void *p, int c, unsigned int n);
 extern "C" int   rand();
 extern "C" float atanf(float);
-extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 static inline VIVect3 operator*(const VIVect3 &v, float f)
 {
@@ -451,14 +450,6 @@ int VIEffectVolume::Process(float dt)
     return 0;
 }
 
-// The VU0 copy goes through an inline wrapper: called directly, cse merges the
-// destination's stack address with the constructor's and hands the call a
-// callee-saved register, where the target rematerialises `addiu a0,sp,N`.
-static inline void CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s)
-{
-    sceVu0CopyMatrix(d, s);
-}
-
 // The camera's world position is carried into the volume's own space through
 // the transposed view matrix -- its translation rebuilt by hand, as
 // VIEffectVolumeSprite::Raster does -- composed with the model-view.  Two
@@ -480,7 +471,7 @@ int VIEffectVolume::Render(VICamera &cam, VIMatrix44 &m)
     VIMatrix44 b;
     VIMatrix44 c;
 
-    CopyMatrix(a, cam.m_view);
+    a = cam.m_view;
     b.Transpose(a);
     {
         float x = b.m[0].w * b.m[0].x + b.m[1].w * b.m[1].x + b.m[2].w * b.m[2].x;
@@ -491,7 +482,7 @@ int VIEffectVolume::Render(VICamera &cam, VIMatrix44 &m)
         b.m[3].y = -y;
         b.m[3].z = -z;
     }
-    CopyMatrix(a, *mScene->m_raster->GetModelView());
+    a = *mScene->m_raster->GetModelView();
     c.Mul(a, b);
     d.x = c.m[3].x;
     d.y = c.m[3].y;

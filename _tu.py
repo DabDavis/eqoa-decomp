@@ -20,6 +20,10 @@ def main():
     rx = re.compile(sys.argv[sys.argv.index("-f") + 1]) if "-f" in sys.argv else None
     o = C.BUILD / (tu + ".o"); asm = C.BUILD / (tu + ".s")
     C.BUILD.mkdir(exist_ok=True)
+    # What the LAST build of this TU defined: a matched function that stops
+    # being emitted (an unused template member is never instantiated) is lost
+    # just as surely as one that stops matching, and the row loop cannot see it.
+    before = set(C.obj_functions(o)) if o.exists() else set()
     for f in (o, asm):
         if f.exists(): f.unlink()
     r = subprocess.run(C.driver(C.TOOLCHAIN) + ["-S"] + C.FLAGS + [str(C.SRC / (tu + ".cpp")), "-o", str(asm)],
@@ -49,6 +53,9 @@ def main():
         else:
             print(f"  wrong {w:>4}/{t:<4} {n}")
     lost = [n for k, w, t, n in rows if k != "match" and n in prev]
+    if not rx:
+        gone = (before - set(C.obj_functions(o))) & prev
+        lost += sorted(f"{n}   (no longer emitted)" for n in gone)
     print(f"{tu}: {ok}/{len(rows)} byte-exact")
     if lost:
         print("REGRESSION -- in MATCHED.txt and not exact now:")

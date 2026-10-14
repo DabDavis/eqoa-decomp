@@ -11,7 +11,6 @@ extern "C" int printf(const char *, ...);
 int VIEEKBFree();
 extern "C" char *strcpy(char *, const char *);
 extern "C" char *strcat(char *, const char *);
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 // ------------------------------------------------------------------- time --
 
@@ -2732,7 +2731,6 @@ int VIScene::Stream(const VIVect3 &at, VILoader &l, int i)
 // own static sprite, drawn in the zone's world-space frame with no baked
 // lighting.  The zone's pre-translations are re-applied whenever the zone
 // changes along the list.  `actors` and `rooms` select which half is drawn.
-//@V
 int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
 {
     VIMatrix44 m;
@@ -2745,6 +2743,10 @@ int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
         VISceneDisplayElem &e0 = list.m_data[i];
         int z = e0.m_a;
 
+        // -1 is tested FIRST (`li v0,-1; beq` then the spilled `zone`), as
+        // the target does; what is left is that `li` being scheduled above the
+        // element load and taking a0 instead of v0 (6 words; the other order
+        // scores 3 but tests the operands the wrong way round).
         if (z != -1 && z != zone)
             m_world.m_zones[z].SetPretranslations(*m_raster, cam);
 
@@ -2786,7 +2788,6 @@ int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
 
     return 0;
 }
-//@E
 
 // The frame.  Lights, atmosphere and the time-of-day blend first, then the
 // world through portals (or by frustum, when bit 0 of m_p00 says the scene has

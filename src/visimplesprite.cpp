@@ -23,9 +23,11 @@ VISimpleSprite::~VISimpleSprite()
 
 int VISimpleSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned int flags)
 {
-    int lod = sc.DitherLevel();
-    if (lod >= 0)
-        return r.DrawPrimBuffer(m_primBuffer, lod, m_materialPal, flags);
+    // The room's baked lighting: the scene hands out its static-lighting
+    // colour buffers one per sprite, in order, while a room is rastered.
+    int cb = sc.GetNextColorBuffer();
+    if (cb >= 0)
+        return r.DrawPrimBuffer(m_primBuffer, cb, m_materialPal, flags);
     return r.DrawPrimBuffer(m_primBuffer, m_materialPal, flags);
 }
 
@@ -41,9 +43,9 @@ int VISimpleSprite::Collide(VICollRay &r, VISceneFilter &f, VIScene &sc, VIColli
 
 int VISimpleSprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc, VIRaster &r)
 {
-    int lod = sc.DitherLevel();
-    if (lod >= 0)
-        return r.PickPrimBuffer(seg, m_primBuffer, lod, m_materialPal);
+    int cb = sc.GetNextColorBuffer();
+    if (cb >= 0)
+        return r.PickPrimBuffer(seg, m_primBuffer, cb, m_materialPal);
     return r.PickPrimBuffer(seg, m_primBuffer, m_materialPal);
 }
 
@@ -70,9 +72,9 @@ int VISimpleSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollide 
     s->m_objIdx = m_objIdx;
     if (r)
     {
-        if (r->AddRefMaterialPal(m_materialPal) < 0)
+        if (r->ShareMaterialPal(m_materialPal) < 0)
             return -1;
-        if (r->AddRefPrimBuffer(m_primBuffer) < 0)
+        if (r->SharePrimBuffer(m_primBuffer) < 0)
             return -1;
     }
     if (c.ShareCollBuffer(m_objIdx) < 0)
@@ -109,7 +111,7 @@ int VISimpleSprite::GetMaterialPal() const
 
 int VISimpleSprite::SetMaterialPal(int pal, VIDictionary &d, VIRaster &r)
 {
-    r.ReleaseMaterialPal(m_materialPal);
+    r.ReleaseMaterialPal(m_materialPal, d);
     m_materialPal = pal;
     r.ShareMaterialPal(pal);
     return 0;
@@ -117,7 +119,7 @@ int VISimpleSprite::SetMaterialPal(int pal, VIDictionary &d, VIRaster &r)
 
 int VISimpleSprite::SetMaterialPalDither(int dither, VIRaster &r)
 {
-    for (int i = 0; i < r.MaterialPalCount(m_materialPal); i++)
-        r.MaterialPalEntry(m_materialPal, i)->SetDither(dither);
+    for (int i = 0; i < r.GetMaterialPalSize(m_materialPal); i++)
+        r.GetMaterialPalEntry(m_materialPal, i)->SetDither(dither);
     return 0;
 }

@@ -6,7 +6,6 @@
 // prioritised volumes, the nearest sorts last.
 #include "vi.h"
 
-extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" float sqrtf(float x);
 
 VIStreamAudioSprite::VIStreamAudioSprite()
@@ -74,15 +73,6 @@ int VIStreamAudioSprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc,
         return sc.PickSprite(seg, f, sc.GetStreamAudioUISprite());
     }
     return 0;
-}
-
-// Phase 61.  VIMatrix44's assignment is an inline sceVu0CopyMatrix -- see
-// visprite.cpp's copy of this definition for the evidence and for why it is
-// not in vi.h.
-inline VIMatrix44 &VIMatrix44::operator=(const VIMatrix44 &a)
-{
-    sceVu0CopyMatrix(*this, a);
-    return *this;
 }
 
 int VIStreamAudioSprite::QueryEmitters(VIScene &sc, const VIMatrix44 &m,

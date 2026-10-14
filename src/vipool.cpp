@@ -109,7 +109,7 @@ template <class T> int VIPool<T>::Clear()
 
 template <class T> int VIPool<T>::DestroyPool()
 {
-    for (int i = Begin(); i != End(); i = Erase(i))
+    for (int i = Begin(); i != End(); i = Next(i))
         ;
     return 0;
 }

@@ -11,7 +11,6 @@
 // which is where this declaration order puts them.
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 VISprite::VISprite()
 {
@@ -57,21 +56,6 @@ int VISprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc, VIRaster &
 // `t` is NOT address-taken and `k` IS (Insert takes `const float &`), so `t`
 // lives in $f20 across the second sqrtf and `k` is stored once, straight into
 // the slot Insert is handed.
-// Phase 61.  VIMatrix44's assignment is an INLINE sceVu0CopyMatrix: no
-// out-of-line `__as__10VIMatrix44RC10VIMatrix44` exists in SUPPORT, and
-// VICamera::Update's target calls sceVu0CopyMatrix where our build calls the
-// (undefined) operator.  Called directly, the copy's `&e.m_matrix` is merged
-// with the constructor's and the destructor's into one callee-saved register;
-// through the inline, every use rematerialises `addiu a0,sp,32` (36 words).
-// Defined here and not in vi.h because viraster.cpp declares sceVu0CopyMatrix
-// with a pointer first argument, and a second C-linkage declaration would not
-// compile there.
-inline VIMatrix44 &VIMatrix44::operator=(const VIMatrix44 &a)
-{
-    sceVu0CopyMatrix(*this, a);
-    return *this;
-}
-
 int VISprite::QueryEmitters(VIScene &sc, const VIMatrix44 &m, VIEmitterQuery &q)
 {
     VIVect3 p;

@@ -423,6 +423,10 @@ int VISpellEventDriver::ProcessSetEmitterMotif(VISpellActiveEvent *e)
 // copies down to one.
 int VISpellEventDriver::ProcessWaitEvent()
 {
+    // ONE sprite pointer for cases 0 and 3: a per-case local is allocated
+    // straight into a0 for IsActionComplete, where the target keeps it in a2.
+    VICSprite *sp;
+
     if (m_wait)
     {
         switch (m_wait->m_event->m_p04)
@@ -431,8 +435,7 @@ int VISpellEventDriver::ProcessWaitEvent()
             {
                 if (m_actor != -1)
                 {
-                    VICSprite *sp =
-                        (VICSprite *)m_scene->GetActorSpritePtr(m_actor);
+                    sp = (VICSprite *)m_scene->GetActorSpritePtr(m_actor);
 
                     if (sp && sp->m_type == 5 && m_action != -1
                         && sp->IsActionComplete(m_action) == 0)
@@ -476,8 +479,7 @@ int VISpellEventDriver::ProcessWaitEvent()
                     return 0;
                 }
 
-                VICSprite *sp =
-                    (VICSprite *)m_scene->GetActorSpritePtr(m_actor);
+                sp = (VICSprite *)m_scene->GetActorSpritePtr(m_actor);
 
                 if (sp == 0)
                 {
@@ -1504,6 +1506,13 @@ int VISpellEventDriver::NewCreateSound(VISpellEvent *ev)
     return 0;
 }
 
+// Through an inline wrapper the Euler call's &hpr is rematerialised, as in the
+// target; called directly, cse shares it with SetActorHPR's callee-saved copy.
+static inline void ToEulerZXY(VIMatrix44 &m, VIVect3 &hpr)
+{
+    m.ConvertToEulerZXY(hpr);
+}
+
 // The actor choice is an if/ELSE: with the default assigned up front, cse
 // follows the path straight through both flag tests and shares the -1 and the
 // flags word with the guard above; with the default in the else arm it does
@@ -1541,7 +1550,7 @@ int VISpellEventDriver::ProcessCreateSprite(VISpellActiveEvent *e, bool active)
                         (VICSpriteNodeID)(ev->m_p0C & 0xFFFF), actor,
                         *m_scene, m);
 
-                m.ConvertToEulerZXY(hpr);
+                ToEulerZXY(m, hpr);
                 m_scene->SetActorLocation(e->m_actor0,
                                           VIVect3(m.m[3].x, m.m[3].y, m.m[3].z));
                 m_scene->SetActorHPR(e->m_actor0, hpr);

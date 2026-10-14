@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,508 of 3,756 byte-exact**, phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,521 of 3,752 byte-exact**, phase 61 in progress)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -23,6 +23,7 @@ decomp goes ahead.
 | `eqfingerprint.py` | codegen fingerprints — narrows compiler + flags before matching |
 | `eqrtl.py` | which PASS made a difference — gcc's own `-da` dumps, no source needed |
 | `eqcalls.py` | resolves a function's CALLEES by name, out of a resident SUPPORT |
+| `eqcallcheck.py` | **byte-exact is not correct**: every `jal` in our objects against the callee the relocated dump names; `eqcheck.score` now refuses a match whose callees differ (`CALLEE` row) |
 | `test_eqdecomp.py` | the canary — see below, it is the point |
 | `_q.py` | one TU, named symbols, 4.5 s — for sweeping source variants |
 | `_tu.py` | one TU, EVERY function in it, plus regressions against `MATCHED.txt` |

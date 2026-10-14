@@ -11,7 +11,6 @@
 // constructors of their own.
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" int  rand();
 extern "C" void *memcpy(void *d, const void *s, unsigned int n);
 extern "C" unsigned int VIHashRefID(const char *);
@@ -1770,11 +1769,7 @@ int VICSprite::SetAnimation(VICSpriteAnimID id, int layer, VIScene &sc)
     }
 
     if (sc.GetTime() > 5000 && id == VICSpriteAnimID0)
-    {
-        id = VICSpriteAnimID17;
-        if (sc.GetTime() - m_idleTime > 4999)
-            id = VICSpriteAnimID0;
-    }
+        id = sc.GetTime() - m_idleTime > 4999 ? VICSpriteAnimID0 : VICSpriteAnimID17;
 
     if (m_skelType == 1)
     {

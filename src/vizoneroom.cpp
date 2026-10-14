@@ -129,9 +129,10 @@ int VIZoneRoom::CalcPortalPlane(int i)
     VIVect3 prev;
     VIVect3 sum;
     int j;
+    VIZonePortal *pt = &((VIZonePortal *)m_portals)[i];
     VIVect3 *v = (VIVect3 *)m_verts;
-    int first = ((VIZonePortal *)m_portals)[i].m_firstVert;
-    int end = first + ((VIZonePortal *)m_portals)[i].m_numVerts;
+    int first = pt->m_firstVert;
+    int end = first + pt->m_numVerts;
     // Phase 21's fresh intermediate, in integer code: written `v[end - 1]` the
     // -1 is distributed into the address as `end*12 + base - 12`, where the
     // target multiplies the decremented index.

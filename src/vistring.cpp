@@ -25,10 +25,10 @@ extern "C" int   strlen(const char *);
 extern "C" char *strcpy(char *, const char *);
 extern "C" void *memcpy(void *, const void *, int);
 extern "C" int   strcmp(const char *, const char *);
-extern "C" char *_strlwr(char *);
-extern "C" char *_strupr(char *);
-extern "C" int   _strcasecmp(const char *, const char *);
-extern "C" int   _strncasecmp(const char *, const char *, int);
+extern "C" char *strncpy(char *, const char *, int); extern "C" char *strcat(char *, const char *);
+extern "C" char *strlwr(char *); extern "C" char *strupr(char *); extern "C" void *malloc(int);
+extern "C" int   strcasecmp(const char *, const char *);
+extern "C" int   strncasecmp(const char *, const char *, int);
 extern "C" int   sprintf(char *, const char *, ...);
 extern "C" void  _VIAssert(const char *expr, const char *file, int line);
 extern "C" void  _VIAssertf(int cond, const char *fmt, ...);
@@ -120,7 +120,7 @@ int VIString::Init(const char *p, int n)
         m_size = n + 1;
         if (Allocate() < 0)
             return -1;
-        memcpy(m_str, p, n);
+        strncpy(m_str, p, n);
         m_str[n] = 0;
     }
     return 0;
@@ -153,7 +153,7 @@ int VIString::Init(const VIString &s, int nStart, int nEnd)
     if (s.m_str)
     {
         m_len = m_size - 1;
-        memcpy(m_str, s.m_str + nStart, m_len);
+        strncpy(m_str, s.m_str + nStart, m_len);
         m_str[m_len] = 0;
     }
     return 0;
@@ -203,7 +203,7 @@ int VIString::Concat(const VIString &s)
     }
     if (s.m_str)
     {
-        strcpy(m_str + m_len, s.m_str);
+        strcat(m_str + m_len, s.m_str);
         m_len = m_len + s.m_len;
     }
     return 0;
@@ -281,7 +281,7 @@ int VIString::Allocate()
     p[0] = 0;
     if (m_str)
     {
-        memcpy(p, m_str, m_len);
+        strncpy(p, m_str, m_len);
         p[m_len] = 0;
         delete [] m_str;
     }
@@ -844,12 +844,12 @@ int VIString::snprintf16(unsigned short *d, int n, const unsigned short *f, ...)
 
 char *VIString::strlwr(char *p)
 {
-    return _strlwr(p);
+    return ::strlwr(p);
 }
 
 char *VIString::strupr(char *p)
 {
-    return _strupr(p);
+    return ::strupr(p);
 }
 
 void VIString::strlwr16(unsigned short *p)
@@ -879,7 +879,7 @@ void VIString::strupr16(unsigned short *p)
 
 int VIString::strcasecmp(const char *a, const char *b)
 {
-    return _strcasecmp(a, b);
+    return ::strcasecmp(a, b);
 }
 
 int VIString::strcasecmp16(const unsigned short *a, const unsigned short *b)
@@ -915,7 +915,7 @@ int VIString::strcasecmp16(const unsigned short *a, const unsigned short *b)
 
 int VIString::strncasecmp(const char *a, const char *b, int n)
 {
-    return _strncasecmp(a, b, n);
+    return ::strncasecmp(a, b, n);
 }
 
 int VIString::strlen16(const unsigned short *p)
@@ -932,7 +932,7 @@ int VIString::strlen16(const unsigned short *p)
 unsigned short *VIString::strdup16(const unsigned short *p)
 {
     int size = (strlen16(p) + 1) * 2;
-    unsigned short *d = (unsigned short *)new char[size];
+    unsigned short *d = (unsigned short *)malloc(size);
     if (d)
         memcpy(d, p, size);
     return d;

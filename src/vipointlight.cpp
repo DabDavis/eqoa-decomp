@@ -8,7 +8,6 @@
 // image cannot tell those apart at all (the `jal` is zeroed either way).
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 VIPointLight::VIPointLight()
 {

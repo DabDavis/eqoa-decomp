@@ -5,7 +5,6 @@
 // forgetting `s.z` (see VIParticleSprite::Pick).
 #include "vi.h"
 
-extern "C" void  sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" float sqrtf(float x);
 
 VISoundSprite::VISoundSprite()

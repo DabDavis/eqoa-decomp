@@ -7,7 +7,7 @@
 #include "vi.h"
 
 extern "C" unsigned int VIHashResourceID(const char *);
-extern "C" unsigned int VIHashResourceID_Icon(const char *);
+unsigned int VIHashResourceID_Icon(const char *);
 extern "C" int sprintf(char *, const char *, ...);
 extern "C" int printf(const char *, ...);
 extern int VIMemCardReadFile(const char *name, void *buf, int size);

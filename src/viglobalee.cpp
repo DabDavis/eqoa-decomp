@@ -191,13 +191,18 @@ extern "C" void _VIAssertf(int cond, const char *fmt, ...)
     }
 }
 
+// OPEN, 2/28, and _VIAssertf above is the same 2/27: the target reads the
+// FILE global first and still hands its high half $v0, the line's $v1.  Read
+// in that order here, the first `lui` gets $v1; read line-first (as written)
+// the registers are right and the two `lui`s come out the other way round.
 extern "C" void _VIAlert(const char *fmt, ...)
 {
     char buf[4096];
     va_list ap;
     va_start(ap, fmt);
     VIString::vsnprintf(buf, 4096, fmt, ap);
-    _VIAssert(buf, __VIAssertf_file, __VIAssertf_line);
+    int line = __VIAssertf_line;
+    _VIAssert(buf, __VIAssertf_file, line);
 }
 
 // ------------------------------------------------------------- the disc id --

@@ -163,6 +163,6 @@ void VIQuatD::ConvertTo(VIVect3D &a) const
     // No Zero() here, unlike the float sibling: VIMatrix44D has a real
     // constructor, and one destructor call closes the block.
     VIMatrix44D m;
-    m.UnitRotate(*this);
-    m.ConvertToEulerXYZ(a);
+    m.Rotate(*this);
+    m.ConvertToEulerZXY(a);
 }

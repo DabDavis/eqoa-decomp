@@ -186,6 +186,6 @@ void VIQuat::Slerp(const VIQuat &a, const VIQuat &b, float t)
 void VIQuat::ConvertTo(VIVect3 &a) const
 {
     VIMatrix44 m;
-    m.UnitRotate(*this);
-    m.ConvertToEulerXYZ(a);
+    m.Rotate(*this);
+    m.ConvertToEulerZXY(a);
 }

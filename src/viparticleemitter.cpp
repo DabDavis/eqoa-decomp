@@ -2,7 +2,6 @@
 #include "vi.h"
 
 extern "C" unsigned int VIHashResourceID(const char *);
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 
 extern "C" float fabsf(float);
 extern "C" int   rand();

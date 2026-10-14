@@ -1789,7 +1789,7 @@ int VIESFParse::ParsePointLightObj()
 int VIESFParse::ParseSoundSpriteObj()
 {
     unsigned short type, version;
-    unsigned int   id;
+    int            id;
     float          radius;
     float          volume;
     VIResourceType rt;
@@ -2569,13 +2569,14 @@ int VIESFParse::ParseGroupSpriteMembers(VIGroupSprite &g)
     if (type != 0x2C30) return -1;
 
     m_file->Read(g.m_numMembers);
+    VIGroupMember *m = g.m_members;
 
     for (int i = 0; i < g.m_numMembers; i++)
     {
         m_file->Read(id);
 
-        if (m_dict->Find(id, rt, g.m_members[i].m_sprite) == 0
-            || m_scene->ShareSprite(g.m_members[i].m_sprite) < 0)
+        if (m_dict->Find(id, rt, m[i].m_sprite) == 0
+            || m_scene->ShareSprite(m[i].m_sprite) < 0)
             return -1;
 
         m_file->Read(g.m_members[i].m_loc.x);

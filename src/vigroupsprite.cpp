@@ -13,7 +13,6 @@
 // is the order the three destructor calls run in reverse.
 #include "vi.h"
 
-extern "C" void sceVu0CopyMatrix(VIMatrix44 &d, const VIMatrix44 &s);
 extern "C" void *memcpy(void *, const void *, unsigned int);
 
 VIGroupSprite::VIGroupSprite()
