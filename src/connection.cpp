@@ -823,9 +823,9 @@ int connection_create_buffer(connection_t **ppConnection, endpoint_t *pEndpoint,
     uns32 uiNow = endpoint_get_time(pEndpoint);
     connection_t *connection = (connection_t *)malloc(sizeof(connection_t));
     int i;
-
+    int iResult;
     if (!connection)
-        goto done;
+        { iResult = -2; goto done; }
     connection->endpoint = pEndpoint;
     connection->local_id = endpoint_get_id(pEndpoint);
     connection->m_pAppPtr = 0;
@@ -879,17 +879,17 @@ int connection_create_buffer(connection_t **ppConnection, endpoint_t *pEndpoint,
     buffer_read_uns32(pBuffer, (uns32 *)&connection->m_iFailTime);
     buffer_readm_packed(pBuffer, connection->m_uiCstat, 11);
     buffer_read_uns8(pBuffer, &ucFlags);
-    if (message_list_load(&connection->m_sendQueue, pEndpoint, pBuffer))
+    iResult = message_list_load(&connection->m_sendQueue, pEndpoint, pBuffer); if (iResult)
         goto done;
-    if (message_list_load(&connection->m_outstanding, pEndpoint, pBuffer))
+    iResult = message_list_load(&connection->m_outstanding, pEndpoint, pBuffer); if (iResult)
         goto done;
-    if (message_seqnum_load(&connection->m_arrivals, pEndpoint, pBuffer))
+    iResult = message_seqnum_load(&connection->m_arrivals, pEndpoint, pBuffer); if (iResult)
         goto done;
-    if (message_seqnum_load(&connection->m_delayed, pEndpoint, pBuffer))
+    iResult = message_seqnum_load(&connection->m_delayed, pEndpoint, pBuffer); if (iResult)
         goto done;
     if (ucFlags & 2)
     {
-        if (connection_allocate_state_channels(connection))
+        iResult = connection_allocate_state_channels(connection); if (iResult)
             goto done;
         for (i = 0; i < CONNECTION_STATE_CHANNEL_COUNT; i++)
         {
@@ -901,9 +901,9 @@ int connection_create_buffer(connection_t **ppConnection, endpoint_t *pEndpoint,
                 buffer_read_uns8(pBuffer, &connection->m_pChannels[i].m_ucRxFlag);
                 buffer_read_uns8(pBuffer, &connection->m_pChannels[i].m_ucWhere);
             }
-            if (message_seqnum_load(&connection->m_pChannels[i].m_txList, pEndpoint, pBuffer))
+            iResult = message_seqnum_load(&connection->m_pChannels[i].m_txList, pEndpoint, pBuffer); if (iResult)
                 goto done;
-            if (message_seqnum_load(&connection->m_pChannels[i].m_rxList, pEndpoint, pBuffer))
+            iResult = message_seqnum_load(&connection->m_pChannels[i].m_rxList, pEndpoint, pBuffer); if (iResult)
                 goto done;
         }
         conection_state_channel_fixup(connection, &connection->m_sendQueue);
@@ -913,16 +913,22 @@ int connection_create_buffer(connection_t **ppConnection, endpoint_t *pEndpoint,
     }
     if (ucFlags & 1)
     {
-        if (message_create_buffer(&connection->m_pTerminate, pEndpoint, connection, pBuffer))
+        iResult = message_create_buffer(&connection->m_pTerminate, pEndpoint, connection, pBuffer); if (iResult)
             goto done;
     }
     *ppConnection = connection;
-    connection = 0;
+    connection = 0; iResult = 0;
 done:
     if (connection)
         connection_destroy(connection);
     return 0;
 }
+// Above: the shipped bug is `return 0` where the idiom returns iResult.  The
+// dead stores of iResult (-2, 0) are real: they stop the malloc test being
+// threaded past `done:`, and gcse counts them when it sizes its hash table --
+// 181 buckets put &m_sendQueue (+188) after &m_outstanding (+212), and that
+// order decides which of the two PRE reaching registers is spilled.
+// (179 buckets, without them, reverses it: 18 wrong words.)
 
 void connection_destroy(connection_t *pConnection)
 {
@@ -948,12 +954,6 @@ int connection_send_best_effort(connection_t *pConnection, const uns8 *pData, in
         message_destroy(pMessage);
     return iResult;
 }
-
-
-
-
-
-
 
 
 

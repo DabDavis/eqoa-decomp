@@ -5,13 +5,20 @@
 // of (zero-run, non-zero-run) pairs and only the non-zero bytes are carried.
 #include "drdp.h"
 
-// OPEN, by one register: gcc CSEs the two 127s -- the loop's limit and the
-// entry guard's copy of it -- into one pseudo whose live range spans the outer
-// loop, so it takes a seventh callee-saved register and every later one shifts.
-// The target rematerialises the constant in both places.  Eight spellings swept
-// (`<` vs `!=`, hex, an explicit guarded do/while, a pointer walker, the
-// counters at function scope, a named `start`); the whole tail of the function
-// is otherwise instruction-for-instruction identical.
+// The run tests read `end` through a CONST REFERENCE.  That makes `end`
+// addressable, so until the addressof pass each read is a load, cse keeps it as
+// its own pseudo, and the purge turns it into a copy `p = end` that loop.c then
+// hoists into each inner loop's preheader -- the target's two `move a0,s5`.
+// Those two insns are what keep the 127 in the outer loop: loop.c moves an
+// invariant only while threshold * savings * lifetime >= the loop's insn count,
+// and with them the outer loop is 65 insns to a threshold of 64 (by value it is
+// 63, the 127 is hoisted into a seventh callee-saved register, every later
+// register shifts).
+static inline int rle_before(const uns8 *p, const uns8 *const &end)
+{
+    return p < end;
+}
+
 void run_length_encode(const uns8 *data, uns32 size, buffer_t *buffer)
 {
     const uns8 *end = data + size;
@@ -26,10 +33,10 @@ void run_length_encode(const uns8 *data, uns32 size, buffer_t *buffer)
         uns32 zeros = 0;
         uns32 nonzeros = 0;
 
-        while (data + zeros < end && data[zeros] == 0 && zeros != 255)
+        while (rle_before(data + zeros, end) && data[zeros] == 0 && zeros != 255)
             zeros++;
         data += zeros;
-        while (data + nonzeros < end && data[nonzeros] != 0 && nonzeros != 127)
+        while (rle_before(data + nonzeros, end) && data[nonzeros] != 0 && nonzeros != 127)
             nonzeros++;
         if (nonzeros >= 8 || zeros >= 16)
         {

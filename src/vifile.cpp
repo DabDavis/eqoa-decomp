@@ -481,6 +481,13 @@ int VIFile::BufferFlush()
     return 0;
 }
 
+// OPEN, 21/233 (was 47).  Every `return -1` is a `goto fail` and the `n == r`
+// exit a `goto done`, both labelled after the closing `m_status = 1` return:
+// that is the target's exit-block order (status block, -1 block, got block,
+// epilogue).  The last block computes `sector` BEFORE `need`, which is the
+// target's instruction order.  Left: local-alloc's register choice in the two
+// sector/need blocks (v0/v1 and a3/t0 swapped) and the m_bufPos/m_bufBase
+// store order inside the multi-sector loop.
 int VIFile::BufferedRead(void *dst, int n)
 {
     int sector;
@@ -504,11 +511,11 @@ int VIFile::BufferedRead(void *dst, int n)
         m_bufBase = sector * 2048;
         m_bufPos = m_position - sector * 2048;
         if (CDSync(0))
-            return -1;
+            goto fail;
         if (CDRead(sector + m_cdFile.lsn, 1, m_bufferAligned, &m_cdMode) == 0)
-            return -1;
+            goto fail;
         if (CDSync(0))
-            return -1;
+            goto fail;
         if (m_cdFile.size - m_bufBase < 2048)
         {
             m_bufLength = m_cdFile.size - m_bufBase;
@@ -541,11 +548,11 @@ int VIFile::BufferedRead(void *dst, int n)
         {
             int k = sectors < 17 ? sectors : 16;
             if (CDSync(0))
-                return -1;
+                goto fail;
             if (CDRead(sector + m_cdFile.lsn, k, m_bufferAligned, &m_cdMode) == 0)
-                return -1;
+                goto fail;
             if (CDSync(0))
-                return -1;
+                goto fail;
             m_bufPos = m_position - sector * 2048;
             m_bufBase = sector * 2048;
             m_bufLength = k * 2048;
@@ -562,19 +569,19 @@ int VIFile::BufferedRead(void *dst, int n)
     BufferClear();
     if (m_position != m_cdFile.size)
     {
-        long need = (m_cdFile.size - m_position) / 2048;
         sector = (int) (m_position / 2048);
+        long need = (m_cdFile.size - m_position) / 2048;
         m_bufPos = m_position - sector * 2048;
         m_bufBase = sector * 2048;
         need = need > 0 ? need : 1;
         need = need < 17 ? need : 16;
         sectors = (int) need;
         if (CDSync(0))
-            return -1;
+            goto fail;
         if (CDRead(sector + m_cdFile.lsn, sectors, m_bufferAligned, &m_cdMode) == 0)
-            return -1;
+            goto fail;
         if (CDSync(0))
-            return -1;
+            goto fail;
         if (m_cdFile.size - m_position < sectors * 2048)
         {
             m_bufLength = m_cdFile.size - m_position;
@@ -588,11 +595,15 @@ int VIFile::BufferedRead(void *dst, int n)
         int r = BufferedReadCopy((char *) dst + got, n);
         got = got + r;
         if (n == r)
-            return got;
+            goto done;
         if (m_bufEof == 0)
             return got;
     }
     m_status = 1;
+    return got;
+fail:
+    return -1;
+done:
     return got;
 }
 
