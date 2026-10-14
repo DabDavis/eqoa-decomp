@@ -6372,6 +6372,10 @@ no code; it is an insn between an else-label and a re-test, which is all that st
 `-fno-thread-jumps` is byte-exact, but that flag on the whole tree loses 20 exact functions
 (connection, drdp, endpoint, vtree and vlist among them), so it was not the library's build.
 Whatever the original had there is not known. It is labelled in the source.
+The rule since: a fakematch may ADD an inert barrier like that one, but never re-type or
+restructure what the source declares. `CalcPortalPlane` closes only if its `VIPlane` local becomes
+raw `float[4]` storage behind a `#define`, zeroed by hand after the other locals; that was
+rejected, and the natural version (10 words wrong) is kept with the trick described beside it.
 
 **One TU was not built by the engine's compiler.** `__do_global_dtors` (libgcc's `L__main`
 object) is byte-exact only when compiled **as C by the ee-gcc 2.9 family** (990721/991111) at

@@ -3727,7 +3727,22 @@ int VIESFParse::ParseAdpcmObj()
                     short *l = (short *)&pcm[56];
                     short *r = (short *)&pcm[half + 56];
 
-                    // OPEN.  The target's bound is `half - (loop + 1) * 56`: fold
+                    // OPEN, 127/245 (wave 7).  eqcallcheck's "+0x360: target calls
+                    // LockBuffer, ours Read" is an OFFSET artefact -- the two call
+                    // sequences are identical, ours is 16 bytes shorter.  So this is
+                    // pure allocation: the target holds 8 callee-saved regs (s7 =
+                    // b, s6 = w, s5 = n, s4 = pcm, s3 = half, s0 = half + 56 built as
+                    // `move s0,s3; addiu s0,s0,56` -- a TWICE-SET, so global,
+                    // pseudo), ours 7 (half + 56 is a one-set temp in v0).  Also in
+                    // the target the loop bound reads a preheader COPY of half
+                    // (`move a0,s3`) and the d walker starts as `move a1,v1` (a
+                    // copy of the loaded p).  The `(loop + 1) * 56` spelling gives
+                    // the target's loop structure exactly but 154 words (56 lands in
+                    // s0 and `this` in s1); `int ro = half; ro += 56`, a named
+                    // `half` copy before or in the loop, d[k] indexing, `*(short *)(l
+                    // + k)` indexing and an asm use of ro all fail (127..154).
+                    // flagsweep names no pass.
+                    // The target's bound is `half - (loop + 1) * 56`: fold
                     // never distributes a MULT_EXPR, so split_tree finds no
                     // constant to reassociate, `half` stays live and the loop
                     // comes out as the target's `mult; addu R56; subu half`.

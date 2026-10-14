@@ -1603,9 +1603,18 @@ int VIHSprite::ProcessPlayList(int lod, VIScene &sc)
                     case 1:
                         {
                         c.m_rot.Slerp(n->m_frame.m_rot, c.m_rot, weight);
-                        c.m_scale = n->m_frame.m_scale
-                                  + (c.m_scale - n->m_frame.m_scale) * weight;
-                        c.m_trans -= n->m_frame.m_trans;
+                        // Wave 7 (17 -> 12): the blend's FP names.  The target gives
+                        // n's scale $f4 and y/z $f2/$f3 (local-alloc takes y, z before
+                        // it); ours gives it $f2.  Spelling the trans subtract per
+                        // component, x first and then the scale, is the best of all
+                        // 24 orders of {scale, x, y, z}.  The target's `addiu v0,s1,36`
+                        // base (an inline operator-= with a reference parameter) is
+                        // lost by this spelling -- the `-=` form scores 17.
+                        float ns = n->m_frame.m_scale;
+                        c.m_trans.x -= n->m_frame.m_trans.x;
+                        c.m_scale = ns + (c.m_scale - ns) * weight;
+                        c.m_trans.y -= n->m_frame.m_trans.y;
+                        c.m_trans.z -= n->m_frame.m_trans.z;
                         c.m_trans *= weight;
                         c.m_trans += n->m_frame.m_trans;
                         CopyFrame(n->m_frame, c);

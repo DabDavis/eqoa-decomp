@@ -122,12 +122,20 @@ int VIZoneRoom::End()
 // in the same loop: the plane's distance is the normal dotted into the average
 // vertex, negated.  A degenerate ring -- Normalize returning zero -- gets d = 0
 // and keeps whatever normal Normalize left behind.
-// OPEN, 22/139 (wave 6).  The target zeroes prev, last, sum and THEN p (sched1
-// ties go by source order after prev's WAW dependents), yet p sits at sp+0 and
-// last/prev/sum at 16/32/48 -- declared first, constructed last.  Declaration
-// order moves the slots (p first scores best of all 24), the ctor insns
-// follow it; `(VIZonePortal *)(i * 32 + (int)m_portals)` fixes the portals/
-// verts load order but nets 24.
+// OPEN, 10/139 (wave 7).  The target zeroes prev, last, sum and THEN p (sched1
+// ties between the four ctor runs go by source order, and prev's WAW dependents
+// come first), yet p sits at sp+0 and last/prev/sum at 16/32/48 -- slots go by
+// declaration order, ctor stores by emission order, so `VIPlane p;` declared
+// first zeroes first: the 10 words left.  A FAKEMATCH closes it -- `p` as raw
+// `float pb[4] __attribute__((aligned(16)))` declared first, `#define p
+// (*(VIPlane *)pb)`, and the four zero stores written by hand after the other
+// locals -- but it changes the declared TYPE, so it is NOT used (phase 61
+// policy: a fakematch may add an inert barrier, never re-type the source).
+// What the original did to get that order is unknown.  Natural and applied
+// (22 -> 10): the portal pointer is `i * 32 + base` (the scaled index FIRST in
+// the RTL sum), and `j` is loaded straight from m_firstVert -- a separate
+// `first` copy gave j a COPY preference for v1 and a priority (5000) over `end`
+// (1818) in global.c, which swapped their registers.
 int VIZoneRoom::CalcPortalPlane(int i)
 {
     VIPlane p;
@@ -135,17 +143,17 @@ int VIZoneRoom::CalcPortalPlane(int i)
     VIVect3 prev;
     VIVect3 sum;
     int j;
-    VIZonePortal *pt = &((VIZonePortal *)m_portals)[i];
     VIVect3 *v = (VIVect3 *)m_verts;
-    int first = pt->m_firstVert;
-    int end = first + pt->m_numVerts;
+    VIZonePortal *pt = (VIZonePortal *)(i * 32 + (int)m_portals);
+    j = pt->m_firstVert;
+    int end = j + pt->m_numVerts;
     // Phase 21's fresh intermediate, in integer code: written `v[end - 1]` the
     // -1 is distributed into the address as `end*12 + base - 12`, where the
     // target multiplies the decremented index.
     int lastIdx = end - 1;
 
     prev = v[lastIdx];
-    for (j = first; j != end; j++)
+    for (; j != end; j++)
     {
         last = prev;
         prev = v[j];

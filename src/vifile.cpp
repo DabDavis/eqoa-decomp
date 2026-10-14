@@ -62,6 +62,16 @@ VIFile::~VIFile()
     Close();
 }
 
+// Wave 7 (flagsweep names no pass; every spelling below was re-scored): the
+// `dev` hunk is a LOCAL-ALLOC fact.  `dev` is a pseudo set in two arms, so
+// combine cannot fold its lo_sum into the a3 argument move (the fmt string can:
+// `lui a2; addiu a2,a2`), and the hi part is a separate one-set temp that
+// local-alloc puts in v0; the target's `lui a3; addiu a3,a3` needs the hi temp
+// tied to a3, i.e. `dev` set ONCE or directly into the argument.  A ternary,
+// two snprintf calls (42), `(void)dev` and `goto ok` for the flag tests (30)
+// all fail.  The third flag test is `bnezl L+4; b ret; li -1` in the target
+// (the -1 block stays where the source put it) and `beqz ret` in ours (jump1
+// threads past it).
 // OPEN, 19/93 (wave 6).  Two sites: the first flag test (`!(flags & 1)` is
 // xori/andi/beqz; `(flags & 1) == 0` is the target's andi/bnez but then the
 // third test and the return -1 copies cost 11 more), and the `dev` literal --
@@ -488,6 +498,13 @@ int VIFile::BufferFlush()
     return 0;
 }
 
+// Wave 7: the two `slt` temps of the multi-sector block (sector test r264
+// [20,24], min test r175 [26,30], both priority 5000) go a3 then t0 in ours and
+// t0 then a3 in the target.  lsim reproduces ours; topo.py finds NO legal
+// sched1 order of the block that gives the target's pair, and raising r175's
+// refs only moves other temps (v1/v0).  So it is not birth order: the pseudo
+// structure differs (the target's `slt a2,a2,a1` also sits after the daddiu,
+// a sched2 consequence of the swap).
 // OPEN, 21/233 (was 47).  Every `return -1` is a `goto fail` and the `n == r`
 // exit a `goto done`, both labelled after the closing `m_status = 1` return:
 // that is the target's exit-block order (status block, -1 block, got block,

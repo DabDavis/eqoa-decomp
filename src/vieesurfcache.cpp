@@ -801,6 +801,11 @@ int VIEESurfCache::Download(VISurface &s, VIEESurfCacheInfo &c,
 // REF tag pointing at the surface's own header, which is where TRXDIR and the
 // IMAGE GIFtag live (VISurface::SetDMAHeaders built those).  The chain closes
 // with a TEXFLUSH.
+// Wave 7 (90, open): the structure matches; what is left is allocation.  The
+// target's `tag` parameter copy is t4 and the packet walker t3; ours the other
+// way round.  gsim: allocno 119 (tag, 36 refs, priority 9090) is taken before
+// 128 (3684), so it gets t3; the target needs 128 first or t3/t1 busy for 119.
+// Both put nine constants in s0..s8; ours hoists `lui 0x1100` into the loop.
 int VIEESurfCache::ConstructDMAPacket(VISurface &s, VIEESurfCacheInfo &c,
                                       _sceDmaTag **tag)
 {

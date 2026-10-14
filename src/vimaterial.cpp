@@ -372,6 +372,8 @@ static inline void WrapY(VIVect2 &v)
 
 // 0x003FCC70.  Scroll every textured layer's UV offset by its rate over the
 // time since the last call, and wrap each component back into (-1, 1).
+// Wave 7: no -fno- flag lowers it, and a second use of the wrap label does not
+// exist to add (the continue and the y-block's end already share one).
 // OPEN, 39/82 (wave 6, loop/cse).  The target's WrapY block recomputes
 // `i*144` and `this + i*144` and RELOADS v.y (a separate cse extended block);
 // ours merges it into the compare's chain because cse's -fcse-skip-blocks
@@ -419,6 +421,15 @@ static inline void ToFloat(VIColor32F &f, const VIColor32 &c)
 // registers VIEESurfCache::Set wrote into the pass, ZBUF_1), then the three
 // primitive GIFtags the microcode reuses, the layer colour and the UV
 // transform with the scroll offset folded into its translation row.
+// Wave 7 (62, open).  Three hunks.  (1) The target's first insn after the
+// prologue is `move t0,a1`: `i` is a global pseudo that lost a1 to the test
+// constants (v1 = 0x33001, a1 = 0x53001, `li a0,71` scheduled BEFORE the andi);
+// ours gives the constants a0/v1, the 71 v1 afterwards, and `i` keeps a1 until
+// global.c.  (2) `if (fl & 4)` on an `int fl` copy gives the target's real
+// branch (`beqz; li 4; or`) but costs 14 words of knock-on allocation (76).
+// (3) the target loads m_blendMode once for the fog and the 0.5 test; ours
+// reloads it.  gsim: the constant pseudo r134 conflicts with hard v0 AND v1
+// (local temps), so global.c takes a0.
 int VIMaterial::ConstructTextPass(int i, VIRaster &r, VIQWord *q)
 {
     VIColor32F col;
