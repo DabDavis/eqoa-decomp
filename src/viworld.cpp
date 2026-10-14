@@ -160,6 +160,26 @@ int VIWorld::CalcTerrainCell(const VIVect3 &at, int &row, int &col) const
     return 0;
 }
 
+// Phase 61, wave 6: the single-zone shift is an INLINE taking min and max by
+// reference.  Bound to the expression `bb.max`, the formal is a fresh pseudo
+// made at the call, BEFORE the test, with no pointer flag: so `addiu a2,a3,12`
+// sits above the branch, where dbr's backward scan finds it for the bne slot
+// before the prologue's `addiu sp,-16`, and its +4 store still kills o.z (the
+// reload).  A named reference or pointer is flagged and loses the reload (26).
+// The named const reference: .x folds onto `this`, .y/.z come off an
+// `addiu v0,a0,36` pointer, as the target reads them.
+static inline void CTBVOffset(const VIWorld &w, VIVect3 &mn, VIVect3 &mx)
+{
+    if (w.m_zones.m_size == 1)
+    {
+        const VIVect3 &org = w.m_origin;
+        VIVect3 o(-org.x, -org.y, -org.z);
+
+        mn += o;
+        mx += o;
+    }
+}
+
 int VIWorld::CalcTerrainCellBVolume(int row, int col, VIBBox &bb) const
 {
     float s = m_cellSize / (float)m_subdiv;
@@ -171,19 +191,7 @@ int VIWorld::CalcTerrainCellBVolume(int row, int col, VIBBox &bb) const
     bb.max.y = m_bbox.max.y;
     bb.max.z = (float)(row + 1) * s;
 
-    if (m_zones.m_size == 1)
-    {
-        // A named const reference: .x folds onto `this`, .y/.z come off an
-        // `addiu v0,a0,36` pointer, as the target reads them.  OPEN: dbr then
-        // fills the bne slot with the prologue's `addiu sp,-16`, where the
-        // target keeps it in place and takes `addiu a2,a3,12` from the
-        // fall-through -- the rest of the function lines up word for word.
-        const VIVect3 &org = m_origin;
-        VIVect3 o(-org.x, -org.y, -org.z);
-
-        bb.min += o;
-        bb.max += o;
-    }
+    CTBVOffset(*this, bb.min, bb.max);
 
     return 0;
 }

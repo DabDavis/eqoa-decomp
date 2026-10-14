@@ -171,7 +171,7 @@ Finding: `decomp-phase60-the-asset-parsers-20260829.md`.
 worked by up to ten agents in isolated LANES (`_lane.py`: own `src/`+`build/`, a `.base/`
 snapshot, three-way `git merge-file` back into main). **Every named SUPPORT function is
 written** (the last "unwritten" one, `VIRStrip6`, is a VU1 label equal to `VIEEUnloadIrx`'s
-entry -- `SPAN_ALIAS`), and **2,891 -> 3,656 of 3,751 byte-exact** so far. The phase's real
+entry -- `SPAN_ALIAS`), and **2,891 -> 3,660 of 3,751 byte-exact** so far. The phase's real
 finding is that **byte-exact is not correct**: the scorer masks every relocated field, so
 `eqcallcheck.py` (jal targets against the relocated dump) found 84 "matched" functions calling
 the WRONG function -- every `DestroyPool` walked with `Erase` instead of `Next`, VIXm's spu/xm

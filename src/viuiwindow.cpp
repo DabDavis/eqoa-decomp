@@ -246,7 +246,7 @@ int VIUIWindow::Text(const unsigned short *s, int x, int y,
     float d = 1.0f - m_open;
     d = 1.0f - d * d;
     col.a = col.a * d;
-    return TextBox(s, x, y, 640, 1, c, f);
+    TextBox(s, x, y, 640, 1, c, f);     // no `return` (see VIString::vsnprintf16)
 }
 
 int VIUIWindow::Text(const unsigned short *s, int x, int y, VIUICOLOR c,

@@ -802,19 +802,19 @@ done:
     dst[pos] = 0;
 }
 
-// OPEN, two words: the target sets up the alloca frame pointer (`move s8,sp`)
-// in the delay slot of the strlen call and materialises that call's argument
-// before it; this build does the opposite.  Eleven spellings -- declaration
-// order, `char *` vs `unsigned short *`, extern `alloca` vs __builtin_alloca,
-// a named return temporary, the size arithmetic -- are byte-identical, so it is
-// not the source.  Same instruction-scheduling family as the 23 carried since
-// Phase 5.
+// Phase 61, wave 6: NO `return` -- like the overload below, it falls off the
+// end with the callee's result still in v0.  `return f()` puts a no-op
+// `v0 = v0` between the call and the final USE, so sched1's
+// add_branch_dependences stops at it; without it the trailing call is made to
+// depend on every insn in the block, those LOG_LINKS survive into sched2, and
+// `move a0,s0` out-ranks the prologue's `move s8,sp` by one dependent (the
+// target puts s8 in the strlen delay slot).
 int VIString::vsnprintf16(unsigned short *d, int n, const char *f, char *ap)
 {
     int size = (strlen(f) + 1) * 2;
     unsigned short *t = (unsigned short *)__builtin_alloca(size);
     str8to16(t, size, f);
-    return vsnprintf16(d, n, t, ap);
+    vsnprintf16(d, n, t, ap);
 }
 
 int VIString::vsnprintf16(unsigned short *d, int n, const unsigned short *f, char *ap)
