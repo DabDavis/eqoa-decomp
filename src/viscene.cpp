@@ -2842,7 +2842,11 @@ int VIScene::Render(VICamera &cam)
         d = 500.0f;
     v.m_viewDist = d;
 
-    if (m_p00 & 1)
+    // The test re-reads the flag just computed (cse hands the branch the
+    // `xori`/`andi` value, `bnez v0`), not a fresh `m_p00 & 1`.  OPEN: the
+    // target then holds &m_world for the frustum arm in a COPY (`move a1,s6`
+    // before the branch, `move a0,a1` in the arm) -- one word, unexplained.
+    if (!v.m_p2C)
     {
         if (m_world.RenderByFrustum(v) < 0)
             return -1;
@@ -3321,11 +3325,21 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
 
     q.Init(32, (VISpriteType)9);
 
-    int ok = !(QueryEmittersAtLocation(cam, q) < 0);
+    // Zero, then set on success: jump.c's store-flag conversion of this
+    // shape goes through MIPS sge (`slti; xori`), where `!(x < 0)` is
+    // expanded by emit_store_flag's sign-shift trick (`nor; srl`).
+    int ok = 0;
+    if (QueryEmittersAtLocation(cam, q) >= 0)
+        ok = 1;
 
     if (ok)
     {
-        for (it = QBegin(q.m_map); it != QEnd(q.m_map); it = QNext(q.m_map, it))
+        // A while loop that steps `it` itself, the `continue` arm included:
+        // the inner test then jumps FORWARD to the body (bgtz), whose label
+        // has two uses, so cse starts afresh there and Value(it) is
+        // recomputed (`li 112; mult`) as the target has it (159 -> 45).
+        it = QBegin(q.m_map);
+        while (it != QEnd(q.m_map))
         {
             int       s   = q.m_map.Value(it).m_b;
             // The sprite slot by REFERENCE: its address is held across Play
@@ -3338,7 +3352,10 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
                     m_sound->Play(((VISoundSprite *)sp)->m_sound, 0, VISOUNDCLASS_SFX);
 
                 if (((VISoundSprite *)m_sprites.Value(s))->m_channel <= 0)
+                {
+                    it = QNext(q.m_map, it);
                     continue;
+                }
             }
 
             VIVect3 d;
@@ -3378,23 +3395,31 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
 
             m_sound->SetVolume(snd->m_channel, (1.0f - t) * snd->m_volume);
 
-            float p = 0.0f;
+            // Set in each arm: the zero is then born after IsPanEnabled and
+            // lands straight in $f12, not in a callee-saved register (45 -> 32).
+            float p;
             if (snd->IsPanEnabled())
                 p = pan;
+            else
+                p = 0.0f;
 
             m_sound->SetPan(snd->m_channel, p);
             ((VISoundSprite *)m_sprites.Value(s))->m_flags = m_p638;
+            it = QNext(q.m_map, it);
         }
     }
 
-    for (int k = 0; k < 32; k++)
+    // `it` again as the slot counter: one function-scope variable, so it
+    // takes the callee-saved register `found` shares (s3), where a fresh
+    // `int k` gets a caller-saved one (32 -> 4).
+    for (it = 0; it < 32; it++)
     {
-        if (m_p5B8[k] != -1)
+        if (m_p5B8[it] != -1)
         {
             int found = 0;
 
             for (int i = m_sprites.Begin(); i != m_sprites.End(); i = m_sprites.Next(i))
-                if (i == m_p5B8[k])
+                if (i == m_p5B8[it])
                 {
                     found = 1;
                     break;
@@ -3402,13 +3427,13 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
 
             if (found)
             {
-                VISoundSprite *snd = (VISoundSprite *)m_sprites.Value(m_p5B8[k]);
+                VISoundSprite *snd = (VISoundSprite *)m_sprites.Value(m_p5B8[it]);
 
                 if (snd->m_flags != m_p638)
                     m_sound->Stop(snd->m_channel);
             }
 
-            m_p5B8[k] = -1;
+            m_p5B8[it] = -1;
         }
     }
 

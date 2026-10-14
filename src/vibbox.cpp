@@ -251,7 +251,11 @@ int VIBBox::Intersects(const VIVect3 &a, const VIVect3 &b) const
         pl.n.Zero();
         n[i] = -1.0f;
         pl.d = (&min.x)[i];
-        if (pl.LineIntersection(p0, *q1, t, hit) && 0.0f <= t && t <= 1.0f)
+        // `this` off the normal pointer, not `pl`: a REG argument is not
+        // precomputed into a pseudo, so PRE has no (plus sp 48) occurrence in
+        // this loop to merge into its hoisted copy, and reload rematerialises
+        // `addiu a0,sp,48` per call as the target does (35 -> 23).
+        if (((VIPlane *)n)->LineIntersection(p0, *q1, t, hit) && 0.0f <= t && t <= 1.0f)
         {
             if ((&p0.x)[i] < (&min.x)[i])
                 p0 = hit;
@@ -262,8 +266,9 @@ int VIBBox::Intersects(const VIVect3 &a, const VIVect3 &b) const
             return 0;
     }
 
-    // n is set AGAIN for the max faces: the second set is a copy the loop
-    // keeps (`move s4,s6`), and LineIntersection's `this` is taken off it.
+    // n is set AGAIN for the max faces.  OPEN: the target keeps that second
+    // set as a COPY (`move s4,s6`) and takes this loop's `this` and walker off
+    // it; here cprop folds the copy away (23 words).
     const float *mx = &max.x;
     n = &pl.n.x;
     for (i = 0; i < 3; i++)

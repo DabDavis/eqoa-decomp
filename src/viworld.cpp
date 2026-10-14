@@ -173,7 +173,13 @@ int VIWorld::CalcTerrainCellBVolume(int row, int col, VIBBox &bb) const
 
     if (m_zones.m_size == 1)
     {
-        VIVect3 o(-m_origin.x, -m_origin.y, -m_origin.z);
+        // A named const reference: .x folds onto `this`, .y/.z come off an
+        // `addiu v0,a0,36` pointer, as the target reads them.  OPEN: dbr then
+        // fills the bne slot with the prologue's `addiu sp,-16`, where the
+        // target keeps it in place and takes `addiu a2,a3,12` from the
+        // fall-through -- the rest of the function lines up word for word.
+        const VIVect3 &org = m_origin;
+        VIVect3 o(-org.x, -org.y, -org.z);
 
         bb.min += o;
         bb.max += o;
