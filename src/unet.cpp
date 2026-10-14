@@ -68,7 +68,7 @@ char  cd[64];
 static int  g_iLibnetInitialized;
 static int  g_iStarted;
 static int  g_iThreadId;
-static char g_szHostName[128];
+char hostname[128];
 static char g_aStack[8192 + 15];
 
 void unet_shutdown()
@@ -122,14 +122,14 @@ void unet_startup_thread(void *pArg)
             ;
     }
 
-    if (sceInetAddress2Name(cd, net_buf, 0, g_szHostName, 128, &addr, 0, 0) != 0)
+    if (sceInetAddress2Name(cd, net_buf, 0, hostname, 128, &addr, 0, 0) != 0)
     {
-        strcpy(g_szHostName, szAddress);
+        strcpy(hostname, szAddress);
         printf("My address: %s\n", szAddress);
     }
     else
     {
-        printf("My address: %s (%s)\n", g_szHostName, szAddress);
+        printf("My address: %s (%s)\n", hostname, szAddress);
     }
 }
 
@@ -198,9 +198,9 @@ int unet_namelookup(const char *pName, ipaddress_t *pAddress)
 int unet_gethostname(char *pName, int iSize)
 {
     unet_startup();
-    if ((unsigned)iSize < strlen(g_szHostName) + 1)
+    if ((unsigned)iSize < strlen(hostname) + 1)
         return -1;
-    strcpy(pName, g_szHostName);
+    strcpy(pName, hostname);
     return 0;
 }
 

@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/core/VILanguage.cpp"
 // VILanguage -- SUPPORT 0x003E96D8 .. 0x003E9818.
 #include "vi.h"
 
@@ -5,21 +6,21 @@ extern "C" int  strcmp(const char *a, const char *b);
 extern "C" void _VIAssert(const char *expr, const char *file, int line);
 
 #define VIASSERT(x)  if (!(x)) _VIAssert(#x, __FILE__, __LINE__);
-
+#define VILANGUAGEID_MAX VILANG_COUNT   // the name the original's asserts quote
 const char  *VILanguage::Name[VILANG_COUNT] =
 {
-    "English", "French", "German", "Spanish",
-    "Italian", "Dutch", "Portuguese", "Japanese"
+    "us", "uk", "fr", "de",
+    "it", "nl", "pt", "sp"
 };
 
 const char  *VILanguage::IsoCode[VILANG_COUNT] =
 {
-    "en", "fr", "de", "es", "it", "nl", "pt", "ja"
+    "en", "en", "fr", "de", "it", "nl", "pt", "sp"
 };
 
 VILanguageID VILanguage::Default;
 
-const char *VILanguage::GetName(VILanguageID id)
+const char *VILanguage::GetName(VILanguageID LanguageId)
 {
 // The two `_VIAssert` calls carry LINE NUMBERS as immediates -- 59 and 69
 // -- so the original file is dated by them and this one is padded to agree.
@@ -56,18 +57,18 @@ const char *VILanguage::GetName(VILanguageID id)
 //
 //
 //
-    VIASSERT(id < sizeof(Name) / sizeof(Name[0]));
-    return Name[id];
+    VIASSERT(0 <= LanguageId && LanguageId < VILANGUAGEID_MAX);
+    return Name[LanguageId];
 }
 
-const char *VILanguage::GetIsoCode(VILanguageID id)
+const char *VILanguage::GetIsoCode(VILanguageID LanguageId)
 {
 
 
 
 
-    VIASSERT(id < sizeof(IsoCode) / sizeof(IsoCode[0]));
-    return IsoCode[id];
+    VIASSERT(0 <= LanguageId && LanguageId < VILANGUAGEID_MAX);
+    return IsoCode[LanguageId];
 }
 
 int VILanguage::GetID(const char *name)

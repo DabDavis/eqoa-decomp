@@ -121,7 +121,7 @@ int VICSFFile::Parse(const char *path, VIESFParse &p, VIScene &sc)
 {
     VIFile f;
 
-    printf("VICSFFile::Parse %s\n", path);
+    printf("Decompressing %s\n", path);
     if (f.Open(path, 33) < 0) return -1;
     if (Parse(f, p, sc) < 0) return -1;
     return 0;
@@ -131,7 +131,7 @@ int VICSFFile::Parse(void *mem, long size, VIESFParse &p, VIScene &sc)
 {
     VIFile f;
 
-    printf("VICSFFile::Parse %d\n", size);
+    printf("Decompressing memory file (%d bytes)\n", size);
     if (f.Open(mem, size, 33, size) < 0) return -1;
     if (Parse(f, p, sc) < 0) return -1;
     return 0;

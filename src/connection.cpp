@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/drdp/connection.cpp"
 // connection.cpp -- SUPPORT 0x004af418..0x004b4aa8, ONE conversation.
 //
 // The original is `C:/code-frontiers-gm/drdp/connection.cpp` -- its own asserts
@@ -134,7 +135,7 @@ inline message_t *message_seqnum_peek_head(message_seqnum_t *pSeqnum)
 void state_channel_init(state_channel_t *pChannel)
 {
     pChannel->m_pPending = 0;
-    pChannel->m_usRx = 0;
+    pChannel->rx = 0;
     pChannel->m_usTxAck = 0;
     pChannel->m_ucRxFlag = 0;
     pChannel->m_ucWhere = 0;
@@ -150,12 +151,12 @@ void state_channel_init(state_channel_t *pChannel)
 static void connection_init(connection_t *pConnection)
 {
     memcpy(pConnection->m_szTag, CONNECTION_TAG, 4);
-    pConnection->m_pEndpoint = 0;
+    pConnection->endpoint = 0;
     pConnection->m_pRoute = 0;
     pConnection->m_pAppPtr = 0;
-    pConnection->m_pAppInfo = 0;
-    pConnection->m_uiLocalId = 0;
-    pConnection->m_uiRemoteId = 0;
+    pConnection->app_info = 0;
+    pConnection->local_id = 0;
+    pConnection->remote_id = 0;
     vlist_init(&pConnection->m_sendQueue.list, message_get_vlink_offset(0), 0, 0);
     vlist_init(&pConnection->m_outstanding.list, message_get_vlink_offset(0), 0, 0);
     vlist_init(&pConnection->m_arrivals.list, message_get_vlink_offset(0),
@@ -164,7 +165,7 @@ static void connection_init(connection_t *pConnection)
                (vcmp_t)uns16_cmp_wrap, message_get_key_offset(0));
     pConnection->m_pTerminate = 0;
     pConnection->m_uiTimeInstanceSent = 0;
-    pConnection->m_uiTimeTx = 0;
+    pConnection->time_last_flush = 0;
     pConnection->m_uiInstanceRemote = 0;
     pConnection->m_usFlags = 0;
     pConnection->m_ucRttIndex = 0;
@@ -197,7 +198,7 @@ int connection_is_valid(const connection_t *pConnection)
     int iResult = memcmp(pConnection->m_szTag, CONNECTION_TAG, 4) == 0;
 
     if (iResult)
-        iResult = endpoint_has_connection(pConnection->m_pEndpoint, pConnection) != 0;
+        iResult = endpoint_has_connection(pConnection->endpoint, pConnection) != 0;
     return iResult;
 }
 
@@ -333,12 +334,12 @@ int connection_get_vnode_offset(int iIndex)
 
 
 
-int connection_get_key_offset(int iIndex)
+int connection_get_key_offset(int index)
 {
     int iOffset = -1;
 
-    VASSERT(0 <= iIndex && iIndex < CONNECTION_KEY_COUNT);   // 340
-    switch (iIndex)
+    VASSERT(0 <= index && index < CONNECTION_KEY_COUNT);   // 340
+    switch (index)
     {
     case 0:
         iOffset = 80;
@@ -510,15 +511,15 @@ int connection_create(connection_t **ppConnection, endpoint_t *pEndpoint, uns64 
         goto out;
     }
     connection_init(pConnection);
-    pConnection->m_pEndpoint = pEndpoint;
-    pConnection->m_uiLocalId = endpoint_get_id(pEndpoint);
-    pConnection->m_uiRemoteId = uiDst;
+    pConnection->endpoint = pEndpoint;
+    pConnection->local_id = endpoint_get_id(pEndpoint);
+    pConnection->remote_id = uiDst;
     pConnection->m_uiDesiredFlushTime = endpoint_get_time(pEndpoint);
-    pConnection->m_uiTimeLastArrival = endpoint_get_time(pEndpoint);
+    pConnection->time_last_arrival = endpoint_get_time(pEndpoint);
     pConnection->m_uiTimeLastInstanceArrival = endpoint_get_time(pEndpoint);
     pConnection->m_uiTimeSend = endpoint_get_time(pEndpoint);
     pConnection->m_uiInstanceLocal = uiInstance;
-    drdp_format_endpoint(pConnection->m_szName, pConnection->m_uiRemoteId);
+    drdp_format_endpoint(pConnection->m_szName, pConnection->remote_id);
     if (iFlags & 1)
     {
         pConnection->m_uiInstanceRemote = pConnection->m_uiInstanceLocal;
@@ -529,7 +530,7 @@ int connection_create(connection_t **ppConnection, endpoint_t *pEndpoint, uns64 
     if (!connection_is_sw_sw(pConnection))
     {
         iResult = message_create(&pConnection->m_pTerminate, pEndpoint, pConnection,
-                                 pConnection->m_uiRemoteId, pConnection->m_uiLocalId, 0, 256,
+                                 pConnection->remote_id, pConnection->local_id, 0, 256,
                                  CONNECTION_MESSAGE_TYPE_TERMINATE, 0xffff,
                                  endpoint_get_time(pEndpoint));
         if (iResult)
@@ -663,7 +664,7 @@ void compress_flush_time_history_verified(buffer_t *pBuffer, uns32 *puiHistory)
 // terminate notification, bit 1 the state channels.
 void connection_destroy_buffer(connection_t *pConnection, buffer_t *pBuffer)
 {
-    uns32 uiNow = endpoint_get_time(pConnection->m_pEndpoint);
+    uns32 uiNow = endpoint_get_time(pConnection->endpoint);
     int i;
 
     if (pBuffer)
@@ -675,21 +676,21 @@ void connection_destroy_buffer(connection_t *pConnection, buffer_t *pBuffer)
         vlist_get_size(&pConnection->m_arrivals.list);
         vlist_get_size(&pConnection->m_delayed.list);
         buffer_appendm_uns8(pBuffer, (const uns8 *)pConnection->m_szTag, 4);
-        if (!pConnection->m_pAppInfo)
+        if (!pConnection->app_info)
             buffer_append_packed_int32(pBuffer, -1);
         else
         {
-            int iLength = strlen(pConnection->m_pAppInfo);
+            int iLength = strlen(pConnection->app_info);
 
             buffer_append_packed_int32(pBuffer, iLength);
-            buffer_appendm_uns8(pBuffer, (const uns8 *)pConnection->m_pAppInfo, iLength);
+            buffer_appendm_uns8(pBuffer, (const uns8 *)pConnection->app_info, iLength);
         }
-        buffer_append_packed_uns64(pBuffer, pConnection->m_uiRemoteId);
+        buffer_append_packed_uns64(pBuffer, pConnection->remote_id);
         buffer_append_uns32(pBuffer, pConnection->m_uiInstanceLocal);
         buffer_append_uns32(pBuffer, pConnection->m_uiInstanceRemote);
         buffer_append_offset_uns32(pBuffer, pConnection->m_uiTimeInstanceSent, uiNow);
-        buffer_append_offset_uns32(pBuffer, pConnection->m_uiTimeTx, uiNow);
-        buffer_append_offset_uns32(pBuffer, pConnection->m_uiTimeLastArrival, uiNow);
+        buffer_append_offset_uns32(pBuffer, pConnection->time_last_flush, uiNow);
+        buffer_append_offset_uns32(pBuffer, pConnection->time_last_arrival, uiNow);
         buffer_append_offset_uns32(pBuffer, pConnection->m_uiTimeLastInstanceArrival, uiNow);
         buffer_append_offset_uns32(pBuffer, pConnection->m_uiTimeSend, uiNow);
         buffer_append_offset_uns32(pBuffer, pConnection->m_uiDesiredFlushTime, uiNow);
@@ -731,7 +732,7 @@ void connection_destroy_buffer(connection_t *pConnection, buffer_t *pBuffer)
             {
                 buffer_append_uns16(pBuffer, pConnection->m_pChannels[i].m_usTx);
                 buffer_append_uns16(pBuffer, pConnection->m_pChannels[i].m_usTxAck);
-                buffer_append_uns16(pBuffer, pConnection->m_pChannels[i].m_usRx);
+                buffer_append_uns16(pBuffer, pConnection->m_pChannels[i].rx);
                 buffer_append_uns8(pBuffer, pConnection->m_pChannels[i].m_ucRxFlag);
                 buffer_append_uns8(pBuffer, pConnection->m_pChannels[i].m_ucWhere);
             }
@@ -820,106 +821,106 @@ int connection_create_buffer(connection_t **ppConnection, endpoint_t *pEndpoint,
     uns8 ucFlags = 0;
     int iLength;
     uns32 uiNow = endpoint_get_time(pEndpoint);
-    connection_t *pConnection = (connection_t *)malloc(sizeof(connection_t));
+    connection_t *connection = (connection_t *)malloc(sizeof(connection_t));
     int i;
 
-    if (!pConnection)
+    if (!connection)
         goto done;
-    pConnection->m_pEndpoint = pEndpoint;
-    pConnection->m_uiLocalId = endpoint_get_id(pEndpoint);
-    pConnection->m_pAppPtr = 0;
-    pConnection->m_pRoute = 0;
-    vlist_init(&pConnection->m_sendQueue.list, message_get_vlink_offset(0), 0, 0);
-    vlist_init(&pConnection->m_outstanding.list, message_get_vlink_offset(0), 0, 0);
-    vlist_init(&pConnection->m_arrivals.list, message_get_vlink_offset(0),
+    connection->endpoint = pEndpoint;
+    connection->local_id = endpoint_get_id(pEndpoint);
+    connection->m_pAppPtr = 0;
+    connection->m_pRoute = 0;
+    vlist_init(&connection->m_sendQueue.list, message_get_vlink_offset(0), 0, 0);
+    vlist_init(&connection->m_outstanding.list, message_get_vlink_offset(0), 0, 0);
+    vlist_init(&connection->m_arrivals.list, message_get_vlink_offset(0),
                (vcmp_t)uns16_cmp_wrap, message_get_key_offset(0));
-    vlist_init(&pConnection->m_delayed.list, message_get_vlink_offset(0),
+    vlist_init(&connection->m_delayed.list, message_get_vlink_offset(0),
                (vcmp_t)uns16_cmp_wrap, message_get_key_offset(0));
-    pConnection->m_pTerminate = 0;
-    pConnection->m_pChannels = 0;
-    buffer_readm_uns8(pBuffer, (uns8 *)pConnection->m_szTag, 4);
+    connection->m_pTerminate = 0;
+    connection->m_pChannels = 0;
+    buffer_readm_uns8(pBuffer, (uns8 *)connection->m_szTag, 4);
     buffer_read_packed_int32(pBuffer, &iLength);
-    pConnection->m_pAppInfo = 0;
+    connection->app_info = 0;
     if (iLength >= 0)
     {
-        pConnection->m_pAppInfo = (char *)malloc(iLength + 1);
-        VASSERT(pConnection->m_pAppInfo != 0);   // 846
-        buffer_readm_uns8(pBuffer, (uns8 *)pConnection->m_pAppInfo, iLength);
-        pConnection->m_pAppInfo[iLength] = 0;
+        connection->app_info = (char *)malloc(iLength + 1);
+        VASSERT(connection->app_info != 0);   // 846
+        buffer_readm_uns8(pBuffer, (uns8 *)connection->app_info, iLength);
+        connection->app_info[iLength] = 0;
     }
-    buffer_read_packed_uns64(pBuffer, &pConnection->m_uiRemoteId);
-    drdp_format_endpoint(pConnection->m_szName, pConnection->m_uiRemoteId);
-    buffer_read_uns32(pBuffer, &pConnection->m_uiInstanceLocal);
-    buffer_read_uns32(pBuffer, &pConnection->m_uiInstanceRemote);
-    buffer_read_offset_uns32(pBuffer, &pConnection->m_uiTimeInstanceSent, uiNow);
-    buffer_read_offset_uns32(pBuffer, &pConnection->m_uiTimeTx, uiNow);
-    buffer_read_offset_uns32(pBuffer, &pConnection->m_uiTimeLastArrival, uiNow);
-    buffer_read_offset_uns32(pBuffer, &pConnection->m_uiTimeLastInstanceArrival, uiNow);
-    buffer_read_offset_uns32(pBuffer, &pConnection->m_uiTimeSend, uiNow);
-    buffer_read_offset_uns32(pBuffer, &pConnection->m_uiDesiredFlushTime, uiNow);
-    buffer_read_offset_uns32(pBuffer, &pConnection->m_uiFlushBy, uiNow);
-    decompress_flush_time_history(pBuffer, pConnection->m_uiFlushTime);
-    buffer_read_uns16(pBuffer, &pConnection->m_usFlags);
-    buffer_read_uns8(pBuffer, &pConnection->m_ucRttIndex);
-    buffer_read_uns8(pBuffer, &pConnection->m_ucRxFlag);
-    buffer_read_uns16(pBuffer, &pConnection->m_usTimeout);
-    buffer_readm_uns16(pBuffer, pConnection->m_usRtt, 16);
-    buffer_read_uns16(pBuffer, &pConnection->m_usFlush);
-    buffer_read_uns16(pBuffer, &pConnection->m_usArrivalNumber);
-    buffer_read_uns16(pBuffer, &pConnection->m_usFlushAck);
-    buffer_read_uns64(pBuffer, &pConnection->m_uiRxMask);
-    buffer_read_uns64(pBuffer, &pConnection->m_uiArrivalHistory);
-    buffer_read_uns16(pBuffer, &pConnection->m_usTxSeqnum);
-    buffer_read_uns16(pBuffer, &pConnection->m_usRxSeqnum);
-    buffer_read_uns16(pBuffer, &pConnection->m_usTxAck);
-    buffer_read_uns64(pBuffer, &pConnection->m_uiTxMask);
-    buffer_read_uns32(pBuffer, (uns32 *)&pConnection->m_iRetryTime);
-    buffer_read_uns32(pBuffer, (uns32 *)&pConnection->m_iWarnTime);
-    buffer_read_uns32(pBuffer, (uns32 *)&pConnection->m_iFailTime);
-    buffer_readm_packed(pBuffer, pConnection->m_uiCstat, 11);
+    buffer_read_packed_uns64(pBuffer, &connection->remote_id);
+    drdp_format_endpoint(connection->m_szName, connection->remote_id);
+    buffer_read_uns32(pBuffer, &connection->m_uiInstanceLocal);
+    buffer_read_uns32(pBuffer, &connection->m_uiInstanceRemote);
+    buffer_read_offset_uns32(pBuffer, &connection->m_uiTimeInstanceSent, uiNow);
+    buffer_read_offset_uns32(pBuffer, &connection->time_last_flush, uiNow);
+    buffer_read_offset_uns32(pBuffer, &connection->time_last_arrival, uiNow);
+    buffer_read_offset_uns32(pBuffer, &connection->m_uiTimeLastInstanceArrival, uiNow);
+    buffer_read_offset_uns32(pBuffer, &connection->m_uiTimeSend, uiNow);
+    buffer_read_offset_uns32(pBuffer, &connection->m_uiDesiredFlushTime, uiNow);
+    buffer_read_offset_uns32(pBuffer, &connection->m_uiFlushBy, uiNow);
+    decompress_flush_time_history(pBuffer, connection->m_uiFlushTime);
+    buffer_read_uns16(pBuffer, &connection->m_usFlags);
+    buffer_read_uns8(pBuffer, &connection->m_ucRttIndex);
+    buffer_read_uns8(pBuffer, &connection->m_ucRxFlag);
+    buffer_read_uns16(pBuffer, &connection->m_usTimeout);
+    buffer_readm_uns16(pBuffer, connection->m_usRtt, 16);
+    buffer_read_uns16(pBuffer, &connection->m_usFlush);
+    buffer_read_uns16(pBuffer, &connection->m_usArrivalNumber);
+    buffer_read_uns16(pBuffer, &connection->m_usFlushAck);
+    buffer_read_uns64(pBuffer, &connection->m_uiRxMask);
+    buffer_read_uns64(pBuffer, &connection->m_uiArrivalHistory);
+    buffer_read_uns16(pBuffer, &connection->m_usTxSeqnum);
+    buffer_read_uns16(pBuffer, &connection->m_usRxSeqnum);
+    buffer_read_uns16(pBuffer, &connection->m_usTxAck);
+    buffer_read_uns64(pBuffer, &connection->m_uiTxMask);
+    buffer_read_uns32(pBuffer, (uns32 *)&connection->m_iRetryTime);
+    buffer_read_uns32(pBuffer, (uns32 *)&connection->m_iWarnTime);
+    buffer_read_uns32(pBuffer, (uns32 *)&connection->m_iFailTime);
+    buffer_readm_packed(pBuffer, connection->m_uiCstat, 11);
     buffer_read_uns8(pBuffer, &ucFlags);
-    if (message_list_load(&pConnection->m_sendQueue, pEndpoint, pBuffer))
+    if (message_list_load(&connection->m_sendQueue, pEndpoint, pBuffer))
         goto done;
-    if (message_list_load(&pConnection->m_outstanding, pEndpoint, pBuffer))
+    if (message_list_load(&connection->m_outstanding, pEndpoint, pBuffer))
         goto done;
-    if (message_seqnum_load(&pConnection->m_arrivals, pEndpoint, pBuffer))
+    if (message_seqnum_load(&connection->m_arrivals, pEndpoint, pBuffer))
         goto done;
-    if (message_seqnum_load(&pConnection->m_delayed, pEndpoint, pBuffer))
+    if (message_seqnum_load(&connection->m_delayed, pEndpoint, pBuffer))
         goto done;
     if (ucFlags & 2)
     {
-        if (connection_allocate_state_channels(pConnection))
+        if (connection_allocate_state_channels(connection))
             goto done;
         for (i = 0; i < CONNECTION_STATE_CHANNEL_COUNT; i++)
         {
             if (pBuffer)
             {
-                buffer_read_uns16(pBuffer, &pConnection->m_pChannels[i].m_usTx);
-                buffer_read_uns16(pBuffer, &pConnection->m_pChannels[i].m_usTxAck);
-                buffer_read_uns16(pBuffer, &pConnection->m_pChannels[i].m_usRx);
-                buffer_read_uns8(pBuffer, &pConnection->m_pChannels[i].m_ucRxFlag);
-                buffer_read_uns8(pBuffer, &pConnection->m_pChannels[i].m_ucWhere);
+                buffer_read_uns16(pBuffer, &connection->m_pChannels[i].m_usTx);
+                buffer_read_uns16(pBuffer, &connection->m_pChannels[i].m_usTxAck);
+                buffer_read_uns16(pBuffer, &connection->m_pChannels[i].rx);
+                buffer_read_uns8(pBuffer, &connection->m_pChannels[i].m_ucRxFlag);
+                buffer_read_uns8(pBuffer, &connection->m_pChannels[i].m_ucWhere);
             }
-            if (message_seqnum_load(&pConnection->m_pChannels[i].m_txList, pEndpoint, pBuffer))
+            if (message_seqnum_load(&connection->m_pChannels[i].m_txList, pEndpoint, pBuffer))
                 goto done;
-            if (message_seqnum_load(&pConnection->m_pChannels[i].m_rxList, pEndpoint, pBuffer))
+            if (message_seqnum_load(&connection->m_pChannels[i].m_rxList, pEndpoint, pBuffer))
                 goto done;
         }
-        conection_state_channel_fixup(pConnection, &pConnection->m_sendQueue);
-        conection_state_channel_fixup(pConnection, &pConnection->m_outstanding);
+        conection_state_channel_fixup(connection, &connection->m_sendQueue);
+        conection_state_channel_fixup(connection, &connection->m_outstanding);
         for (i = 0; i < CONNECTION_STATE_CHANNEL_COUNT; i++)
             ;
     }
     if (ucFlags & 1)
     {
-        if (message_create_buffer(&pConnection->m_pTerminate, pEndpoint, pConnection, pBuffer))
+        if (message_create_buffer(&connection->m_pTerminate, pEndpoint, connection, pBuffer))
             goto done;
     }
-    *ppConnection = pConnection;
-    pConnection = 0;
+    *ppConnection = connection;
+    connection = 0;
 done:
-    if (pConnection)
-        connection_destroy(pConnection);
+    if (connection)
+        connection_destroy(connection);
     return 0;
 }
 
@@ -933,10 +934,10 @@ void connection_destroy(connection_t *pConnection)
 int connection_send_best_effort(connection_t *pConnection, const uns8 *pData, int iSize)
 {
     message_t *pMessage = 0;
-    int iResult = message_create(&pMessage, pConnection->m_pEndpoint, pConnection,
-                                 pConnection->m_uiLocalId, pConnection->m_uiRemoteId, pData,
+    int iResult = message_create(&pMessage, pConnection->endpoint, pConnection,
+                                 pConnection->local_id, pConnection->remote_id, pData,
                                  iSize, CONNECTION_MESSAGE_TYPE_BEST_EFFORT, 0xffff,
-                                 endpoint_get_time(pConnection->m_pEndpoint));
+                                 endpoint_get_time(pConnection->endpoint));
 
     if (iResult == 0)
     {
@@ -1048,7 +1049,7 @@ int connection_send_best_effort(connection_t *pConnection, const uns8 *pData, in
 // own sequence number, so a five-megabyte send is four thousand messages.  All
 // of them are built into a local list first and only moved onto the send queue
 // when the whole set succeeded -- a half-sent message is worse than none.
-int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int iSize,
+int connection_send_guaranteed(connection_t *connection, const uns8 *pData, int iSize,
                                int iType)
 {
     message_list_t messages;
@@ -1058,7 +1059,7 @@ int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int
     uns32 uiChunk;
     uns8 ucType;
     message_list_init(&messages);
-    pConnection->m_uiTimeSend = endpoint_get_time(pConnection->m_pEndpoint);
+    connection->m_uiTimeSend = endpoint_get_time(connection->endpoint);
     for (uiOffset = 0; uiOffset == 0 || uiOffset < (uns32)iSize; uiOffset += 1300)
     {
         uiChunk = iSize - uiOffset;
@@ -1067,16 +1068,16 @@ int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int
         ucType = (uns8)iType;
         if (uiOffset + uiChunk < (uns32)iSize)
             ucType = CONNECTION_MESSAGE_TYPE_BIG;
-        if (uns16_gt(pConnection->m_usTxSeqnum, pConnection->m_usTxAck + 4096))
+        if (uns16_gt(connection->m_usTxSeqnum, connection->m_usTxAck + 4096))
         {
-            VASSERT(!connection_is_sw_sw(pConnection));   // 1072
+            VASSERT(!connection_is_sw_sw( connection ));   // 1072
             iResult = -1;
             goto out;
         }
-        iResult = message_create(&pMessage, pConnection->m_pEndpoint, pConnection,
-                                 pConnection->m_uiLocalId, pConnection->m_uiRemoteId,
-                                 pData + uiOffset, uiChunk, ucType, pConnection->m_usTxSeqnum++,
-                                 endpoint_get_time(pConnection->m_pEndpoint));
+        iResult = message_create(&pMessage, connection->endpoint, connection,
+                                 connection->local_id, connection->remote_id,
+                                 pData + uiOffset, uiChunk, ucType, connection->m_usTxSeqnum++,
+                                 endpoint_get_time(connection->endpoint));
         if (iResult != 0)
             goto out;
         message_list_add_tail(&messages, pMessage);
@@ -1086,7 +1087,7 @@ int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int
     {
         message_get_seqnum(message_list_peek_head(&messages));
         message_get_size(message_list_peek_head(&messages));
-        vlist_add_tail(&pConnection->m_sendQueue.list, message_list_remove_head(&messages));
+        vlist_add_tail(&connection->m_sendQueue.list, message_list_remove_head(&messages));
     }
     iResult = 0;
 out:
@@ -1203,9 +1204,9 @@ int connection_send_state(connection_t *pConnection, const uns8 *pData, int iSiz
     }
     if (iSame)
         return 0;
-    iResult = message_create(&pMessage, pConnection->m_pEndpoint, pConnection,
-                             pConnection->m_uiLocalId, pConnection->m_uiRemoteId, pData, iSize,
-                             (uns8)iChannel, 0xffff, endpoint_get_time(pConnection->m_pEndpoint));
+    iResult = message_create(&pMessage, pConnection->endpoint, pConnection,
+                             pConnection->local_id, pConnection->remote_id, pData, iSize,
+                             (uns8)iChannel, 0xffff, endpoint_get_time(pConnection->endpoint));
     if (iResult)
         return iResult;
     switch (pChannel->m_ucWhere)
@@ -1236,12 +1237,12 @@ int connection_is_closed(connection_t *pConnection)
 // The one place the four transports are told apart.  A terminated connection
 // silently drops everything, which is how the application can keep writing to
 // one that has already gone away.
-int connection_send_internal(connection_t *pConnection, const uns8 *pData, int iSize, int iType)
+int connection_send_internal(connection_t *connection, const uns8 *pData, int iSize, int iType)
 {
     int iResult;
-    VASSERT(!connection_is_closed(pConnection));   // 1242
-    VASSERT(!endpoint_is_closed(pConnection->m_pEndpoint));   // 1243
-    if (connection_is_terminated(pConnection))
+    VASSERT(!connection_is_closed( connection ));   // 1242
+    VASSERT(!endpoint_is_closed( connection->endpoint ));   // 1243
+    if (connection_is_terminated(connection))
         iResult = 0;
     else
     {
@@ -1250,24 +1251,24 @@ int connection_send_internal(connection_t *pConnection, const uns8 *pData, int i
         switch (iType)
         {
         case CONNECTION_MESSAGE_TYPE_BEST_EFFORT:
-            iError = connection_send_best_effort(pConnection, pData, iSize);
+            iError = connection_send_best_effort(connection, pData, iSize);
             break;
         case CONNECTION_MESSAGE_TYPE_GUARANTEED:
         case CONNECTION_MESSAGE_TYPE_SYSTEM:
-            iError = connection_send_guaranteed(pConnection, pData, iSize, iType);
+            iError = connection_send_guaranteed(connection, pData, iSize, iType);
             break;
         default:
-            iError = connection_send_state(pConnection, pData, iSize, iType);
+            iError = connection_send_state(connection, pData, iSize, iType);
             break;
         }
         if (iError == 0)
         {
             iResult = 0;
-            route_resort(pConnection);
+            route_resort(connection);
         }
         else
         {
-            connection_terminate_reason(pConnection, 1, 7);
+            connection_terminate_reason(connection, 1, 7);
             iResult = iError;
         }
     }
@@ -1295,10 +1296,10 @@ int connection_send_internal(connection_t *pConnection, const uns8 *pData, int i
 
 
 
-void connection_send(connection_t *pConnection, const void *pData, int iSize, int iType)
+void connection_send(connection_t *pConnection, const void *pData, int size, int message_type)
 {
-    VASSERT(iSize <= connection_get_max_message_size(iType));   // 1300
-    connection_send_internal(pConnection, (const uns8 *)pData, iSize, iType);
+    VASSERT(size <= connection_get_max_message_size( message_type ));   // 1300
+    connection_send_internal(pConnection, (const uns8 *)pData, size, message_type);
 }
 
 
@@ -1443,8 +1444,8 @@ int connection_is_sw_sw(connection_t *pConnection)
 {
     int iResult = 0;
 
-    if (drdp_is_software_endpoint(pConnection->m_uiLocalId))
-        iResult = drdp_is_software_endpoint(pConnection->m_uiRemoteId) != 0;
+    if (drdp_is_software_endpoint(pConnection->local_id))
+        iResult = drdp_is_software_endpoint(pConnection->remote_id) != 0;
     return iResult;
 }
 
@@ -1460,15 +1461,15 @@ void connection_rx_reset(connection_t *pConnection)
     pConnection->m_ucRxFlag = 0;
     pConnection->m_usArrivalNumber = 0;
     pConnection->m_usRxSeqnum = 0;
-    drdp_format_endpoint1(pConnection->m_uiLocalId);
-    drdp_format_endpoint2(pConnection->m_uiRemoteId);
+    drdp_format_endpoint1(pConnection->local_id);
+    drdp_format_endpoint2(pConnection->remote_id);
     if (pConnection->m_pChannels)
     {
         for (i = 0; i < CONNECTION_STATE_CHANNEL_COUNT; i++)
         {
             state_channel_t *pChannel = &pConnection->m_pChannels[i];
 
-            pChannel->m_usRx = 0;
+            pChannel->rx = 0;
             pChannel->m_ucRxFlag = 0;
             while ((pMessage = (message_t *)vlist_remove_head(&pChannel->m_rxList.list)) != 0)
                 message_destroy(pMessage);
@@ -1483,12 +1484,12 @@ void connection_tx_reset(connection_t *pConnection)
     message_t *pMessage;
     int i;
 
-    drdp_format_endpoint1(pConnection->m_uiLocalId);
-    drdp_format_endpoint2(pConnection->m_uiRemoteId);
-    pConnection->m_uiInstanceLocal = endpoint_get_instance(pConnection->m_pEndpoint);
+    drdp_format_endpoint1(pConnection->local_id);
+    drdp_format_endpoint2(pConnection->remote_id);
+    pConnection->m_uiInstanceLocal = endpoint_get_instance(pConnection->endpoint);
     pConnection->m_usFlags &= 0xfdbf;
     pConnection->m_uiTimeInstanceSent = 0;
-    pConnection->m_uiTimeTx = 0;
+    pConnection->time_last_flush = 0;
     pConnection->m_usFlush = 1;
     pConnection->m_usTxSeqnum = 1;
     pConnection->m_usFlushAck = 0;
@@ -1533,7 +1534,7 @@ int connection_append_message(connection_t *pConnection, buffer_t *pBuffer,
     buffer_appendm_uns8(pBuffer, (const uns8 *)message_get_data(pMessage), uiSize);
     if (iReliable)
     {
-        message_set_time(pMessage, endpoint_get_time(pConnection->m_pEndpoint));
+        message_set_time(pMessage, endpoint_get_time(pConnection->endpoint));
         message_set_flush(pMessage, usFlush);
         vlist_add_tail(&pConnection->m_outstanding.list, pMessage);
         message_get_type(pMessage);
@@ -1550,7 +1551,7 @@ int connection_append_message(connection_t *pConnection, buffer_t *pBuffer,
 // the acked one) and run-length encoded, so an unchanged byte costs nothing.
 // The delta byte says how far back that reference is.  A channel 4,096 ahead
 // of its acknowledgements is terminated rather than allowed to wrap.
-int connection_append_state(connection_t *pConnection, buffer_t *pBuffer, message_t *pMessage,
+int connection_append_state(connection_t *pConnection, buffer_t *buffer, message_t *pMessage,
                             message_list_t *pList, uns16 usFlush)
 {
     uns8 data[1300];
@@ -1563,11 +1564,11 @@ int connection_append_state(connection_t *pConnection, buffer_t *pBuffer, messag
     uns16 usNext;
     message_t *pReference;
     message_t *pSent;
-    int iResult;
+    int result;
 
-    if (pBuffer->position > 300)
+    if (buffer->position > 300)
         return -1;
-    if (pBuffer->size < usSize + pBuffer->position + 27)
+    if (buffer->size < usSize + buffer->position + 27)
         return -1;
     usNext = pChannel->m_usTx + 1;
     if ((int16)(usNext - pChannel->m_usTxAck) == 4096)
@@ -1578,12 +1579,12 @@ int connection_append_state(connection_t *pConnection, buffer_t *pBuffer, messag
     if (pChannel->m_ucWhere == 1)
     {
         message_set_seqnum(pMessage, pChannel->m_usTx++);
-        iResult = message_create(&pCopy, pConnection->m_pEndpoint, pConnection,
-                                 pConnection->m_uiLocalId, pConnection->m_uiRemoteId,
+        result = message_create(&pCopy, pConnection->endpoint, pConnection,
+                                 pConnection->local_id, pConnection->remote_id,
                                  message_get_data(pMessage), message_get_size(pMessage),
                                  message_get_type(pMessage), message_get_seqnum(pMessage),
-                                 endpoint_get_time(pConnection->m_pEndpoint));
-        VASSERT(iResult == 0);   // 1586
+                                 endpoint_get_time(pConnection->endpoint));
+        VASSERT(result == 0);   // 1586
         vlist_add_tail(&pChannel->m_txList.list, pCopy);
     }
     usSeqnum = message_get_seqnum(pMessage);
@@ -1606,11 +1607,11 @@ int connection_append_state(connection_t *pConnection, buffer_t *pBuffer, messag
             memcpy(data, message_get_data(pMessage), message_get_size(pMessage));
     }
     pSent = (message_t *)vlist_remove_head(&pList->list);
-    buffer_append_uns8(pBuffer, ucChannel);
-    buffer_append_size(pBuffer, usSize);
-    buffer_append_uns16(pBuffer, usSeqnum);
-    buffer_append_uns8(pBuffer, iDelta);
-    run_length_encode(data, usSize, pBuffer);
+    buffer_append_uns8(buffer, ucChannel);
+    buffer_append_size(buffer, usSize);
+    buffer_append_uns16(buffer, usSeqnum);
+    buffer_append_uns8(buffer, iDelta);
+    run_length_encode(data, usSize, buffer);
 
 
 
@@ -1636,9 +1637,9 @@ int connection_append_state(connection_t *pConnection, buffer_t *pBuffer, messag
 
 
 
-    VASSERT(!pBuffer->error);   // 1639
+    VASSERT(!buffer->overflow);   // 1639
     pChannel->m_ucWhere = 2;
-    message_set_time(pSent, endpoint_get_time(pConnection->m_pEndpoint));
+    message_set_time(pSent, endpoint_get_time(pConnection->endpoint));
     message_set_flush(pSent, usFlush);
     vlist_add_tail(&pConnection->m_outstanding.list, pSent);
     return 0;
@@ -1905,8 +1906,8 @@ int connection_idle_check(connection_t *pConnection)
             && !vlist_get_size(&pConnection->m_sendQueue.list)
             && !vlist_get_size(&pConnection->m_outstanding.list)
             && !(pConnection->m_usFlags & 0xf)
-            && uns32_ge(endpoint_get_time(pConnection->m_pEndpoint),
-                        pConnection->m_uiTimeTx + CONNECTION_IDLE_RESET))
+            && uns32_ge(endpoint_get_time(pConnection->endpoint),
+                        pConnection->time_last_flush + CONNECTION_IDLE_RESET))
         {
             connection_tx_reset(pConnection);
             iResult = 1;
@@ -1914,12 +1915,12 @@ int connection_idle_check(connection_t *pConnection)
         if ((~pConnection->m_usFlags & 0x200) && (pConnection->m_usFlags & 0x20)
             && !vlist_get_size(&pConnection->m_delayed.list)
             && !vlist_get_size(&pConnection->m_arrivals.list)
-            && uns32_ge(endpoint_get_time(pConnection->m_pEndpoint),
-                        pConnection->m_uiTimeLastArrival + 360000))
+            && uns32_ge(endpoint_get_time(pConnection->endpoint),
+                        pConnection->time_last_arrival + 360000))
         {
             iResult |= 2;
-            drdp_format_endpoint1(pConnection->m_uiLocalId);
-            drdp_format_endpoint2(pConnection->m_uiRemoteId);
+            drdp_format_endpoint1(pConnection->local_id);
+            drdp_format_endpoint2(pConnection->remote_id);
             _endpoint_connection_destroy(pConnection, __FILE__, __LINE__);   // 1923
         }
     }
@@ -1967,9 +1968,9 @@ int connection_idle_check(connection_t *pConnection)
 // flag is low", bit 6 the far instance -- and then as many messages as fit,
 // in desired-flush-time order.  A reliable message unacknowledged for longer
 // than the fail time terminates the connection from here.
-int connection_flush(connection_t *pConnection, buffer_t *pBuffer, int iFlushNumber)
+int connection_flush(connection_t *connection, buffer_t *pBuffer, int iFlushNumber)
 {
-    uns16 usFlush = pConnection->m_usFlush;
+    uns16 usFlush = connection->m_usFlush;
     uns8 ucFlags = 0;
     uns64 uiAckMask;
     message_list_t *pList;
@@ -1977,27 +1978,27 @@ int connection_flush(connection_t *pConnection, buffer_t *pBuffer, int iFlushNum
     int iResult;
     int i;
 
-    drdp_format_endpoint1(pConnection->m_uiLocalId);
-    drdp_format_endpoint2(pConnection->m_uiRemoteId);
-    endpoint_get_time(pConnection->m_pEndpoint);
-    pConnection->m_iLastRouteFlushNumber = iFlushNumber;
-    if (endpoint_is_closed(pConnection->m_pEndpoint) && endpoint_is_in_sync(pConnection->m_pEndpoint))
+    drdp_format_endpoint1(connection->local_id);
+    drdp_format_endpoint2(connection->remote_id);
+    endpoint_get_time(connection->endpoint);
+    connection->m_iLastRouteFlushNumber = iFlushNumber;
+    if (endpoint_is_closed(connection->endpoint) && endpoint_is_in_sync(connection->endpoint))
     {
-        drdp_format_endpoint1(pConnection->m_uiLocalId);
-        drdp_endpoint_destroy(pConnection->m_pEndpoint);
+        drdp_format_endpoint1(connection->local_id);
+        drdp_endpoint_destroy(connection->endpoint);
         iResult = -3;
         goto done;
     }
-    if (connection_is_closed(pConnection) && connection_is_in_sync(pConnection))
+    if (connection_is_closed(connection) && connection_is_in_sync(connection))
     {
-        drdp_format_endpoint1(pConnection->m_uiLocalId);
-        drdp_format_endpoint2(pConnection->m_uiRemoteId);
-        connection_terminate_reason(pConnection, 1, 10);
-        _endpoint_connection_destroy(pConnection, __FILE__, __LINE__);   // 1996
+        drdp_format_endpoint1(connection->local_id);
+        drdp_format_endpoint2(connection->remote_id);
+        connection_terminate_reason(connection, 1, 10);
+        _endpoint_connection_destroy(connection, __FILE__, __LINE__);   // 1996
         iResult = -3;
         goto done;
     }
-    iResult = connection_idle_check(pConnection);
+    iResult = connection_idle_check(connection);
     if (iResult & 2)
     {
         iResult = -3;
@@ -2008,55 +2009,55 @@ int connection_flush(connection_t *pConnection, buffer_t *pBuffer, int iFlushNum
         iResult = -1;
         goto done;
     }
-    if (!connection_is_sw_sw(pConnection) && !connection_is_closed(pConnection)
-        && !endpoint_is_closed(pConnection->m_pEndpoint)
-        && uns32_ge(endpoint_get_time(pConnection->m_pEndpoint),
-                    pConnection->m_uiTimeSend + 30000))
+    if (!connection_is_sw_sw(connection) && !connection_is_closed(connection)
+        && !endpoint_is_closed(connection->endpoint)
+        && uns32_ge(endpoint_get_time(connection->endpoint),
+                    connection->m_uiTimeSend + 30000))
     {
         uns8 ucKeepAlive = 18;
 
-        drdp_format_endpoint1(pConnection->m_uiLocalId);
-        drdp_format_endpoint2(pConnection->m_uiRemoteId);
-        connection_send_internal(pConnection, &ucKeepAlive, 1, CONNECTION_MESSAGE_TYPE_SYSTEM);
-        if (pConnection->m_usFlags & 0x100)
+        drdp_format_endpoint1(connection->local_id);
+        drdp_format_endpoint2(connection->remote_id);
+        connection_send_internal(connection, &ucKeepAlive, 1, CONNECTION_MESSAGE_TYPE_SYSTEM);
+        if (connection->m_usFlags & 0x100)
         {
             iResult = -1;
             goto done;
         }
     }
     uiAckMask = 0;
-    if ((pConnection->m_usFlags & 1) || (pConnection->m_usFlags & 2))
+    if ((connection->m_usFlags & 1) || (connection->m_usFlags & 2))
     {
-        connection_get_ack_mask(pConnection, &uiAckMask);
+        connection_get_ack_mask(connection, &uiAckMask);
         ucFlags |= 2;
         if (uiAckMask)
             ucFlags |= 8;
     }
-    if (pConnection->m_usFlags & 4)
+    if (connection->m_usFlags & 4)
         ucFlags |= 0x10;
-    if (pConnection->m_usFlags & 1)
+    if (connection->m_usFlags & 1)
     {
         ucFlags |= 1;
-        if (pConnection->m_uiRxMask)
+        if (connection->m_uiRxMask)
             ucFlags |= 4;
     }
-    if (pConnection->m_usFlags & 8)
+    if (connection->m_usFlags & 8)
         ucFlags |= 0x40;
-    if (pConnection->m_ucRxFlag < 17)
+    if (connection->m_ucRxFlag < 17)
         ucFlags |= 0x20;
     buffer_append_uns8(pBuffer, ucFlags);
     if (ucFlags & 0x40)
-        buffer_append_uns32(pBuffer, pConnection->m_uiInstanceRemote);
+        buffer_append_uns32(pBuffer, connection->m_uiInstanceRemote);
     buffer_append_uns16(pBuffer, usFlush);
     if (ucFlags & 1)
     {
-        buffer_append_uns16(pBuffer, pConnection->m_usArrivalNumber);
+        buffer_append_uns16(pBuffer, connection->m_usArrivalNumber);
         if (ucFlags & 4)
-            buffer_append_packed_uns64(pBuffer, pConnection->m_uiRxMask);
+            buffer_append_packed_uns64(pBuffer, connection->m_uiRxMask);
     }
     if (ucFlags & 2)
     {
-        buffer_append_uns16(pBuffer, pConnection->m_usRxSeqnum);
+        buffer_append_uns16(pBuffer, connection->m_usRxSeqnum);
         if (ucFlags & 8)
             buffer_append_packed_uns64(pBuffer, uiAckMask);
     }
@@ -2064,16 +2065,16 @@ int connection_flush(connection_t *pConnection, buffer_t *pBuffer, int iFlushNum
     {
         for (i = 0; i < CONNECTION_STATE_CHANNEL_COUNT; i++)
         {
-            if (pConnection->m_pChannels[i].m_ucRxFlag)
+            if (connection->m_pChannels[i].m_ucRxFlag)
             {
                 buffer_append_uns8(pBuffer, i);
-                buffer_append_uns16(pBuffer, pConnection->m_pChannels[i].m_usRx);
-                pConnection->m_pChannels[i].m_ucRxFlag--;
+                buffer_append_uns16(pBuffer, connection->m_pChannels[i].rx);
+                connection->m_pChannels[i].m_ucRxFlag--;
             }
         }
         buffer_append_uns8(pBuffer, CONNECTION_STATE_CHANNEL_COUNT);
     }
-    if (pBuffer->error)
+    if (pBuffer->overflow)
     {
         iResult = -2;
         goto done;
@@ -2081,45 +2082,45 @@ int connection_flush(connection_t *pConnection, buffer_t *pBuffer, int iFlushNum
     for (;;)
     {
         pList = 0;
-        connection_get_next_message(pConnection, &pList, &uiTime, 0);
+        connection_get_next_message(connection, &pList, &uiTime, 0);
         if (!pList)
             break;
-        if (drdp_is_hardware_endpoint(pConnection->m_uiLocalId)
-            || drdp_is_hardware_endpoint(pConnection->m_uiRemoteId))
+        if (drdp_is_hardware_endpoint(connection->local_id)
+            || drdp_is_hardware_endpoint(connection->remote_id))
         {
             message_t *pHead = (message_t *)vlist_peek_head(&pList->list);
-            uns32 uiAge = endpoint_get_time(pConnection->m_pEndpoint) - message_get_created(pHead);
-            uns32 uiSilence = endpoint_get_time(pConnection->m_pEndpoint)
-                              - pConnection->m_uiTimeLastArrival;
+            uns32 uiAge = endpoint_get_time(connection->endpoint) - message_get_created(pHead);
+            uns32 uiSilence = endpoint_get_time(connection->endpoint)
+                              - connection->time_last_arrival;
             int iTimeout;
 
-            if (pConnection->m_usFlags & 0x40)
-                iTimeout = route_is_terminated(pConnection->m_pRoute) ? pConnection->m_iRetryTime
-                                                                      : pConnection->m_iWarnTime;
+            if (connection->m_usFlags & 0x40)
+                iTimeout = route_is_terminated(connection->m_pRoute) ? connection->m_iRetryTime
+                                                                      : connection->m_iWarnTime;
             else
-                iTimeout = pConnection->m_iRetryTime;
-            if ((uns32)pConnection->m_iFailTime < uiAge)
+                iTimeout = connection->m_iRetryTime;
+            if ((uns32)connection->m_iFailTime < uiAge)
             {
-                connection_terminate_reason(pConnection, 1, 3);
+                connection_terminate_reason(connection, 1, 3);
                 iResult = -1;
                 goto done;
             }
-            if (pList == &pConnection->m_outstanding && iTimeout < (int)uiAge
+            if (pList == &connection->m_outstanding && iTimeout < (int)uiAge
                 && iTimeout < (int)uiSilence)
             {
-                connection_terminate_reason(pConnection, 1, 2);
+                connection_terminate_reason(connection, 1, 2);
                 iResult = -1;
                 goto done;
             }
         }
-        if (endpoint_get_time(pConnection->m_pEndpoint) < uiTime)
+        if (endpoint_get_time(connection->endpoint) < uiTime)
             break;
-        if (connection_append(pConnection, pBuffer, pList, usFlush))
+        if (connection_append(connection, pBuffer, pList, usFlush))
             break;
     }
-    if (~pConnection->m_usFlags & 0x40)
-        pConnection->m_usTimeout += 1000;
-    if (pConnection->m_usFlags & 0x200)
+    if (~connection->m_usFlags & 0x40)
+        connection->m_usTimeout += 1000;
+    if (connection->m_usFlags & 0x200)
     {
 
 
@@ -2237,19 +2238,19 @@ int connection_flush(connection_t *pConnection, buffer_t *pBuffer, int iFlushNum
 
 
 
-        VASSERT(uns32_gt( pConnection->m_uiTimeTx + 2 * CONNECTION_IDLE_RESET, endpoint_get_time( pConnection->m_pEndpoint ) ));   // 2240
+        VASSERT(uns32_gt( connection->time_last_flush + 2 * CONNECTION_IDLE_RESET, endpoint_get_time( connection->endpoint ) ));   // 2240
     }
     else
     {
-        pConnection->m_uiTimeInstanceSent = endpoint_get_time(pConnection->m_pEndpoint);
-        pConnection->m_uiTimeLastArrival = endpoint_get_time(pConnection->m_pEndpoint);
-        pConnection->m_usFlags |= 0x200;
+        connection->m_uiTimeInstanceSent = endpoint_get_time(connection->endpoint);
+        connection->time_last_arrival = endpoint_get_time(connection->endpoint);
+        connection->m_usFlags |= 0x200;
     }
-    pConnection->m_usFlags &= 0xfff0;
-    pConnection->m_usFlush++;
-    pConnection->m_uiCstat[6]++;
-    pConnection->m_uiFlushTime[usFlush & 1023] = endpoint_get_time(pConnection->m_pEndpoint);
-    pConnection->m_uiTimeTx = endpoint_get_time(pConnection->m_pEndpoint);
+    connection->m_usFlags &= 0xfff0;
+    connection->m_usFlush++;
+    connection->m_uiCstat[6]++;
+    connection->m_uiFlushTime[usFlush & 1023] = endpoint_get_time(connection->endpoint);
+    connection->time_last_flush = endpoint_get_time(connection->endpoint);
     iResult = 0;
 done:
     return iResult;
@@ -2285,46 +2286,46 @@ void connection_add_rtt_sample(connection_t *pConnection, uns16 usSample)
 // A software-to-software connection never really talks to anything, so its
 // flush time is pushed a long way out; a real one wakes up thirty seconds
 // after its last send, or a whole day once it is closed.
-void connection_recalc_desired_flush_time(connection_t *pConnection)
+void connection_recalc_desired_flush_time(connection_t *connection)
 {
     message_list_t *pList;
 
-    if (connection_is_sw_sw(pConnection))
+    if (connection_is_sw_sw(connection))
     {
-        if (pConnection->m_usFlags & 0x200)
-            pConnection->m_uiDesiredFlushTime = pConnection->m_uiTimeTx + 120000;
-        else if (pConnection->m_usFlags & 0x20)
-            pConnection->m_uiDesiredFlushTime = pConnection->m_uiTimeLastArrival + 360000;
+        if (connection->m_usFlags & 0x200)
+            connection->m_uiDesiredFlushTime = connection->time_last_flush + 120000;
+        else if (connection->m_usFlags & 0x20)
+            connection->m_uiDesiredFlushTime = connection->time_last_arrival + 360000;
         else
-            pConnection->m_uiDesiredFlushTime = pConnection->m_uiTimeLastArrival + 86400000;
+            connection->m_uiDesiredFlushTime = connection->time_last_arrival + 86400000;
     }
-    else if (connection_is_closed(pConnection) || connection_is_terminated(pConnection))
+    else if (connection_is_closed(connection) || connection_is_terminated(connection))
     {
-        VASSERT(endpoint_get_time(pConnection->m_pEndpoint)
-                - pConnection->m_uiTimeLastArrival < 43200000);   // 2304
-        pConnection->m_uiDesiredFlushTime =
-            endpoint_get_time(pConnection->m_pEndpoint) + 86400000;
+        VASSERT(endpoint_get_time( connection->endpoint )
+                - connection->time_last_arrival < ONE_DAY/2);   // 2304
+        connection->m_uiDesiredFlushTime =
+            endpoint_get_time(connection->endpoint) + 86400000;
     }
     else
     {
-        pConnection->m_uiDesiredFlushTime = pConnection->m_uiTimeSend + 30000;
+        connection->m_uiDesiredFlushTime = connection->m_uiTimeSend + 30000;
     }
-    connection_get_next_message(pConnection, &pList, &pConnection->m_uiDesiredFlushTime, 1);
-    if (pConnection->m_usFlags & 0xf)
-        if ((int)(pConnection->m_uiDesiredFlushTime - pConnection->m_uiFlushBy) >= 0)
-            pConnection->m_uiDesiredFlushTime = pConnection->m_uiFlushBy;
-    if (connection_is_closed(pConnection) && connection_is_in_sync(pConnection))
+    connection_get_next_message(connection, &pList, &connection->m_uiDesiredFlushTime, 1);
+    if (connection->m_usFlags & 0xf)
+        if ((int)(connection->m_uiDesiredFlushTime - connection->m_uiFlushBy) >= 0)
+            connection->m_uiDesiredFlushTime = connection->m_uiFlushBy;
+    if (connection_is_closed(connection) && connection_is_in_sync(connection))
     {
-        drdp_format_endpoint1(connection_get_src(pConnection));
-        drdp_format_endpoint2(connection_get_dst(pConnection));
-        pConnection->m_uiDesiredFlushTime = pConnection->m_uiTimeLastArrival;
+        drdp_format_endpoint1(connection_get_src(connection));
+        drdp_format_endpoint2(connection_get_dst(connection));
+        connection->m_uiDesiredFlushTime = connection->time_last_arrival;
     }
-    if (endpoint_is_closed(pConnection->m_pEndpoint)
-        && endpoint_is_in_sync(pConnection->m_pEndpoint))
+    if (endpoint_is_closed(connection->endpoint)
+        && endpoint_is_in_sync(connection->endpoint))
     {
-        drdp_format_endpoint1(connection_get_src(pConnection));
-        drdp_format_endpoint2(connection_get_dst(pConnection));
-        pConnection->m_uiDesiredFlushTime = pConnection->m_uiTimeLastArrival;
+        drdp_format_endpoint1(connection_get_src(connection));
+        drdp_format_endpoint2(connection_get_dst(connection));
+        connection->m_uiDesiredFlushTime = connection->time_last_arrival;
     }
 }
 
@@ -2408,7 +2409,7 @@ void connection_record_flush_ack(connection_t *pConnection, uns16 usFlush)
     puiTime = &puiRing[usFlush & 1023];
     if (*puiTime)
     {
-        uns32 uiRtt = endpoint_get_time(pConnection->m_pEndpoint) - *puiTime;
+        uns32 uiRtt = endpoint_get_time(pConnection->endpoint) - *puiTime;
 
         *puiTime = 0;
         connection_add_rtt_sample(pConnection, (uns16)(uiRtt > 0xffff ? 0xffff : uiRtt));
@@ -2636,32 +2637,32 @@ void connection_move_delayed_to_arrivals(connection_t *pConnection)
         }
         else if (vlist_get_size(&pConnection->m_arrivals.list) == 0)
         {
-            endpoint_arrival_enqueue(pConnection->m_pEndpoint, pMessage);
+            endpoint_arrival_enqueue(pConnection->endpoint, pMessage);
         }
         else
         {
             message_t *pPiece;
-            uns32 uiTotal = 0;
+            uns32 total_size = 0;
             uns32 uiOffset;
-            int iResult;
+            int result;
             vlist_add_tail(&pConnection->m_arrivals.list, pMessage);
             for (pPiece = (message_t *)vlist_peek_head(&pConnection->m_arrivals.list); pPiece;
                  pPiece = (message_t *)vlist_get_next(&pConnection->m_arrivals.list, pPiece))
-                uiTotal += message_get_size(pPiece);
-            VASSERT(uiTotal <= 0x514000);   // 2651
-            iResult = message_create(&pMessage, pConnection->m_pEndpoint, pConnection,
-                                     pConnection->m_uiRemoteId, pConnection->m_uiLocalId, 0,
-                                     uiTotal, message_get_type(pMessage),
+                total_size += message_get_size(pPiece);
+            VASSERT(total_size <= DRDP_SEND_SIZE_MAX_GUARANTEED);   // 2651
+            result = message_create(&pMessage, pConnection->endpoint, pConnection,
+                                     pConnection->remote_id, pConnection->local_id, 0,
+                                     total_size, message_get_type(pMessage),
                                      message_get_seqnum((message_t *)vlist_peek_head(
                                          &pConnection->m_arrivals.list)),
-                                     endpoint_get_time(pConnection->m_pEndpoint));
+                                     endpoint_get_time(pConnection->endpoint));
 
 
 
 
 
 
-            VASSERT(iResult == 0);   // 2664
+            VASSERT(result == 0);   // 2664
             uiOffset = 0;
             while ((pPiece = (message_t *)vlist_remove_head(&pConnection->m_arrivals.list)) != 0)
             {
@@ -2670,7 +2671,7 @@ void connection_move_delayed_to_arrivals(connection_t *pConnection)
                 uiOffset += message_get_size(pPiece);
                 message_destroy(pPiece);
             }
-            endpoint_arrival_enqueue(pConnection->m_pEndpoint, pMessage);
+            endpoint_arrival_enqueue(pConnection->endpoint, pMessage);
         }
     }
 }
@@ -2686,7 +2687,7 @@ void connection_record_state_message(connection_t *pConnection, message_t *pMess
     uns8 ucRefnum;
 
     message_get_type(pMessage);
-    pChannel->m_usRx = usSeqnum;
+    pChannel->rx = usSeqnum;
     pChannel->m_ucRxFlag = 2;
     ucRefnum = message_get_refnum_offset(pMessage);
     if (ucRefnum == 0)
@@ -2695,7 +2696,7 @@ void connection_record_state_message(connection_t *pConnection, message_t *pMess
         message_seqnum_remove_thru(&pChannel->m_rxList, usSeqnum - ucRefnum);
     if (pWith)
         vlist_add_tail(&pChannel->m_rxList.list, pWith);
-    endpoint_arrival_enqueue(pConnection->m_pEndpoint, pMessage);
+    endpoint_arrival_enqueue(pConnection->endpoint, pMessage);
 }
 
 void connection_record_message(connection_t *pConnection, message_t *pMessage,
@@ -2706,7 +2707,7 @@ void connection_record_message(connection_t *pConnection, message_t *pMessage,
     case CONNECTION_MESSAGE_TYPE_BEST_EFFORT:
     case 254:
     case 255:
-        endpoint_arrival_enqueue(pConnection->m_pEndpoint, pMessage);
+        endpoint_arrival_enqueue(pConnection->endpoint, pMessage);
         break;
     case CONNECTION_MESSAGE_TYPE_SYSTEM:
     case CONNECTION_MESSAGE_TYPE_BIG:
@@ -2730,7 +2731,7 @@ void connection_record_segment_messages(connection_t *pConnection, segment_body_
         int i;
 
         if (!(pConnection->m_usFlags & 0xf))
-            pConnection->m_uiFlushBy = endpoint_get_time(pConnection->m_pEndpoint) + 100;
+            pConnection->m_uiFlushBy = endpoint_get_time(pConnection->endpoint) + 100;
         pConnection->m_usFlags |= pBody->m_usConnFlags;
         for (i = 0; i < pBody->m_iChannelCount; i++)
             pConnection->m_pChannels[pBody->m_ucChannels[i]].m_ucRxFlag = 2;
@@ -2744,19 +2745,19 @@ void connection_record_segment_messages(connection_t *pConnection, segment_body_
 void connection_record_segment(connection_t *pConnection, const segment_header_t *pHeader,
                                segment_body_t *pBody)
 {
-    pConnection->m_uiTimeLastArrival = endpoint_get_time(pConnection->m_pEndpoint);
-    if (pHeader->m_uiFlags & 0x2000)
+    pConnection->time_last_arrival = endpoint_get_time(pConnection->endpoint);
+    if (pHeader->flags & 0x2000)
     {
-        pConnection->m_uiTimeLastInstanceArrival = endpoint_get_time(pConnection->m_pEndpoint);
+        pConnection->m_uiTimeLastInstanceArrival = endpoint_get_time(pConnection->endpoint);
         if (~pConnection->m_usFlags & 0x20)
         {
             pConnection->m_usFlags |= 0x20;
             pConnection->m_uiInstanceRemote = pHeader->m_uiCrc;
         }
-        if (pHeader->m_uiFlags & 0x80000)
+        if (pHeader->flags & 0x80000)
         {
             if (!(pConnection->m_usFlags & 0xf))
-                pConnection->m_uiFlushBy = endpoint_get_time(pConnection->m_pEndpoint) + 100;
+                pConnection->m_uiFlushBy = endpoint_get_time(pConnection->endpoint) + 100;
             pConnection->m_usFlags |= 9;
         }
     }
@@ -3170,7 +3171,7 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
 {
     segment_body_t body;
     uns8 ucType;
-    uns16 usSize;
+    uns16 size;
     uns16 usSeqnum;
     uns8 ucRefnumOffset;
     message_t *pReset;
@@ -3185,7 +3186,7 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
         memset(&body, 0, sizeof(body));
         pBody = &body;
     }
-    if ((pHeader->m_uiFlags & 0x2000) && pConnection)
+    if ((pHeader->flags & 0x2000) && pConnection)
     {
         if (pConnection->m_usFlags & 0x20)
         {
@@ -3196,7 +3197,7 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
                 goto out;
             }
         }
-        else if (~pHeader->m_uiFlags & 0x80000)
+        else if (~pHeader->flags & 0x80000)
         {
             iResult = -1;
             connection_log_parse_failure(pConnection, "connection has NOT received an instance the remote instance MUST be asking for an instance ack (routers w/o UDP state?)\n");
@@ -3247,8 +3248,8 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
         }
         else if (iIncrement > 1 && connection_get_leader(pConnection))
         {
-            drdp_format_endpoint1(pConnection->m_uiRemoteId);
-            drdp_format_endpoint2(pConnection->m_uiLocalId);
+            drdp_format_endpoint1(pConnection->remote_id);
+            drdp_format_endpoint2(pConnection->local_id);
         }
     }
     if (pBody->m_ucFlags & 1)
@@ -3381,12 +3382,12 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
         }
     }
     if (pConnection
-        && (drdp_is_hardware_endpoint(pHeader->m_uiSrc) || drdp_is_hardware_endpoint(pHeader->m_uiDst))
+        && (drdp_is_hardware_endpoint(pHeader->src) || drdp_is_hardware_endpoint(pHeader->dst))
         && (~pConnection->m_usFlags & 0x20))
     {
-        iResult = message_create(&pReset, pConnection->m_pEndpoint, pConnection, pHeader->m_uiSrc,
-                                 pHeader->m_uiDst, 0, 0, 255, 0xffff,
-                                 endpoint_get_time(pConnection->m_pEndpoint));
+        iResult = message_create(&pReset, pConnection->endpoint, pConnection, pHeader->src,
+                                 pHeader->dst, 0, 0, 255, 0xffff,
+                                 endpoint_get_time(pConnection->endpoint));
         if (iResult)
         {
             iResult = -1;
@@ -3398,11 +3399,11 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
     while (buffer_bytes_remaining(pBuffer))
     {
         buffer_read_uns8(pBuffer, &ucType);
-        buffer_read_size(pBuffer, &usSize);
-        if (usSize >= 2047)
+        buffer_read_size(pBuffer, &size);
+        if (size >= 2047)
         {
             connection_log_parse_failure(pConnection, "size (%u) >= SEGMENT_HEADER_SEGMENT_BODY_SIZE (%u)\n",
-                                         usSize, 2047);
+                                         size, 2047);
             goto out;
         }
         if ((uns8)(ucType + 7) < 3)
@@ -3420,7 +3421,7 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
                 }
                 if (connection_has_reliable(pConnection, usSeqnum))
                 {
-                    buffer_skip(pBuffer, usSize);
+                    buffer_skip(pBuffer, size);
                     pConnection->m_uiCstat[7]++;
                     continue;
                 }
@@ -3432,9 +3433,9 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
                     pConnection->m_uiCstat[2]++;
                 goto out;
             }
-            if (message_create(&pMessage, pConnection ? pConnection->m_pEndpoint : 0, pConnection,
-                               pHeader->m_uiSrc, pHeader->m_uiDst, 0, usSize, ucType, usSeqnum,
-                               pConnection ? endpoint_get_time(pConnection->m_pEndpoint) : 0))
+            if (message_create(&pMessage, pConnection ? pConnection->endpoint : 0, pConnection,
+                               pHeader->src, pHeader->dst, 0, size, ucType, usSeqnum,
+                               pConnection ? endpoint_get_time(pConnection->endpoint) : 0))
             {
                 connection_log_parse_failure(pConnection, "message_create failed\n");
                 if (pConnection)
@@ -3443,7 +3444,7 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
             }
             if (pConnection)
                 pConnection->m_uiCstat[8]++;
-            buffer_readm_uns8(pBuffer, (uns8 *)message_get_data(pMessage), usSize);
+            buffer_readm_uns8(pBuffer, (uns8 *)message_get_data(pMessage), size);
             vlist_add_tail(&pBody->m_messages.list, pMessage);
         }
         else if (ucType == CONNECTION_MESSAGE_TYPE_BEST_EFFORT)
@@ -3451,20 +3452,20 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
             usSeqnum = 0;
             if (pBody->m_iArrival)
             {
-                if (message_create(&pMessage, pConnection ? pConnection->m_pEndpoint : 0, pConnection,
-                                   pHeader->m_uiSrc, pHeader->m_uiDst, 0, usSize, ucType, 0xffff,
-                                   pConnection ? endpoint_get_time(pConnection->m_pEndpoint) : 0))
+                if (message_create(&pMessage, pConnection ? pConnection->endpoint : 0, pConnection,
+                                   pHeader->src, pHeader->dst, 0, size, ucType, 0xffff,
+                                   pConnection ? endpoint_get_time(pConnection->endpoint) : 0))
                 {
                     connection_log_parse_failure(pConnection, "message_create failed\n");
                     if (pConnection)
                         pConnection->m_uiCstat[1]++;
                     goto out;
                 }
-                buffer_readm_uns8(pBuffer, (uns8 *)message_get_data(pMessage), usSize);
+                buffer_readm_uns8(pBuffer, (uns8 *)message_get_data(pMessage), size);
                 vlist_add_tail(&pBody->m_messages.list, pMessage);
             }
             else
-                buffer_skip(pBuffer, usSize);
+                buffer_skip(pBuffer, size);
         }
         else if (ucType < CONNECTION_STATE_CHANNEL_COUNT)
         {
@@ -3502,31 +3503,31 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
             if (!pConnection)
             {
                 uns8 data[1300];
-                VASSERT(usSize <= DRDP_SEND_SIZE_MAX_STATE);   // 3505
-                run_length_decode(pBuffer, data, usSize);
+                VASSERT(size <= DRDP_SEND_SIZE_MAX_STATE);   // 3505
+                run_length_decode(pBuffer, data, size);
                 pBody->m_ucChannels[pBody->m_iChannelCount++] = ucType;
                 continue;
             }
-            if (uns16_le(usSeqnum, pChannel->m_usRx))
+            if (uns16_le(usSeqnum, pChannel->rx))
             {
                 uns8 data[1300];
                 pConnection->m_uiCstat[9]++;
 
 
 
-                VASSERT(usSize <= DRDP_SEND_SIZE_MAX_STATE);   // 3517
-                run_length_decode(pBuffer, data, usSize);
+                VASSERT(size <= DRDP_SEND_SIZE_MAX_STATE);   // 3517
+                run_length_decode(pBuffer, data, size);
                 pBody->m_ucChannels[pBody->m_iChannelCount++] = ucType;
                 continue;
             }
-            if ((int16)(usSeqnum - pChannel->m_usRx) > 4096)
+            if ((int16)(usSeqnum - pChannel->rx) > 4096)
             {
                 pConnection->m_uiCstat[2]++;
                 goto out;
             }
-            if (message_create(&pMessage, pConnection->m_pEndpoint, pConnection, pHeader->m_uiSrc,
-                               pHeader->m_uiDst, 0, usSize, ucType, usSeqnum,
-                               endpoint_get_time(pConnection->m_pEndpoint)))
+            if (message_create(&pMessage, pConnection->endpoint, pConnection, pHeader->src,
+                               pHeader->dst, 0, size, ucType, usSeqnum,
+                               endpoint_get_time(pConnection->endpoint)))
             {
                 connection_log_parse_failure(pConnection, "message_create failed\n");
                 pConnection->m_uiCstat[1]++;
@@ -3534,7 +3535,7 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
             }
             message_set_refnum_offset(pMessage, ucRefnumOffset);
             vlist_add_tail(&pBody->m_messages.list, pMessage);
-            run_length_decode(pBuffer, (uns8 *)message_get_data(pMessage), usSize);
+            run_length_decode(pBuffer, (uns8 *)message_get_data(pMessage), size);
             if (ucRefnumOffset)
             {
                 message_t *pReference;
@@ -3585,16 +3586,16 @@ int connection_handle_segment(connection_t *pConnection, const segment_header_t 
     memset(&body, 0, sizeof(body));
     iOffset = message_get_vlink_offset(0);
     vlist_init(&body.m_messages.list, iOffset, 0, 0);
-    drdp_format_endpoint1(pConnection->m_uiLocalId);
-    drdp_format_endpoint2(pConnection->m_uiRemoteId);
-    endpoint_get_time(pConnection->m_pEndpoint);
+    drdp_format_endpoint1(pConnection->local_id);
+    drdp_format_endpoint2(pConnection->remote_id);
+    endpoint_get_time(pConnection->endpoint);
     iResult = connection_parse_segment_body(pConnection, pHeader, &body, pBuffer);
     if (iResult == 0)
     {
-        if (body.m_iArrival && drdp_is_client(endpoint_get_drdp(pConnection->m_pEndpoint))
-            && drdp_is_software_endpoint(pHeader->m_uiSrc))
-            drdp_re_route_connections_to_endpoint(endpoint_get_drdp(pConnection->m_pEndpoint),
-                                                  pHeader->m_uiSrc, pHeader->m_uiRoute);
+        if (body.m_iArrival && drdp_is_client(endpoint_get_drdp(pConnection->endpoint))
+            && drdp_is_software_endpoint(pHeader->src))
+            drdp_re_route_connections_to_endpoint(endpoint_get_drdp(pConnection->endpoint),
+                                                  pHeader->src, pHeader->m_uiRoute);
         connection_record_segment(pConnection, pHeader, &body);
         iResult = 0;
     }
@@ -3605,12 +3606,12 @@ int connection_handle_segment(connection_t *pConnection, const segment_header_t 
 
 uns64 connection_get_src(const connection_t *pConnection)
 {
-    return pConnection->m_uiLocalId;
+    return pConnection->local_id;
 }
 
 uns64 connection_get_dst(const connection_t *pConnection)
 {
-    return pConnection->m_uiRemoteId;
+    return pConnection->remote_id;
 }
 
 void *connection_get_app_ptr(const connection_t *pConnection)
@@ -3625,18 +3626,18 @@ void connection_set_app_ptr(connection_t *pConnection, void *pAppPtr)
 
 char *connection_get_app_info(const connection_t *pConnection)
 {
-    return pConnection->m_pAppInfo;
+    return pConnection->app_info;
 }
 
 void connection_set_app_info(connection_t *pConnection, char *pAppInfo)
 {
-    if (pConnection->m_pAppInfo)
+    if (pConnection->app_info)
     {
-        free(pConnection->m_pAppInfo);
-        pConnection->m_pAppInfo = 0;
+        free(pConnection->app_info);
+        pConnection->app_info = 0;
     }
     if (pAppInfo)
-        pConnection->m_pAppInfo = strdup(pAppInfo);
+        pConnection->app_info = strdup(pAppInfo);
 }
 
 int connection_has_instance_ack(connection_t *pConnection)
@@ -3662,7 +3663,7 @@ int connection_send_instance_local(connection_t *pConnection)
     uns32 uiWhen = pConnection->m_uiTimeInstanceSent + 120000;
 
     if (connection_is_sw_sw(pConnection) || !(pConnection->m_usFlags & 0x40)
-        || uns32_gt(uiWhen, endpoint_get_time(pConnection->m_pEndpoint)))
+        || uns32_gt(uiWhen, endpoint_get_time(pConnection->endpoint)))
         iSend = 1;
     return iSend;
 }
@@ -3774,17 +3775,17 @@ uns32 connection_get_instance_local(connection_t *pConnection)
 
 // A reset is a segment with no body: the far end is told which instance pair it
 // was, so a stale one cannot be mistaken for a live one.
-void connection_send_reset(connection_t *pConnection, void *pData, int iSize)
+void connection_send_reset(connection_t *connection, void *pData, int iSize)
 {
     int iReason = 1;
 
-    VASSERT(connection_is_terminated(pConnection));   // 3781
-    if (pConnection->m_usFlags & 0x20)
+    VASSERT(connection_is_terminated( connection ));   // 3781
+    if (connection->m_usFlags & 0x20)
         iReason = 3;
-    route_send_reset_connection(pConnection->m_pRoute, pConnection->m_uiLocalId,
-                                pConnection->m_uiRemoteId, iReason,
-                                pConnection->m_uiInstanceLocal,
-                                pConnection->m_uiInstanceRemote);
+    route_send_reset_connection(connection->m_pRoute, connection->local_id,
+                                connection->remote_id, iReason,
+                                connection->m_uiInstanceLocal,
+                                connection->m_uiInstanceRemote);
 }
 
 
@@ -3800,25 +3801,25 @@ void connection_send_reset(connection_t *pConnection, void *pData, int iSize)
 
 // The terminate notification built in `connection_create` is delivered HERE and
 // everything still queued is freed.  It happens once: the flag latches.
-void connection_terminate(connection_t *pConnection, int iSendReset, void *pData, int iSize)
+void connection_terminate(connection_t *connection, int iSendReset, void *pData, int iSize)
 {
-    if (~pConnection->m_usFlags & 0x100)
+    if (~connection->m_usFlags & 0x100)
     {
-        drdp_connection_terminate(endpoint_get_drdp(pConnection->m_pEndpoint),
-                                  pConnection->m_uiRemoteId, pData, iSize);
-        VASSERT(drdp_is_hardware_endpoint(pConnection->m_uiRemoteId)
-                || drdp_is_hardware_endpoint(pConnection->m_uiLocalId));   // 3810
-        message_set_time(pConnection->m_pTerminate,
-                         endpoint_get_time(pConnection->m_pEndpoint));
-        memcpy(message_get_data(pConnection->m_pTerminate), pData,
-               (uns32)iSize < message_get_size(pConnection->m_pTerminate)
-                   ? (uns32)iSize : message_get_size(pConnection->m_pTerminate));
-        endpoint_arrival_enqueue(pConnection->m_pEndpoint, pConnection->m_pTerminate);
-        pConnection->m_pTerminate = 0;
-        connection_free_outstanding(pConnection);
-        pConnection->m_usFlags |= 0x100;
+        drdp_connection_terminate(endpoint_get_drdp(connection->endpoint),
+                                  connection->remote_id, pData, iSize);
+        VASSERT(drdp_is_hardware_endpoint( connection->remote_id )
+                || drdp_is_hardware_endpoint( connection->local_id ));   // 3810
+        message_set_time(connection->m_pTerminate,
+                         endpoint_get_time(connection->endpoint));
+        memcpy(message_get_data(connection->m_pTerminate), pData,
+               (uns32)iSize < message_get_size(connection->m_pTerminate)
+                   ? (uns32)iSize : message_get_size(connection->m_pTerminate));
+        endpoint_arrival_enqueue(connection->endpoint, connection->m_pTerminate);
+        connection->m_pTerminate = 0;
+        connection_free_outstanding(connection);
+        connection->m_usFlags |= 0x100;
         if (iSendReset & 1)
-            connection_send_reset(pConnection, pData, iSize);
+            connection_send_reset(connection, pData, iSize);
     }
 }
 
@@ -3849,7 +3850,7 @@ int connection_get_last_route_flush_number(connection_t *pConnection)
 }
 endpoint_t *connection_get_endpoint(connection_t *pConnection)
 {
-    return pConnection->m_pEndpoint;
+    return pConnection->endpoint;
 }
 void connection_set_bps_limit(connection_t *pConnection, int iLimit)
 {
@@ -3873,16 +3874,16 @@ int connection_is_terminated(connection_t *pConnection)
 }
 // Closing is not destroying: it stays alive until everything it owes is
 // acknowledged, which is what `connection_is_in_sync` decides.
-void connection_close_internal(connection_t *pConnection, int iNow)
+void connection_close_internal(connection_t *connection, int iNow)
 {
-    VASSERT(connection_is_valid(pConnection));   // 3878
+    VASSERT(connection_is_valid( connection ));   // 3878
 
 
-    VASSERT(drdp_is_local_hardware_endpoint(pConnection->m_uiLocalId)
-            || drdp_is_remote_hardware_endpoint(pConnection->m_uiRemoteId));   // 3882
-    VASSERT(!connection_is_closed(pConnection));   // 3883
-    endpoint_connection_free_arrivals(pConnection);
-    pConnection->m_usFlags |= 0x800;
+    VASSERT(drdp_is_local_hardware_endpoint( connection->local_id )
+            || drdp_is_remote_hardware_endpoint( connection->remote_id ));   // 3882
+    VASSERT(!connection_is_closed( connection ));   // 3883
+    endpoint_connection_free_arrivals(connection);
+    connection->m_usFlags |= 0x800;
 
     // Everything the application had waiting is dropped: it asked to close, so
     // it is not going to read any of it.  What is still OWED to the far end is
@@ -3892,10 +3893,10 @@ void connection_close_internal(connection_t *pConnection, int iNow)
     // The reason byte is 10.  It reaches the far end as a one-byte terminate
     // payload, and the application on that side sees it as an arrival on the
     // pre-built notification message rather than as a socket error.
-    if (iNow || connection_is_in_sync(pConnection))
+    if (iNow || connection_is_in_sync(connection))
     {
-        connection_terminate_reason(pConnection, 1, 10);
-        _endpoint_connection_destroy(pConnection, __FILE__, __LINE__);   // 3898
+        connection_terminate_reason(connection, 1, 10);
+        _endpoint_connection_destroy(connection, __FILE__, __LINE__);   // 3898
     }
 }
 
@@ -3920,12 +3921,12 @@ void connection_close_now(connection_t *pConnection)
     connection_close_internal(pConnection, 1);
 }
 
-int connection_open(connection_t **ppConnection, endpoint_t *pEndpoint, uns64 uiDst)
+int connection_open(connection_t **ppConnection, endpoint_t *pEndpoint, uns64 dst)
 {
-    VASSERT(drdp_is_endpoint(uiDst));   // 3925
-    return endpoint_connection_create(pEndpoint, ppConnection, uiDst,
+    VASSERT(drdp_is_endpoint( dst ));   // 3925
+    return endpoint_connection_create(pEndpoint, ppConnection, dst,
                                       drdp_get_route_endpoint(endpoint_get_drdp(pEndpoint),
-                                                              uiDst),
+                                                              dst),
                                       endpoint_get_instance(pEndpoint), 1);
 }
 
@@ -4006,13 +4007,13 @@ int connection_open(connection_t **ppConnection, endpoint_t *pEndpoint, uns64 ui
 // Everything on the list is delivered as if it had arrived off the wire.  It
 // is how a short-circuited pair of software endpoints talks: the sender's own
 // queues are handed straight to the receiver.
-void connection_receive_list(connection_t *pConnection, message_list_t *pList)
+void connection_receive_list(connection_t *connection, message_list_t *pList)
 {
     message_t *pMessage;
 
     while ((pMessage = (message_t *)vlist_remove_head(&pList->list)) != 0)
     {
-        message_set_connection(pMessage, pConnection);
+        message_set_connection(pMessage, connection);
         switch (message_get_type(pMessage))
         {
         case 254:
@@ -4020,15 +4021,15 @@ void connection_receive_list(connection_t *pConnection, message_list_t *pList)
             VASSERT(!"this makes no sense");   // 4020
             break;
         case CONNECTION_MESSAGE_TYPE_BEST_EFFORT:
-            endpoint_arrival_enqueue(pConnection->m_pEndpoint, pMessage);
+            endpoint_arrival_enqueue(connection->endpoint, pMessage);
             break;
         case CONNECTION_MESSAGE_TYPE_SYSTEM:
         case CONNECTION_MESSAGE_TYPE_BIG:
         case CONNECTION_MESSAGE_TYPE_GUARANTEED:
-            if (!connection_has_reliable(pConnection, message_get_seqnum(pMessage)))
+            if (!connection_has_reliable(connection, message_get_seqnum(pMessage)))
             {
-                vlist_insert(&pConnection->m_delayed.list, pMessage);
-                connection_move_delayed_to_arrivals(pConnection);
+                vlist_insert(&connection->m_delayed.list, pMessage);
+                connection_move_delayed_to_arrivals(connection);
             }
             else
             {
@@ -4037,8 +4038,9 @@ void connection_receive_list(connection_t *pConnection, message_list_t *pList)
             break;
         default:
             {
-                state_channel_t *pChannel;
-                uns16 usSeqnum;
+                state_channel_t *state_channel;
+                uns16 seqnum;
+                int result;
 
 
 
@@ -4049,12 +4051,11 @@ void connection_receive_list(connection_t *pConnection, message_list_t *pList)
 
 
 
-
-
-                VASSERT(connection_allocate_state_channels(pConnection) == 0);   // 4054
-                pChannel = &pConnection->m_pChannels[message_get_type(pMessage)];
-                usSeqnum = message_get_seqnum(pMessage);
-                if ((int16)(usSeqnum - pChannel->m_usRx) <= 0)
+                result = connection_allocate_state_channels( connection );
+                VASSERT(result == 0);   // 4054
+                state_channel = &connection->m_pChannels[message_get_type(pMessage)];
+                seqnum = message_get_seqnum(pMessage);
+                if ((int16)(seqnum - state_channel->rx) <= 0)
                 {
                     message_destroy(pMessage);
                 }
@@ -4062,8 +4063,8 @@ void connection_receive_list(connection_t *pConnection, message_list_t *pList)
                 {
 
 
-                    VASSERT((int16)(usSeqnum - pChannel->m_usRx) < 4096);   // 4065
-                    connection_record_state_message(pConnection, pMessage, 0);
+                    VASSERT(uns16_sub( seqnum, state_channel->rx ) < CONNECTION_MAX_OUTSTANDING_STATE);   // 4065
+                    connection_record_state_message(connection, pMessage, 0);
                 }
             }
             break;
@@ -4096,18 +4097,18 @@ int connection_send_instance_push(const connection_t *pConnection)
 // already been replaced, and acting on it would kill the live one.
 int connection_handle_reset(connection_t *pConnection, const segment_header_t *pHeader)
 {
-    if (pHeader->m_uiFlags & 0x2000)
+    if (pHeader->flags & 0x2000)
         if (connection_has_instance_remote(pConnection))
             if (connection_get_instance_remote(pConnection) != pHeader->m_uiCrc)
                 return -1;
-    if (pHeader->m_uiFlags & 0x40000)
+    if (pHeader->flags & 0x40000)
         if (connection_get_instance_local(pConnection) != pHeader->m_uiFlushNumber)
             return -1;
-    if (!(pHeader->m_uiFlags & 0x2000) && !(pHeader->m_uiFlags & 0x40000))
+    if (!(pHeader->flags & 0x2000) && !(pHeader->flags & 0x40000))
         if (connection_send_instance_local(pConnection))
             return -1;
-    drdp_format_endpoint1(pConnection->m_uiRemoteId);
-    drdp_format_endpoint2(pConnection->m_uiLocalId);
+    drdp_format_endpoint1(pConnection->remote_id);
+    drdp_format_endpoint2(pConnection->local_id);
     connection_terminate_reason(pConnection, 0, 6);
     return 0;
 }
@@ -4165,8 +4166,8 @@ int connection_get_debug(connection_t *pConnection)
 
 int connection_get_leader(connection_t *pConnection)
 {
-    return drdp_is_leader_endpoint(endpoint_get_drdp(pConnection->m_pEndpoint),
-                                   pConnection->m_uiRemoteId);
+    return drdp_is_leader_endpoint(endpoint_get_drdp(pConnection->endpoint),
+                                   pConnection->remote_id);
 }
 
 void connection_set_failure(connection_t *pConnection, int iRetry, int iWarn, int iFail)
@@ -4178,7 +4179,7 @@ void connection_set_failure(connection_t *pConnection, int iRetry, int iWarn, in
 
 uns32 connection_get_time_last_arrival(const connection_t *pConnection)
 {
-    return pConnection->m_uiTimeLastArrival;
+    return pConnection->time_last_arrival;
 }
 
 // The trace hook.  A null connection always prints; a real one prints only
@@ -4233,14 +4234,14 @@ int connection_is_in_sync(connection_t *pConnection)
 
 void connection_set_remote_id(connection_t *pConnection, uns64 uiRemoteId)
 {
-    pConnection->m_uiRemoteId = uiRemoteId;
+    pConnection->remote_id = uiRemoteId;
     drdp_format_endpoint(pConnection->m_szName, uiRemoteId);
 }
 
 // The soonest of the two, so a debug dump never reports a flush in the past.
 uns32 connection_get_debug_time(connection_t *pConnection)
 {
-    uns32 uiTime = pConnection->m_uiTimeTx;
+    uns32 uiTime = pConnection->time_last_flush;
 
     if ((int)(uiTime - pConnection->m_uiDesiredFlushTime) <= 0)
         uiTime = pConnection->m_uiDesiredFlushTime;
@@ -4280,7 +4281,7 @@ uns64 connection_get_cstat(const connection_t *pConnection, int iIndex)
 static const char *cstat_text[] =
 {
     "discarded (old)",
-    "discarded (no memory was available to process it)",
+    "discarded (no memory was available to process message)",
     "discarded (corrupt)",
     "discarded (crc)",
     "out of sequence",

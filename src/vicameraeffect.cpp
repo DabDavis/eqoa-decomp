@@ -154,13 +154,13 @@ void VICameraEffect::Update(float dt)
 // sizes the count table at four ints -- i.e. four SPEED values -- and the
 // sample table's row stride is the `li t0,24` the index arithmetic multiplies
 // by, six floats a row.
-static const int   ShakeCount[4] = { 1, 2, 4, 6 };
+static const int   ShakeCount[4] = { 0, 6, 4, 2 };
 static const float ShakeSample[4][6] =
 {
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 1.0f, 0.7f, -0.7f, -1.0f, -0.7f, 0.7f },
+    { 1.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f },
     { 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f },
-    { 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f },
-    { 1.0f, 0.5f, -0.5f, -1.0f, -0.5f, 0.5f },
 };
 
 // Both crosses return by VALUE: the frame is exactly 32 bytes longer than a

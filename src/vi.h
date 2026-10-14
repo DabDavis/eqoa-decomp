@@ -1605,14 +1605,17 @@ enum VIPixelStore
     VIPixelStore6      = 6
 };
 
-// Init's switch is bounded `sltiu 5`, so five values; only four have a body.
+// Init's switch is bounded `sltiu 5`, so five values.  The jump table, read
+// out of the relocated dump (eqrefcheck), sends 0 to the I4 body, 1 to I8, 2
+// to RGBA16 and BOTH 3 and 4 to RGBA32; nothing reaches a bare `break`.  The
+// name of 3 is not recovered -- VIBitDepth24 is a guess.
 enum VIBitDepth
 {
-    VIBitDepthNone = 0,
-    VIBitDepth32   = 1,
+    VIBitDepth4    = 0,
+    VIBitDepth8    = 1,
     VIBitDepth16   = 2,
-    VIBitDepth8    = 3,
-    VIBitDepth4    = 4
+    VIBitDepth24   = 3,
+    VIBitDepth32   = 4
 };
 
 class VIMipLevel
@@ -1736,7 +1739,9 @@ public:
 
     TYPE m_type;
 
-    virtual ~VISound();
+    // PURE, with a body (visound.cpp): the target's _vt$7VISound holds
+    // __pure_virtual in this slot too, like the other five (eqrefcheck).
+    virtual ~VISound() = 0;
 
     TYPE    Type() const;
     VIWave *AsWave();

@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/game/VIStringTable.cpp"
 // VIStringTable -- SUPPORT 0x004A4050 .. 0x004A4940.  Line-padded (phase 61):
 // LoadRawFile's two asserts carry lines 245 and 253 of
 // game/VIStringTable.cpp as immediates.
@@ -19,7 +20,7 @@ int UTF8_convertToUTF16(const char *s, unsigned short *out, int max);
 #define VIASSERTF(x, fmt, args...) \
     { __VIAssertf_file = __FILE__; __VIAssertf_line = __LINE__; _VIAssertf(x, fmt, ## args); }
 
-static const char NullString[] = "";
+static const unsigned short NullString[] = { '(', 'n', 'u', 'l', 'l', ')', 0 };
 
 VIStringTable::VIStringTable()
 {
@@ -47,7 +48,7 @@ void VIStringTable::Unload()
 
 const char *VIStringTable::GetString(int row, int col)
 {
-    const char *s = NullString;
+    const char *s = (const char *)NullString;
 
     row--;
 

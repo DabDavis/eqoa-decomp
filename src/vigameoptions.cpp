@@ -8,7 +8,7 @@ extern int VIMemCardReadFile(const char *name, void *buf, int size);
 extern int VIMemCardWriteFile(const char *name, const void *buf, int size);
 extern unsigned int VIGetDiscFlags();
 
-static const char OptionsFile[] = "BAEQOAOPT/options.dat";
+static const char OptionsFile[] = "game.opt";
 
 // Phase 61.  The one global options object.  Its constructor is what makes the
 // TU's `_GLOBAL_$I$VIGetGameOptions__Fv` -- named after VIGetGameOptions, the

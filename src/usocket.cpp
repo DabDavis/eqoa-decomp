@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/drdp/usocket.cpp"
 // usocket.cpp -- SUPPORT 0x004ad480..0x004ae088.  The socket.
 //
 // One `usocket_t` is a tagged 200-byte allocation whose first eleven bytes this
@@ -164,7 +165,7 @@ int usocket_create_internal(usocket_t **ppSocket, int iType, int iFd)
         goto done;
     }
     memcpy(pSocket->m_szTag, SOCKET_TAG, 4);
-    pSocket->m_ucType = (uns8)iType;
+    pSocket->type = (uns8)iType;
     pSocket->m_iFd = iFd;
     pSocket->m_ucListen = 0;
     pSocket->m_ucFlags = 0;
@@ -544,21 +545,21 @@ void usocket_destroy(usocket_t *pSocket)
 //
 //
 // -------------------------------------------------------------------------
-static int usocket_sendto_internal(usocket_t *pSocket, const ipaddress_t *pAddress,
+static int usocket_sendto_internal(usocket_t *usocket, const ipaddress_t *pAddress,
                                    const void *pData, int iSize)
 {
     sceInetAddress addr;
     int iResult;
 
-    VASSERT(pSocket->m_ucType == USOCKET_TYPE_UDP);
+    VASSERT(usocket->type == USOCKET_TYPE_UDP);
     memset(&addr, 0, sizeof(addr));
     ipaddress_to_sceaddr(pAddress, &addr);
-    iResult = VIUSocketSend(pSocket, pData, iSize > 1984 ? 1984 : iSize, 0, &addr,
+    iResult = VIUSocketSend(usocket, pData, iSize > 1984 ? 1984 : iSize, 0, &addr,
                             pAddress->m_usPort);
     if (iResult != iSize)
     {
         iResult = uerror_get_net_error(iResult);
-        pSocket->m_ucFlags &= ~2;
+        usocket->m_ucFlags &= ~2;
     }
     return iResult;
 }
@@ -720,20 +721,20 @@ int usocket_sendto(usocket_t *pSocket, const void *pData, int iSize, int iDrop,
 //
 //
 // -------------------------------------------------------------------------
-static int usocket_recvfrom_internal(usocket_t *pSocket, ipaddress_t *pAddress,
+static int usocket_recvfrom_internal(usocket_t *usocket, ipaddress_t *pAddress,
                                      void *pData, int iSize, int *piRead)
 {
     sceInetAddress addr;
     int iResult;
 
-    VASSERT(pSocket->m_ucType == USOCKET_TYPE_ICMP || pSocket->m_ucType == USOCKET_TYPE_UDP);
+    VASSERT(usocket->type == USOCKET_TYPE_ICMP || usocket->type == USOCKET_TYPE_UDP);
 
-    if (pSocket->m_ucType == USOCKET_TYPE_ICMP)
+    if (usocket->type == USOCKET_TYPE_ICMP)
     {
         int iFlags = 0;
         int iPort;
 
-        iResult = VIUSocketRecv(pSocket, pData, iSize > 1984 ? 1984 : iSize,
+        iResult = VIUSocketRecv(usocket, pData, iSize > 1984 ? 1984 : iSize,
                                 &iFlags, &addr, &iPort);
         if (iResult < 0)
             goto error;
@@ -746,25 +747,25 @@ static int usocket_recvfrom_internal(usocket_t *pSocket, ipaddress_t *pAddress,
         int iPort;
 
         memset(&addr, 0, sizeof(addr));
-        iResult = VIUSocketRecv(pSocket, pData, iSize > 1984 ? 1984 : iSize,
+        iResult = VIUSocketRecv(usocket, pData, iSize > 1984 ? 1984 : iSize,
                                 &iFlags, &addr, &iPort);
         if (iResult < 0)
             goto error;
         sceaddr_to_ipaddress(&addr, pAddress);
-        if (pSocket->m_ucType == USOCKET_TYPE_UDP)
+        if (usocket->type == USOCKET_TYPE_UDP)
             pAddress->m_usPort = (uns16)iPort;
-        else if (pSocket->m_ucType == USOCKET_TYPE_ICMP)
+        else if (usocket->type == USOCKET_TYPE_ICMP)
             pAddress->m_usPort = 0;
         *piRead = iResult;
     }
     iResult = 0;
     if (iResult)
-        pSocket->m_ucFlags &= ~1;
+        usocket->m_ucFlags &= ~1;
     return iResult;
 error:
     iResult = uerror_remap_os_error_code(iResult);
     if (iResult)
-        pSocket->m_ucFlags &= ~1;
+        usocket->m_ucFlags &= ~1;
     return iResult;
 }
 
@@ -937,13 +938,13 @@ int usocket_recvfrom_addr(usocket_t *pSocket, ipaddress_t *pAddress, void *pData
 //
 //
 // -------------------------------------------------------------------------
-int usocket_recvfrom(usocket_t *pSocket, void *pData, int iSize, int *piRead)
+int usocket_recvfrom(usocket_t *usocket, void *pData, int iSize, int *piRead)
 {
     ipaddress_t addr;
     int iResult;
 
-    VASSERT(pSocket->m_ucType == USOCKET_TYPE_ICMP || pSocket->m_ucType == USOCKET_TYPE_UDP);
-    iResult = usocket_recvfrom_addr(pSocket, &addr, (char *)pData + 6, iSize - 6,
+    VASSERT(usocket->type == USOCKET_TYPE_ICMP || usocket->type == USOCKET_TYPE_UDP);
+    iResult = usocket_recvfrom_addr(usocket, &addr, (char *)pData + 6, iSize - 6,
                                     piRead);
     if (!iResult)
     {
@@ -1200,14 +1201,14 @@ int usocket_get_fd(usocket_t *pSocket)
 //
 //
 // -------------------------------------------------------------------------
-int usocket_recv(usocket_t *pSocket, void *pData, int iSize, int *piRead)
+int usocket_recv(usocket_t *usocket, void *pData, int iSize, int *piRead)
 {
     int iFlags;
     int iResult;
 
-    VASSERT(pSocket->m_ucType == USOCKET_TYPE_TCP_CONNECT || pSocket->m_ucType == USOCKET_TYPE_TCP_LISTEN);
+    VASSERT(usocket->type == USOCKET_TYPE_TCP_CONNECT || usocket->type == USOCKET_TYPE_TCP_LISTEN);
     iFlags = 0;
-    iResult = sceInetRecv(cd, net_buf, pSocket->m_iFd, pData,
+    iResult = sceInetRecv(cd, net_buf, usocket->m_iFd, pData,
                           iSize > 1984 ? 1984 : iSize, &iFlags, 0);
     if (iResult < 0)
         iResult = uerror_remap_os_error_code(iResult);
@@ -1217,6 +1218,6 @@ int usocket_recv(usocket_t *pSocket, void *pData, int iSize, int *piRead)
         iResult = 0;
     }
     if (iResult)
-        pSocket->m_ucFlags &= ~1;
+        usocket->m_ucFlags &= ~1;
     return iResult;
 }

@@ -104,7 +104,7 @@ int icmp_parse(const void *pData, int iSize, icmp_info_t *pInfo)
     buffer_init_read(&buffer, pData, iSize, BUFFER_BIG_ENDIAN);
     ip_header_read(&buffer, &ip);
     icmp_header_read(&buffer, &icmp);
-    if (buffer.error)
+    if (buffer.overflow)
         return -1;
     if (ip.m_ucProtocol != 1)
         return -1;
@@ -120,7 +120,7 @@ int icmp_parse(const void *pData, int iSize, icmp_info_t *pInfo)
     case 11:
         ip_header_read(&buffer, &quoted);
         udp_header_read(&buffer, &udp);
-        if (buffer.error)
+        if (buffer.overflow)
             return -1;
         if (quoted.m_ucProtocol != 17)
             return -1;

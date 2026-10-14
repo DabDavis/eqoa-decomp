@@ -14,9 +14,9 @@
 // stores of `error = 1`, and the target branches to a single one.
 static void buffer_read_bytes(buffer_t *buffer, void *value, int size)
 {
-    if (buffer->position + size > buffer->size || buffer->error)
+    if (buffer->position + size > buffer->size || buffer->overflow)
     {
-        buffer->error = 1;
+        buffer->overflow = 1;
         return;
     }
     if (buffer->swap)
@@ -38,9 +38,9 @@ static void buffer_append_bytes(buffer_t *buffer, const void *value, int size)
 {
     if (buffer->read_only)
         return;
-    if (buffer->position + size > buffer->size || buffer->error)
+    if (buffer->position + size > buffer->size || buffer->overflow)
     {
-        buffer->error = 1;
+        buffer->overflow = 1;
         return;
     }
     if (buffer->swap)
@@ -58,7 +58,7 @@ static void buffer_append_bytes(buffer_t *buffer, const void *value, int size)
 
 int buffer_bytes_remaining(buffer_t *buffer)
 {
-    if (buffer->error)
+    if (buffer->overflow)
         return -1;
     return buffer->size - buffer->position;
 }
@@ -77,7 +77,7 @@ void buffer_init(buffer_t *buffer, void *data, int size, int flags)
     buffer->size = size;
     buffer->data = (uns8 *)data;
     buffer->position = 0;
-    buffer->error = 0;
+    buffer->overflow = 0;
     // ONE `||`, not two `if`s: when the left half is true the target never
     // calls little_endian() a second time, and only short-circuiting can skip
     // a call gcc has to assume has side effects.
@@ -97,7 +97,7 @@ static void buffer_readm_bytes(buffer_t *buffer, void *value, int size, int coun
     int total = size * count;
     if (buffer->position + total > buffer->size)
         return;
-    if (buffer->error)
+    if (buffer->overflow)
         return;
     if (buffer->swap)
     {
@@ -120,7 +120,7 @@ static void buffer_appendm_bytes(buffer_t *buffer, const void *value, int size, 
     int total = size * count;
     if (buffer->position + total > buffer->size)
         return;
-    if (buffer->error)
+    if (buffer->overflow)
         return;
     if (buffer->swap)
     {
@@ -144,10 +144,10 @@ void buffer_skip(buffer_t *buffer, int size)
 {
     int position = buffer->position + size;
 
-    if (position <= buffer->size && buffer->error == 0)
+    if (position <= buffer->size && buffer->overflow == 0)
         buffer->position = position;
     else
-        buffer->error = 1;
+        buffer->overflow = 1;
 }
 
 int buffer_get_position(buffer_t *buffer)
@@ -160,7 +160,7 @@ void buffer_set_position(buffer_t *buffer, int position)
     if (position >= 0 && position < buffer->size)
         buffer->position = position;
     else
-        buffer->error = 1;
+        buffer->overflow = 1;
 }
 
 void buffer_swap(buffer_t *buffer, int flags)
@@ -190,7 +190,7 @@ void buffer_copy(buffer_t *from, buffer_t *to, int size)
             // is on the failing path: the source is consumed even when the
             // destination cannot take it.
             from->position += size;
-            to->error = 1;
+            to->overflow = 1;
         }
     }
     else
@@ -198,8 +198,8 @@ void buffer_copy(buffer_t *from, buffer_t *to, int size)
         // two statements, not a chain: the chain stores `to` first, and the
         // second arm's lone store only cross-jumps onto this block's tail if
         // the tail is the one it duplicates.
-        from->error = 1;
-        to->error = 1;
+        from->overflow = 1;
+        to->overflow = 1;
     }
 }
 
@@ -413,7 +413,7 @@ BUFFER_OFFSET_TYPE(uns64, uns64, uns64)
 // jumping straight into it.
 void buffer_append_string(buffer_t *buffer, const char *string)
 {
-    if (*string != 0 && buffer->error == 0)
+    if (*string != 0 && buffer->overflow == 0)
     {
         const char *p = string;
 
@@ -422,7 +422,7 @@ void buffer_append_string(buffer_t *buffer, const char *string)
             buffer_append_int8(buffer, *p);
             p++;
         }
-        while (*p != 0 && buffer->error == 0);
+        while (*p != 0 && buffer->overflow == 0);
     }
     buffer_append_int8(buffer, 0);
 }
@@ -440,7 +440,7 @@ void buffer_read_string(buffer_t *buffer, char *string, int size)
         buffer_read_int8(buffer, &c);
         if (c == 0)
             break;
-        if (buffer->error)
+        if (buffer->overflow)
             break;
         if (n < size - 1)
         {

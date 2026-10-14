@@ -385,9 +385,9 @@ int VICollide::DebugResources()
         prims += b->m_numPrims;
     }
 
-    printf("VICollide: %d coll buffers\n", m_buffers.Size());
-    printf("VICollide: %d prims\n", prims);
-    printf("VICollide: %d bytes\n", bytes);
+    printf("CollBuffers: %d\n", m_buffers.Size());
+    printf("CollBuffers Prims: %d\n", prims);
+    printf("CollBuffers Size: %d\n", bytes);
     return bytes;
 }
 

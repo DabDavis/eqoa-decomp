@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/drdp/route_table.cpp"
 // route_table.cpp -- SUPPORT 0x004bc9d0..0x004bcf00.
 //
 // Which endpoint ids live behind which route, held as a tree of RANGES.  The
@@ -34,100 +35,100 @@ int rte_get_key_offset(int iIndex)
 // test names the entry first -- swapped operands are what stop thread_jumps
 // from skipping the re-test (97 wrong words to 0, with block-scoped
 // neighbours for the lo/hi arms).
-void route_table_update_range(route_table_t *pTable, uns64_range_t *pRange, uns64 uiRoute)
+void route_table_update_range(route_table_t *pTable, uns64_range_t *range, uns64 uiRoute)
 {
-    route_table_entry_t *pRte =
-        (route_table_entry_t *)vtree_lookup(&pTable->m_tree, pRange);
+    route_table_entry_t *rte =
+        (route_table_entry_t *)vtree_lookup(&pTable->entries, range);
     route_table_entry_t *pPrev;
     route_table_entry_t *pNext;
     route_table_entry_t *pNew;
 
-    VASSERT(pRte != 0);
+    VASSERT(rte != 0);
 
-    VASSERT(pRte->m_range.lo <= pRange->lo && pRange->hi <= pRte->m_range.hi);
-    if (pRte->m_uiRoute == uiRoute)
+    VASSERT(rte->range.lo <= range->lo && range->hi <= rte->range.hi);
+    if (rte->owner == uiRoute)
         return;
-    if (pRte->m_range.lo == pRange->lo && pRte->m_range.hi == pRange->hi)
+    if (rte->range.lo == range->lo && rte->range.hi == range->hi)
     {
         if (uiRoute == (uns64)-1)
         {
-            vtree_remove(&pTable->m_tree, pRte);
-            free(pRte);
+            vtree_remove(&pTable->entries, rte);
+            free(rte);
             return;
         }
-        pPrev = (route_table_entry_t *)vtree_get_prev(&pTable->m_tree, pRte);
-        pNext = (route_table_entry_t *)vtree_get_next(&pTable->m_tree, pRte);
-        pRte->m_uiRoute = uiRoute;
-        if (pPrev && pPrev->m_range.hi + 1 == pRange->lo && pPrev->m_uiRoute == uiRoute)
+        pPrev = (route_table_entry_t *)vtree_get_prev(&pTable->entries, rte);
+        pNext = (route_table_entry_t *)vtree_get_next(&pTable->entries, rte);
+        rte->owner = uiRoute;
+        if (pPrev && pPrev->range.hi + 1 == range->lo && pPrev->owner == uiRoute)
         {
-            vtree_remove(&pTable->m_tree, pPrev);
-            pRte->m_range.lo = pPrev->m_range.lo;
+            vtree_remove(&pTable->entries, pPrev);
+            rte->range.lo = pPrev->range.lo;
             free(pPrev);
         }
         if (!pNext)
             return;
-        if (pRange->hi + 1 != pNext->m_range.lo)
+        if (range->hi + 1 != pNext->range.lo)
             return;
-        if (uiRoute != pNext->m_uiRoute)
+        if (uiRoute != pNext->owner)
             return;
-        vtree_remove(&pTable->m_tree, pNext);
-        pRte->m_range.hi = pNext->m_range.hi;
+        vtree_remove(&pTable->entries, pNext);
+        rte->range.hi = pNext->range.hi;
         free(pNext);
         return;
     }
-    if (pRange->lo == pRte->m_range.lo)
+    if (range->lo == rte->range.lo)
     {
-        pRte->m_range.lo = pRange->hi + 1;
+        rte->range.lo = range->hi + 1;
         if (uiRoute == (uns64)-1)
             return;
         route_table_entry_t *pLeft =
-            (route_table_entry_t *)vtree_get_prev(&pTable->m_tree, pRte);
+            (route_table_entry_t *)vtree_get_prev(&pTable->entries, rte);
 
-        if (pLeft && pLeft->m_range.hi + 1 == pRange->lo && pLeft->m_uiRoute == uiRoute)
+        if (pLeft && pLeft->range.hi + 1 == range->lo && pLeft->owner == uiRoute)
         {
-            pLeft->m_range.hi = pRange->hi;
+            pLeft->range.hi = range->hi;
             return;
         }
-        pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
-        pRte->m_range.lo = pRange->lo;
-        pRte->m_range.hi = pRange->hi;
-        pRte->m_uiRoute = uiRoute;
-        vtree_insert(&pTable->m_tree, pRte);
+        rte = (route_table_entry_t *)malloc(sizeof(*rte));
+        rte->range.lo = range->lo;
+        rte->range.hi = range->hi;
+        rte->owner = uiRoute;
+        vtree_insert(&pTable->entries, rte);
     }
-    else if (pRange->hi == pRte->m_range.hi)
+    else if (range->hi == rte->range.hi)
     {
-        pRte->m_range.hi = pRange->lo - 1;
+        rte->range.hi = range->lo - 1;
         if (uiRoute == (uns64)-1)
             return;
         route_table_entry_t *pRight =
-            (route_table_entry_t *)vtree_get_next(&pTable->m_tree, pRte);
+            (route_table_entry_t *)vtree_get_next(&pTable->entries, rte);
 
-        if (pRight && pRange->hi == pRight->m_range.lo - 1 && uiRoute == pRight->m_uiRoute)
+        if (pRight && range->hi == pRight->range.lo - 1 && uiRoute == pRight->owner)
         {
-            pRight->m_range.lo = pRange->lo;
+            pRight->range.lo = range->lo;
             return;
         }
-        pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
-        pRte->m_range.lo = pRange->lo;
-        pRte->m_range.hi = pRange->hi;
-        pRte->m_uiRoute = uiRoute;
-        vtree_insert(&pTable->m_tree, pRte);
+        rte = (route_table_entry_t *)malloc(sizeof(*rte));
+        rte->range.lo = range->lo;
+        rte->range.hi = range->hi;
+        rte->owner = uiRoute;
+        vtree_insert(&pTable->entries, rte);
     }
     else
     {
         pNew = (route_table_entry_t *)malloc(sizeof(*pNew));
-        pNew->m_range.lo = pRange->hi + 1;
-        pNew->m_range.hi = pRte->m_range.hi;
-        pNew->m_uiRoute = pRte->m_uiRoute;
-        pRte->m_range.hi = pRange->lo - 1;
-        vtree_insert(&pTable->m_tree, pNew);
+        pNew->range.lo = range->hi + 1;
+        pNew->range.hi = rte->range.hi;
+        pNew->owner = rte->owner;
+        rte->range.hi = range->lo - 1;
+        vtree_insert(&pTable->entries, pNew);
         if (uiRoute == (uns64)-1)
             return;
-        pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
-        pRte->m_range.lo = pRange->lo;
-        pRte->m_range.hi = pRange->hi;
-        pRte->m_uiRoute = uiRoute;
-        vtree_insert(&pTable->m_tree, pRte);
+        rte = (route_table_entry_t *)malloc(sizeof(*rte));
+        rte->range.lo = range->lo;
+        rte->range.hi = range->hi;
+        rte->owner = uiRoute;
+        vtree_insert(&pTable->entries, rte);
     }
 }
 
@@ -157,20 +158,20 @@ void route_table_init(route_table_t *pTable, uns64 uiLo, uns64 uiHi)
 {
     route_table_entry_t *pRte;
 
-    vtree_init(&pTable->m_tree, rte_get_vnode_offset(0), (vcmp_t)uns64_range_t_cmp,
+    vtree_init(&pTable->entries, rte_get_vnode_offset(0), (vcmp_t)uns64_range_t_cmp,
                rte_get_key_offset(0));
     pTable->m_uiLo = uiLo;
     pTable->m_uiHi = uiHi;
     pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
-    pRte->m_range.lo = pTable->m_uiLo;
-    pRte->m_range.hi = pTable->m_uiHi;
-    pRte->m_uiRoute = 0;
-    vtree_insert(&pTable->m_tree, pRte);
+    pRte->range.lo = pTable->m_uiLo;
+    pRte->range.hi = pTable->m_uiHi;
+    pRte->owner = 0;
+    vtree_insert(&pTable->entries, pRte);
 }
 
 void route_table_destroy(route_table_t *pTable)
 {
-    vtree_free(&pTable->m_tree);
+    vtree_free(&pTable->entries);
 }
 
 // An id outside the table's own bounds fails; an id inside it that lands on an
@@ -187,14 +188,14 @@ int route_table_find(route_table_t *pTable, uns64 uiId, uns64 *puiRoute)
         return -1;
     if (uiId > pTable->m_uiHi)
         return -1;
-    pRte = (route_table_entry_t *)vtree_lookup(&pTable->m_tree, &range);
+    pRte = (route_table_entry_t *)vtree_lookup(&pTable->entries, &range);
     if (!pRte)
         *puiRoute = (uns64)-1;
     else
     {
-        if (pRte->m_uiRoute == 0)
+        if (pRte->owner == 0)
             return -1;
-        *puiRoute = pRte->m_uiRoute;
+        *puiRoute = pRte->owner;
     }
     return 0;
 }

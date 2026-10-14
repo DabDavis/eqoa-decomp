@@ -94,7 +94,7 @@ void VIUSocketRecvThread(void *pArg)
         usocket_packet_t *pPacket = 0;
         int iRead;
 
-        if (pSocket->m_ucType == 1)
+        if (pSocket->type == 1)
         {
             int iFlags = 0;
 
@@ -129,7 +129,7 @@ void VIUSocketRecvThread(void *pArg)
                 SignalSema(pEx->m_iRecvSema);
             }
         }
-        else if (pSocket->m_ucType == 0)
+        else if (pSocket->type == 0)
         {
             sceInetAddress addr;
             int iFlags = 0;

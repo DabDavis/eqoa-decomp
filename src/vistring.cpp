@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/core/VIString.cpp"
 // VIString -- SUPPORT 0x003EC278 .. 0x003EDE70; the last 0x890 bytes are the
 // two VI_vsnprintf instantiations, emitted at the end of the TU (phase 61).
 //

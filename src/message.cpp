@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/drdp/message.cpp"
 // message.cpp -- SUPPORT 0x004bad40..0x004bb370, one application message.
 //
 // A message is a 72-byte header with its payload in the malloc slack straight

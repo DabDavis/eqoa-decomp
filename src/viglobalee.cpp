@@ -287,7 +287,7 @@ void VIEEDebugVU1Memory(int first, int last)
 #define D_STAT  (*(volatile unsigned int *)0x1000E010)
 #define D_PCR   (*(volatile unsigned int *)0x1000E020)
 
-static int sDMASyncSkip = 0;
+static int sDMASyncSkip = 1;
 
 void VIEEDMAReset()
 {

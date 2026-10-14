@@ -113,6 +113,17 @@ def build(tc: str, flags: list[str], gnu_as: bool = False) -> tuple[list[Path], 
     return objs, "\n".join(x.strip() for x in err if x and x.strip())
 
 
+def obj_locals(obj: Path) -> set[str]:
+    """The object's LOCAL function symbols -- per-TU names (a static, the TU's
+    `__static_initialization_and_destruction_0`) that another TU may reuse for a
+    different function."""
+    out = subprocess.run([E._find_objdump(), "-t", str(obj)],
+                         capture_output=True, text=True).stdout
+    # 00000000 l     F .text  000000b4 connection_init__FP12connection_t
+    return {m.group(1) for m in re.finditer(
+        r"^[0-9a-f]+\s+l\s+F\s+\S*\.text\S*\s+[0-9a-f]+\s+(\S+)$", out, re.M)}
+
+
 def obj_functions(obj: Path) -> list[str]:
     """Global function symbols defined in a .text section of the object."""
     out = subprocess.run([E._find_objdump(), "-t", str(obj)],
@@ -124,6 +135,18 @@ def obj_functions(obj: Path) -> list[str]:
         if m and ".text" in m.group(2):
             names.append(m.group(3))
     return names
+
+
+def masked_body(obj: Path, symbol: str) -> bytes:
+    """The function's bytes with every field its own relocations name zeroed."""
+    data, sec, at = D.elf_function_at(obj, symbol)
+    b = bytearray(data)
+    for off, typ, _ in D.elf_relocations(obj, sec):
+        if at <= off < at + len(data):
+            k = off - at
+            w = int.from_bytes(b[k:k + 4], "little") & ~D.RELOC_FIELD.get(typ, 0)
+            b[k:k + 4] = (w & 0xFFFFFFFF).to_bytes(4, "little")
+    return bytes(b)
 
 
 _CALLEE = {"dump": None, "warned": False, "syms": {}}
@@ -224,17 +247,30 @@ def main(argv=None):
             print(f"BUILD FAILED  {o.stem}", file=sys.stderr)
             rows.append(("build-failed", 0, 0, o.stem, None))
             continue
+        local = obj_locals(o)
         for name in obj_functions(o):
             if rx and not rx.search(name):
                 continue
+            if name in local:
+                key = f"{o.stem}:{name}"      # a TU-local name is not shared
+                if key in seen:
+                    continue
+                seen.add(key)
+                kind, wrong, tot, res = score(st, img, o, name)
+                rows.append((kind, wrong, tot, name, res))
+                if kind == "match":
+                    matched.append(name)
+                continue
             if name in seen:
                 # the same target function, defined twice; only report it if
-                # the two definitions actually differ
-                if D.elf_function_at(o, name)[0] != seen_body[name]:
+                # the two definitions actually differ -- with each object's own
+                # relocation fields masked, since two TUs' copies of one weak
+                # function (`__tf7VISound`) differ in their addends and nothing else
+                if masked_body(o, name) != seen_body[name]:
                     rows.append(("duplicate", 0, 0, name, None))
                 continue
             seen.add(name)
-            seen_body[name] = D.elf_function_at(o, name)[0]
+            seen_body[name] = masked_body(o, name)
             kind, wrong, tot, res = score(st, img, o, name)
             rows.append((kind, wrong, tot, name, res))
             if kind == "match":

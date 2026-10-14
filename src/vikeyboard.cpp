@@ -194,7 +194,7 @@ VIKeyboard::~VIKeyboard()
 int VIKeyboard::Init()
 {
     gKeyboardAttached = 0;
-    printf("VIKeyboard::Init\n");
+    printf("======= INIT KEYBOARD =======\n");
     m_fd = -1;
     m_queue = sKeyQueue;
     m_numQueued = 0;
@@ -207,7 +207,7 @@ int VIKeyboard::Init()
 
 void VIKeyboard::Free()
 {
-    printf("VIKeyboard::Free\n");
+    printf("======= FREE KEYBOARD =======\n");
     if (m_fd != -1)
     {
         lgKbdClose(m_fd);

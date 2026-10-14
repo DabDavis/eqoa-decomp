@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/drdp/route.cpp"
 // route.cpp -- SUPPORT 0x004bb370..0x004bc300, one UDP peer.
 //
 // A route is the socket address every connection to one machine shares. It
@@ -127,21 +128,21 @@ enum
 
 
 
-int route_get_vnode_offset(int iIndex)
+int route_get_vnode_offset(int index)
 {
-    VASSERT(0 <= iIndex && iIndex < ROUTE_NODE_MAX);
-    return iIndex * 16 + 4;
+    VASSERT(0 <= index && index < ROUTE_NODE_MAX);
+    return index * 16 + 4;
 }
 
 
 
 
-int route_get_key_offset(int iIndex)
+int route_get_key_offset(int index)
 {
     int iOffset = -1;
 
-    VASSERT(0 <= iIndex && iIndex < ROUTE_KEY_MAX);
-    switch (iIndex)
+    VASSERT(0 <= index && index < ROUTE_KEY_MAX);
+    switch (index)
     {
     case 0:
         iOffset = 48;
@@ -212,17 +213,17 @@ int route_is_valid(route_t *pRoute)
 
 
 
-void route_destroy(route_t *pRoute)
+void route_destroy(route_t *route)
 {
     message_t *pMessage;
 
-    VASSERT(route_is_valid(pRoute));
-    memcpy(pRoute->m_szTag, NULL_TAG, 4);
-    while ((pMessage = (message_t *)vlist_remove_head(&pRoute->m_pending)) != 0)
+    VASSERT(route_is_valid( route ));
+    memcpy(route->m_szTag, NULL_TAG, 4);
+    while ((pMessage = (message_t *)vlist_remove_head(&route->m_pending)) != 0)
         message_destroy(pMessage);
-    vset_remove_all(&pRoute->m_resetConnections);
-    vset_remove_all(&pRoute->m_resetEndpoints);
-    free(pRoute);
+    vset_remove_all(&route->m_resetConnections);
+    vset_remove_all(&route->m_resetEndpoints);
+    free(route);
 }
 
 uns32 route_get_desired_flush_time(route_t *pRoute)
@@ -308,19 +309,19 @@ void route_flush_reset_connection(route_t *pRoute, buffer_t *pBuffer)
            && vset_remove_first(&pRoute->m_resetConnections, &reset) == 0)
     {
         memset(&header, 0, sizeof(header));
-        header.m_uiFlags = 0x10000;
-        header.m_uiSrc = reset.m_uiSrc;
-        header.m_uiDst = reset.m_uiDst;
-        drdp_format_endpoint1(header.m_uiSrc);
-        drdp_format_endpoint2(header.m_uiDst);
+        header.flags = 0x10000;
+        header.src = reset.m_uiSrc;
+        header.dst = reset.m_uiDst;
+        drdp_format_endpoint1(header.src);
+        drdp_format_endpoint2(header.dst);
         if (reset.m_iFlags & 1)
         {
-            header.m_uiFlags |= 0x2000;
+            header.flags |= 0x2000;
             header.m_uiCrc = reset.m_uiInstanceLocal;
         }
         if (reset.m_iFlags & 2)
         {
-            header.m_uiFlags |= 0x40000;
+            header.flags |= 0x40000;
             header.m_uiFlushNumber = reset.m_uiInstanceRemote;
         }
         buffer_append_segment_header(pBuffer, &header);
@@ -336,8 +337,8 @@ void route_flush_reset_endpoint(route_t *pRoute, buffer_t *pBuffer)
            && vset_remove_first(&pRoute->m_resetEndpoints, &reset) == 0)
     {
         memset(&header, 0, sizeof(header));
-        header.m_uiFlags = 0x20000;
-        header.m_uiSrc = reset.m_uiId;
+        header.flags = 0x20000;
+        header.src = reset.m_uiId;
         drdp_format_endpoint1(reset.m_uiId);
         buffer_append_segment_header(pBuffer, &header);
     }
@@ -407,18 +408,18 @@ void route_flush(route_t *pRoute)
             drdp_format_endpoint1(connection_get_src(pConnection));
             drdp_format_endpoint2(connection_get_dst(pConnection));
             memset(&header, 0, sizeof(header));
-            header.m_uiFlags = 0;
+            header.flags = 0;
             header.m_uiSize = cbuffer.position;
-            header.m_uiSrc = connection_get_src(pConnection);
-            header.m_uiDst = connection_get_dst(pConnection);
+            header.src = connection_get_src(pConnection);
+            header.dst = connection_get_dst(pConnection);
             if (connection_send_instance_local(pConnection))
             {
-                header.m_uiFlags |= 0x2000;
+                header.flags |= 0x2000;
                 if (!connection_has_instance_ack(pConnection))
-                    header.m_uiFlags |= 0x80000;
+                    header.flags |= 0x80000;
                 header.m_uiCrc = connection_get_instance_local(pConnection);
                 if (connection_send_instance_push(pConnection))
-                    header.m_uiFlags |= 0x4000;
+                    header.flags |= 0x4000;
             }
             buffer_append_segment_header(&buffer, &header);
             buffer_appendm_uns8(&buffer, cbuffer.data, cbuffer.position);
@@ -474,8 +475,8 @@ void route_recalc_desired_flush_time(route_t *pRoute)
 
 void segment_header_print(segment_header_t *pHeader)
 {
-    drdp_format_endpoint1(pHeader->m_uiSrc);
-    drdp_format_endpoint2(pHeader->m_uiDst);
+    drdp_format_endpoint1(pHeader->src);
+    drdp_format_endpoint2(pHeader->dst);
     drdp_format_endpoint4(pHeader->m_uiRoute);
 }
 
@@ -489,7 +490,7 @@ void route_forward_segment(route_t *pRoute, segment_header_t *pHeader, buffer_t 
     char *data = (char *)__builtin_alloca(2047);
 
     buffer_init(&buffer, data, 2047, BUFFER_LITTLE_ENDIAN);
-    pHeader->m_uiFlags |= 0x8000;
+    pHeader->flags |= 0x8000;
     buffer_append_segment_header(&buffer, pHeader);
     buffer_copy(pBuffer, &buffer, pHeader->m_uiSize);
     if (message_create(&pMessage, 0, 0, 0, 0, buffer.data, buffer.position, 0, 0,

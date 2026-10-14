@@ -5,7 +5,9 @@
 // to the matching VIRaster call with the VIFont itself as the colour -- and
 // each one stores the hash into a static of its own before using it.  Those
 // stores are `lui`/`sw 0(reg)` pairs, i.e. relocation sites the differ masks,
-// so one file-scope static here produces the same bytes as seven.
+// so the bytes cannot tell one static from eight -- but the relocated dump
+// can: eqrefcheck reads EIGHT distinct words, 0x004F3BC0..0x004F3BDC, one per
+// function in source order, so each function declares its own.
 //
 // The class is nothing but a VIColor32F: every VIRaster call takes `this`
 // straight through as its `const VIColor32F &` argument, and the constructor
@@ -17,7 +19,6 @@ extern "C" unsigned int VIHashResourceID(const char *);
 
 char VIFont::sm_FontName[] = "ArialUI";
 
-static unsigned int sm_FontID;
 
 VIFont::VIFont()
     : m_color(1.0f, 1.0f, 1.0f, 1.0f)
@@ -80,6 +81,7 @@ int VIFont::DrawString(VIRaster *r, VIDictionary *d, const unsigned short *s, in
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             r->DrawString(i, VIVect2I(x, y), m_color, s);
@@ -93,6 +95,7 @@ int VIFont::DrawString(VIRaster *r, VIDictionary *d, const char *s, int x, int y
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             r->DrawString(i, VIVect2I(x, y), m_color, s);
@@ -107,6 +110,7 @@ int VIFont::DrawCenteredString(VIRaster *r, VIDictionary *d, const unsigned shor
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             r->DrawCenteredString(i, VIVect2I(x, y), m_color, s, w);
@@ -121,6 +125,7 @@ int VIFont::DrawCenteredString(VIRaster *r, VIDictionary *d, const char *s,
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             r->DrawCenteredString(i, VIVect2I(x, y), m_color, s, w);
@@ -135,6 +140,7 @@ int VIFont::GetHeight(VIRaster *r, VIDictionary *d)
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             n = r->GetPointSize(i);
@@ -149,6 +155,7 @@ int VIFont::GetStringWidth(VIRaster *r, VIDictionary *d, const char *s)
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             n = r->GetStringWidth(i, s);
@@ -163,6 +170,7 @@ int VIFont::GetStringWidth(VIRaster *r, VIDictionary *d, const unsigned short *s
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             n = r->GetStringWidth(i, s);
@@ -177,6 +185,7 @@ int VIFont::GetCharacterWidth(VIRaster *r, VIDictionary *d, unsigned short c)
 
     if (d)
     {
+        static unsigned int sm_FontID;
         sm_FontID = VIHashResourceID(sm_FontName);
         if (d->FindTyped(sm_FontID, VIRT_Font, i))
             n = r->GetWidth(i, c);

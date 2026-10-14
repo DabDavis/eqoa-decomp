@@ -68,8 +68,8 @@ struct VIMemCardDirEntry
 // reproduced here.
 extern unsigned char VIMemCardIconData[];
 
-static char sProductId[32]    = "BASLUS-20744EQONLINE";
-static char sProductTitle[64] = "EverQuest Online\nAdv. Frontiers";
+static char sProductId[32]    = "BASLUS-20470EQONLINE";
+static char sProductTitle[64] = "EverQuest Online\nAdventures";
 static int  sInited = 0;
 static VIIconDefinition sIconDef;
 static int  sAsyncMode;     // 0 read, 1 write, 2 pad

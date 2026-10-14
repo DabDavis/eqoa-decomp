@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/drdp/vtree.cpp"
 // vtree.cpp -- SUPPORT 0x004beb10..0x004bf970.
 //
 // The name is not a guess: `_uassert`'s second argument in this file is the
@@ -165,9 +166,9 @@ void vtree_rotate(vtree_t *tree, vnode_t *x, int dir)
     x->parent = y;
 }
 
-void vtree_insert(vtree_t *tree, void *object)
+void vtree_insert(vtree_t *tree, void *element)
 {
-    vnode_t *node = vtree_node(tree, object);
+    vnode_t *node = vtree_node(tree, element);
 // -----------------------------------------------------------------------
 // The layout, measured off vtree_init:
 //   vtree_t   +0x00 root        +0x04 size      +0x08 vnode_offset
@@ -212,8 +213,8 @@ void vtree_insert(vtree_t *tree, void *object)
 // the first of four in this file, and its line number is an immediate the
 // differ compares, so the padding above is load-bearing.
 // -----------------------------------------------------------------------
-    VASSERT(object != 0);
-    vtree_insert_raw(tree, object);
+    VASSERT(element != 0);
+    vtree_insert_raw(tree, element);
     while (tree->root != node && node->parent->colour != 0)
     {
         vnode_t *parent = node->parent;
@@ -243,9 +244,9 @@ void vtree_insert(vtree_t *tree, void *object)
     tree->size++;
 }
 
-int vtree_contains(vtree_t *tree, void *object)
+int vtree_contains(vtree_t *tree, void *element)
 {
-    vnode_t *node = vtree_node(tree, object);
+    vnode_t *node = vtree_node(tree, element);
     // `d` is 0 when the parent is its own parent's LEFT child, and the
     // uncle is always the other side -- which is why one body serves both
     // mirror images of every case below.
@@ -280,7 +281,7 @@ int vtree_contains(vtree_t *tree, void *object)
 // Either way the node it stops on is painted black.
 //
 
-    VASSERT(object != 0);
+    VASSERT(element != 0);
     return vtree_lookup(tree, VTREE_KEY(tree, node)) != 0;
 }
 
@@ -322,13 +323,13 @@ static void vtree_remove_fixup(vtree_t *tree, vnode_t *node)
     node->colour = 0;
 }
 
-void *vtree_iterate(vtree_t *tree, void *object, int dir)
+void *vtree_iterate(vtree_t *tree, void *element, int dir)
 {
-    vnode_t *node = vtree_node(tree, object);
+    vnode_t *node = vtree_node(tree, element);
     vnode_t *nil = &tree->nil;
 // Successor/predecessor, both directions; the child walk re-spells `&tree->nil` (loop.c hoists it: `move a1,s1`).
 
-    VASSERT(object != 0);
+    VASSERT(element != 0);
     if (node->child[dir] == nil)
     {
         vnode_t *p = node->parent;
@@ -347,9 +348,9 @@ void *vtree_iterate(vtree_t *tree, void *object, int dir)
     }
     return vtree_object(tree, node);
 }
-void *vtree_remove(vtree_t *tree, void *object)
+void *vtree_remove(vtree_t *tree, void *element)
 {
-    vnode_t *node = vtree_node(tree, object);
+    vnode_t *node = vtree_node(tree, element);
     vnode_t *nil = &tree->nil;
     vnode_t *y;
 // CLRS delete: `y` is the node actually unlinked -- the target itself when
@@ -362,7 +363,7 @@ void *vtree_remove(vtree_t *tree, void *object)
 //
 // `x` is the child that takes the unlinked node's place.
 // case that shortens a path.
-    VASSERT(object != 0);
+    VASSERT(element != 0);
     if (node->child[0] == nil || node->child[1] == nil)
         y = node;
     else if (vtree_iterate(tree, vtree_object(tree, node), 1) == 0)
@@ -385,7 +386,7 @@ void *vtree_remove(vtree_t *tree, void *object)
         node->child[1]->parent = y;
     }
     tree->size--;
-    return object;
+    return element;
 }
 
 void *vtree_remove_by_key(vtree_t *tree, void *key)

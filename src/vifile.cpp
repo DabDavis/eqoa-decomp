@@ -96,7 +96,7 @@ int VIFile::Open(const char *path, int flags)
     CDDiskReady(0);
     if (CDSearchFile(&m_cdFile, name) == 0)
     {
-        printf("VIFile::Open could not find %s\n", name);
+        printf("VIEEFile: Unable to locate %s\n", name);
         return -1;
     }
     if (!sIopStream)
@@ -105,7 +105,7 @@ int VIFile::Open(const char *path, int flags)
         m_cdMode.spindlctrl = 1;
         m_cdMode.datapattern = 0;
     }
-    printf("VIFile::Open %s\n", name);
+    printf("VIEEFile: %s opened\n", name);
     m_fd = 0;
     m_position = 0;
     BufferClear();
@@ -130,10 +130,10 @@ int VIFile::CDSearchFile(sceCdlFILE *f, const char *name)
     {
         while ((r = sceCdSearchFile(f, name)) == 0 && sceCdGetError())
         {
-            printf("VIFile::CDSearchFile error %d\n", sceCdGetError());
+            printf("CDSearchFile: Error %d\n", sceCdGetError());
             while (sceCdDiskReady(0) != 2)
             {
-                printf("VIFile::CDSearchFile waiting\n");
+                printf("CDSearchFile: Waiting for disk ready\n");
                 VIEEFileDelay(480);
             }
         }
@@ -160,10 +160,10 @@ int VIFile::CDSync(int mode)
         {
         while (sceCdGetError() && m_cdPending)
         {
-            printf("VIFile::CDSync error %d\n", sceCdGetError());
+            printf("CDSync: Error %d, restarting previous read\n", sceCdGetError());
             while (sceCdDiskReady(0) != 2)
             {
-                printf("VIFile::CDSync waiting\n");
+                printf("CDSync: Waiting for disk ready\n");
                 VIEEFileDelay(480);
             }
             sceCdSync(0);
@@ -180,10 +180,10 @@ int VIFile::CDSync(int mode)
         {
         while (VICdStreamStatus() && m_cdPending)
         {
-            printf("VIFile::CDSync error %d\n", VICdStreamStatus());
+            printf("CDSync: Error %d, restarting previous read\n", VICdStreamStatus());
             while (VICdStreamDiskReady() < 0)
             {
-                printf("VIFile::CDSync waiting\n");
+                printf("CDSync: Waiting for disc ready\n");
                 VIEEFileDelay(480);
             }
             VICdStreamSync(0);
@@ -207,10 +207,10 @@ int VIFile::CDRead(unsigned lsn, unsigned sectors, void *buf, sceCdRMode *mode)
     {
         while (sceCdRead(lsn, sectors, buf, mode) == 0)
         {
-            printf("VIFile::CDRead error %d\n", sceCdGetError());
+            printf("CDRead: Error %d\n", sceCdGetError());
             while (sceCdDiskReady(0) != 2)
             {
-                printf("VIFile::CDRead waiting\n");
+                printf("CDRead: Waiting for disk ready\n");
                 VIEEFileDelay(480);
             }
         }
@@ -279,7 +279,7 @@ int VIFile::Close()
     if (m_fd >= 0)
     {
         BufferFlush();
-        printf("VIFile::Close\n");
+        printf("VIEEFile: Close\n");
         // NOT m_flags: the asynchronous drain tests the file DESCRIPTOR for
         // bit 6, so on any real handle it is skipped.  Matched as written.
         if (m_fd & 0x40)

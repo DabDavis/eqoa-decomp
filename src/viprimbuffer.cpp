@@ -581,7 +581,7 @@ int VIPrimBuffer::End()
     {
         int s = PrimVQStart;
         unsigned int tag = 0x6C018000;
-        int prog = VIRaster::RStrip5Offset;
+        int prog = VIRaster::RStrip6Offset;
         *(int *)(m_verts + s * 16 + 12) = tag;
         *(int *)(m_verts + s * 16 + 16) = m_prims[m_numPrims].m_numVerts;
         *(int *)(m_verts + s * 16 + 20) = 0;

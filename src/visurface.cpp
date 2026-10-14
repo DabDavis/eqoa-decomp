@@ -49,6 +49,7 @@ int VISurface::Init(VIRaster &r, int w, int h, VIBitDepth bd, int levels)
     m_numMipLevels = levels;
     switch (bd)
     {
+    case VIBitDepth24:
     case VIBitDepth32:
         m_pixelStore = VIPixelStoreRGBA32;
         m_paletteStore = VIPixelStoreRGBA32;
@@ -68,8 +69,6 @@ int VISurface::Init(VIRaster &r, int w, int h, VIBitDepth bd, int levels)
         m_pixelStore = VIPixelStoreI4;
         m_paletteCount = 16;
         m_paletteStore = VIPixelStoreRGBA32;
-        break;
-    case VIBitDepthNone:
         break;
     default:
         return -1;
@@ -324,6 +323,7 @@ int VISurface::CalcMipLevelStride(int w)
         return w >> 1;
     case VIPixelStoreI8:
         return w;
+    case VIPixelStore3:
     case VIPixelStoreRGBA32:
         return w << 2;
     case VIPixelStoreRGB24:

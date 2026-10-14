@@ -69,7 +69,7 @@ struct buffer_t
     uns8 *data;
     int   size;
     int   position;
-    int   error;
+    int   overflow;
     int   read_only;
     int   swap;
 };
@@ -473,7 +473,7 @@ struct state_channel_t
     message_t       *m_pPending;    // +0x00  the message not yet on the wire
     uns16            m_usTx;        // +0x04  next sequence number to send
     uns16            m_usTxAck;     // +0x06  the far end has this one
-    uns16            m_usRx;        // +0x08  next sequence number expected
+    uns16            rx;            // +0x08  next sequence number expected
     uns8             m_ucRxFlag;    // +0x0A
     uns8             m_ucWhere;     // +0x0B  0 nowhere, 1 send queue, 2 outstanding
     message_seqnum_t m_txList;      // +0x0C  sent, by sequence number
@@ -522,31 +522,31 @@ struct segment_body_t
 // one packed word and nothing else.
 struct segment_header_t
 {
-    uns32 m_uiFlags;        // +0x00
+    uns32 flags;            // +0x00
     uns32 m_uiSize;         // +0x04  flags & 0x7ff
     uns32 m_uiCrc;          // +0x08  flags & 0x2000
     uns32 m_uiFlushNumber;  // +0x0C  flags & 0x40000
     uns64 m_uiRoute;        // +0x10  flags & 0x8000, else the caller's default
-    uns64 m_uiSrc;          // +0x18  flags & 0x1000 means "same as the route"
-    uns64 m_uiDst;          // +0x20  flags & 0x800, else the caller's default
+    uns64 src;              // +0x18  flags & 0x1000 means "same as the route"
+    uns64 dst;              // +0x20  flags & 0x800, else the caller's default
 };                          //  0x28
 
 struct connection_t
 {
     char        m_szTag[4];         // +0x0000  "CONN"
     vnode_t     m_vnode[3];         // +0x0004  endpoint, drdp, route
-    endpoint_t *m_pEndpoint;        // +0x0034
+    endpoint_t *endpoint;           // +0x0034
     route_t    *m_pRoute;           // +0x0038
     void       *m_pAppPtr;          // +0x003C
-    char       *m_pAppInfo;         // +0x0040  strdup'd
-    uns64       m_uiLocalId;        // +0x0048
-    uns64       m_uiRemoteId;       // +0x0050  key 0
+    char       *app_info;           // +0x0040  strdup'd
+    uns64       local_id;           // +0x0048
+    uns64       remote_id;          // +0x0050  key 0
     char        m_szName[64];       // +0x0058  drdp_format_endpoint's
     uns32       m_uiInstanceLocal;  // +0x0098
     uns32       m_uiInstanceRemote; // +0x009C
     uns32       m_uiTimeInstanceSent;   // +0x00A0
-    uns32       m_uiTimeTx;         // +0x00A4
-    uns32       m_uiTimeLastArrival;    // +0x00A8
+    uns32       time_last_flush;         // +0x00A4
+    uns32       time_last_arrival;      // +0x00A8
     uns32       m_uiTimeLastInstanceArrival;  // +0x00AC
     uns32       m_uiTimeSend;       // +0x00B0
     uns32       m_uiDesiredFlushTime;   // +0x00B4  key 1
@@ -782,7 +782,7 @@ int   route_get_bps_limit(route_t *pRoute);
 int   route_get_bps_sent(route_t *pRoute);
 int   route_get_bps_recv(route_t *pRoute);
 void  route_resort(connection_t *pConnection);
-int   uns16_sub(uns16 a, uns16 b);
+#define uns16_sub(a, b) ((int16)((a) - (b)))   // inline in the original: no call
 
 // Reached from endpoint.cpp, defined in connection.cpp and drdp.cpp.
 endpoint_t *connection_get_endpoint(connection_t *pConnection);
@@ -934,15 +934,15 @@ struct uns64_range_t
 struct route_table_entry_t
 {
     vnode_t      m_vnode;       // +0x00
-    uns64_range_t m_range;      // +0x10  key 0
-    uns64        m_uiRoute;     // +0x20
+    uns64_range_t range;        // +0x10  key 0
+    uns64        owner;         // +0x20
 };                              //  0x28
 
 struct route_table_t
 {
     uns64   m_uiLo;             // +0x00
     uns64   m_uiHi;             // +0x08
-    vtree_t m_tree;             // +0x10
+    vtree_t entries;             // +0x10
 };
 
 int  uns64_range_t_cmp(const uns64_range_t *pA, const uns64_range_t *pB);
@@ -1072,7 +1072,7 @@ struct usocket_t
 {
     char  m_szTag[4];       // +0x00  "SOCK", then "NULL" once destroyed
     int   m_iFd;            // +0x04  the sceInet descriptor, -1 when closed
-    uns8  m_ucType;         // +0x08
+    uns8  type;             // +0x08
     uns8  m_ucListen;       // +0x09
     uns8  m_ucFlags;        // +0x0A  bit 0 readable, bit 1 writable
     uns8  m_ucPad;          // +0x0B
@@ -1193,11 +1193,11 @@ struct drdp_t
     vlist_t     m_arrivals;             // +0x080
     vtree_t     m_leaders;              // +0x098
     vtree_t     m_connections;          // +0x0BC
-    route_table_t m_routeTable;         // +0x0E0
+    route_table_t route_table;          // +0x0E0
     route_cache_t m_routeCache;         // +0x118
     bandwidth_t m_bandwidth;            // +0x178
     uns32       m_uiTime;               // +0x1A8
-    int         m_iRole;                // +0x1AC
+    int         role;                   // +0x1AC
     int         m_iBytesRecv;           // +0x1B0
     int         m_iBytesSent;           // +0x1B4
     int         m_iBytesDropped;        // +0x1B8
@@ -1206,8 +1206,8 @@ struct drdp_t
     uns32       m_uiTimeFlush;          // +0x1C4
     ipaddress_t m_bindAddress;          // +0x1C8
     uns16       m_usProtocolVersion;    // +0x1CE
-    endpoint_block_t m_endpointBlock[2];// +0x1D0
-    endpoint_t *m_pSystemEndpoint;      // +0x1F0
+    endpoint_block_t endpoint_block[2]; // +0x1D0
+    endpoint_t *system_endpoint;        // +0x1F0
     void       *m_pAppPtr;              // +0x1F4
     drdp_leader_callback_t   m_pfnLeaderAdd;        // +0x1F8
     drdp_leader_callback_t   m_pfnLeaderRemove;     // +0x1FC
@@ -1359,5 +1359,16 @@ void  endpoint_destroy(endpoint_t *pEndpoint);
 int   route_is_valid(route_t *pRoute);
 extern "C" int sprintf(char *, const char *, ...);
 
+// Names the original's own asserts quote (eqrefcheck reads them out of the
+// relocated dump); the values are the immediates the matched code already used.
+#define SEGMENT_HEADER_SRC_ADDR           0x8000
+#define SEGMENT_HEADER_RESET_ENDPOINT     0x20000
+#define MESSAGE_TYPE_CONNECT              255
+#define MESSAGE_TYPE_DISCONNECT           253
+#define DRDP_SEND_SIZE_MAX_GUARANTEED     0x514000
+#define ONE_DAY 86400000
+#define CONNECTION_MAX_OUTSTANDING_STATE  4096
+#define rt_peek_first(t) ((route_table_entry_t *)vtree_peek_first(t))
+#define rt_peek_last(t)  ((route_table_entry_t *)vtree_peek_last(t))
 
 #endif

@@ -1122,7 +1122,7 @@ unsigned int VISoundDevice::AllocSpuMem(int size)
             return addr;
         }
     }
-    printf("VISoundDevice: out of SPU memory\n");
+    printf("AllocSpuMem( %d ) request failed.\n");
     return 0;
 }
 
@@ -1206,7 +1206,7 @@ unsigned int VISoundDevice::AllocXmMem(int size)
         if (n < 0xc000)
             n = 0xc000;
     }
-    printf("VISoundDevice: AllocXmMem %d\n", size);
+    printf("Allocating %d bytes for XM\n", size);
 
     for (VISpuBlock *b = (VISpuBlock *)m_xmMem.m_head; b->m_next;
          b = (VISpuBlock *)b->m_next)
@@ -1225,11 +1225,11 @@ unsigned int VISoundDevice::AllocXmMem(int size)
             for (VISpuBlock *f = (VISpuBlock *)m_xmMem.m_head; f->m_next;
                  f = (VISpuBlock *)f->m_next)
                 total += f->m_size;
-            printf("VISoundDevice: XM memory left %d\n", total);
+            printf("Total remaining: %d\n", total);
             return addr;
         }
     }
-    printf("VISoundDevice: out of XM memory\n");
+    printf("AllocXmMem() FAILED\n");
     return 0;
 }
 
@@ -1375,7 +1375,7 @@ int VISoundDevice::IdleTransfer()
         m_xferDma = sceSifSetDma(dma, 1);
         if (m_xferDma == 0)
         {
-            printf("VISoundDevice: sceSifSetDma failed\n");
+            printf("Sample data transfer failed..\n");
             return -1;
         }
         m_xferRemain -= n;
@@ -1423,13 +1423,13 @@ int VISoundDevice::DebugResources()
         }
     }
 
-    printf("Sound resources\n");
-    printf("---------------\n");
-    printf("  waves      %d\n", waves);
-    printf("  modules    %d\n", xms);
-    printf("  bytes      %d\n", bytes);
-    printf("  overhead   %d\n", 6016);
-    printf("---------------\n");
+    printf("Sound Device Memory Usage\n");
+    printf("---------------------------------------------\n");
+    printf("Waves             : %d\n", waves);
+    printf("XMs               : %d\n", xms);
+    printf("Total Mem         : %d Bytes\n", bytes);
+    printf("Sound Device Ovhd : %d Bytes\n", 6016);
+    printf("---------------------------------------------\n");
     return 0;
 }
 
@@ -1448,7 +1448,7 @@ static int SoundBind()
     {
         if (sceSifBindRpc(gSndClient, 0x2112, 0) < 0)
         {
-            printf("VISoundDevice: sceSifBindRpc failed\n");
+            printf("Error: sceSifBindRpc \n");
             return -1;
         }
         for (spin = 9999; spin != -1; spin--)

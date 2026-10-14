@@ -202,3 +202,41 @@ classifies what is left by byte identity against the named functions:
   `SoundCall`/`SoundCmd` statics, two `usocket` and two `buffer` internals,
   `connection_init`, `CdStreamDone`, and two static initialisers. That is the real
   remainder of SUPPORT beyond the named opens.
+
+## Data references: applied
+
+`eqrefcheck.py`'s findings were all applied in one lane and merged; **matched functions go
+from 261 findings to 2**, with nothing lost.
+- **The 14 data/behaviour bugs:**
+  - `VIPixelStore3` shares the RGBA32 stride;
+  - `VIBitDepth` is numbered 4=0, 8=1, 16=2, 24=3, 32=4, and 3 and 4 share the RGBA32 body;
+  - `VIPrimBuffer::End`'s PackVU arm uses `RStrip6Offset`;
+  - `sDMASyncSkip` starts at 1;
+  - the camera-shake tables;
+  - `~VISound` is PURE (all six vtable slots are `__pure_virtual`);
+  - the `VILanguage` name/ISO tables;
+  - the memory-card product id `BASLUS-20470EQONLINE` and title "EverQuest Online\nAdventures";
+  - `game.opt`;
+  - three-letter day and month names with a `"???"` tail;
+  - a UTF-16 `(null)`;
+  - the `hostname` global;
+  - eight separate `VIFont::sm_FontID` statics, one per function.
+- **Every debug/printf string.**
+- **`#line 1 "C:/code-frontiers-gm/<dir>/<File>.cpp"`** at the top of the 12 TUs whose asserts
+  carry `__FILE__`. The original was built from `C:/code-frontiers-gm/{core,drdp,game}/`.
+- **Every assert's expression text.** The DRDP layer now uses the original identifiers the
+  asserts reveal: `result`, `connection`, `route_table.entries`, `endpoint_block`,
+  `time_last_flush`, `MESSAGE_TYPE_SYSTEM`, the `f( x )` spacing, and so on. The inline
+  `find_leader_index` was `drdp_find`, in drdp.cpp itself.
+
+Left:
+- `drdp_master_send_route_table`'s assert names `buffer.size` for what our `buffer_t` calls
+  `position` (+8), so matching it means renaming our `size` (+4) to a name nothing reveals.
+- `VIPad::Read` is byte-exact but loads a 7-byte table where the target loads a table of 8
+  POINTERS (0x4ed040..0x4ed080). It is a source-shape difference the bytes cannot see.
+
+`eqcheck` fixes that came with it:
+- The duplicate test now masks each copy's own relocation fields. A pure `~VISound` makes
+  `viwave`/`vixm` emit weak `__tf7VISound` copies that differ only in their addends.
+- TU-LOCAL symbols are keyed by TU. Twelve "duplicate" `__static_initialization_and_destruction_0`
+  rows were twelve different functions.

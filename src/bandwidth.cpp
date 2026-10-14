@@ -1,3 +1,4 @@
+#line 1 "C:/code-frontiers-gm/drdp/bandwidth.cpp"
 // bandwidth.cpp -- SUPPORT 0x004aeb80..0x004aef90, the DRDP rate limiter.
 //
 // Two mechanisms in one struct.  The first is a leaky bucket: `m_fQueueSize`
@@ -9,7 +10,7 @@
 // __LINE__ is an immediate (phase 27), so the four of them have to land on
 // lines 42, 43, 44 and 45 -- which is what the spacing in this file is for.
 #include "drdp.h"
-
+#define INT_MAX 0x7fffffff   // <limits.h>'s; the original's assert quotes it
 void bandwidth_init(bandwidth_t *pBandwidth, int iBpsLimit, int iQueueSizeMax)
 {
     pBandwidth->m_fBpsLimit = (float)iBpsLimit;
@@ -41,8 +42,8 @@ void bandwidth_process(bandwidth_t *pBandwidth, uns32 uiTime)
     {
         VASSERT(pBandwidth->m_iBytesSentSinceLastSample < DRDP_INT64_MAX / 1000);
         VASSERT(pBandwidth->m_iBytesRecvSinceLastSample < DRDP_INT64_MAX / 1000);
-        VASSERT(( 1000 * pBandwidth->m_iBytesSentSinceLastSample ) / TimeSinceLastSample < DRDP_INT_MAX);
-        VASSERT(( 1000 * pBandwidth->m_iBytesRecvSinceLastSample ) / TimeSinceLastSample < DRDP_INT_MAX);
+        VASSERT(( 1000 * pBandwidth->m_iBytesSentSinceLastSample ) / TimeSinceLastSample < INT_MAX);
+        VASSERT(( 1000 * pBandwidth->m_iBytesRecvSinceLastSample ) / TimeSinceLastSample < INT_MAX);
         pBandwidth->m_iBpsSent = (int)((1000 * pBandwidth->m_iBytesSentSinceLastSample) / TimeSinceLastSample);
         pBandwidth->m_iBpsRecv = (int)((1000 * pBandwidth->m_iBytesRecvSinceLastSample) / TimeSinceLastSample);
         pBandwidth->m_uiLastSampleTime = uiTime;
