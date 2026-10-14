@@ -5,7 +5,9 @@
 // little-endian, so the test folds), called from the TU's static initialiser.
 #include "vi.h"
 
-static int VIGetEndian()
+// UNSIGNED: the int initialiser then wraps the call in a conversion, so it is
+// not a bare CALL_EXPR and gcc computes VIEndian's address BEFORE the call.
+static unsigned int VIGetEndian()
 {
     int x = 1;
     return *(char *)&x;

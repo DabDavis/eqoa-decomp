@@ -619,6 +619,11 @@ class VIRect
 public:
     VIVect2I min, max;
 
+    // Zeroes TWICE, like VIBBox: the members' own constructors, then this body
+    // -- read off VINameSprite::NameDefers' static initialiser, the only
+    // VIRect the corpus constructs.
+    VIRect() { min.Set(0, 0); max.Set(0, 0); }
+
     void Scale(int s);
     void Scale(const VIVect2I &s);
     void Bound(int first, const VIVect2I &v);

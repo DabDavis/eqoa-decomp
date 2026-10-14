@@ -26,7 +26,7 @@ extern "C" int    sceSifCheckStatRpc(void *client);
 // The IOP's view of the machine, DMA'd back every flush: [4]/[5] are the two
 // halves of the 46-bit voice mask, [6] says whether the BGM stream is still
 // running.
-static unsigned int gSndStatus[8];
+static unsigned int gSndStatus[128];
 
 // The XM modules the IOP currently has playing -- eight {lo, hi} channel-mask
 // pairs.  The two halves share one address base, which is what puts the whole
@@ -46,7 +46,7 @@ static int gSndPacket[128];
 static int gSndWords;
 
 static int   SoundBind();
-static int   SoundCall(void *send, int ssize, int async);
+static int   SoundCall(int fno, void *send, int async);
 static int   SoundFlush(int wait);
 static void  SoundCmd(int id, int argc);
 static int  *SoundFindCmd(int id);
@@ -1122,6 +1122,7 @@ unsigned int VISoundDevice::AllocSpuMem(int size)
             return addr;
         }
     }
+    // Shipped: the %d has no argument -- a1 is whatever the walk left there.
     printf("AllocSpuMem( %d ) request failed.\n");
     return 0;
 }
@@ -1437,8 +1438,7 @@ int VISoundDevice::DebugResources()
 // The SIF RPC back end.  Five file statics, no symbols, all of them after
 // DebugResources in the image.
 
-static int gSndClient[16];
-static int gSndBusy;
+static int gSndClient[10];
 
 static int SoundBind()
 {
@@ -1461,23 +1461,26 @@ static int SoundBind()
     return 0;
 }
 
-static int SoundCall(void *send, int ssize, int async)
+static int SoundCall(int fno, void *send, int async)
 {
-    sceSifCallRpc(gSndClient, 1, async != 0, send, ssize, gSndStatus, 512,
-                  0, 0);
-    return gSndClient[0];
+    sceSifCallRpc(gSndClient, fno, async != 0, send, 512, gSndStatus, 512, 0, 0);
+    return gSndStatus[0];
 }
 
+// Ship the packet if there is anything in it; returns the words it held.
 static int SoundFlush(int wait)
 {
+    int n;
+
     if (sceSifCheckStatRpc(gSndClient))
         return -1;
-    if (gSndBusy == 0)
+    if (gSndPacket[0] == 0)
         return -2;
-    SoundCall(gSndPacket, 0x80f0, wait);
-    gSndBusy = 0;
+    SoundCall(0x80f0, gSndPacket, wait);
+    gSndPacket[0] = 0;
+    n = gSndWords;
     gSndWords = 0;
-    return 0;
+    return n;
 }
 
 static void SoundCmd(int id, int argc)
@@ -1485,29 +1488,27 @@ static void SoundCmd(int id, int argc)
     int n = gSndWords;
     int i;
 
-    if (n + argc + 3 >= 128)
-        return;
-    gSndPacket[n + 1] = id;
-    gSndPacket[n + 2] = argc;
-    for (i = 0; i < argc; i++)
-        gSndPacket[n + 3 + i] = gSndArgs[i];
-    gSndWords = gSndWords + 2 + argc;
-    gSndPacket[0] = gSndPacket[0] + 1;
+    if (n + argc + 3 < 128)
+    {
+        gSndPacket[n + 1] = id;
+        gSndPacket[n + 2] = argc;
+        for (i = 0; i < argc; i++)
+            gSndPacket[n + 3 + i] = gSndArgs[i];
+        gSndWords += 2 + argc;
+        gSndPacket[0] = gSndPacket[0] + 1;
+    }
 }
 
 static int *SoundFindCmd(int id)
 {
     int *p = gSndPacket;
-    int n = gSndPacket[0];
+    int n = *p++;
     int i;
 
     for (i = 0; i < n; i++)
     {
-        p++;
-        int cmd = *p;
-        p++;
-        int argc = *p;
-        p++;
+        int cmd = *p++;
+        int argc = *p++;
         if (id == cmd)
             return p;
         p += argc;

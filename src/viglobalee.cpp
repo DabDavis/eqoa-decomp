@@ -287,6 +287,7 @@ void VIEEDebugVU1Memory(int first, int last)
 #define D_STAT  (*(volatile unsigned int *)0x1000E010)
 #define D_PCR   (*(volatile unsigned int *)0x1000E020)
 
+// Starts at 1 (the image's .data): the first channel-1 sync does not wait.
 static int sDMASyncSkip = 1;
 
 void VIEEDMAReset()
@@ -535,6 +536,8 @@ static int CdStreamCall(int nowait)
 
 static void CdStreamDone(void *pkt, void *data)
 {
+    // The packet is read before either store: a local, not an inline read.
+    int status = ((int *)pkt)[3];
     sCdBusy = 0;
-    sCdStatus = ((int *)pkt)[3];
+    sCdStatus = status;
 }
