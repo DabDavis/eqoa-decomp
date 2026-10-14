@@ -120,7 +120,11 @@ int endpoint_connection_create(endpoint_t *pEndpoint, connection_t **ppConnectio
     route_t *pRoute;
     connection_t *pConnection = 0;
 
-    if (uiRoute == (uns64)-1 || vtree_lookup(&pEndpoint->m_connections, &uiDst))
+    // Two failure arms, not one `||`: the second `iResult = -1` is what
+    // ranks iResult below uiInstance in global-alloc (s4/s3, as the target).
+    if (uiRoute == (uns64)-1)
+        iResult = -1;
+    else if (vtree_lookup(&pEndpoint->m_connections, &uiDst))
         iResult = -1;
     else
     {
@@ -181,10 +185,6 @@ done:
         connection_destroy(pConnection);
     return iResult;
 }
-
-
-
-
 
 
 

@@ -37,9 +37,17 @@ const VIClassDef *GetClass(int c)
     return &s_classes[c];
 }
 
+// A RESULT VARIABLE, the shape of IsValidRaceClassCityCombo: two returns put
+// `c` and the 44 in a0/v0, the one return moves `c` to a2 and frees a0 for
+// the stride (6 -> 0).
 int IsStatHighlighted(int c, int stat)
 {
+    int ok;
+
     if ((unsigned int)stat >= 7 || c < 0 || c >= 15)
-        return 0;
-    return (s_classes[c].m_statMask >> stat) & 1;
+        ok = 0;
+    else
+        ok = (s_classes[c].m_statMask >> stat) & 1;
+
+    return ok;
 }

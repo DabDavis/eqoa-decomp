@@ -53,12 +53,17 @@ int VIEffectVolume::GlobalInit(VIScene *sc)
         v[1].Set(0.5f, 0.5f, 0.0f);
         v[2].Set(0.5f, -0.5f, 0.0f);
         v[3].Set(-0.5f, -0.5f, 0.0f);
+        // The card row is NAMED before the rotation: the `48` it multiplies by
+        // is then loop.c's first movable, hoisted while the threshold still
+        // allows it, so `i * 48` is a giv and the four rows are reduced to
+        // pointers stepping by 48 (387 -> 356 with loop 2's).
+        VIVect3 *card = sFogCard[i];
         VIMatrix44 m;
         m.RotateZ((float)i / 8.0f * 2.0f * 3.1415927f);
-        m.Mul(v[0], sFogCard[i][0]);
-        m.Mul(v[1], sFogCard[i][1]);
-        m.Mul(v[2], sFogCard[i][2]);
-        m.Mul(v[3], sFogCard[i][3]);
+        m.Mul(v[0], card[0]);
+        m.Mul(v[1], card[1]);
+        m.Mul(v[2], card[2]);
+        m.Mul(v[3], card[3]);
     }
     for (i = 0; i < 60; i++)
     {
@@ -66,12 +71,13 @@ int VIEffectVolume::GlobalInit(VIScene *sc)
         v[1].Set(0.5f, 0.5f, 0.0f);
         v[2].Set(0.5f, -0.5f, 0.0f);
         v[3].Set(-0.5f, -0.5f, 0.0f);
+        VIVect3 *card = sDustCard[i];
         VIMatrix44 m;
         m.RotateZ((float)-i / 60.0f * 2.0f * 3.1415927f);
-        m.Mul(v[0], sDustCard[i][0]);
-        m.Mul(v[1], sDustCard[i][1]);
-        m.Mul(v[2], sDustCard[i][2]);
-        m.Mul(v[3], sDustCard[i][3]);
+        m.Mul(v[0], card[0]);
+        m.Mul(v[1], card[1]);
+        m.Mul(v[2], card[2]);
+        m.Mul(v[3], card[3]);
     }
     for (i = 0; i < 30; i++)
     {
@@ -95,15 +101,19 @@ int VIEffectVolume::GlobalInit(VIScene *sc)
         m.Mul(v[2], t[2]); v[2] = t[2];
         m.Mul(v[3], t[3]); v[3] = t[3];
         m.RotateZ(-cosf(a) * 0.4f);
-        m.Mul(v[0], sFallEffect[0][i][0]);
-        m.Mul(v[1], sFallEffect[0][i][1]);
-        m.Mul(v[2], sFallEffect[0][i][2]);
-        m.Mul(v[3], sFallEffect[0][i][3]);
-        sFallEffect[0][i][0].y += h;
-        sFallEffect[0][i][1].y += h;
-        sFallEffect[0][i][2].y += h;
-        sFallEffect[0][i][3].y += h;
+        // One row pointer for both sets, re-pointed between them: the target
+        // keeps its `i * 48` in s0 and steps s1 from set 0 to set 1 (321 -> 157).
+        VIVect3 *fx = sFallEffect[0][i];
+        m.Mul(v[0], fx[0]);
+        m.Mul(v[1], fx[1]);
+        m.Mul(v[2], fx[2]);
+        m.Mul(v[3], fx[3]);
+        fx[0].y += h;
+        fx[1].y += h;
+        fx[2].y += h;
+        fx[3].y += h;
 
+        fx = sFallEffect[1][i];
         h = 0.4f;
         v[0].Set(-0.1f, -0.4f, -0.1f);
         v[1].Set(0.1f, -0.4f, -0.1f);
@@ -115,14 +125,14 @@ int VIEffectVolume::GlobalInit(VIScene *sc)
         m.Mul(v[2], t[2]); v[2] = t[2];
         m.Mul(v[3], t[3]); v[3] = t[3];
         m.RotateY(sinf(a) * 0.23f);
-        m.Mul(v[0], sFallEffect[1][i][0]);
-        m.Mul(v[1], sFallEffect[1][i][1]);
-        m.Mul(v[2], sFallEffect[1][i][2]);
-        m.Mul(v[3], sFallEffect[1][i][3]);
-        sFallEffect[1][i][0].y += h;
-        sFallEffect[1][i][1].y += h;
-        sFallEffect[1][i][2].y += h;
-        sFallEffect[1][i][3].y += h;
+        m.Mul(v[0], fx[0]);
+        m.Mul(v[1], fx[1]);
+        m.Mul(v[2], fx[2]);
+        m.Mul(v[3], fx[3]);
+        fx[0].y += h;
+        fx[1].y += h;
+        fx[2].y += h;
+        fx[3].y += h;
     }
     return 0;
 }
@@ -353,8 +363,6 @@ void VIEffectVolume::FreeFlock()
 int VIEffectVolume::AllocParticles()
 {
     VIVect3 s = m_bbox.Size();
-    int n;
-    int c;
 
     FreeParticles();
     switch (m_type)
@@ -363,45 +371,53 @@ int VIEffectVolume::AllocParticles()
         FreeParticles();
         return 0;
     case VIEFFECTVOLUME_LEAVES:
-        n = 1;
-        c = (int)(s.x * s.y * 0.4f * m_density);
-        n = (c > 0) ? c : n;
+    // Both counts are locals of their own case: `c > 0 ? c : 1` folds to a
+    // MAX whose `n = c; if (n >= 1) skip; n = 1` jump.c turns into
+    // `slt t,zero,c; movn n,c,t` with n preloaded 1 -- and only a block-local
+    // `n` ties to the 1 rather than to c (5 -> 0).
+    {
+        int c = (int)(s.x * s.y * 0.4f * m_density);
+        int n = c > 0 ? c : 1;
         m_numParticles = n;
         m_particles = malloc(n * 36);
         if (m_particles == 0)
             return -1;
         memset(m_particles, 0, m_numParticles * 36);
         break;
+    }
     case VIEFFECTVOLUME_SHAFTS:
-        n = 1;
-        c = (int)(s.x * 0.5f * m_density);
-        n = (c > 0) ? c : n;
+    {
+        int c = (int)(s.x * 0.5f * m_density);
+        int n = c > 0 ? c : 1;
         m_numParticles = n;
         m_particles = malloc(n * 32);
         if (m_particles == 0)
             return -1;
         memset(m_particles, 0, m_numParticles * 32);
         break;
+    }
     case VIEFFECTVOLUME_FOG:
-        n = 1;
-        c = (int)(s.x * 20.0f * m_density);
-        n = (c > 0) ? c : n;
+    {
+        int c = (int)(s.x * 20.0f * m_density);
+        int n = c > 0 ? c : 1;
         m_numParticles = n;
         m_particles = malloc(n * 36);
         if (m_particles == 0)
             return -1;
         memset(m_particles, 0, m_numParticles * 36);
         break;
+    }
     case VIEFFECTVOLUME_DUST:
-        n = 1;
-        c = (int)(s.x * 20.0f * m_density);
-        n = (c > 0) ? c : n;
+    {
+        int c = (int)(s.x * 20.0f * m_density);
+        int n = c > 0 ? c : 1;
         m_numParticles = n;
         m_particles = malloc(n * 60);
         if (m_particles == 0)
             return -1;
         memset(m_particles, 0, m_numParticles * 60);
         break;
+    }
     case VIEFFECTVOLUME_FLOCK:
         if (AllocFlock() < 0)
             return -1;
@@ -607,46 +623,49 @@ int VIEffectVolume::ProcessFallingLeaves(float dt)
     int n = m_numParticles;
     VIFallingLeaf *p = (VIFallingLeaf *)m_particles;
 
-    for (i = 0; i < n; p++, i++)
+    // Indexed, not walked: loop.c reduces the `p[i]` givs to a pointer of its
+    // own, set in the PREHEADER -- its `move s1,v0` is what dbr steals into the
+    // guard's delay slot, and what pairs with the first constant load there.
+    for (i = 0; i < n; i++)
     {
-        switch (p->m_state)
+        switch (p[i].m_state)
         {
         case 0:
-            p->m_state = 1;
-            p->m_pos.x = s.x * 0.5f * VIBOIDRAND;
+            p[i].m_state = 1;
+            p[i].m_pos.x = s.x * 0.5f * VIBOIDRAND;
             if (m_reseed)
-                p->m_pos.y = s.y * 0.5f * VIBOIDRAND;
+                p[i].m_pos.y = s.y * 0.5f * VIBOIDRAND;
             else
-                p->m_pos.y = s.y * 0.5f;
-            p->m_pos.z = s.z * 0.5f * VIBOIDRAND;
-            p->m_scale = (float)((rand() * 131) & 0xFF) / 255.0f * 0.8f + 0.5f;
+                p[i].m_pos.y = s.y * 0.5f;
+            p[i].m_pos.z = s.z * 0.5f * VIBOIDRAND;
+            p[i].m_scale = (float)((rand() * 131) & 0xFF) / 255.0f * 0.8f + 0.5f;
             if (m_reseed)
-                p->m_floor = -s.y * 0.5f;
+                p[i].m_floor = -s.y * 0.5f;
             else
-                p->m_floor = -s.y * 0.5f;
-            p->m_life = 1.0f;
-            p->m_wobble = (float)(rand() % 30);
-            p->m_side = rand() & 1;
+                p[i].m_floor = -s.y * 0.5f;
+            p[i].m_life = 1.0f;
+            p[i].m_wobble = (float)(rand() % 30);
+            p[i].m_side = rand() & 1;
             break;
         case 1:
-            p->m_pos.y -= p->m_scale * dt;
-            p->m_wobble += dt * 30.0f;
-            if (30.0f <= p->m_wobble)
-                p->m_wobble = 0.0f;
-            if (p->m_pos.y < p->m_floor)
-                p->m_state = 2;
+            p[i].m_pos.y -= p[i].m_scale * dt;
+            p[i].m_wobble += dt * 30.0f;
+            if (30.0f <= p[i].m_wobble)
+                p[i].m_wobble = 0.0f;
+            if (p[i].m_pos.y < p[i].m_floor)
+                p[i].m_state = 2;
             break;
         case 2:
-            if (1.0f <= p->m_wobble)
+            if (1.0f <= p[i].m_wobble)
             {
-                p->m_wobble += dt * 30.0f;
-                if (30.0f <= p->m_wobble)
-                    p->m_wobble = 0.0f;
+                p[i].m_wobble += dt * 30.0f;
+                if (30.0f <= p[i].m_wobble)
+                    p[i].m_wobble = 0.0f;
             }
             else
-                p->m_life -= dt * 0.6f;
-            if (p->m_life < 0.0f)
-                p->m_state = 0;
+                p[i].m_life -= dt * 0.6f;
+            if (p[i].m_life < 0.0f)
+                p[i].m_state = 0;
             break;
         }
     }
@@ -683,25 +702,25 @@ int VIEffectVolume::ProcessLightShafts(float dt)
     int n = m_numParticles;
     VILightShaft *p = (VILightShaft *)m_particles;
 
-    for (i = 0; i < n; p++, i++)
+    for (i = 0; i < n; i++)
     {
-        switch (p->m_state)
+        switch (p[i].m_state)
         {
         case 0:
-            p->m_state = 1;
-            p->m_pos.x = s.x * 0.5f * VIBOIDRAND;
-            p->m_pos.y = s.y * 0.5f;
-            p->m_pos.z = s.z * 0.5f * VIBOIDRAND;
-            p->m_width = ((float)((rand() * 131) & 0xFF) / 255.0f * 0.4f + 1.5f) * 0.5f;
-            p->m_height = s.y * ((float)((rand() * 131) & 0xFF) / 255.0f * 0.2f + 0.8f);
-            p->m_age = 0.0f;
-            p->m_life = (1.0f - m_p28) * 60.0f + 4.0f +
+            p[i].m_state = 1;
+            p[i].m_pos.x = s.x * 0.5f * VIBOIDRAND;
+            p[i].m_pos.y = s.y * 0.5f;
+            p[i].m_pos.z = s.z * 0.5f * VIBOIDRAND;
+            p[i].m_width = ((float)((rand() * 131) & 0xFF) / 255.0f * 0.4f + 1.5f) * 0.5f;
+            p[i].m_height = s.y * ((float)((rand() * 131) & 0xFF) / 255.0f * 0.2f + 0.8f);
+            p[i].m_age = 0.0f;
+            p[i].m_life = (1.0f - m_p28) * 60.0f + 4.0f +
                         (float)((rand() * 131) & 0xFF) / 255.0f * ((1.0f - m_p28) * 10.0f + 2.0f);
             break;
         case 1:
-            p->m_age += dt;
-            if (p->m_life <= p->m_age)
-                p->m_state = 0;
+            p[i].m_age += dt;
+            if (p[i].m_life <= p[i].m_age)
+                p[i].m_state = 0;
             break;
         }
     }
@@ -887,34 +906,34 @@ int VIEffectVolume::ProcessDustStorm(float dt)
     int n = m_numParticles;
     VIDustMote *p = (VIDustMote *)m_particles;
 
-    for (i = 0; i < n; p++, i++)
+    for (i = 0; i < n; i++)
     {
-        switch (p->m_state)
+        switch (p[i].m_state)
         {
         case 0:
-            p->m_state = 1;
-            p->m_sizeX = ((float)((rand() * 131) & 0xFF) / 255.0f + 2.0f) * 2.0f * (m_p28 * 0.5f + 0.5f);
-            p->m_sizeY = ((float)((rand() * 131) & 0xFF) / 255.0f + 2.0f) * 2.0f * (m_p28 * 0.5f + 0.5f);
-            p->m_pos.x = -s.x * 0.5f - s.x * 0.25f * ((float)((rand() * 131) & 0xFF) / 255.0f);
-            p->m_pos.y = s.y * 0.5f * VIBOIDRAND;
-            p->m_pos.z = s.z * 0.5f * VIBOIDRAND;
-            p->m_end.x = s.x * 0.5f + s.x * 0.25f * ((float)((rand() * 131) & 0xFF) / 255.0f);
-            p->m_end.y = p->m_pos.y;
-            p->m_end.z = p->m_pos.z;
-            p->m_base = p->m_frame = rand() & 0x3C;
-            p->m_rate = (float)((rand() * 131) & 0xFF) / 255.0f * 0.5f + 0.5f;
-            p->m_life = ((float)((rand() * 131) & 0xFF) / 255.0f * 0.7f + 1.0f) * (1.0f - m_p28 + 1.0f);
-            p->m_invLife = 1.0f / p->m_life;
+            p[i].m_state = 1;
+            p[i].m_sizeX = ((float)((rand() * 131) & 0xFF) / 255.0f + 2.0f) * 2.0f * (m_p28 * 0.5f + 0.5f);
+            p[i].m_sizeY = ((float)((rand() * 131) & 0xFF) / 255.0f + 2.0f) * 2.0f * (m_p28 * 0.5f + 0.5f);
+            p[i].m_pos.x = -s.x * 0.5f - s.x * 0.25f * ((float)((rand() * 131) & 0xFF) / 255.0f);
+            p[i].m_pos.y = s.y * 0.5f * VIBOIDRAND;
+            p[i].m_pos.z = s.z * 0.5f * VIBOIDRAND;
+            p[i].m_end.x = s.x * 0.5f + s.x * 0.25f * ((float)((rand() * 131) & 0xFF) / 255.0f);
+            p[i].m_end.y = p[i].m_pos.y;
+            p[i].m_end.z = p[i].m_pos.z;
+            p[i].m_base = p[i].m_frame = rand() & 0x3C;
+            p[i].m_rate = (float)((rand() * 131) & 0xFF) / 255.0f * 0.5f + 0.5f;
+            p[i].m_life = ((float)((rand() * 131) & 0xFF) / 255.0f * 0.7f + 1.0f) * (1.0f - m_p28 + 1.0f);
+            p[i].m_invLife = 1.0f / p[i].m_life;
             if (m_reseed)
-                p->m_age = p->m_life * ((float)((rand() * 131) & 0xFF) / 255.0f);
+                p[i].m_age = p[i].m_life * ((float)((rand() * 131) & 0xFF) / 255.0f);
             else
-                p->m_age = 0.0f;
+                p[i].m_age = 0.0f;
             break;
         case 1:
-            p->m_age += dt;
-            p->m_frame = ((int)(p->m_age * p->m_invLife * 60.0f * p->m_rate) + p->m_base) % 60;
-            if (p->m_life <= p->m_age)
-                p->m_state = 0;
+            p[i].m_age += dt;
+            p[i].m_frame = ((int)(p[i].m_age * p[i].m_invLife * 60.0f * p[i].m_rate) + p[i].m_base) % 60;
+            if (p[i].m_life <= p[i].m_age)
+                p[i].m_state = 0;
             break;
         }
     }
@@ -1386,12 +1405,14 @@ int VIEffectVolume::ProcessFlock(float dt)
 
         h = Cross(h, c);
 
-        float turn = (1.0f - dot) * 0.5f * 0.0067f;
+        // The turn is computed back INTO `dot`: one variable for both puts the
+        // dot sum's chain after h.y in local-alloc's order (14 -> 0).
+        dot = (1.0f - dot) * 0.5f * 0.0067f;
 
         if (0.05f < h.y)
-            b[i].m_p10 -= turn;
+            b[i].m_p10 -= dot;
         else if (h.y < -0.05f)
-            b[i].m_p10 += turn;
+            b[i].m_p10 += dot;
         b[i].m_p10 *= 0.94f;
         b[i].m_hpr.z = -b[i].m_p10 * 9.0f;
         b[i].m_hpr.x += (b[i].m_p10 + b[i].m_hpr.y * 0.01f) * b[i].m_pA4 * dt * 30.0f;

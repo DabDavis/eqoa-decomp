@@ -232,15 +232,27 @@ VIVect2I VIRect::Center() const
 }
 
 
-// The first pair through IRMax: 2 wrong words where the ternary is 4 (the
-// target compares `x < 1` -- LE against a LITERAL 0 -- not reached yet).
+// The first pair clamps a scalar initialised to the LITERAL 0, not d.x (the
+// zeroing ctor's 0 is only known after cse): jump.c turns `x = 0; if (t > 0)
+// x = t;` into a conditional move whose test is against a constant, and
+// get_condition rewrites `t <= 0` as the target's `slti t,1` + `movn`.  Through
+// d.x (IRMax, or the ternary) the test is against a register: `slti t,0` or
+// `slt zero,t` + `movz`.
 
 int VIRect::DistanceSquared(const VIVect2I &v) const
 {
     VIVect2I d;
 
-    d.x = IRMax(d.x, min.x - v.x);
-    d.y = IRMax(d.y, min.y - v.y);
+    int tx = min.x - v.x;
+    int x = 0;
+    if (tx > 0)
+        x = tx;
+    d.x = x;
+    int ty = min.y - v.y;
+    int y = 0;
+    if (ty > 0)
+        y = ty;
+    d.y = y;
     d.x = (d.x < v.x - max.x) ? v.x - max.x : d.x;
     d.y = (d.y < v.y - max.y) ? v.y - max.y : d.y;
 

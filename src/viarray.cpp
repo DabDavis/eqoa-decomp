@@ -30,11 +30,15 @@
 //    is Phase 23's `long` is EIGHT bytes said a third way.
 #include "vi.h"
 
-// Placement new.  The allocation is a RAW char block -- `new T[n]` would carry
-// gcc's own vec-init loop, which the target does not have -- and the elements
-// are constructed one at a time by the loop below, whose null test is written
-// out: placement new does not generate one.
-inline void *operator new(unsigned int, void *p)
+// Placement new, DECLARED `throw()`.  The allocation is a RAW char block --
+// `new T[n]` would carry gcc's own vec-init loop, which the target does not
+// have -- and the elements are constructed one at a time by the loop below.
+// The null test on each element is the COMPILER'S: gcc 2.95 tests a nothrow
+// operator new's result before running the constructor.  Written out by hand
+// instead (`T *p = (T *)(i * sizeof(T) + (unsigned)m_data); if (p) ...`) all
+// but the one-byte VIWorldRegion matched; the compiler's own test puts the
+// scaled index FIRST in the sum and, for a one-byte element, m_data first.
+inline void *operator new(unsigned int, void *p) throw()
 {
     return p;
 }
@@ -139,11 +143,7 @@ template <class T> int VIArray<T>::Allocate()
     if (m_data == 0)
         return -1;
     for (int i = 0; i < m_size; i++)
-    {
-        T *p = (T *)(i * sizeof(T) + (unsigned int)m_data);
-        if (p)
-            new (p) T();
-    }
+        new (&m_data[i]) T();
     return 0;
 }
 

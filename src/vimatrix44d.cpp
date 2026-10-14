@@ -810,6 +810,9 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, double &scale, VIVect3D &t) const
     }
 }
 
+// OPEN, 111/338 (was 143/337).  As the float twin: the scale loop's counter
+// IS the else branch's pivot `i`.  Left: the target's `&inv.x` temporary
+// copied into s8 (gcse's copy propagation merges the two here).
 void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
 {
     int nxt[3] = { 1, 2, 0 };
@@ -828,7 +831,8 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
     t.z = m[3].z;
 
     const double *row = &m[0].x;
-    for (int n = 0; n < 3; n++)
+    int i;
+    for (i = 0; i < 3; i++)
     {
         *sc = row[0] * row[0] + row[1] * row[1] + row[2] * row[2];
         if (*sc > 0.0)
@@ -855,7 +859,7 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
     else
     {
         double *qq = &q.x;
-        int i = 0;
+        i = 0;
         if (m[1].y > m[0].x)
             i = 1;
         const double *mt = (const double *)(i * 32 + (unsigned)m);

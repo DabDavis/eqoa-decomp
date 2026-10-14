@@ -346,8 +346,10 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
                 {
                     n = &s[fit] - line;
                     TEXTBOX_COPY(n)
-                    i = fit;
+                    // `line` first: cse reuses n's `fit * 2`, held across
+                    // the copy calls, where `i = fit` first rebuilds it from i.
                     line = &s[fit];
+                    i = fit;
                 }
                 if (f != 0xFFFFFFFF && (f & 2) && drawn + 1 == rows &&
                     VIString::strlen16(line))

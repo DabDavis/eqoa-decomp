@@ -49,15 +49,22 @@ unsigned short VIIconDefinition::Ascii2Sjis(char c)
     else
         return 0;
 
-    // Phase 7's if-direction: the ALPHANUMERIC arm is the one gcc moves out of
-    // line, so it is the one written in the `if`.  And phase 14's fresh local
-    // for the intermediate -- `c - (bias + 31)` written out reassociates to
-    // `(c - 31) - bias`, which is the wrong two instructions.
-    if (bias == 0)
-        return sAlnum[run].m_sjis + c - sAlnum[run].m_first;
+    // A RESULT VARIABLE, punctuation first.  Returned straight from each
+    // arm, the chain feeding the `lhu v0` ends where v0 is born, and
+    // local-alloc's widened (INSN_SCHEDULING) lifetime then refuses it v0:
+    // the index takes v1 and the table base v0.  Through `r` the chain ends
+    // at a global pseudo instead (13 -> 0).  Phase 14's fresh local stays:
+    // `c - (bias + 31)` written out reassociates to `(c - 31) - bias`.
+    unsigned short r;
 
-    int i = bias + 31;
-    return sPunct[c - i].m_sjis;
+    if (bias != 0)
+    {
+        int i = bias + 31;
+        r = sPunct[c - i].m_sjis;
+    }
+    else
+        r = sAlnum[run].m_sjis + c - sAlnum[run].m_first;
+    return r;
 }
 
 void VIIconDefinition::AsciiString2Sjis(char *src, unsigned short *dst)

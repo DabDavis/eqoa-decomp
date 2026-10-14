@@ -16,7 +16,7 @@ extern "C" int sceCdGetError();
 extern "C" int sceCdSearchFile(sceCdlFILE *f, const char *name);
 extern "C" int sceCdSync(int mode);
 extern "C" int sceCdRead(unsigned lsn, unsigned sectors, void *buf, sceCdRMode *mode);
-extern "C" int FlushCache(int mode);
+extern "C" void FlushCache(int mode);
 
 int VIEEFileDelay(int n);
 int VICdSearchFile(const char *name, unsigned *lsn, unsigned *size);
@@ -621,6 +621,10 @@ int VIFile::BufferedReadCopy(void *dst, int n)
     return got;
 }
 
+// The tail is written out in BOTH arms, each with its own `return n`: jump2
+// cross-jumps the identical tails back together, memcpy included, into the
+// target's single `jal`.  With one shared tail the falling-through arm ends
+// in the call, flow puts a `(use (const_int 0))` after it, and nothing merges.
 int VIFile::BufferedWrite(const void *src, int n)
 {
     m_status = 0;
@@ -643,7 +647,16 @@ int VIFile::BufferedWrite(const void *src, int n)
     if (m_bufLength == 0)
         m_bufBase = m_position;
     if (m_bufPos >= 0 && m_bufPos + n <= 32767)
+    {
         memcpy(m_bufferAligned + (int) m_bufPos, src, n);
+        long end = m_bufPos + n;
+        m_bufLength = VIMAX(end, m_bufLength);
+        m_dirtyStart = VIMIN(m_bufPos, m_dirtyStart);
+        m_dirtyEnd = VIMAX(m_dirtyEnd, end);
+        m_bufPos = end;
+        m_position = m_position + n;
+        return n;
+    }
     else
     {
         BufferFlush();
@@ -664,14 +677,14 @@ int VIFile::BufferedWrite(const void *src, int n)
         m_bufBase = m_position - keep;
         m_bufPos = keep;
         memcpy(m_bufferAligned + (int) m_bufPos, src, n);
+        long end = m_bufPos + n;
+        m_bufLength = VIMAX(end, m_bufLength);
+        m_dirtyStart = VIMIN(m_bufPos, m_dirtyStart);
+        m_dirtyEnd = VIMAX(m_dirtyEnd, end);
+        m_bufPos = end;
+        m_position = m_position + n;
+        return n;
     }
-    long end = m_bufPos + n;
-    m_bufLength = VIMAX(end, m_bufLength);
-    m_dirtyStart = VIMIN(m_bufPos, m_dirtyStart);
-    m_dirtyEnd = VIMAX(m_dirtyEnd, end);
-    m_bufPos = end;
-    m_position = m_position + n;
-    return n;
 }
 
 int VIFile::BufferedSeek(long offset, SeekOrigin origin)

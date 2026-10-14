@@ -56,7 +56,7 @@ extern "C" int  sceDmaReset(int mode);
 extern "C" void sceDmaSend(sceDmaChan *d, void *tag);
 extern "C" void sceDmaSendN(sceDmaChan *d, void *addr, int size);
 extern "C" int  sceDmaSync(sceDmaChan *d, int mode, int timeout);
-extern "C" int  FlushCache(int mode);
+extern "C" void FlushCache(int mode);
 extern "C" int  DIntr();
 extern "C" int  EIntr();
 extern "C" int  RotateThreadReadyQueue(int prio);

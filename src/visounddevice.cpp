@@ -14,7 +14,7 @@
 extern "C" int    printf(const char *, ...);
 extern "C" char  *strcpy(char *d, const char *s);
 extern "C" int    strcmp(const char *a, const char *b);
-extern "C" int    FlushCache(int mode);
+extern "C" void   FlushCache(int mode);   // void, as in eekernel.h: an int return sets v0 and keeps the next load out of it
 extern "C" int    sceSifDmaStat(unsigned int id);
 extern "C" unsigned int sceSifSetDma(void *sdd, int len);
 extern "C" int    sceSifBindRpc(void *client, unsigned int number, unsigned int mode);
@@ -596,12 +596,9 @@ int VISoundDevice::Play(int sound, int priority, VISOUNDCLASS cls)
         gSndArgs[0] = first;
         gSndArgs[1] = w->m_spuAddr;
         gSndArgs[2] = second;
-        int right;
-        if (second != -1)
-            right = w->m_spuAddr + (w->m_size >> 1);
-        else
-            right = 0;
-        gSndArgs[3] = right;
+        // One full expression: the base computed for [1] and [2] still holds
+        // after the select, where an if/else into a local recomputes it.
+        gSndArgs[3] = second != -1 ? w->m_spuAddr + (w->m_size >> 1) : 0;
         gSndArgs[4] = (int)(((long)w->m_sampleRate << 12) / 48000);
         gSndArgs[5] = (unsigned int)(pb->m_volume * w->Volume() * m_classVolume[cls] * 16383.0f);
         int p = 0;
@@ -609,6 +606,9 @@ int VISoundDevice::Play(int sound, int priority, VISOUNDCLASS cls)
             p = pan;
         gSndArgs[6] = p;
         SoundCmd(2, 7);
+        // Each arm RETURNS: [call, v0 = handle] is two insns, enough for the
+        // cross-jump that shares the XM arm's SoundCmd call (28 -> 7).
+        return handle;
     }
     else
     {
@@ -1122,8 +1122,9 @@ unsigned int VISoundDevice::AllocSpuMem(int size)
             return addr;
         }
     }
-    // Shipped: the %d has no argument -- a1 is whatever the walk left there.
-    printf("AllocSpuMem( %d ) request failed.\n");
+    // `size` IS passed: an argument needs no `move a1` when a1 still holds it,
+    // and keeping it live there is what puts `n` in a0 (13 -> 0).
+    printf("AllocSpuMem( %d ) request failed.\n", size);
     return 0;
 }
 

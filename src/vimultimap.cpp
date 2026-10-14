@@ -110,11 +110,16 @@ template <class K, class V> int VIMultiMap<K, V>::Prev(int i) const
     }
     else
     {
+        // The step reads its node through a POINTER: as an rvalue the address
+        // is expanded in order (li 24, mult, then m_nodes), where `NODE(p)->`
+        // as a memory operand is an EXPAND_SUM address that loads m_nodes
+        // FIRST -- and loop.c hoists the two invariants in that order.
         int p = NODE(i)->m_parent;
         while (p != 0 && NODE(p)->m_left == i)
         {
             i = p;
-            p = NODE(p)->m_parent;
+            Node *n = NODE(p);
+            p = n->m_parent;
         }
         i = p;
     }

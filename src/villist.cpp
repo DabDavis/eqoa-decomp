@@ -148,20 +148,29 @@ int VILList::Index(VILNode *n) const
     return -1;
 }
 
+// The next node is CACHED in `n` and re-read through a temporary the loop
+// tests: `lw v0,0(v1); move v1,v0; bnez v0` needs `t` live past the copy, so
+// it cannot be coalesced with `n`.  Walking `p = p->m_next` reloads the link at
+// the step (this gcse never PREs a load through a pseudo), and `n = n->m_next`
+// tested as `n` loads straight into n's register.  The read comes BEFORE
+// `p = n`, else cse bases it on p.  `break`, not `return 0`, shares the tail.
 VILNode *VILList::Node(int index) const
 {
     int i = 0;
     VILNode *p = m_head;
-    if (index >= 0 && p->m_next)
+    VILNode *n, *t;
+    if (index >= 0 && (n = p->m_next) != 0)
     {
         do {
             if (i == index)
                 return p;
             i++;
             if (index < i)
-                return 0;
-            p = p->m_next;
-        } while (p->m_next);
+                break;
+            t = n->m_next;
+            p = n;
+            n = t;
+        } while (t);
     }
     return 0;
 }

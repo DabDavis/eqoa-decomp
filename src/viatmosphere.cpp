@@ -330,6 +330,7 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
     VIColor32      c;
     int            i, j;
     int            alpha;
+    VIMaterial    *m;     // ONE for every loop and arm: its range outlives the colour temp's (29 -> 11)
 
     if (m_p608 != 0.0f)
     {
@@ -370,7 +371,7 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
 
         for (i = 0; i < n; i++)
         {
-            VIMaterial *m = r->GetMaterialPalEntry(pal, i);
+            m = r->GetMaterialPalEntry(pal, i);
 
             for (j = 0; j < m->m_numLayers; j++)
             {
@@ -383,12 +384,15 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
         n = r->GetMaterialPalSize(pal);
         for (i = 0; i < n; i++)
         {
-            VIMaterial *m = r->GetMaterialPalEntry(pal, i);
-
-            int a = VIMAX(255 - (255 - alpha) * 2, 0);
+            m = r->GetMaterialPalEntry(pal, i);
 
             for (j = 0; j < m->m_numLayers; j++)
             {
+                // The clamp lives IN the layer loop, through a local `v`:
+                // loop.c hoists it to the layer preheader (the `* 2` one
+                // level further out), as the target has it (185 -> 29).
+                int v = 255 - (255 - alpha) * 2;
+                int a = VIMAX(v, 0);
                 c = m->GetLayerColor(j);
                 c.a = a;
                 m->SetLayerColor(j, c);
@@ -398,7 +402,7 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
         n = r->GetMaterialPalSize(pal);
         for (i = 0; i < n; i++)
         {
-            VIMaterial *m = r->GetMaterialPalEntry(pal, i);
+            m = r->GetMaterialPalEntry(pal, i);
 
             for (j = 0; j < m->m_numLayers; j++)
             {
@@ -476,7 +480,7 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
 
         if (m_p608 < 0.5f)
         {
-            VIMaterial *m = r->GetMaterialPalEntry(
+            m = r->GetMaterialPalEntry(
                 ((VISimpleSprite *)sc.Sprite(m_skySprite))->GetMaterialPal(), 0);
 
             m->SetLayerBlendMode(0, VIAlphaBlendMode3);
@@ -496,7 +500,7 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
         }
         else if (m_p608 < 1.0f)
         {
-            VIMaterial *m = r->GetMaterialPalEntry(
+            m = r->GetMaterialPalEntry(
                 ((VISimpleSprite *)sc.Sprite(m_skySprite))->GetMaterialPal(), 0);
 
             if (m->m_numLayers != 2)
@@ -512,7 +516,7 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
         }
         if (m_p608 == 1.0f)
         {
-            VIMaterial *m = r->GetMaterialPalEntry(
+            m = r->GetMaterialPalEntry(
                 ((VISimpleSprite *)sc.Sprite(m_skySprite))->GetMaterialPal(), 0);
 
             m->SetLayerTexture(0, m_p5F8, *r, *d);
@@ -546,8 +550,8 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
     }
     else
     {
-        m_skyScale = 0.0f;
         m_p61C = 0.0f;
+        m_skyScale = 0.0f;
     }
 
     if (Intensity() != 0.0f && EffectMix() < 1.0f)
@@ -576,7 +580,7 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
             snd->SetVolume(m_p1194, Intensity() * (1.0f - EffectMix()) * 0.5f * vol);
     }
     else if (Intensity() == 0.0f)
-        m_p1198 = m_p119C = m_p11A0 = 0.0f;
+        m_p11A0 = m_p1198 = m_p119C = 0.0f;
 }
 
 // The Lavastorm: while there are fewer fireballs than m_lavastorm calls for,
@@ -973,11 +977,16 @@ int VIAtmosphere::Update(VIScene &sc, VICamera &cam, long time, float a, float b
 {
     if (m_initialised)
     {
-        float w = a * 0.2617993f;
-
-        m_p4A8 = (int)(time - m_p5C8) * 0.001f;
+        // The clock moves FIRST and the step reads the copy: a value whose
+        // store is its last use lowers sched1's register-pressure weight, so
+        // with the step computed first both `sd`s outrank the HPR temporary's
+        // stores and run ahead of them (4 -> 0).
         m_p5D0 = m_p5C8;
         m_p5C8 = time;
+        m_p4A8 = (int)(time - m_p5D0) * 0.001f;
+
+        float w = a * 0.2617993f;
+
         m_skyRot.RotateHPR(VIVect3(0.0f, 0.0f, w));
         m_skyRot.m[3].x = sinf(w) * 35.0f;
         m_skyRot.m[3].y = cosf(w) * -35.0f;
@@ -1343,11 +1352,14 @@ void VIAtmosphere::RenderStars(VIScene &sc, VICamera &cam)
                 c.Set(b, b, b, 1.0f);
                 bb->m_color = c;
                 r->EndBillboards();
+                // Cleared on BOTH paths -- the store sits in the delay slot
+                // of the `1.0 <= m_pF2C` branch -- so the star pass below
+                // always begins a fresh batch.
+                bb = 0;
                 if (1.0f <= m_pF2C)
                 {
                     m_pF2C = 0.0f;
                     m_pF28 = (float)((rand() & 0xF) + 10);
-                    bb = 0;
                 }
             }
         }
@@ -1411,9 +1423,11 @@ void VIAtmosphere::RenderStars(VIScene &sc, VICamera &cam)
             bb->m_height = m_patches[i].w;
             bb->m_frame = 0;
 
-            float t = m_pF48 * 0.45f;
-
-            b = VIMIN(t, 0.15f);
+            // `b` is clamped IN PLACE: the select's temporary cannot share a
+            // register with the `b` it reads, which is the `mov.s $f0,$f1`
+            // before the colour stores (11 -> 0).
+            b = m_pF48 * 0.45f;
+            b = VIMIN(b, 0.15f);
             cnt--;
             left--;
             c.Set(b, b, b, 1.0f);
@@ -1588,15 +1602,20 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
     VIVect3       b;
     VIVect3       c;
     VIEnvRay      env;
-    VIVect3      &cm = m_camera;
 
+    // No `cm` reference anywhere: every camera access is the MEMBER, so the
+    // compound operators get it as an unflagged inline parameter -- `.x` folds
+    // to 60(this), `.y`/`.z` go through one this+60 pseudo that is spilled and
+    // re-read after every stack store, as the target does (221 -> 90 with the
+    // vector-op reseat below).
     c = cam.m_dir * 5.0f;
-    a = c + cam.m_position;
+    a = c;
+    a += cam.m_position;
     d = a;
-    d -= cm;
+    d -= m_camera;
     n = (int)(m_intensity * m_numParticles);
     k = (int)(n * m_effectMix);
-    cm = a;
+    m_camera = a;
     if (m_range < d.x || m_range < d.y || m_range < d.z)
     {
         d.x = 0.0f;
@@ -1604,20 +1623,14 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
         d.z = 0.0f;
         for (i = 0; i < m_numParticles; i++)
         {
-            a.x = m_particles[i].m_location.x;
-            a.y = m_particles[i].m_location.y;
-            a.z = m_particles[i].m_location.z;
-            a.x = a.x + cm.x;
-            a.y = a.y + 5000.0f;
-            b.x = m_particles[i].m_location.x;
-            b.y = m_particles[i].m_location.y;
-            b.z = m_particles[i].m_location.z;
-            b.x = b.x + cm.x;
-            b.y = b.y - 5000.0f;
-            a.y = a.y + cm.y;
-            a.z = a.z + cm.z;
-            b.y = b.y + cm.y;
-            b.z = b.z + cm.z;
+            // Copy, offset, then add the camera through operator+=: the x
+            // adds fold and run early, y/z wait behind the stack stores.
+            a = m_particles[i].m_location;
+            a.y += 5000.0f;
+            b = m_particles[i].m_location;
+            b.y -= 5000.0f;
+            a += m_camera;
+            b += m_camera;
             ray.Init(a, b);
             env.Init(a, b, 15);
             if (sc.Collide(ray, filter))
@@ -1630,7 +1643,7 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
                 {
                     VIVect3 e = env.GetHitPoint();
 
-                    if (h.y < e.y)
+                    if (e.y > h.y)
                     {
                         m_particles[i].m_p20 = 1;
                         h.x = e.x;
@@ -1639,7 +1652,7 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
                     }
                 }
                 m_particles[i].m_p1C = h.y;
-                m_particles[i].m_location.y = h.y - cm.y;
+                m_particles[i].m_location.y = h.y - m_camera.y;
                 m_particles[i].m_location.y =
                     m_range * 0.5f +
                     (m_particles[i].m_location.y - m_range * 0.5f) *
@@ -1658,7 +1671,7 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
 
     float half = m_range * 0.5f;
 
-    for (i = 0; i < m_numParticles; i++, j += 29)
+    for (i = 0; i < m_numParticles; j += 29, i++)   // j steps first: the latch order (90 -> 88)
     {
         sel = (i < k);
         m_particles[i].m_location.x =
@@ -1703,20 +1716,12 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
 
         if (wrapped)
         {
-            a.x = m_particles[i].m_location.x;
-            a.y = m_particles[i].m_location.y;
-            a.z = m_particles[i].m_location.z;
-            a.x = a.x + cm.x;
-            a.y = a.y + 5000.0f;
-            b.x = m_particles[i].m_location.x;
-            b.y = m_particles[i].m_location.y;
-            b.z = m_particles[i].m_location.z;
-            b.x = b.x + cm.x;
-            b.y = b.y - 5000.0f;
-            a.y = a.y + cm.y;
-            a.z = a.z + cm.z;
-            b.y = b.y + cm.y;
-            b.z = b.z + cm.z;
+            a = m_particles[i].m_location;
+            a.y += 5000.0f;
+            b = m_particles[i].m_location;
+            b.y -= 5000.0f;
+            a += m_camera;
+            b += m_camera;
             ray.Init(a, b);
             env.Init(a, b, 15);
             if (sc.Collide(ray, filter))
@@ -1729,7 +1734,7 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
                 {
                     VIVect3 e = env.GetHitPoint();
 
-                    if (h.y < e.y)
+                    if (e.y > h.y)
                     {
                         h.x = e.x;
                         h.y = e.y;
@@ -1738,7 +1743,7 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
                     }
                 }
                 m_particles[i].m_p1C = h.y;
-                m_particles[i].m_location.y = h.y - cm.y;
+                m_particles[i].m_location.y = h.y - m_camera.y;
                 m_particles[i].m_location.y =
                     m_range * 0.5f +
                     (m_particles[i].m_location.y - m_range * 0.5f) *
@@ -1746,7 +1751,7 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
             }
         }
 
-        if (m_particles[i].m_location.y + cm.y < m_particles[i].m_p1C)
+        if (m_particles[i].m_location.y + m_camera.y < m_particles[i].m_p1C)
         {
             if (sel == 0)
             {
@@ -1754,9 +1759,9 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
                 {
                     VIVect3 at;
 
-                    at.x = m_particles[i].m_location.x + cm.x;
+                    at.x = m_particles[i].m_location.x + m_camera.x;
                     at.y = m_particles[i].m_p1C + 0.08f;
-                    at.z = m_particles[i].m_location.z + cm.z;
+                    at.z = m_particles[i].m_location.z + m_camera.z;
                     AddSplash(at);
                 }
             }
@@ -1768,7 +1773,7 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
                     ((rand() * 131) & 0xFF) / 255.0f * m_range - m_range * 0.5f;
             }
             m_particles[i].m_location.y =
-                VIMAX(m_particles[i].m_p1C - cm.y, half);
+                VIMAX(m_particles[i].m_p1C - m_camera.y, half);
         }
     }
 }

@@ -23,7 +23,7 @@ extern "C" int   sceGsSyncV(int mode);
 extern "C" int   sceGsSyncPath(int mode, unsigned short timeout);
 extern "C" void *sceDmaGetChan(int ch);
 extern int   VIEEDMASync(int wait);
-extern "C" int FlushCache(int mode);
+extern "C" void FlushCache(int mode);
 void VIEEDMASend(int chan, void *tag);
 // (Phase 61: `VIEEDMAStart`/`VIEEDMAKick` were guesses -- Flush calls these two.)
 extern "C" void VIVu0MulMatrix(void *d, const void *a, const void *b);
@@ -1852,7 +1852,7 @@ int VIRaster::DrawPrimBuffer(int prim, int cbi, int pal, unsigned int flags)
 
 // ---------------------------------------------------------- phase 61 --------
 
-extern "C" int  FlushCache(int mode);
+extern "C" void FlushCache(int mode);
 extern "C" void sceGsSetDefDBuffDc(void *db, int psm, int w, int h, int ztest,
                                    int zpsm, int clear);
 extern "C" int  sceGsSwapDBuffDc(void *db, int field);

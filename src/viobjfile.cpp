@@ -12,7 +12,7 @@
 // the two swap blocks, which a re-read of the global could not do.
 #include "vi.h"
 
-extern int VIEndian;
+extern const int VIEndian;
 void VIBufferSwap(int n, unsigned char *p);
 
 extern "C" int strlen(const char *);

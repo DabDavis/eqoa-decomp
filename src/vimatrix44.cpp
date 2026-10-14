@@ -1,22 +1,23 @@
 #include "vi.h"
 
-// NOT YET BYTE-EXACT, but every part is accounted for: the zero loop IS the
-// implicit construction of the `VIVect4 m[4]` member (gcc's array-ctor loop,
-// counter down to -1 with `bne`, not `bgez`) and comes out instruction for
-// instruction, and the copy IS a 64-byte block move, which needs the class to
-// be 16-byte aligned or it becomes ldl/ldr.  What differs is one register
-// choice: the target keeps `this` in v0 across the loop and walks v1, this
-// build walks v0 and rematerialises `this` from a0 at the end.  Adding a
-// self-assignment guard (`if (this != &a)`) reproduces the target's allocation
-// exactly -- at the cost of the two instructions the guard itself costs -- so
-// the mechanism is "something keeps `this` live across the loop", and fifteen
-// spellings that should have done it all coalesce the same way.
+// The zero loop IS the implicit construction of the `VIVect4 m[4]` member
+// (gcc's array-ctor loop, counter down to -1 with `bne`).  The copy is
+// libvu0's sceVu0CopyMatrix body INLINED as asm: the four `lq`/`sq` pairs go
+// through a2/a3/t0/t1 because the asm names $6..$9 outright, and that
+// clobber list is what keeps `this` in v0 across the loop (with a C++ block
+// copy the walker took v0 and `this` stayed in a0, 19 words wrong).
 VIMatrix44::VIMatrix44(const VIMatrix44 &a)
 {
-    // The block move inline: `*this = a` became a CALL once vi.h declared
-    // operator= out of line, which the target does not make.
-    struct B { VIVect4 v[4]; };
-    *(B *)m = *(const B *)a.m;
+    __asm__ __volatile__(
+        "lq $6, 0x0(%1)\n"
+        "lq $7, 0x10(%1)\n"
+        "lq $8, 0x20(%1)\n"
+        "lq $9, 0x30(%1)\n"
+        "sq $6, 0x0(%0)\n"
+        "sq $7, 0x10(%0)\n"
+        "sq $8, 0x20(%0)\n"
+        "sq $9, 0x30(%0)\n"
+        : : "r"(m), "r"(a.m) : "$6", "$7", "$8", "$9");
 }
 
 void VIMatrix44::Scale(float s)
@@ -578,13 +579,13 @@ void VIMatrix44::SwapRows(int i, int j)
     m[j].Set(t);
 }
 
-// NOT YET BYTE-EXACT: 71 of 245 words differ, but the length is exactly right
-// and the whole scale loop and both branch bodies match.  The divergence is one
-// register-allocation choice in the prologue -- the target materialises
-// `&inv.x` into a temporary and copies it (`addiu v0,sp,16` + `move s7,v0`)
-// where this build writes `addiu s7,sp,16`, and the extra live pseudo renames
-// registers through the else branch.  Fifteen spellings of the local and its
-// pointers all coalesce the same way.
+// NOT YET BYTE-EXACT, 57/245 (was 71).  The scale loop's counter IS the
+// else branch's pivot `i` -- one function-scope variable, so both live in s3
+// as in the target.  Left: the target materialises `&inv.x` into a temporary
+// and copies it (`addiu v0,sp,16` + `move s7,v0`, the y/z stores of 1.0f
+// through v0) where cse2 here merges the two into s7; the pattern is an
+// inline helper's `this` (its constant stores fail try_constants, so the
+// zero stores at +4/+8 survive), but `inv.Set(1, 1, 1)` merges the same way.
 void VIMatrix44::ConvertTo(VIQuat &q, VIVect3 &scale, VIVect3 &t) const
 {
     int nxt[3] = { 1, 2, 0 };
@@ -603,7 +604,8 @@ void VIMatrix44::ConvertTo(VIQuat &q, VIVect3 &scale, VIVect3 &t) const
     t.z = m[3].z;
 
     const float *row = &m[0].x;
-    for (int n = 0; n < 3; n++)
+    int i;
+    for (i = 0; i < 3; i++)
     {
         *sc = row[0] * row[0] + row[1] * row[1] + row[2] * row[2];
         if (*sc > 0.0f)
@@ -630,7 +632,7 @@ void VIMatrix44::ConvertTo(VIQuat &q, VIVect3 &scale, VIVect3 &t) const
     else
     {
         float *qq = &q.x;
-        int i = 0;
+        i = 0;
         if (m[1].y > m[0].x)
             i = 1;
         const float *mt = (const float *)(i * 16 + (unsigned)m);
@@ -948,14 +950,18 @@ VIVect4 operator*(const VIVect4 &v, const VIMatrix44 &m)
 }
 
 // 0x003F0790.  Through the out-of-line libvu0 call, with a copy of the
-// point as its input.
+// point as its input.  OPEN, 7/33: the copy's slot is declared FIRST and has
+// no constructor (a VIVect4 would zero it), which puts it at sp+0 and the
+// point at sp+16 as in the target (19 -> 7).  Left: the inlined ctor's w
+// store keeps `this` in a register (its constant source fails try_constants,
+// which reverts the address substitution too); a variable 1.0f fixes that
+// but moves the call's argument setup above v's loads.
 VIVect4 operator*(const VIVect3 &v, const VIMatrix44 &m)
 {
+    float in[4] __attribute__((aligned(16)));
     VIVect4 r(v.x, v.y, v.z, 1.0f);
-    {
-        VIVect4 in = r;
-        sceVu0ApplyMatrix(r, m, in);
-    }
+    *(VIVect4 *)in = r;
+    sceVu0ApplyMatrix(r, m, *(VIVect4 *)in);
     return VIVect4(r.x, r.y, r.z, r.w);
 }
 

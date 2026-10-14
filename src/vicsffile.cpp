@@ -4,7 +4,12 @@
 // so VIObjFile reads a .CSF exactly as it reads a flat .ESF.
 #include "vi.h"
 
-extern int VIEndian;
+// CONST: the byte order is fixed for the run, so every read is unchanging
+// memory.  gcse then turns the in-loop read into a copy of the first one and
+// loop.c hoists that copy -- the target's second register for the same value
+// (`move s5,s3` in Compress, a stack slot stored at the loop entry in
+// Decompress).  Through one `int endian` local it is a single pseudo.
+extern const int VIEndian;
 void VIBufferSwap(int n, unsigned char *p);
 
 extern "C" int printf(const char *f, ...);
@@ -21,7 +26,10 @@ int VICSFFile::Compress(const char *src, const char *dst)
     VIFile out;
     VICSFHeader h;
     unsigned int destLen;
-    VICSFSegm *recs;
+    // Set TWICE (= 0, then the allocation), so the pointer loses its alias
+    // base: the +4 store through the loop's walker may alias the stack, and
+    // destLen is re-read for the 64-bit total -- the target's `lwu`.
+    VICSFSegm *recs = 0;
     char **blocks;
     int i;
 
@@ -59,8 +67,8 @@ int VICSFFile::Compress(const char *src, const char *dst)
         recs[i].m_size = n;
         h.m_totalCompressed += destLen;
         h.m_maxCompressed = VIMAX((int)destLen, h.m_maxCompressed);
-        remaining -= n;
         p += n;
+        remaining -= n;
     }
     if (buf) delete [] buf;
     if (in.Close() < 0) return -1;
@@ -68,8 +76,7 @@ int VICSFFile::Compress(const char *src, const char *dst)
     h.m_id = 0x46534543;
     h.m_offset = 40;
     if (out.Open(dst, 42) < 0) return -1;
-    int endian = VIEndian;
-    if (endian != 1)
+    if (VIEndian != 1)
     {
         VIBufferSwap(4, (unsigned char *)&h.m_id);
         VIBufferSwap(4, (unsigned char *)&h.m_numSegms);
@@ -79,7 +86,7 @@ int VICSFFile::Compress(const char *src, const char *dst)
         VIBufferSwap(4, (unsigned char *)&h.m_maxCompressed);
     }
     if (out.Write(&h, 40) < 0) return -1;
-    if (endian != 1)
+    if (VIEndian != 1)
     {
         VIBufferSwap(4, (unsigned char *)&h.m_id);
         VIBufferSwap(4, (unsigned char *)&h.m_numSegms);
@@ -90,14 +97,14 @@ int VICSFFile::Compress(const char *src, const char *dst)
     }
     for (i = 0; i < h.m_numSegms; i++)
     {
-        if (endian != 1)
+        if (VIEndian != 1)
         {
             VIBufferSwap(4, (unsigned char *)&recs[i].m_compressed);
             VIBufferSwap(4, (unsigned char *)&recs[i].m_size);
         }
         if (out.Write(&recs[i], 8) < 0) return -1;
         if (out.Write(blocks[i], recs[i].m_compressed) < 0) return -1;
-        if (endian != 1)
+        if (VIEndian != 1)
         {
             VIBufferSwap(4, (unsigned char *)&recs[i].m_compressed);
             VIBufferSwap(4, (unsigned char *)&recs[i].m_size);
@@ -167,8 +174,7 @@ int VICSFFile::Decompress(VIFile &f, int &n, VIFile::MemSegm **segms)
     VICSFHeader h;
 
     if (f.Read(&h, 40) < 0) return -1;
-    int endian = VIEndian;
-    if (endian != 1)
+    if (VIEndian != 1)
     {
         VIBufferSwap(4, (unsigned char *)&h.m_id);
         VIBufferSwap(4, (unsigned char *)&h.m_numSegms);
@@ -190,7 +196,7 @@ int VICSFFile::Decompress(VIFile &f, int &n, VIFile::MemSegm **segms)
         VICSFSegm s;
 
         if (f.Read(&s, 8) < 0) return -1;
-        if (endian != 1)
+        if (VIEndian != 1)
         {
             VIBufferSwap(4, (unsigned char *)&s.m_compressed);
             VIBufferSwap(4, (unsigned char *)&s.m_size);
