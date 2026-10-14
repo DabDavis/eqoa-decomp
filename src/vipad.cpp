@@ -176,7 +176,15 @@ void VISetFeatureFlags(unsigned int f)
 // is why the two bit-7 buttons look like a different idiom.
 int VIPad::Read(VIConsolePad &p)
 {
-    unsigned char align[32] = { 0, 1, 0xff, 0xff, 0xff, 0xff };
+    // libpad's state names, indexed by scePadGetState's result.  Nothing reads
+    // them in this build -- they are what a debug print would have used -- but
+    // the array is still initialised: a 32-byte copy from the .rodata template
+    // at 0x4ED088, whose eight words point at the strings just below it ("" is
+    // one string for both unused states 3 and 4).
+    const char *stateName[8] =
+    {
+        "DISCONNECT", "FINDPAD", "FINDCTP1", "", "", "EXECCMD", "STABLE", "ERROR"
+    };
 
     if (m_actAligned)
     {

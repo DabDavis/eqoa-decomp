@@ -206,7 +206,7 @@ classifies what is left by byte identity against the named functions:
 ## Data references: applied
 
 `eqrefcheck.py`'s findings were all applied in one lane and merged; **matched functions go
-from 261 findings to 2**, with nothing lost.
+from 261 findings to 0**, with nothing lost.
 - **The 14 data/behaviour bugs:**
   - `VIPixelStore3` shares the RGBA32 stride;
   - `VIBitDepth` is numbered 4=0, 8=1, 16=2, 24=3, 32=4, and 3 and 4 share the RGBA32 body;
@@ -229,11 +229,18 @@ from 261 findings to 2**, with nothing lost.
   `time_last_flush`, `MESSAGE_TYPE_SYSTEM`, the `f( x )` spacing, and so on. The inline
   `find_leader_index` was `drdp_find`, in drdp.cpp itself.
 
-Left:
-- `drdp_master_send_route_table`'s assert names `buffer.size` for what our `buffer_t` calls
-  `position` (+8), so matching it means renaming our `size` (+4) to a name nothing reveals.
-- `VIPad::Read` is byte-exact but loads a 7-byte table where the target loads a table of 8
-  POINTERS (0x4ed040..0x4ed080). It is a source-shape difference the bytes cannot see.
+Both of the last two were closed in wave 5 (0 findings whole-tree, both still byte-exact):
+- `drdp_master_send_route_table`'s assert names `buffer.size`: our `position` (+8, the write
+  cursor `buffer_get_position` returns) IS the original `size`. The capacity (+4) became
+  `max_size`, a name of ours since no string reveals it. It was renamed first, so every old use
+  failed to compile rather than silently changing meaning. The binary also keeps an unreferenced
+  name table after connection.cpp's `cstat_text`, `{ 0, "MESSAGE_TYPE_SYSTEM",
+  "MESSAGE_TYPE_FRAGMENT", "MESSAGE_TYPE_GUARANTEED", 0 }` = 249..251, so those are now
+  `#define`s and the source uses them; only 248 and 252 keep names of ours.
+- `VIPad::Read`'s never-read 32-byte local is a `const char *[8]` of libpad state names
+  (`"DISCONNECT", "FINDPAD", "FINDCTP1", "", "", "EXECCMD", "STABLE", "ERROR"`) copied from a
+  template at 0x4ED088. A block aligned below 8 is copied with `ldl`/`ldr` either way, which is
+  why the bytes could not see the difference.
 
 `eqcheck` fixes that came with it:
 - The duplicate test now masks each copy's own relocation fields. A pure `~VISound` makes

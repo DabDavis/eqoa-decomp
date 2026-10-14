@@ -15,20 +15,20 @@
 // both tests branch to the one store at the bottom.
 static void buffer_read_bytes(buffer_t *buffer, void *value, int size)
 {
-    if (!(buffer->position + size > buffer->size || buffer->overflow))
+    if (!(buffer->size + size > buffer->max_size || buffer->overflow))
     {
         if (buffer->swap)
         {
             // Indexed, not a walking pointer: loop.c's giv is what puts the
             // `value + size - 1` setup after the `size > 0` guard.
             for (int i = 0; i < size; i++)
-                ((uns8 *)value)[size - 1 - i] = buffer->data[buffer->position + i];
+                ((uns8 *)value)[size - 1 - i] = buffer->data[buffer->size + i];
         }
         else
         {
-            memcpy(value, buffer->data + buffer->position, size);
+            memcpy(value, buffer->data + buffer->size, size);
         }
-        buffer->position += size;
+        buffer->size += size;
     }
     else
         buffer->overflow = 1;
@@ -40,18 +40,18 @@ static void buffer_append_bytes(buffer_t *buffer, const void *value, int size)
 {
     if (buffer->read_only)
         return;
-    if (!(buffer->position + size > buffer->size || buffer->overflow))
+    if (!(buffer->size + size > buffer->max_size || buffer->overflow))
     {
         if (buffer->swap)
         {
             for (int i = 0; i < size; i++)
-                buffer->data[buffer->position + i] = ((const uns8 *)value)[size - 1 - i];
+                buffer->data[buffer->size + i] = ((const uns8 *)value)[size - 1 - i];
         }
         else
         {
-            memcpy(buffer->data + buffer->position, value, size);
+            memcpy(buffer->data + buffer->size, value, size);
         }
-        buffer->position += size;
+        buffer->size += size;
     }
     else
         buffer->overflow = 1;
@@ -61,7 +61,7 @@ int buffer_bytes_remaining(buffer_t *buffer)
 {
     if (buffer->overflow)
         return -1;
-    return buffer->size - buffer->position;
+    return buffer->max_size - buffer->size;
 }
 
 // `lui`/`lb` on a static: the low byte of a word holding 1, so the answer is
@@ -75,9 +75,9 @@ int little_endian()
 
 void buffer_init(buffer_t *buffer, void *data, int size, int flags)
 {
-    buffer->size = size;
+    buffer->max_size = size;
     buffer->data = (uns8 *)data;
-    buffer->position = 0;
+    buffer->size = 0;
     buffer->overflow = 0;
     // ONE `||`, not two `if`s: when the left half is true the target never
     // calls little_endian() a second time, and only short-circuiting can skip
@@ -96,7 +96,7 @@ void buffer_init_read(buffer_t *buffer, const void *data, int size, int flags)
 static void buffer_readm_bytes(buffer_t *buffer, void *value, int size, int count)
 {
     int total = size * count;
-    if (buffer->position + total > buffer->size)
+    if (buffer->size + total > buffer->max_size)
         return;
     if (buffer->overflow)
         return;
@@ -111,15 +111,15 @@ static void buffer_readm_bytes(buffer_t *buffer, void *value, int size, int coun
     }
     else
     {
-        memcpy(value, buffer->data + buffer->position, total);
-        buffer->position += total;
+        memcpy(value, buffer->data + buffer->size, total);
+        buffer->size += total;
     }
 }
 
 static void buffer_appendm_bytes(buffer_t *buffer, const void *value, int size, int count)
 {
     int total = size * count;
-    if (buffer->position + total > buffer->size)
+    if (buffer->size + total > buffer->max_size)
         return;
     if (buffer->overflow)
         return;
@@ -134,8 +134,8 @@ static void buffer_appendm_bytes(buffer_t *buffer, const void *value, int size, 
     }
     else
     {
-        memcpy(buffer->data + buffer->position, value, total);
-        buffer->position += total;
+        memcpy(buffer->data + buffer->size, value, total);
+        buffer->size += total;
     }
 }
 
@@ -143,23 +143,23 @@ static void buffer_appendm_bytes(buffer_t *buffer, const void *value, int size, 
 // is the `else` and the success path falls through.
 void buffer_skip(buffer_t *buffer, int size)
 {
-    int position = buffer->position + size;
+    int position = buffer->size + size;
 
-    if (position <= buffer->size && buffer->overflow == 0)
-        buffer->position = position;
+    if (position <= buffer->max_size && buffer->overflow == 0)
+        buffer->size = position;
     else
         buffer->overflow = 1;
 }
 
 int buffer_get_position(buffer_t *buffer)
 {
-    return buffer->position;
+    return buffer->size;
 }
 
 void buffer_set_position(buffer_t *buffer, int position)
 {
-    if (position >= 0 && position < buffer->size)
-        buffer->position = position;
+    if (position >= 0 && position < buffer->max_size)
+        buffer->size = position;
     else
         buffer->overflow = 1;
 }
@@ -177,20 +177,20 @@ void buffer_swap(buffer_t *buffer, int flags)
 // so the success path is what the `if` holds.
 void buffer_copy(buffer_t *from, buffer_t *to, int size)
 {
-    if (from->position + size <= from->size)
+    if (from->size + size <= from->max_size)
     {
-        if (to->position + size <= to->size)
+        if (to->size + size <= to->max_size)
         {
-            memcpy(to->data + to->position, from->data + from->position, size);
-            from->position += size;
-            to->position += size;
+            memcpy(to->data + to->size, from->data + from->size, size);
+            from->size += size;
+            to->size += size;
         }
         else
         {
             // the branch-likely's delay slot carries this store, so it really
             // is on the failing path: the source is consumed even when the
             // destination cannot take it.
-            from->position += size;
+            from->size += size;
             to->overflow = 1;
         }
     }
@@ -206,7 +206,7 @@ void buffer_copy(buffer_t *from, buffer_t *to, int size)
 
 void *buffer_get_position_ptr(buffer_t *buffer)
 {
-    return buffer->data + buffer->position;
+    return buffer->data + buffer->size;
 }
 
 #define BUFFER_TYPE(NAME, TYPE)                                               \

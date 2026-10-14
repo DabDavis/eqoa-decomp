@@ -25,17 +25,17 @@ extern "C" void vpf(const char *pFormat, char *ap);
 extern "C" unsigned int strlen(const char *);
 extern "C" int vsprintf(char *, const char *, va_list);
 
-// The message types.  Anything below 248 is a state channel INDEX; the four
-// above are the transports, and `connection_get_max_message_size` is where
-// they are told apart by size.
+// The message types.  Anything below 248 is a state channel INDEX; above it
+// are MESSAGE_TYPE_SYSTEM, MESSAGE_TYPE_FRAGMENT and MESSAGE_TYPE_GUARANTEED
+// (249..251), best effort (252) and MESSAGE_TYPE_DISCONNECT (253) -- the named
+// ones are in drdp.h under the original's own names, read off its strings
+// (an assert in drdp.cpp, and an unreferenced name table after cstat_text).
+// `connection_get_max_message_size` is where they are told apart by size.
+// These two have no name in the binary:
 enum
 {
     CONNECTION_STATE_CHANNEL_COUNT = 248,
-    CONNECTION_MESSAGE_TYPE_SYSTEM = 249,
-    CONNECTION_MESSAGE_TYPE_BIG    = 250,
-    CONNECTION_MESSAGE_TYPE_GUARANTEED = 251,
-    CONNECTION_MESSAGE_TYPE_BEST_EFFORT = 252,
-    CONNECTION_MESSAGE_TYPE_TERMINATE = 253
+    CONNECTION_MESSAGE_TYPE_BEST_EFFORT = 252
 };
 
 enum
@@ -531,7 +531,7 @@ int connection_create(connection_t **ppConnection, endpoint_t *pEndpoint, uns64 
     {
         iResult = message_create(&pConnection->m_pTerminate, pEndpoint, pConnection,
                                  pConnection->remote_id, pConnection->local_id, 0, 256,
-                                 CONNECTION_MESSAGE_TYPE_TERMINATE, 0xffff,
+                                 MESSAGE_TYPE_DISCONNECT, 0xffff,
                                  endpoint_get_time(pEndpoint));
         if (iResult)
             goto out;
@@ -653,7 +653,7 @@ void compress_flush_time_history_verified(buffer_t *pBuffer, uns32 *puiHistory)
 
     buffer_init(&buffer, data, sizeof(data), BUFFER_LITTLE_ENDIAN);
     compress_flush_time_history(&buffer, puiHistory);
-    buffer_init_read(&check, buffer.data, buffer.position, BUFFER_LITTLE_ENDIAN);
+    buffer_init_read(&check, buffer.data, buffer.size, BUFFER_LITTLE_ENDIAN);
     decompress_flush_time_history(&check, uiCheck);
     compress_flush_time_history(pBuffer, puiHistory);
 }
@@ -1067,7 +1067,7 @@ int connection_send_guaranteed(connection_t *connection, const uns8 *pData, int 
             uiChunk = 1300;
         ucType = (uns8)iType;
         if (uiOffset + uiChunk < (uns32)iSize)
-            ucType = CONNECTION_MESSAGE_TYPE_BIG;
+            ucType = MESSAGE_TYPE_FRAGMENT;
         if (uns16_gt(connection->m_usTxSeqnum, connection->m_usTxAck + 4096))
         {
             VASSERT(!connection_is_sw_sw( connection ));   // 1072
@@ -1253,8 +1253,8 @@ int connection_send_internal(connection_t *connection, const uns8 *pData, int iS
         case CONNECTION_MESSAGE_TYPE_BEST_EFFORT:
             iError = connection_send_best_effort(connection, pData, iSize);
             break;
-        case CONNECTION_MESSAGE_TYPE_GUARANTEED:
-        case CONNECTION_MESSAGE_TYPE_SYSTEM:
+        case MESSAGE_TYPE_GUARANTEED:
+        case MESSAGE_TYPE_SYSTEM:
             iError = connection_send_guaranteed(connection, pData, iSize, iType);
             break;
         default:
@@ -1359,7 +1359,7 @@ int connection_get_max_message_size(int iType)
     if ((0 <= iType && iType < CONNECTION_STATE_CHANNEL_COUNT)
         || iType == CONNECTION_MESSAGE_TYPE_BEST_EFFORT)
         iSize = 1300;
-    else if (iType == CONNECTION_MESSAGE_TYPE_GUARANTEED || iType == CONNECTION_MESSAGE_TYPE_SYSTEM)
+    else if (iType == MESSAGE_TYPE_GUARANTEED || iType == MESSAGE_TYPE_SYSTEM)
         iSize = 0x514000;
     return iSize;
 }
@@ -1524,7 +1524,7 @@ int connection_append_message(connection_t *pConnection, buffer_t *pBuffer,
 
     if ((uns8)(ucType + 7) <= 2)
         iCost = uiSize + 6;
-    if (pBuffer->size < pBuffer->position + iCost)
+    if (pBuffer->max_size < pBuffer->size + iCost)
         return -1;
     pMessage = (message_t *)vlist_remove_head(&pList->list);
     buffer_append_uns8(pBuffer, ucType);
@@ -1566,9 +1566,9 @@ int connection_append_state(connection_t *pConnection, buffer_t *buffer, message
     message_t *pSent;
     int result;
 
-    if (buffer->position > 300)
+    if (buffer->size > 300)
         return -1;
-    if (buffer->size < usSize + buffer->position + 27)
+    if (buffer->max_size < usSize + buffer->size + 27)
         return -1;
     usNext = pChannel->m_usTx + 1;
     if ((int16)(usNext - pChannel->m_usTxAck) == 4096)
@@ -1651,8 +1651,8 @@ int connection_append(connection_t *pConnection, buffer_t *pBuffer, message_list
     message_t *pMessage = (message_t *)vlist_peek_head(&pList->list);
     int iType = message_get_type(pMessage);
 
-    if (iType < CONNECTION_MESSAGE_TYPE_TERMINATE)
-        if (iType >= CONNECTION_MESSAGE_TYPE_SYSTEM)
+    if (iType < MESSAGE_TYPE_DISCONNECT)
+        if (iType >= MESSAGE_TYPE_SYSTEM)
             return connection_append_message(pConnection, pBuffer, pMessage, pList, usFlush);
     return connection_append_state(pConnection, pBuffer, pMessage, pList, usFlush);
 }
@@ -2018,7 +2018,7 @@ int connection_flush(connection_t *connection, buffer_t *pBuffer, int iFlushNumb
 
         drdp_format_endpoint1(connection->local_id);
         drdp_format_endpoint2(connection->remote_id);
-        connection_send_internal(connection, &ucKeepAlive, 1, CONNECTION_MESSAGE_TYPE_SYSTEM);
+        connection_send_internal(connection, &ucKeepAlive, 1, MESSAGE_TYPE_SYSTEM);
         if (connection->m_usFlags & 0x100)
         {
             iResult = -1;
@@ -2341,9 +2341,9 @@ void connection_record_guaranteed_ack(connection_t *pConnection, uns16 usSeqnum,
          pMessage = pNext)
     {
         pNext = (message_t *)vlist_get_next(&pConnection->m_outstanding.list, pMessage);
-        if (message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_GUARANTEED
-            || message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_BIG
-            || message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_SYSTEM)
+        if (message_get_type(pMessage) == MESSAGE_TYPE_GUARANTEED
+            || message_get_type(pMessage) == MESSAGE_TYPE_FRAGMENT
+            || message_get_type(pMessage) == MESSAGE_TYPE_SYSTEM)
         {
             int iAhead = (int16)(message_get_seqnum(pMessage) - usSeqnum);
             if (iAhead <= 0)
@@ -2631,7 +2631,7 @@ void connection_move_delayed_to_arrivals(connection_t *pConnection)
     {
         pConnection->m_usRxSeqnum = pConnection->m_usRxSeqnum + 1;
         vlist_remove_head(&pConnection->m_delayed.list);
-        if (message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_BIG)
+        if (message_get_type(pMessage) == MESSAGE_TYPE_FRAGMENT)
         {
             vlist_add_tail(&pConnection->m_arrivals.list, pMessage);
         }
@@ -2709,9 +2709,9 @@ void connection_record_message(connection_t *pConnection, message_t *pMessage,
     case 255:
         endpoint_arrival_enqueue(pConnection->endpoint, pMessage);
         break;
-    case CONNECTION_MESSAGE_TYPE_SYSTEM:
-    case CONNECTION_MESSAGE_TYPE_BIG:
-    case CONNECTION_MESSAGE_TYPE_GUARANTEED:
+    case MESSAGE_TYPE_SYSTEM:
+    case MESSAGE_TYPE_FRAGMENT:
+    case MESSAGE_TYPE_GUARANTEED:
         vlist_insert(&pConnection->m_delayed.list, pMessage);
         connection_move_delayed_to_arrivals(pConnection);
         break;
@@ -3835,7 +3835,7 @@ void connection_terminate_file_line(connection_t *pConnection, int iSendReset, c
         buffer_append_uns8(&buffer, 16);
         buffer_append_string(&buffer, pFile);
         buffer_append_uns32(&buffer, iLine);
-        connection_terminate(pConnection, iSendReset, buffer.data, buffer.position);
+        connection_terminate(pConnection, iSendReset, buffer.data, buffer.size);
     }
 }
 
@@ -4023,9 +4023,9 @@ void connection_receive_list(connection_t *connection, message_list_t *pList)
         case CONNECTION_MESSAGE_TYPE_BEST_EFFORT:
             endpoint_arrival_enqueue(connection->endpoint, pMessage);
             break;
-        case CONNECTION_MESSAGE_TYPE_SYSTEM:
-        case CONNECTION_MESSAGE_TYPE_BIG:
-        case CONNECTION_MESSAGE_TYPE_GUARANTEED:
+        case MESSAGE_TYPE_SYSTEM:
+        case MESSAGE_TYPE_FRAGMENT:
+        case MESSAGE_TYPE_GUARANTEED:
             if (!connection_has_reliable(connection, message_get_seqnum(pMessage)))
             {
                 vlist_insert(&connection->m_delayed.list, pMessage);
@@ -4204,11 +4204,11 @@ int message_list_is_in_sync(message_list_t *pList)
     for (pMessage = (message_t *)vlist_peek_head(&pList->list); pMessage;
          pMessage = (message_t *)vlist_get_next(&pList->list, pMessage))
     {
-        if (message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_GUARANTEED)
+        if (message_get_type(pMessage) == MESSAGE_TYPE_GUARANTEED)
             return 0;
-        if (message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_BIG)
+        if (message_get_type(pMessage) == MESSAGE_TYPE_FRAGMENT)
             return 0;
-        if (message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_SYSTEM)
+        if (message_get_type(pMessage) == MESSAGE_TYPE_SYSTEM)
             return 0;
     }
     return 1;
@@ -4276,7 +4276,7 @@ uns64 connection_get_cstat(const connection_t *pConnection, int iIndex)
 }
 
 // The eleven counters, in the order `connection_get_cstat` indexes them.  The
-// two after the null are the message type names, in another table the linker
+// three after the null are the message type names, in another table the linker
 // happened to put next to this one.
 static const char *cstat_text[] =
 {
@@ -4304,7 +4304,7 @@ void connection_send_uns8(connection_t *pConnection, uns8 ucType)
 {
     uns8 data = ucType;
 
-    connection_send(pConnection, &data, 1, CONNECTION_MESSAGE_TYPE_SYSTEM);
+    connection_send(pConnection, &data, 1, MESSAGE_TYPE_SYSTEM);
 }
 
 void connection_send_uns8_uns64(connection_t *pConnection, uns8 ucType, uns64 uiA)
@@ -4315,7 +4315,7 @@ void connection_send_uns8_uns64(connection_t *pConnection, uns8 ucType, uns64 ui
     buffer_init(&buffer, data, sizeof(data), BUFFER_LITTLE_ENDIAN);
     buffer_append_uns8(&buffer, ucType);
     buffer_append_uns64(&buffer, uiA);
-    connection_send(pConnection, buffer.data, buffer.position, CONNECTION_MESSAGE_TYPE_SYSTEM);
+    connection_send(pConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
 }
 
 void connection_send_uns8_uns64_uns64(connection_t *pConnection, uns8 ucType, uns64 uiA,
@@ -4328,7 +4328,7 @@ void connection_send_uns8_uns64_uns64(connection_t *pConnection, uns8 ucType, un
     buffer_append_uns8(&buffer, ucType);
     buffer_append_uns64(&buffer, uiA);
     buffer_append_uns64(&buffer, uiB);
-    connection_send(pConnection, buffer.data, buffer.position, CONNECTION_MESSAGE_TYPE_SYSTEM);
+    connection_send(pConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
 }
 
 void connection_send_uns8_uns64_uns64_uns64(connection_t *pConnection, uns8 ucType, uns64 uiA,
@@ -4342,7 +4342,7 @@ void connection_send_uns8_uns64_uns64_uns64(connection_t *pConnection, uns8 ucTy
     buffer_append_uns64(&buffer, uiA);
     buffer_append_uns64(&buffer, uiB);
     buffer_append_uns64(&buffer, uiC);
-    connection_send(pConnection, buffer.data, buffer.position, CONNECTION_MESSAGE_TYPE_SYSTEM);
+    connection_send(pConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
 }
 
 void connection_send_uns8_uns64_uns64_uns64_uns64(connection_t *pConnection, uns8 ucType,
@@ -4357,5 +4357,5 @@ void connection_send_uns8_uns64_uns64_uns64_uns64(connection_t *pConnection, uns
     buffer_append_uns64(&buffer, uiB);
     buffer_append_uns64(&buffer, uiC);
     buffer_append_uns64(&buffer, uiD);
-    connection_send(pConnection, buffer.data, buffer.position, CONNECTION_MESSAGE_TYPE_SYSTEM);
+    connection_send(pConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
 }

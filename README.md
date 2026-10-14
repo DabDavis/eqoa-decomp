@@ -6380,7 +6380,7 @@ close that gap, and the first is now part of `eqcheck.score` itself:
 | tool | what it compares | first run |
 |---|---|---|
 | `eqcallcheck.py` | every `jal` against the callee the relocated in-world dump names | 84 matched functions called the WRONG function |
-| `eqrefcheck.py` | every `%hi/%lo` pair, traced through the CFG: strings by text, floats by value, jump tables by target, globals by name, unnamed objects by consistency | 261 findings; 2 left |
+| `eqrefcheck.py` | every `%hi/%lo` pair, traced through the CFG: strings by text, floats by value, jump tables by target, globals by name, unnamed objects by consistency | 261 findings; **0 left** |
 | `eqlocal.py` | the functions the map does not name (statics, local helpers), found in the unnamed code | 41/65 found → **65/65**; 0 unique bytes unmatched |
 
 Real behaviour they exposed in "exact" functions:

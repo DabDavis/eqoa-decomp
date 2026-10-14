@@ -1033,8 +1033,8 @@ steals it into the delay slot), and phase 35's count-read-once and phase 16's
 hoist again. **`VIPad` is 96 bytes and closes exactly** on `scePadRead`'s
 32-byte buffer at +0x3C; **`VIConsoleKey` is TWO bytes, not sixteen** (phase 27
 guessed 16); **`VIScene+0x4BA4` is the `VISoundDevice *`**. Shipped:
-**`VIPad::Read` initialises a 32-byte local it never reads** (the alignment it
-sends is a file static, and gcc does not delete a dead initialised array), every
+**`VIPad::Read` initialises a 32-byte local it never reads** (phase 61: a
+`const char *[8]` of libpad state names; gcc does not delete a dead initialised array), every
 button is the COMPLEMENT of one bit with `(b ^ 0x80) >> 7` for the top bit only,
 the stick dead zone is 88..167, and **`VIBattleMusic` has two back ends behind
 feature bit 0x100** where **track 9 means "pick one of eight at random"**. Open:

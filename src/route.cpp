@@ -369,7 +369,7 @@ void route_flush(route_t *pRoute)
     drdp_remap_address_to_route(pRoute->m_pDrdp, &address, &route);
     buffer_append_uns16(&buffer, drdp_get_port_drdp(pRoute->m_pDrdp));
     buffer_append_uns16(&buffer, usPort);
-    iStart = buffer.position;
+    iStart = buffer.size;
     drdp_format_endpoint1(pRoute->m_uiId);
     drdp_get_time(pRoute->m_pDrdp);
     route_flush_reset_connection(pRoute, &buffer);
@@ -409,7 +409,7 @@ void route_flush(route_t *pRoute)
             drdp_format_endpoint2(connection_get_dst(pConnection));
             memset(&header, 0, sizeof(header));
             header.flags = 0;
-            header.m_uiSize = cbuffer.position;
+            header.m_uiSize = cbuffer.size;
             header.src = connection_get_src(pConnection);
             header.dst = connection_get_dst(pConnection);
             if (connection_send_instance_local(pConnection))
@@ -422,7 +422,7 @@ void route_flush(route_t *pRoute)
                     header.flags |= 0x4000;
             }
             buffer_append_segment_header(&buffer, &header);
-            buffer_appendm_uns8(&buffer, cbuffer.data, cbuffer.position);
+            buffer_appendm_uns8(&buffer, cbuffer.data, cbuffer.size);
             iDebug |= connection_get_debug(pConnection);
             connections_by_desired_flush_time_resort(&pRoute->m_connections, pConnection);
             break;
@@ -433,7 +433,7 @@ void route_flush(route_t *pRoute)
         }
     }
 done:
-    if (iStart < buffer.position)
+    if (iStart < buffer.size)
     {
         drdp_crc_send(pRoute->m_pDrdp, &route, &buffer, pRoute->m_iDrop, pRoute->m_iDelay,
                       pRoute->m_iJitter);
@@ -444,7 +444,7 @@ done:
             drdp_format_addr2(&route);
         }
         bandwidth_send(&pRoute->m_bandwidth, drdp_get_time(pRoute->m_pDrdp),
-                       buffer.position + 28);
+                       buffer.size + 28);
     }
     pRoute->m_iFlushNumber++;
     if (pRoute->m_iFlushNumber == -1)
@@ -493,7 +493,7 @@ void route_forward_segment(route_t *pRoute, segment_header_t *pHeader, buffer_t 
     pHeader->flags |= 0x8000;
     buffer_append_segment_header(&buffer, pHeader);
     buffer_copy(pBuffer, &buffer, pHeader->m_uiSize);
-    if (message_create(&pMessage, 0, 0, 0, 0, buffer.data, buffer.position, 0, 0,
+    if (message_create(&pMessage, 0, 0, 0, 0, buffer.data, buffer.size, 0, 0,
                        drdp_get_time(pRoute->m_pDrdp)) == 0)
     {
         vlist_add_tail(&pRoute->m_pending, pMessage);

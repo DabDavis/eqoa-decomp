@@ -325,7 +325,7 @@ void endpoint_send(endpoint_t *endpoint, uns64 uiDst, const void *pData, int siz
         buffer_init(&buffer, data, sizeof(data), BUFFER_LITTLE_ENDIAN);
         buffer_append_uns8(&buffer, 22);
         if (message_create(&pUnreachable, endpoint, 0, uiDst, endpoint_get_id(endpoint),
-                           buffer.data, buffer.position, 249, 0,
+                           buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM, 0,
                            drdp_get_time(endpoint->m_pDrdp)) == 0)
             endpoint_arrival_enqueue(endpoint, pUnreachable);
         return;
@@ -1119,7 +1119,7 @@ void endpoint_transfer(endpoint_t *pEndpoint, uns64 uiTo, const void *pData, int
     buffer_appendm_uns8(&buffer, (const uns8 *)pData, iSize);
     endpoint_destroy_buffer(pEndpoint, &buffer);
     VASSERTF( !buffer.overflow, "endpoint_transfer: buffer overflow" );   // 1120
-    connection_send(pMaster, buffer.data, buffer.position, 249);
+    connection_send(pMaster, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
 }
 
 // Two software endpoints are never allowed to talk to each other directly --

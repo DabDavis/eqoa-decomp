@@ -61,14 +61,18 @@ void   ll_remove(lnode *node);
 lnode *ll_rem_head(llist *list);
 lnode *ll_rem_tail(llist *list);
 
-// +0x00 data  +0x04 size  +0x08 position  +0x0C error  +0x10 read_only
+// +0x00 data  +0x04 max_size  +0x08 size  +0x0C overflow  +0x10 read_only
 // +0x14 swap.  Read off buffer_init (which stores all six) and confirmed by
-// buffer_bytes_remaining, which returns -1 when +0x0C is set.
+// buffer_bytes_remaining, which returns -1 when +0x0C is set.  +0x08 -- the
+// write cursor, what buffer_get_position returns -- is `size` in the original:
+// its own assert reads `buffer.size <= connection_get_max_message_size(...)`
+// and compiles to a load of +0x08.  `max_size` for the capacity at +0x04 is
+// OURS; no string in the binary names it.
 struct buffer_t
 {
     uns8 *data;
+    int   max_size;
     int   size;
-    int   position;
     int   overflow;
     int   read_only;
     int   swap;
@@ -1365,6 +1369,14 @@ extern "C" int sprintf(char *, const char *, ...);
 #define SEGMENT_HEADER_RESET_ENDPOINT     0x20000
 #define MESSAGE_TYPE_CONNECT              255
 #define MESSAGE_TYPE_DISCONNECT           253
+// The transports' own names, from the assert in drdp_master_send_route_table
+// and from a { 0, "MESSAGE_TYPE_SYSTEM", "MESSAGE_TYPE_FRAGMENT",
+// "MESSAGE_TYPE_GUARANTEED", 0 } name table that sits, unreferenced, after
+// connection.cpp's cstat_text: 249..251 in order.  252 (best effort) and 248
+// (the state channel count) have no name in the binary.
+#define MESSAGE_TYPE_SYSTEM               249
+#define MESSAGE_TYPE_FRAGMENT             250
+#define MESSAGE_TYPE_GUARANTEED           251
 #define DRDP_SEND_SIZE_MAX_GUARANTEED     0x514000
 #define ONE_DAY 86400000
 #define CONNECTION_MAX_OUTSTANDING_STATE  4096

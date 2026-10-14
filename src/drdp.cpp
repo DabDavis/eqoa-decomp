@@ -443,7 +443,7 @@ int drdp_create_leader(drdp_t **ppDrdp, const drdp_addr_t *pAddress, const drdp_
         buffer_init(&buffer, pHello, iSize + 1, BUFFER_LITTLE_ENDIAN);
         buffer_append_uns8(&buffer, 7);
         buffer_appendm_uns8(&buffer, (const uns8 *)pData, iSize);
-        connection_send(pDrdp->m_pMasterConnection, buffer.data, buffer.position, 249);
+        connection_send(pDrdp->m_pMasterConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
     }
 
     *ppDrdp = pDrdp;
@@ -807,18 +807,18 @@ void drdp_crc_send(drdp_t *pDrdp, const drdp_addr_t *pAddress, buffer_t *pBuffer
 
     uiCrc = drdp_crc_table_get(2);
     buffer_append_uns32(pBuffer, uiCrc ^ drdp_crc(0, (const char *)pBuffer->data,
-                                                  pBuffer->position));
+                                                  pBuffer->size));
     drdp_addr_to_ipaddress(pAddress, &address);
 
-    pDrdp->m_iBytesSent += pBuffer->position;
+    pDrdp->m_iBytesSent += pBuffer->size;
 
     if (!pDrdp->m_bNoSend)
     {
-        usocket_sendto_addr(pDrdp->m_socket[0], &address, pBuffer->data, pBuffer->position,
+        usocket_sendto_addr(pDrdp->m_socket[0], &address, pBuffer->data, pBuffer->size,
                             iDrop, iDelay, iJitter);
     }
 
-    bandwidth_send(&pDrdp->m_bandwidth, pDrdp->m_uiTime, pBuffer->position + 28);
+    bandwidth_send(&pDrdp->m_bandwidth, pDrdp->m_uiTime, pBuffer->size + 28);
 }
 
 // An address is not a route: one machine can carry many drdp ports, so a
@@ -1227,17 +1227,17 @@ int drdp_consume_crc_get_protocol_version(buffer_t *pBuffer)
     uns32 uiCrc;
     int iPosition;
 
-    if (pBuffer->size < 4)
+    if (pBuffer->max_size < 4)
         return -1;
 
-    iPosition = pBuffer->position;
-    pBuffer->position = pBuffer->size - 4;
+    iPosition = pBuffer->size;
+    pBuffer->size = pBuffer->max_size - 4;
     buffer_read_uns32(pBuffer, &uiCrc);
-    pBuffer->position = iPosition;
-    pBuffer->size -= 4;
+    pBuffer->size = iPosition;
+    pBuffer->max_size -= 4;
 
     return drdp_crc_table_lookup(uiCrc ^ drdp_crc(0, (const char *)pBuffer->data,
-                                                 pBuffer->size), 2);
+                                                 pBuffer->max_size), 2);
 }
 
 // One UDP datagram.  The socket layer wrote the sender's address into the
@@ -1268,9 +1268,9 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
     buffer_readm_uns8(&buffer, address.m_ucIp, 4);
     buffer_read_uns16(&buffer, &address.m_usPort);
 
-    buffer.data = buffer.data + buffer.position;
-    buffer.size = buffer.size - buffer.position;
-    buffer.position = 0;
+    buffer.data = buffer.data + buffer.size;
+    buffer.max_size = buffer.max_size - buffer.size;
+    buffer.size = 0;
 
     buffer_read_uns16(&buffer, &usDrdpPort);
 
@@ -1336,7 +1336,7 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
         return -1;
     }
 
-    iPosition = buffer.position;
+    iPosition = buffer.size;
 
     while (buffer_bytes_remaining(&buffer))
     {
@@ -1367,7 +1367,7 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
     drdp_format_endpoint1(uiRoute);
     drdp_get_time(pDrdp);
 
-    buffer.position = iPosition;
+    buffer.size = iPosition;
 
     while (buffer_bytes_remaining(&buffer))
     {
@@ -2240,9 +2240,9 @@ void drdp_master_send_route_table(drdp_t *drdp, connection_t *pConnection)
     VASSERT( DRDP_SW_ENDPOINT_MIN == rt_peek_first( &drdp->route_table.entries )->range.lo );   // 2239
     VASSERT( rt_peek_last( &drdp->route_table.entries )->range.hi == DRDP_SW_ENDPOINT_MAX );   // 2240
 
-    VASSERT( buffer.position <= connection_get_max_message_size( 249 ) );   // 2242
+    VASSERT( buffer.size <= connection_get_max_message_size( MESSAGE_TYPE_SYSTEM ) );   // 2242
 
-    connection_send(pConnection, buffer.data, buffer.position, 249);
+    connection_send(pConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
 
     delete [] pData;
     delete [] p_leader_endpoints;
@@ -2356,7 +2356,7 @@ void drdp_connection_terminate(drdp_t *drdp, uns64 uiId, const void *pData, int 
         buffer_append_uns8(&buffer, 6);
         buffer_append_uns64(&buffer, uiId);
         buffer_appendm_uns8(&buffer, (const uns8 *)pData, iSize);
-        connection_send(drdp->m_pMasterConnection, buffer.data, buffer.position, 249);
+        connection_send(drdp->m_pMasterConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
         return;
     }
 
@@ -2664,7 +2664,7 @@ int drdp_leader_add(drdp_t *drdp, connection_t *pConnection)
 
     VASSERT( !buffer.overflow );   // 2664
 
-    connection_send(pConnection, buffer.data, buffer.position, 249);
+    connection_send(pConnection, buffer.data, buffer.size, MESSAGE_TYPE_SYSTEM);
     return 0;
 }
 
@@ -2795,7 +2795,7 @@ void drdp_process_system_message(drdp_t *drdp, message_t *pMessage)
                 buffer_read_uns64(&buffer, &uiId);
                 drdp_leader_add_internal(drdp, uiId, 0);
             }
-            connection_send(drdp->m_pMasterConnection, pData, uiSize, 249);
+            connection_send(drdp->m_pMasterConnection, pData, uiSize, MESSAGE_TYPE_SYSTEM);
             break;
         }
 
@@ -2878,7 +2878,7 @@ void drdp_process_system_message(drdp_t *drdp, message_t *pMessage)
         buffer_append_uns64(&reply, uiSrc);
         buffer_append_uns64(&reply, uiId);
         buffer_copy(&buffer, &reply, buffer_bytes_remaining(&buffer));
-        connection_terminate(pLeader->m_pConnection, 1, reply.data, reply.position);
+        connection_terminate(pLeader->m_pConnection, 1, reply.data, reply.size);
         break;
     }
     case 3:
@@ -2999,7 +2999,7 @@ void drdp_process_system_message(drdp_t *drdp, message_t *pMessage)
             message_get_size(pMessage);
             uiFrom = pTo->m_uiId;
             connection_send(pTo->m_pConnection, message_get_data(pMessage),
-                            message_get_size(pMessage), 249);
+                            message_get_size(pMessage), MESSAGE_TYPE_SYSTEM);
             if (pFrom->m_uiId == uiFrom)
                 break;
             route_table_update(&drdp->route_table, uiEndpoint, uiFrom);
@@ -3127,7 +3127,7 @@ message_t *drdp_receive(drdp_t *drdp)
         else
             endpoint_arrival_remove(pEndpoint, message);
 
-        if (message_get_type(message) == 249)
+        if (message_get_type(message) == MESSAGE_TYPE_SYSTEM)
             drdp_process_system_message(drdp, message);
 
         if (drdp_is_software_endpoint(message_get_src(message))
