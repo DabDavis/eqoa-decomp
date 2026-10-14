@@ -373,21 +373,26 @@ int VIHSprite::SetNodeBindPose(int i, const VIQuat &q, float s, const VIVect3 &t
 
 int VIHSprite::GetNodeBindPose(int i, VIQuat &q, float &s, VIVect3 &t)
 {
+    // SetNodeBindPose's fresh pointer per statement: one pointer reassigned
+    // three times leaves the first in the wrong register (8 wrong words).
     VIVector<VIHSpriteNode> *a = &m_nodes;
-    VIHSpriteNode *n = &a->m_data[i];
-    q = n->m_bind.m_rot;
-    n = &a->m_data[i];
-    s = n->m_bind.m_scale;
-    n = &a->m_data[i];
-    t = n->m_bind.m_trans;
+    VIHSpriteNode *n0 = &a->m_data[i];
+    q = n0->m_bind.m_rot;
+    VIHSpriteNode *n1 = &a->m_data[i];
+    s = n1->m_bind.m_scale;
+    VIHSpriteNode *n2 = &a->m_data[i];
+    t = n2->m_bind.m_trans;
     return 0;
 }
 
+// The named array pointer, declared before the test, is what puts its
+// `addiu a0,s0,64` in the `bnez`'s delay slot (6 wrong words without it).
 int VIHSprite::AddRoot()
 {
+    VIVector<VIHSpriteNode> *a = &m_nodes;
     if (m_nodes.m_size == 0)
     {
-        int i = m_nodes.Add();
+        int i = a->Add();
         if (i < 0)
             return -1;
         if (m_blend.Add() < 0)
@@ -851,13 +856,17 @@ int VIHSprite::ProcessHierarchy(int i, VIMatrix44 &m)
     v *= n->m_frame.m_scale;
     t.Transform(n->m_frame.m_rot, v, n->m_frame.m_trans);
     n->m_world.Mul(t, m);
-    int c = a->m_data[i].m_child;
+    // A fresh element pointer for the child, and another (off a second
+    // array pointer) for each sibling: 23 wrong words as subscripts.
+    VIHSpriteNode *n2 = &a->m_data[i];
+    int c = n2->m_child;
     while (c != -1)
     {
         if (ProcessHierarchy(c, n->m_world) < 0)
             return -1;
         VIVector<VIHSpriteNode> *b = &m_nodes;
-        c = b->m_data[c].m_sibling;
+        VIHSpriteNode *s = &b->m_data[c];
+        c = s->m_sibling;
     }
     return 0;
 }
@@ -1120,8 +1129,16 @@ int VIHSprite::Copy(VIScene &sc, VIRaster *r, VISoundDevice *sd, VICollide &c, i
     d->m_defaultScale = m_defaultScale;
     d->m_center[0] = m_center[0];
     d->m_center[1] = m_center[1];
-    d->m_transform[0] = m_transform[0];
-    d->m_transform[1] = m_transform[1];
+    // Member by member, NOT through VIHSpriteFrame::operator=: the target
+    // block-moves each rotation (the implicit VIQuat assignment, ldl/ldr),
+    // where the user operator= copies it as four floats -- and the extra
+    // pointers that costs pushed the whole function onto s6..s8 (183 words).
+    d->m_transform[0].m_rot = m_transform[0].m_rot;
+    d->m_transform[0].m_scale = m_transform[0].m_scale;
+    d->m_transform[0].m_trans = m_transform[0].m_trans;
+    d->m_transform[1].m_rot = m_transform[1].m_rot;
+    d->m_transform[1].m_scale = m_transform[1].m_scale;
+    d->m_transform[1].m_trans = m_transform[1].m_trans;
     d->m_refMap = m_refMap;
     d->m_defaultAnim = m_defaultAnim;
     for (int i = m_attach.Begin(); i != m_attach.End(); i = m_attach.Next(i))
@@ -1275,160 +1292,163 @@ int VIHSprite::ProcessPlayTiming(int i, VIScene &sc)
     VIPool<VIHSpritePlay> *pool = &m_plays;
     VIHSpriteAnim *a = sc.Animation(pool->Value(i).m_animID);
     VIHSpritePlay *p = &pool->Value(i);
-    if (p->m_playbackType == VIPlaybackTypeStopped ||
-        p->m_playbackType == VIPlaybackTypeStopEnd)
+    // ONE `return 0` at the bottom, the stopped case falling through to it:
+    // with an early return the return label splits the tail from the epilogue
+    // and sched2 cannot slide `move v0,zero` behind `lq ra`.
+    if (p->m_playbackType != VIPlaybackTypeStopped &&
+        p->m_playbackType != VIPlaybackTypeStopEnd)
     {
-        p->m_lastTime = sc.GetTime();
-        return 0;
-    }
-    long since = sc.GetTime() - p->m_lastTime;
-    float dt = (float)(int)since;
-    float from;
-    if (0.0f < p->m_speed)
-        from = (float)p->m_frameA + p->m_frameT;
-    else
-        from = (float)p->m_frameA - p->m_frameT;
-    if (p->m_frameRate != 0.0f)
-    {
-        float acc = p->m_timeAccum + dt;
-        int n = (int)(acc * p->m_frameRate);
-        p->m_timeAccum = acc - (float)n * p->m_frameDuration;
+        long since = sc.GetTime() - p->m_lastTime;
+        float dt = (float)(int)since;
+        float from;
         if (0.0f < p->m_speed)
-        {
-            p->m_frameA = p->m_frameA + n;
-            if (p->m_playbackType == VIPlaybackTypeOnce)
-            {
-                if (a->m_numFrames - 1 < p->m_frameA)
-                    p->m_frameA = a->m_numFrames - 1;
-                p->m_frameB = p->m_frameA + 1;
-                if (a->m_numFrames - 1 < p->m_frameB)
-                {
-                    p->m_frameB = p->m_frameA;
-                    p->m_timeAccum = 0.0f;
-                    p->m_playbackType = VIPlaybackTypeStopEnd;
-                }
-            }
-            else
-            {
-                p->m_frameA = p->m_frameA % a->m_numFrames;
-                p->m_frameB = p->m_frameA + 1;
-                if (a->m_numFrames - 1 < p->m_frameB)
-                    p->m_frameB = 0;
-            }
-        }
+            from = (float)p->m_frameA + p->m_frameT;
         else
+            from = (float)p->m_frameA - p->m_frameT;
+        if (p->m_frameRate != 0.0f)
         {
-            p->m_frameA = p->m_frameA - n;
-            if (p->m_playbackType == VIPlaybackTypeOnce)
-            {
-                if (p->m_frameA < 0)
-                    p->m_frameA = 0;
-                p->m_frameB = p->m_frameA - 1;
-                if (p->m_frameB < 0)
-                {
-                    p->m_frameB = p->m_frameA;
-                    p->m_timeAccum = 0.0f;
-                    p->m_playbackType = VIPlaybackTypeStopEnd;
-                }
-            }
-            else
-            {
-                p->m_frameA = p->m_frameA % a->m_numFrames;
-                if (p->m_frameA < 0)
-                    p->m_frameA = p->m_frameA + a->m_numFrames;
-                p->m_frameB = p->m_frameA - 1;
-                if (p->m_frameB < 0)
-                    p->m_frameB = a->m_numFrames - 1;
-            }
-        }
-        p->m_frameT = p->m_timeAccum * p->m_frameRate;
-        if (a->m_numTriggers)
-        {
-            float to;
+            float acc = p->m_timeAccum + dt;
+            int n = (int)(acc * p->m_frameRate);
+            p->m_timeAccum = acc - (float)n * p->m_frameDuration;
             if (0.0f < p->m_speed)
             {
-                to = (float)p->m_frameA + p->m_frameT;
-                if ((float)a->m_numFrames < to)
-                    to = fmodf(to, (float)a->m_numFrames) + (float)a->m_numFrames;
+                p->m_frameA = p->m_frameA + n;
+                if (p->m_playbackType == VIPlaybackTypeOnce)
+                {
+                    if (a->m_numFrames - 1 < p->m_frameA)
+                        p->m_frameA = a->m_numFrames - 1;
+                    p->m_frameB = p->m_frameA + 1;
+                    if (a->m_numFrames - 1 < p->m_frameB)
+                    {
+                        p->m_frameB = p->m_frameA;
+                        p->m_timeAccum = 0.0f;
+                        p->m_playbackType = VIPlaybackTypeStopEnd;
+                    }
+                }
+                else
+                {
+                    p->m_frameA = p->m_frameA % a->m_numFrames;
+                    p->m_frameB = p->m_frameA + 1;
+                    if (a->m_numFrames - 1 < p->m_frameB)
+                        p->m_frameB = 0;
+                }
             }
             else
             {
-                to = (float)p->m_frameA - p->m_frameT;
-                if (to < -(float)a->m_numFrames)
-                    to = fmodf(to, (float)a->m_numFrames) - (float)a->m_numFrames;
-            }
-            for (int k = 0; k < a->m_numTriggers; k++)
-            {
-                VIArray<VIHSpriteTrigger> *ta = &m_triggers;
-                int idx;
-                if (FindTrigger(a->m_triggers[k].m_id, idx))
+                p->m_frameA = p->m_frameA - n;
+                if (p->m_playbackType == VIPlaybackTypeOnce)
                 {
-                    float tf = a->m_triggers[k].m_frame;
-                    if (0.0f < p->m_speed)
+                    if (p->m_frameA < 0)
+                        p->m_frameA = 0;
+                    p->m_frameB = p->m_frameA - 1;
+                    if (p->m_frameB < 0)
                     {
-                        if (from < tf && tf <= to)
+                        p->m_frameB = p->m_frameA;
+                        p->m_timeAccum = 0.0f;
+                        p->m_playbackType = VIPlaybackTypeStopEnd;
+                    }
+                }
+                else
+                {
+                    p->m_frameA = p->m_frameA % a->m_numFrames;
+                    if (p->m_frameA < 0)
+                        p->m_frameA = p->m_frameA + a->m_numFrames;
+                    p->m_frameB = p->m_frameA - 1;
+                    if (p->m_frameB < 0)
+                        p->m_frameB = a->m_numFrames - 1;
+                }
+            }
+            p->m_frameT = p->m_timeAccum * p->m_frameRate;
+            if (a->m_numTriggers)
+            {
+                float to;
+                if (0.0f < p->m_speed)
+                {
+                    to = (float)p->m_frameA + p->m_frameT;
+                    if ((float)a->m_numFrames < to)
+                        to = fmodf(to, (float)a->m_numFrames) + (float)a->m_numFrames;
+                }
+                else
+                {
+                    to = (float)p->m_frameA - p->m_frameT;
+                    if (to < -(float)a->m_numFrames)
+                        to = fmodf(to, (float)a->m_numFrames) - (float)a->m_numFrames;
+                }
+                for (int k = 0; k < a->m_numTriggers; k++)
+                {
+                    VIArray<VIHSpriteTrigger> *ta = &m_triggers;
+                    int idx;
+                    if (FindTrigger(a->m_triggers[k].m_id, idx))
+                    {
+                        float tf = a->m_triggers[k].m_frame;
+                        if (0.0f < p->m_speed)
                         {
-                            VIHSpriteTrigger *tr = &ta->m_data[idx];
-                            tr->m_c = sc.GetTime()
-                                - (long)((to - tf) * p->m_frameDuration);
-                            VIHSpriteTrigger *tb = &ta->m_data[idx];
-                            tb->m_b = 1;
-                        }
-                        else
-                        {
-                            tf = tf + (float)a->m_numFrames;
                             if (from < tf && tf <= to)
                             {
                                 VIHSpriteTrigger *tr = &ta->m_data[idx];
-                            tr->m_c = sc.GetTime()
-                                - (long)((to - tf) * p->m_frameDuration);
-                            VIHSpriteTrigger *tb = &ta->m_data[idx];
-                            tb->m_b = 1;
+                                tr->m_c = sc.GetTime()
+                                    - (long)((to - tf) * p->m_frameDuration);
+                                VIHSpriteTrigger *tb = &ta->m_data[idx];
+                                tb->m_b = 1;
                             }
-                        }
-                    }
-                    else
-                    {
-                        if (tf < from && to <= tf)
-                        {
-                            VIHSpriteTrigger *tr = &ta->m_data[idx];
-                            tr->m_c = sc.GetTime()
-                                - (long)((tf - to) * p->m_frameDuration);
-                            VIHSpriteTrigger *tb = &ta->m_data[idx];
-                            tb->m_b = 1;
+                            else
+                            {
+                                tf = tf + (float)a->m_numFrames;
+                                if (from < tf && tf <= to)
+                                {
+                                    VIHSpriteTrigger *tr = &ta->m_data[idx];
+                                tr->m_c = sc.GetTime()
+                                    - (long)((to - tf) * p->m_frameDuration);
+                                VIHSpriteTrigger *tb = &ta->m_data[idx];
+                                tb->m_b = 1;
+                                }
+                            }
                         }
                         else
                         {
-                            tf = tf - (float)a->m_numFrames;
                             if (tf < from && to <= tf)
                             {
                                 VIHSpriteTrigger *tr = &ta->m_data[idx];
-                            tr->m_c = sc.GetTime()
-                                - (long)((tf - to) * p->m_frameDuration);
-                            VIHSpriteTrigger *tb = &ta->m_data[idx];
-                            tb->m_b = 1;
+                                tr->m_c = sc.GetTime()
+                                    - (long)((tf - to) * p->m_frameDuration);
+                                VIHSpriteTrigger *tb = &ta->m_data[idx];
+                                tb->m_b = 1;
+                            }
+                            else
+                            {
+                                tf = tf - (float)a->m_numFrames;
+                                if (tf < from && to <= tf)
+                                {
+                                    VIHSpriteTrigger *tr = &ta->m_data[idx];
+                                tr->m_c = sc.GetTime()
+                                    - (long)((tf - to) * p->m_frameDuration);
+                                VIHSpriteTrigger *tb = &ta->m_data[idx];
+                                tb->m_b = 1;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
-    switch (p->m_blendMode)
-    {
-    case 0:
-        p->m_weight = 0.0f;
-        break;
-    case 1:
+        switch (p->m_blendMode)
         {
-            long el = sc.GetTime() - p->m_blendStart;
-            float f = (float)(int)el;
-            if (p->m_blendDuration < el)
-                p->m_blendMode = 0;
-            else
-                p->m_weight = f / (float)(int)p->m_blendDuration;
+        case 0:
+            p->m_weight = 0.0f;
+            break;
+        case 1:
+            {
+                // `since` and `dt` REUSED: both stay in the registers the
+                // first pair had (v1, $f4); fresh locals take others.
+                since = sc.GetTime() - p->m_blendStart;
+                dt = (float)(int)since;
+                if (p->m_blendDuration < since)
+                    p->m_blendMode = 0;
+                else
+                    p->m_weight = dt / (float)(int)p->m_blendDuration;
+            }
+            break;
         }
-        break;
     }
     p->m_lastTime = sc.GetTime();
     return 0;

@@ -275,18 +275,26 @@ int VIPad::Read(VIConsolePad &p)
         return 0;
     }
 
-    if (Active())
+    // The reset is a do/while(0) (a macro's shape): its LOOP_END note is a
+    // sched barrier that keeps the return's `move v0,zero` after the stores
+    // (6 wrong words without).  The `if` must be INSIDE it -- the first label
+    // after LOOP_BEG is aligned, and the if's end label is 8-aligned already
+    // where the return label is not (a stores-only wrap costs a `nop`).
+    do
     {
+        if (Active())
+        {
+            m_act[0] = 0;
+            m_act[1] = 0;
+            scePadSetActDirect(m_port, m_slot, m_act);
+        }
+        m_state = -1;
+        m_lfEnd = 0;
+        m_hfEnd = 0;
         m_act[0] = 0;
         m_act[1] = 0;
-        scePadSetActDirect(m_port, m_slot, m_act);
-    }
-    m_state = -1;
-    m_lfEnd = 0;
-    m_hfEnd = 0;
-    m_act[0] = 0;
-    m_act[1] = 0;
-    m_dirty = 0;
-    m_mode = 0;
+        m_dirty = 0;
+        m_mode = 0;
+    } while (0);
     return 0;
 }

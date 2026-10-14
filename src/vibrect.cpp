@@ -232,12 +232,15 @@ VIVect2I VIRect::Center() const
 }
 
 
+// The first pair through IRMax: 2 wrong words where the ternary is 4 (the
+// target compares `x < 1` -- LE against a LITERAL 0 -- not reached yet).
+
 int VIRect::DistanceSquared(const VIVect2I &v) const
 {
     VIVect2I d;
 
-    d.x = (d.x < min.x - v.x) ? min.x - v.x : d.x;
-    d.y = (d.y < min.y - v.y) ? min.y - v.y : d.y;
+    d.x = IRMax(d.x, min.x - v.x);
+    d.y = IRMax(d.y, min.y - v.y);
     d.x = (d.x < v.x - max.x) ? v.x - max.x : d.x;
     d.y = (d.y < v.y - max.y) ? v.y - max.y : d.y;
 

@@ -892,27 +892,32 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
 // Gauss-Jordan with partial pivoting on a stack COPY of `a`, `this` seeded to
 // the identity and swapped and eliminated in lockstep -- the same algorithm
 // VIMatrix33::Invert spells at three, and the one the float 4x4 runs on VU0.
+//
+// VIMatrix33::Invert's spelling: every element off its ROW, the pivot read
+// through an inline taking the row by reference, `p` read before `|p|`, and
+// the swap test written `t > mag` (the libcall is __gtdf2(t, mag), not
+// __ltdf2(mag, t)).  And two variables REUSED: the elimination factor is `q`
+// again and the elimination loop counter is the pivot loop's `k` -- each
+// pair shares a register in the target.  2 wrong words (one move scheduled
+// past a load), from 152 with the `double (*)[4]` view and separate
+// variables.
+static inline double &M44DAt(VIVect4D &v, int k) { return (&v.x)[k]; }
 int VIMatrix44D::Invert(const VIMatrix44D &a)
 {
     VIMatrix44D w(a);
     Identity();
-    double (*s)[4] = (double (*)[4])w.m;
-    double (*d)[4] = (double (*)[4])m;
     for (int i = 0; i < 4; i++)
     {
-        // NOT byte-exact: the target keeps `i*32` and `i*8` as two separate
-        // live values (a row base in a register, the column offset spilled)
-        // where this build folds them into one multiply by 40.  A row-pointer
-        // local (193/227) and the integer-cast idiom (219/225) are both worse.
-        double mag = fabs(s[i][i]);
-        double p = s[i][i];
+        double p = M44DAt(w.m[i], i);
         int row = i;
-        for (int k = i + 1; k < 4; k++)
+        double mag = fabs(p);
+        int k;
+        for (k = i + 1; k < 4; k++)
         {
-            double t = fabs(s[k][i]);
-            if (mag < t)
+            double t = fabs(M44DAt(w.m[k], i));
+            if (t > mag)
             {
-                p = s[k][i];
+                p = M44DAt(w.m[k], i);
                 mag = t;
                 row = k;
             }
@@ -922,27 +927,27 @@ int VIMatrix44D::Invert(const VIMatrix44D &a)
         w.SwapRows(i, row);
         SwapRows(i, row);
         double q = 1.0 / p;
-        s[i][0] *= q;
-        s[i][1] *= q;
-        s[i][2] *= q;
-        s[i][3] *= q;
-        d[i][0] *= q;
-        d[i][1] *= q;
-        d[i][2] *= q;
-        d[i][3] *= q;
-        for (int j = 0; j < 4; j++)
+        (&w.m[i].x)[0] *= q;
+        (&w.m[i].x)[1] *= q;
+        (&w.m[i].x)[2] *= q;
+        (&w.m[i].x)[3] *= q;
+        (&m[i].x)[0] *= q;
+        (&m[i].x)[1] *= q;
+        (&m[i].x)[2] *= q;
+        (&m[i].x)[3] *= q;
+        for (k = 0; k < 4; k++)
         {
-            if (j != i)
+            if (k != i)
             {
-                double f = -s[j][i];
-                s[j][0] += s[i][0] * f;
-                s[j][1] += s[i][1] * f;
-                s[j][2] += s[i][2] * f;
-                s[j][3] += s[i][3] * f;
-                d[j][0] += d[i][0] * f;
-                d[j][1] += d[i][1] * f;
-                d[j][2] += d[i][2] * f;
-                d[j][3] += d[i][3] * f;
+                q = -(&w.m[k].x)[i];
+                (&w.m[k].x)[0] += (&w.m[i].x)[0] * q;
+                (&w.m[k].x)[1] += (&w.m[i].x)[1] * q;
+                (&w.m[k].x)[2] += (&w.m[i].x)[2] * q;
+                (&w.m[k].x)[3] += (&w.m[i].x)[3] * q;
+                (&m[k].x)[0] += (&m[i].x)[0] * q;
+                (&m[k].x)[1] += (&m[i].x)[1] * q;
+                (&m[k].x)[2] += (&m[i].x)[2] * q;
+                (&m[k].x)[3] += (&m[i].x)[3] * q;
             }
         }
     }

@@ -72,7 +72,7 @@ int VIFile::Open(const char *path, int flags)
     {
         if (!(flags & 2))
         {
-            if (!(flags & 4))
+            if ((flags & 4) == 0)
                 return -1;
         }
     }
@@ -82,9 +82,9 @@ int VIFile::Open(const char *path, int flags)
         dev = "";
     VIString::snprintf(name, 256, "%s\\%s;1", dev, path);
     VIString::strupr(name);
-    char *p = name;
-    if (*p)
+    if (name[0])
     {
+        char *p = name;
         do
         {
             if (*p == '/')

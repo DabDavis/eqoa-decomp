@@ -3938,6 +3938,13 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
 
 // -------------------------------------------------------------- shadows --
 
+// One triangle of a query list, through an inline whose `this` is the list.
+// Through it the three vertex copies each RE-READ `m_tris` off the pointer
+// gcse hoisted for Reset/QueryIntersection (the target's three `lw v0,8(s2)`),
+// where `m_queryTris.m_tris[t]` -- or a named `VIQueryTriList &` -- folds to
+// ONE `lw v0,6136(s1)` shared by all three.  Measured, not explained.
+static inline VIQueryTri &QTri(VIQueryTriList &l, int i) { return l.m_tris[i]; }
+
 // A character's blob shadow.  Six nodes of the character's skeleton -- two of
 // them pulled halfway to the root -- are taken into the actor's own frame and
 // bounded; that box, inflated by 0.2 in x and z, is taken back into the world
@@ -3952,6 +3959,7 @@ int VIScene::RenderShadow(int actor)
     VIVect3       v;
     VIActorFilter filt;
     int           nodes[6] = { 5, 6, 4, 7, 0, 1 };
+    int           i;      // ONE counter for both loops: they share s5
 
     if (m_p1880 == -1)
         return -1;
@@ -3966,23 +3974,24 @@ int VIScene::RenderShadow(int actor)
     GetActorTransform(actor, toWorld);
     toLocal.Invert(toWorld);
 
-    for (int k = 0; k < 6; k++)
+    for (i = 0; i < 6; i++)
     {
-        sprite->CalcSlotWorldTransform((VICSpriteNodeID)nodes[k], actor, *this, node);
+        sprite->CalcSlotWorldTransform((VICSpriteNodeID)nodes[i], actor, *this, node);
         v.x = node.m[3].x;
         v.y = node.m[3].y;
         v.z = node.m[3].z;
-        toLocal.Mul(v, pts[k]);
+        toLocal.Mul(v, pts[i]);
 
-        if (k >= 4)
-            pts[k] *= 0.5f;
+        if (i >= 4)
+            pts[i] *= 0.5f;
     }
 
     bb.Init(6, pts);
 
-    VIVect3 e;
+    // The three-float constructor, not `VIVect3 e;` + Set: the zeroing ctor's
+    // z store survives (Set's z goes through the hoisted `&e`), one word.
+    VIVect3 e(0.2f, 0.0f, 0.2f);
 
-    e.Set(0.2f, 0.0f, 0.2f);
     bb.min -= e;
     e.Set(0.2f, 0.0f, 0.2f);
 
@@ -4007,39 +4016,46 @@ int VIScene::RenderShadow(int actor)
     m_raster->SetMaterial(m_p1880);
     m_raster->SetZBias(15);
 
-    for (int t = 0; t < m_queryTris.m_numTris; t++)
+    for (i = 0; i < m_queryTris.m_numTris; i++)
     {
-        p0 = m_queryTris.m_tris[t].m_v0;
+        // Both reciprocals once, FIRST: 1.0f is then the first constant the
+        // loop hoists, and the uv[1]/uv[2] blocks reuse them across the clamp
+        // branches instead of re-dividing.  The copies all precede the three
+        // `+= 0.04f`, whose stores the target sinks below the third copy.
+        float sx = 1.0f / (bb.max.x - bb.min.x);
+        float sz = 1.0f / (bb.max.z - bb.min.z);
+
+        p0 = QTri(m_queryTris, i).m_v0;
+        p1 = QTri(m_queryTris, i).m_v1;
+        p2 = QTri(m_queryTris, i).m_v2;
         p0.y += 0.04f;
-        p1 = m_queryTris.m_tris[t].m_v1;
         p1.y += 0.04f;
-        p2 = m_queryTris.m_tris[t].m_v2;
         p2.y += 0.04f;
 
         uv[0].x = (p0.x * toLocal.m[0].x + p0.y * toLocal.m[1].x
                    + p0.z * toLocal.m[2].x + toLocal.m[3].x - bb.min.x)
-                  * (1.0f / (bb.max.x - bb.min.x));
+                  * sx;
         uv[0].y = (p0.x * toLocal.m[0].z + p0.y * toLocal.m[1].z
                    + p0.z * toLocal.m[2].z + toLocal.m[3].z - bb.min.z)
-                  * (1.0f / (bb.max.z - bb.min.z));
+                  * sz;
         e.x = v.y - p0.y;
         e.x = VIMIN(VIMAX(0.0f, e.x), 1.0f);
 
         uv[1].x = (p1.x * toLocal.m[0].x + p1.y * toLocal.m[1].x
                    + p1.z * toLocal.m[2].x + toLocal.m[3].x - bb.min.x)
-                  * (1.0f / (bb.max.x - bb.min.x));
+                  * sx;
         uv[1].y = (p1.x * toLocal.m[0].z + p1.y * toLocal.m[1].z
                    + p1.z * toLocal.m[2].z + toLocal.m[3].z - bb.min.z)
-                  * (1.0f / (bb.max.z - bb.min.z));
+                  * sz;
         e.y = v.y - p1.y;
         e.y = VIMIN(VIMAX(0.0f, e.y), 1.0f);
 
         uv[2].x = (p2.x * toLocal.m[0].x + p2.y * toLocal.m[1].x
                    + p2.z * toLocal.m[2].x + toLocal.m[3].x - bb.min.x)
-                  * (1.0f / (bb.max.x - bb.min.x));
+                  * sx;
         uv[2].y = (p2.x * toLocal.m[0].z + p2.y * toLocal.m[1].z
                    + p2.z * toLocal.m[2].z + toLocal.m[3].z - bb.min.z)
-                  * (1.0f / (bb.max.z - bb.min.z));
+                  * sz;
         e.z = v.y - p2.y;
         e.z = VIMIN(VIMAX(0.0f, e.z), 1.0f);
 

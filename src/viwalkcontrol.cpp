@@ -21,11 +21,21 @@ VIVect3 VIWalkControl::WGravity(0.0f, -1.0f, 0.0f);
 // Phase 11/13 position, and the reason this class is worth doing before the
 // ones whose behaviour still has to be read out of the disassembly.
 
-// The tail every input method shares: `accum += dir * k`, one component at a
-// time.  It is a real helper and not three statements written out: taking both
-// vectors by REFERENCE is what makes the store to accum alias `dir` on the
-// stack, so the guest writes each dir component back and reloads it -- which a
-// version reading dir straight out of registers cannot produce.
+// The vector helpers.  Each one is an inline taking its vectors BY REFERENCE,
+// and the guest's aliasing is decided by WHAT the caller hands them:
+//
+//   a member (`m_right`) or a stack local -- the argument is an expression, so
+//     the inlined parameter is a fresh pseudo with NO pointer flag.  A store
+//     or load through it at +4/+8 has no known base (alias.c find_base_term),
+//     so gcc must assume it can touch any addressable stack local: cse
+//     forgets the local's known components, flow keeps stores to it it would
+//     otherwise call dead, and sched keeps loads behind stores to it.  At +0
+//     the register's own base value is used, so +0 aliases nothing.
+//   a named `VIVect3 *` -- the parameter IS that register, pointer-flagged,
+//     with a known base, and none of the above happens.
+//
+// All four of UpdateDirections, ViewRelativeMove, UpdateLocomotion and
+// UpdatePhysics closed on handing these the member instead of a named pointer.
 static inline void Cross(VIVect3 &out, const VIVect3 &a, const VIVect3 &b)
 {
     out.x = a.y * b.z - a.z * b.y;
@@ -33,6 +43,21 @@ static inline void Cross(VIVect3 &out, const VIVect3 &a, const VIVect3 &b)
     out.z = a.x * b.y - a.y * b.x;
 }
 
+// By value: the result is built in a caller temporary with the three-float
+// ctor (no zeroing) and then copied by VIVect3::operator=.
+static inline VIVect3 operator-(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+static inline float Dot(const VIVect3 &a, const VIVect3 &b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// The tail every input method shares: `accum += dir * k`, one component at a
+// time.  Both vectors by reference: with `accum` a member, its store at +4
+// is the unflagged-pseudo store above and the guest reloads dir.z after it.
 static inline void AddVec(VIVect3 &accum, const VIVect3 &dir, float k)
 {
     accum.x += dir.x * k;
@@ -367,20 +392,22 @@ int VIWalkControl::PitchDown(float t)
 // The cross products are written out term by term because the world up vector
 // is (0,1,0) and the guest's operand order is load-bearing on the sign of
 // zero: `(-x)*0 + z*0` is not `z*0 - x*0` when the signs differ.
+//
+// Cross is handed the MEMBER, not a named `VIVect3 *`: the inline's `out` is
+// then a fresh pseudo with no pointer flag, and a store through it at a
+// nonzero offset has no known base -- so storing `right.y` makes cse forget
+// the stack-held `up`, and `right.z` reloads up.x and up.y (0 and 1) where a
+// named pointer lets it fold them.  `right.x`, at offset 0, kills nothing.
 int VIWalkControl::UpdateDirections()
 {
-    VIVect3 *fwd = &m_forward;
-    VIVect3 *fac = &m_facing;
-    VIVect3 *rgt = &m_right;
-
-    fwd->HPR(m_phys.m_angles.x, 0.0f, m_phys.m_angles.z);
-    fac->HPR(m_phys.m_angles.x, m_phys.m_angles.y, m_phys.m_angles.z);
+    m_forward.HPR(m_phys.m_angles.x, 0.0f, m_phys.m_angles.z);
+    m_facing.HPR(m_phys.m_angles.x, m_phys.m_angles.y, m_phys.m_angles.z);
 
     VIVect3 up(0.0f, 1.0f, 0.0f);
-    Cross(*rgt, *fwd, up);
-    rgt->Normalize();
+    Cross(m_right, m_forward, up);
+    m_right.Normalize();
 
-    Cross(m_up, *fac, *rgt);
+    Cross(m_up, m_facing, m_right);
     return 0;
 }
 
@@ -674,46 +701,54 @@ int VIWalkControl::CalcPitchRollToLandscape(VIVect3 &v) const
 int VIWalkControl::UpdateLocomotion(float dt)
 {
     VIVect3  d;
-    VIVect3  d2;
-    VIVect3 *prev = &m_committed.m_position;
-    VIVect3 *pos = &m_phys.m_position;
-    VIVect3 *fwd = &m_forward;
-    VIVect3 *rgt = &m_right;
     float    vF, vR;
 
-    d.x = pos->x - prev->x;
-    d.y = pos->y - prev->y;
-    d.z = pos->z - prev->z;
-    d2 = d;
-    vF = (d.x * fwd->x + d.y * fwd->y + d.z * fwd->z) / dt;
-    vR = (d.x * rgt->x + d.y * rgt->y + d.z * rgt->z) / dt;
+    // The difference and both dots go through inline helpers handed the
+    // MEMBERS: their reference parameters are unflagged pseudos, so every
+    // read at +4/+8 may alias the stack.  That keeps d's zeroing ctor (the
+    // reads sit between it and the copy-in, so flow cannot call the zeroes
+    // dead) and holds fwd.y/z and right.* behind d's stores in the schedule.
+    // The by-value `-` builds its result in a temporary at sp+16, which is
+    // the second vector in the frame -- not a second local.
+    d = m_phys.m_position - m_committed.m_position;
+    vF = Dot(d, m_forward) / dt;
+    vR = Dot(d, m_right) / dt;
 
+    // State 6 is the ELSE of an outer test, not the first link of the chain:
+    // the guest's `beqz` to the shared store with `li v0,6` in its slot is an
+    // out-of-line arm folded by reorg.  As the first `if` it falls through and
+    // reorg fills the `bnez` from its target instead.  The swim test is one
+    // `||` for the same reason, and `fabsf(vR) > fabsf(vF)` is written that
+    // way round because the guest takes |vR| first.
     if (!IN_LIQUID(m_phys))
     {
-        if ((m_phys.m_flags & 1) == 0)
-            m_phys.m_locoState = 6;
-        else if (m_walkSpeed + (m_runSpeed - m_walkSpeed) * 0.1f < vF)
-            m_phys.m_locoState = 3;
-        else if (m_speedThreshold < vR && fabsf(vF) < fabsf(vR) &&
-                 m_committed.m_locoState != 1 && m_committed.m_locoState != 2)
-            m_phys.m_locoState = 11;
-        else if (vR < -m_speedThreshold && fabsf(vF) < fabsf(vR) &&
-                 m_committed.m_locoState != 1 && m_committed.m_locoState != 2)
-            m_phys.m_locoState = 10;
-        else if (m_speedThreshold < vR && fabsf(vF) * 1.5f < fabsf(vR))
-            m_phys.m_locoState = 11;
-        else if (vR < -m_speedThreshold && fabsf(vF) * 1.5f < fabsf(vR))
-            m_phys.m_locoState = 10;
-        else if (m_speedThreshold < vF)
-            m_phys.m_locoState = 1;
-        else if (vF < -m_speedThreshold)
-            m_phys.m_locoState = 2;
-        else if (m_turnRate * 0.5f < m_phys.m_angularVel.x)
-            m_phys.m_locoState = 4;
-        else if (m_phys.m_angularVel.x < -(m_turnRate * 0.5f))
-            m_phys.m_locoState = 5;
+        if (m_phys.m_flags & 1)
+        {
+            if (m_walkSpeed + (m_runSpeed - m_walkSpeed) * 0.1f < vF)
+                m_phys.m_locoState = 3;
+            else if (m_speedThreshold < vR && fabsf(vR) > fabsf(vF) &&
+                     m_committed.m_locoState != 1 && m_committed.m_locoState != 2)
+                m_phys.m_locoState = 11;
+            else if (vR < -m_speedThreshold && fabsf(vR) > fabsf(vF) &&
+                     m_committed.m_locoState != 1 && m_committed.m_locoState != 2)
+                m_phys.m_locoState = 10;
+            else if (m_speedThreshold < vR && fabsf(vF) * 1.5f < fabsf(vR))
+                m_phys.m_locoState = 11;
+            else if (vR < -m_speedThreshold && fabsf(vF) * 1.5f < fabsf(vR))
+                m_phys.m_locoState = 10;
+            else if (m_speedThreshold < vF)
+                m_phys.m_locoState = 1;
+            else if (vF < -m_speedThreshold)
+                m_phys.m_locoState = 2;
+            else if (m_turnRate * 0.5f < m_phys.m_angularVel.x)
+                m_phys.m_locoState = 4;
+            else if (m_phys.m_angularVel.x < -(m_turnRate * 0.5f))
+                m_phys.m_locoState = 5;
+            else
+                m_phys.m_locoState = 0;
+        }
         else
-            m_phys.m_locoState = 0;
+            m_phys.m_locoState = 6;
     }
     else
     {
@@ -721,13 +756,9 @@ int VIWalkControl::UpdateLocomotion(float dt)
         // counts as well as the heading rate -- a swimmer looking up and down
         // is animating.  The last comparison is on |vR| and its two outcomes
         // differ: fast sideways drift is state 12, not 13.
-        if (m_turnRate * 0.25f < fabsf(m_phys.m_angularVel.y))
-            m_phys.m_locoState = 12;
-        else if (m_turnRate * 0.25f < fabsf(m_phys.m_angularVel.x))
-            m_phys.m_locoState = 12;
-        else if (m_speedThreshold < vF)
-            m_phys.m_locoState = 12;
-        else if (m_speedThreshold < fabsf(vR))
+        if (fabsf(m_phys.m_angularVel.y) > m_turnRate * 0.25f ||
+            m_turnRate * 0.25f < fabsf(m_phys.m_angularVel.x) ||
+            m_speedThreshold < vF || m_speedThreshold < fabsf(vR))
             m_phys.m_locoState = 12;
         else
             m_phys.m_locoState = 13;
@@ -758,12 +789,8 @@ int VIWalkControl::UpdatePhysics(float dt)
 {
     VIVect3  f;
     VIVect3  tq;
-    VIVect3 *pos;
-    VIVect3 *vel;
-    VIVect3 *ang;
-    VIVect3 *avel;
-    float    damp, angDamp, dt2, k;
-    float    heading, wrapped;
+    float    damp, dt2;
+    float    wrapped;
 
     // The +0x18C -> +0x104 decay.  The unconditional copy on the first line is
     // a BIT copy and it is what survives when neither branch runs -- which is
@@ -785,19 +812,20 @@ int VIWalkControl::UpdatePhysics(float dt)
         m_phys.m_heightOffset = VIMIN(0.0f, VIMAX(-m_parm28, m_phys.m_heightOffset));
     }
 
-    // ONE powf call with its argument selected, not three calls cross-jumped:
-    // the guest loads the chosen damping into f12 in each arm's DELAY SLOT and
-    // falls into a single `jal`.
+    // THREE powf calls, one per arm, cross-jumped after reload into the one
+    // `jal` with each arm's damping loaded in a delay slot.  A selected
+    // argument and one call gives the same branches, but then sched1 sees the
+    // `damp = $f0` copy in the same block as the force copy below and sinks it
+    // under the loads, which also swaps f.x and f.y between $f4 and $f5.
     if (!IN_LIQUID(m_phys))
     {
         if (m_phys.m_flags & 1)
-            k = m_moveDamping;
+            damp = powf(m_moveDamping, dt);
         else
-            k = m_parm44;
+            damp = powf(m_parm44, dt);
     }
     else
-        k = m_swimDamping;
-    damp = powf(k, dt);
+        damp = powf(m_swimDamping, dt);
 
     f = m_phys.m_force;
     if (m_parm60)
@@ -819,24 +847,21 @@ int VIWalkControl::UpdatePhysics(float dt)
     dt2 = dt * dt;
     tq = m_phys.m_torque;
 
-    pos = &m_phys.m_position;
-    vel = &m_phys.m_velocity;
-    AddVec(*pos, f, dt2 * damp);
-    AddVec(*pos, *vel, dt * damp);
-    AddVec(*vel, f, dt);
-    vel->x *= damp;
-    vel->y *= damp;
-    vel->z *= damp;
+    // Every accumulator is handed to AddVec as the MEMBER, so each store at
+    // +4 goes through an unflagged pseudo and kills the stack copy `f`: f.z
+    // is reloaded after pos.y is written, and f.x/f.y again for the velocity.
+    // ONE `damp`, reassigned by the second powf -- a separate angDamp gets a
+    // register of its own where the guest moves both results into $f6.
+    AddVec(m_phys.m_position, f, dt2 * damp);
+    AddVec(m_phys.m_position, m_phys.m_velocity, dt * damp);
+    AddVec(m_phys.m_velocity, f, dt);
+    m_phys.m_velocity *= damp;
 
-    angDamp = powf(m_turnDamping, dt);
-    ang = &m_phys.m_angles;
-    avel = &m_phys.m_angularVel;
-    AddVec(*ang, tq, dt2 * angDamp);
-    AddVec(*ang, *avel, dt * angDamp);
-    AddVec(*avel, tq, dt);
-    avel->x *= angDamp;
-    avel->y *= angDamp;
-    avel->z *= angDamp;
+    damp = powf(m_turnDamping, dt);
+    AddVec(m_phys.m_angles, tq, dt2 * damp);
+    AddVec(m_phys.m_angles, m_phys.m_angularVel, dt * damp);
+    AddVec(m_phys.m_angularVel, tq, dt);
+    m_phys.m_angularVel *= damp;
 
     // The OVERSHOOT DETECTOR, the other half of SetTargetHeading's bang-bang
     // turn.  The target is wrapped to within pi of the heading for the
@@ -845,14 +870,16 @@ int VIWalkControl::UpdatePhysics(float dt)
     // is the pre-step torque: nothing above writes +0xEC.
     if (m_phys.m_flags & 0x100)
     {
-        heading = m_phys.m_angles.x;
+        // No `heading` local: the member is read in all four places, so PRE
+        // turns the later loads into a copy of the first (`mov.s f5,f0`); a
+        // local assigned up front IS the load and gets no copy.
         wrapped = m_phys.m_targetHeading;
-        if (3.14159274f < m_phys.m_targetHeading - heading)
+        if (3.14159274f < m_phys.m_targetHeading - m_phys.m_angles.x)
             wrapped = m_phys.m_targetHeading - 6.28318548f;
-        else if (m_phys.m_targetHeading - heading < -3.14159274f)
+        else if (m_phys.m_targetHeading - m_phys.m_angles.x < -3.14159274f)
             wrapped = m_phys.m_targetHeading + 6.28318548f;
-        if ((0.0f < m_phys.m_torque.x && wrapped < heading) ||
-            (m_phys.m_torque.x < 0.0f && heading < wrapped))
+        if ((0.0f < m_phys.m_torque.x && wrapped < m_phys.m_angles.x) ||
+            (m_phys.m_torque.x < 0.0f && m_phys.m_angles.x < wrapped))
         {
             m_phys.m_angles.x = m_phys.m_targetHeading;
             m_phys.m_torque.x = 0.0f;
@@ -872,11 +899,24 @@ int VIWalkControl::UpdatePhysics(float dt)
     if (m_committed.m_flags & 0x10A8)
         m_phys.m_angles.y = m_committed.m_angles.y;
     else if (m_committed.m_flags & 0x854)
-        m_phys.m_angles.y = VIMIN(1.5607964f, VIMAX(-1.5607964f, m_phys.m_angles.y));
-    else if (m_phys.m_angles.y < m_minPitch && m_phys.m_angles.y < m_committed.m_angles.y)
-        m_phys.m_angles.y = m_committed.m_angles.y;
-    else if (m_maxPitch < m_phys.m_angles.y && m_committed.m_angles.y < m_phys.m_angles.y)
-        m_phys.m_angles.y = m_committed.m_angles.y;
+    {
+        // The store is through a computed `float *` (SetPitchRange's idiom)
+        // and the clamp runs on a LOCAL, so the result shares the input's
+        // register; the dry arm reads its own local, so the two loads are
+        // separate pseudos and reorg fills the `beqzl` from the dry side.
+        float *p = &m_phys.m_angles.y;
+        float y = *p;
+        y = VIMIN(1.5607964f, VIMAX(-1.5607964f, y));
+        *p = y;
+    }
+    else
+    {
+        float y = m_phys.m_angles.y;
+        if (y < m_minPitch && y < m_committed.m_angles.y)
+            m_phys.m_angles.y = m_committed.m_angles.y;
+        else if (m_maxPitch < y && m_committed.m_angles.y < y)
+            m_phys.m_angles.y = m_committed.m_angles.y;
+    }
     m_phys.m_angles.z = 0.0f;
     return 0;
 }
@@ -901,7 +941,7 @@ int VIWalkControl::ViewRelativeMove(const VIVect3 &ref, float x, float y)
     VIVect3 w;
     VIVect3 dir;
     float   h, p, r;
-    float   mag, accel;
+    float   mag;
 
     if (m_phys.m_flags & 0x200)
     {
@@ -925,11 +965,24 @@ int VIWalkControl::ViewRelativeMove(const VIVect3 &ref, float x, float y)
         dir = u;
         dir *= v.x;
         AddVec(dir, w, v.y);
-        if (m_runThreshold < mag && !(IN_MUD(m_phys) || m_phys.m_bits.slowRun))
-            accel = m_runAccel;
+        // THREE calls, one per arm, nested so that each arm's label has a
+        // single jump and a barrier in front: cse then follows every arm from
+        // the block that stored dir, keeps dir.x/dir.y in registers in all
+        // three, and jump2 cross-jumps the identical tails into the one the
+        // guest has.  `accel = c ? run : walk` and one call puts the call
+        // after a join, where cse knows nothing and reloads all of dir; the
+        // flat `&&` gives the else label two jumps and loses that arm.
+        // dir.z is reloaded either way -- the m_force.y store before it goes
+        // through AddVec's unflagged `accum` (see UpdateDirections).
+        if (m_runThreshold < mag)
+        {
+            if (!(IN_MUD(m_phys) || m_phys.m_bits.slowRun))
+                AddVec(m_phys.m_force, dir, m_runAccel);
+            else
+                AddVec(m_phys.m_force, dir, m_walkAccel);
+        }
         else
-            accel = m_walkAccel;
-        AddVec(m_phys.m_force, dir, accel);
+            AddVec(m_phys.m_force, dir, m_walkAccel);
         dir.HPR(&h, &p, &r);
     }
     else

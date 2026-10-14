@@ -124,15 +124,12 @@ int VIFrustum::Cull(const VISphere &s) const
     return 0;
 }
 
-// Open at 19/66.  The target does NOT hoist the four plane loads out of the
-// inner loop and enters the loop by jumping into the MIDDLE of its body, with
-// the first iteration's head duplicated in the preheader and its vertex
-// addresses folded to sp.  Writing the j-exhausted exit as a `return 1` from
-// inside the loop reproduces the un-hoisted body exactly -- gcc will not move a
-// MEM out of a loop whose body is reachable past a conditional exit -- but it
-// costs the post-loop `if (j == 8)` shape the target has.  Neither the natural
-// for/break form (31/72, every plane load hoisted), a source-level peel of the
-// first iteration (37/73), nor thirteen -fno- flags produce the target's shape.
+// The inner loop is ONE compound `while` test.  expand_end_loop rotates the
+// whole `j < 8 && !(...)` to the bottom, so the plane and vertex loads sit
+// behind the `j < 8` exit, loop.c will not hoist them (maybe_never), and the
+// entry jumps into the middle of the body.  The for/break form rotates only
+// `j < 8` and hoists every plane load (31/72); a `return 1` inside the loop
+// gave the right body but not the post-loop `j == 8` (19/66).
 int VIFrustum::Cull(const VIBBox &b, const VIMatrix44 &m) const
 {
     VIVect3 v[8];
@@ -143,18 +140,12 @@ int VIFrustum::Cull(const VIBBox &b, const VIMatrix44 &m) const
 
     for (int i = 0; i < 6; i++)
     {
-        const VIVect3 *q = v;
         int j = 0;
 
-        for (;;)
-        {
-            if (j >= 8)
-                return 1;
-            if (q->x * pl->n.x + q->y * pl->n.y + q->z * pl->n.z + pl->d < 0.0f)
-                break;
+        while (j < 8 && !(v[j].x * pl->n.x + v[j].y * pl->n.y + v[j].z * pl->n.z + pl->d < 0.0f))
             j++;
-            q++;
-        }
+        if (j == 8)
+            return 1;
         pl++;
     }
     return 0;

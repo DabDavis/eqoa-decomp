@@ -72,12 +72,27 @@ VIColor32 *VICSpriteCust::GetTintColor(VICSpriteTint tint)
 // helm resources looked up by name hash (in the order CHARCUST.CSF loaded
 // them, which is why each set goes chest, boots, bracer, legs, gloves), then
 // the face hashes and the fifteen tints as constants.  Race 9 has no faces.
+//
+// Every clearing loop counts UP, even the three the target walks DOWN: gcc's
+// loop reversal turns a one-store `for (i = 0; i < n; i++)` into a pointer from
+// the END, so the descending pointer is no evidence of a descending source.
+// And it is the shape that matters to the Race clear before it: each `i + 1`
+// in a later latch makes the earlier one "isolated" to gcse's LCM, so it is
+// not hoisted above the inner loop, `i` stays a biv, and the outer `i * 32`
+// is strength-reduced to the `addiu a1,a1,32` the target has.  Written down-
+// counting, PRE hoists `i + 1` and the outer loop keeps an `sll`: 377 -> 296.
+// What is left is the 400-insn constant block after the last call -- the
+// stores are in target order, the reload registers are not.
+//
+// The faces go race by race in the order 6, 2, 4, 1, 8, 3, 7, 0, 10, 5, the
+// four male faces then the four female -- read off the target's store order,
+// which a constant block this size keeps in source order (619 -> 377 words).
 void VICSpriteCust::SetResources(VIRaster &r, VIDictionary &d)
 {
     int i, j;
 
     for (i = 0; i < 9; i++)
-        for (j = 4; j >= 0; j--)
+        for (j = 0; j < 5; j++)
             Armor[i][j] = -1;
     for (i = 0; i < 11; i++)
         for (j = 0; j < 4; j++)
@@ -85,7 +100,7 @@ void VICSpriteCust::SetResources(VIRaster &r, VIDictionary &d)
             Race[i][j][0] = 0;
             Race[i][j][1] = 0;
         }
-    for (i = 7; i >= 0; i--)
+    for (i = 0; i < 8; i++)
         Hair[i] = -1;
     HairNull = -1;
     for (i = 0; i < 4; i++)
@@ -93,7 +108,7 @@ void VICSpriteCust::SetResources(VIRaster &r, VIDictionary &d)
         Robe[i][0] = -1;
         Robe[i][1] = -1;
     }
-    for (i = 8; i >= 0; i--)
+    for (i = 0; i < 9; i++)
         Helm[i] = -1;
 
     d.FindTyped(0xBF4B7E0A, VIRT_Surface, Armor[1][0]);

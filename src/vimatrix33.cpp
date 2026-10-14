@@ -158,27 +158,22 @@ void VIMatrix33::Mul(const VIMatrix33 &a, float f)
     d2[2] = s2[2] * f;
 }
 
-// NOT byte-exact: the inner loop is identical instruction for instruction, and
-// so is everything from the guard down -- what differs is four words of the
-// outer preamble.  The target builds THREE induction pointers (a separate one
-// for the load of d[i][j] and for the store of it, plus one shared for d[j][i])
-// where the plain `t = d[i][j]; d[i][j] = d[j][i]; d[j][i] = t;` builds two,
-// and the row pointer below is what splits them.  It costs one thing: gcc
-// strength-reduces `r`'s i*12 across the OUTER loop, so the mult is hoisted and
-// a second `li 12` appears, where the target computes both i*12 inside the
-// guarded region from one constant.  ~20 spellings and 11 toolchains later
-// that is the whole remaining delta.
+// Element k of a row, through the row taken by REFERENCE (Invert, Transpose).
+static inline float &M33At(VIVect3 &v, int k) { return (&v.x)[k]; }
+
+// Every element through M33At on its row: the three pointers (a load and a
+// store pointer for m[i][j], one shared for m[j][i]) and both i*12 inside the
+// guarded preheader come out exactly.  A `float (*)[3]` view folds them --
+// 19 wrong words, open since phase 4.
 void VIMatrix33::Transpose()
 {
-    float (*d)[3] = (float (*)[3])m;
     for (int i = 0; i < 3; i++)
     {
-        float *r = &m[i].x;
         for (int j = i; j < 3; j++)
         {
-            float t = r[j];
-            d[i][j] = d[j][i];
-            d[j][i] = t;
+            float t = M33At(m[i], j);
+            M33At(m[i], j) = M33At(m[j], i);
+            M33At(m[j], i) = t;
         }
     }
 }
@@ -301,23 +296,30 @@ void VIMatrix33::Mul(const VIMatrix33 &a, const VIMatrix33 &b)
 // VIMatrix44::Invert, and the one go-eqoa-vi/vimath/invert.go documents.
 // SwapRows is called UNCONDITIONALLY: there is no `row != i` guard in the
 // object code, only the two jals.
+// Every element is reached off its ROW (`(&row.x)[k]`), never through one
+// `float (*)[3]` view: the view is a pseudo copy of sp held in a callee-saved
+// register, and folds s[i][i] to i*16 where the target adds i*4 to the row.
+// The pivot search reads through an inline taking the row by reference, so
+// the |t| read and the `p` read are two pointers, as in the target.  67 wrong
+// words (108 through the view); the rest is the scale step's two mults per
+// row and the 12-constant registers.  The scale goes through a reference per
+// row, and the elimination factor REUSES `q` -- the target keeps both in $f8
+// (64 -> 57).
 int VIMatrix33::Invert(const VIMatrix33 &a)
 {
     VIMatrix33 w(a);
     Identity();
-    float (*s)[3] = (float (*)[3])w.m;
-    float (*d)[3] = (float (*)[3])m;
     for (int i = 0; i < 3; i++)
     {
-        float mag = fabsf(s[i][i]);
-        float p = s[i][i];
+        float mag = fabsf(M33At(w.m[i], i));
+        float p = M33At(w.m[i], i);
         int row = i;
         for (int k = i + 1; k < 3; k++)
         {
-            float t = fabsf(s[k][i]);
+            float t = fabsf(M33At(w.m[k], i));
             if (mag < t)
             {
-                p = s[k][i];
+                p = M33At(w.m[k], i);
                 mag = t;
                 row = k;
             }
@@ -327,23 +329,25 @@ int VIMatrix33::Invert(const VIMatrix33 &a)
         w.SwapRows(i, row);
         SwapRows(i, row);
         float q = 1.0f / p;
-        s[i][0] *= q;
-        s[i][1] *= q;
-        s[i][2] *= q;
-        d[i][0] *= q;
-        d[i][1] *= q;
-        d[i][2] *= q;
+        VIVect3 &wi = w.m[i];
+        wi.x *= q;
+        wi.y *= q;
+        wi.z *= q;
+        VIVect3 &mi = m[i];
+        mi.x *= q;
+        mi.y *= q;
+        mi.z *= q;
         for (int j = 0; j < 3; j++)
         {
             if (j != i)
             {
-                float f = -s[j][i];
-                s[j][0] += s[i][0] * f;
-                s[j][1] += s[i][1] * f;
-                s[j][2] += s[i][2] * f;
-                d[j][0] += d[i][0] * f;
-                d[j][1] += d[i][1] * f;
-                d[j][2] += d[i][2] * f;
+                q = -(&w.m[j].x)[i];
+                (&w.m[j].x)[0] += (&w.m[i].x)[0] * q;
+                (&w.m[j].x)[1] += (&w.m[i].x)[1] * q;
+                (&w.m[j].x)[2] += (&w.m[i].x)[2] * q;
+                (&m[j].x)[0] += (&m[i].x)[0] * q;
+                (&m[j].x)[1] += (&m[i].x)[1] * q;
+                (&m[j].x)[2] += (&m[i].x)[2] * q;
             }
         }
     }

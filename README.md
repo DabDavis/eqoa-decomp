@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,539 of 3,752 byte-exact**, phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,555 of 3,752 byte-exact**, phase 61 in progress)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -24,6 +24,8 @@ decomp goes ahead.
 | `eqrtl.py` | which PASS made a difference — gcc's own `-da` dumps, no source needed |
 | `eqcalls.py` | resolves a function's CALLEES by name, out of a resident SUPPORT |
 | `eqcallcheck.py` | **byte-exact is not correct**: every `jal` in our objects against the callee the relocated dump names; `eqcheck.score` now refuses a match whose callees differ (`CALLEE` row) |
+| `eqrefcheck.py` | the same for DATA references: every %hi/%lo pair (traced through the CFG) against the relocated dump -- strings by text, floats by value, jump tables by target, globals by name |
+| `eqlocal.py` | scores the functions the map does NOT name (statics, local helpers) by searching the unnamed code; reports what unique unnamed code is still unmatched |
 | `test_eqdecomp.py` | the canary — see below, it is the point |
 | `_q.py` | one TU, named symbols, 4.5 s — for sweeping source variants |
 | `_tu.py` | one TU, EVERY function in it, plus regressions against `MATCHED.txt` |
@@ -1144,7 +1146,24 @@ The r5900 costs as this binary actually computes them:
 | double fsqrt | 112 |
 | SN's VU0 types 28/29 | 3 |
 
-Tools: `rig_lat/` (`patch_lat1.py`, `verify_variant.py`, the interpreter `emu.py`,
+**Round 2: no scheduler knob either.** Five more hypotheses were patched into copies of the
+binary. Its `rank_for_schedule` and `insn_cost` are line for line the 990721 source.
+
+| Hypothesis | Matched that regress | Open that close |
+|---|---|---|
+| drop the "more dependents first" tie-break | 1,554 | 0 |
+| gcc-3 anti/output dependence cost 0 | 1,439 | 0 |
+| `ISSUE_RATE` 1 | 2,217 | 0 |
+| keep a call's return-value copy glued to the call | 504 | 0 |
+| make ready-list class 2 reachable | 483 | 0 |
+
+The decisive observation is that the target emits BOTH `jal; move <v0 copy>; ld` and
+`jal; ld; move` in functions already matched byte for byte, at 998 and 292 sites. Our
+unpatched compiler reproduces both. The order comes down to the dependents-count tie-break,
+which is decided by the source. **Every open function is a source-shape problem until
+shown otherwise.**
+
+Tools (in the private tree only, not in the public export): `rig_lat/` (`patch_lat1.py`, `verify_variant.py`, the interpreter `emu.py`,
 `cmp_runs.py`) and the regression lists in `rig_lat/logs/`. They patch a COPY under a
 lane's `tc/`, never `toolchains/`, and the lane's `eqcheck.py` takes `EQ_TC_DIR`.
 

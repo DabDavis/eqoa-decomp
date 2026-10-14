@@ -69,9 +69,9 @@ int VIFlyCamera::PitchDown(float t)
     VIVect3 axis;
 
     t = VIMIN(1.0f, VIMAX(-1.0f, t));
-    axis.x = 0.0f;
-    axis.y = 1.0f;
-    axis.z = 0.0f;
+    // VIWalkControl::PitchDown's lever: through Set() the 1.0 stays in a
+    // register and `* axis.y` is not folded (22 wrong words as three stores).
+    axis.Set(0.0f, 1.0f, 0.0f);
     AddVec(dir, axis, m_pitchAccel);
     AddVec(m_torque, dir, t);
     return 0;
@@ -154,11 +154,13 @@ int VIFlyCamera::UpdateCameraPhysics(float dt)
     VIVect3 tq;
     float   damp, dt2;
 
-    dt2 = dt * dt;
     f = m_force;
     tq = m_torque;
 
     damp = powf(m_moveDamping, dt);
+    // Written AFTER the call, yet it is issued before the jal, behind the
+    // argument setup -- the only one of 120 statement orders that matches.
+    dt2 = dt * dt;
 
     AddVec(m_position, f, dt2 * damp);
     AddVec(m_position, m_velocity, dt * damp);
@@ -183,10 +185,14 @@ int VIFlyCamera::UpdateCameraPhysics(float dt)
     // The member is read into a LOCAL first: the macro re-reads its argument
     // three times, and with the member written out gcc allocates a fresh
     // destination register where the target lets the upper bound's own
-    // register be the default.
-    float p = m_angles.y;
+    // register be the default.  And it is written back through a named
+    // REFERENCE, whose address the target materialises before the compares.
+    float &y = m_angles.y;
+    float p = y;
     float c = VIMIN(1.5607964f, VIMAX(-1.5607964f, p));
-    m_angles.y = c;
+    y = c;
+    // The roll is zeroed HERE, not last: it is scheduled into the damping below.
+    m_angles.z = 0.0f;
 
     AddVec(m_angularVel, tq, dt);
     {
@@ -196,7 +202,6 @@ int VIFlyCamera::UpdateCameraPhysics(float dt)
         avel->z *= damp;
     }
 
-    m_angles.z = 0.0f;
     return 0;
 }
 
@@ -273,10 +278,18 @@ int VIFlyCamera::Init(const VIVect3 &pos, const VIVect3 &angles,
 
 // 0x00441210.  Take the position and heading off a camera that is already
 // aimed -- the const HPR overload writes its three angles through pointers.
+//
+// Each copy is a three-float ctor off a named REFERENCE: the reference keeps
+// its own pointer (first component folded into the base) and the ctor's three
+// arguments are loaded before any store, so all six loads issue first in six
+// registers.  The copy ctor interleaves them (26 wrong words); the three-float
+// ctor straight off `cam.m_position` loses the pointers (also 26).
 int VIFlyCamera::Init(VICamera &cam, VIScene &scene)
 {
-    VIVect3 pos = cam.m_position;
-    VIVect3 dir = cam.m_dir;
+    const VIVect3 &p = cam.m_position;
+    const VIVect3 &d = cam.m_dir;
+    VIVect3 pos(p.x, p.y, p.z);
+    VIVect3 dir(d.x, d.y, d.z);
     VIVect3 hpr;
 
     dir.HPR(&hpr.x, &hpr.y, &hpr.z);

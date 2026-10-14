@@ -142,9 +142,15 @@ int VIObjFile::PostOpen()
         m_read = 0;
         m_write = 1;
     }
-    m_dirty = 0;
-    m_canWrite = 0;
-    m_canRead = 0;
+    // A do/while(0) (a macro's shape): the LOOP_END note keeps the return's
+    // `move v0,zero` after the stores, and this order is the one sched2
+    // turns into the target's (2 wrong words without either).
+    do
+    {
+        m_canWrite = 0;
+        m_dirty = 0;
+        m_canRead = 0;
+    } while (0);
     return 0;
 }
 

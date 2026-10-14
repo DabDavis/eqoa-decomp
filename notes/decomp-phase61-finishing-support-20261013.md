@@ -180,3 +180,25 @@ sub-loop and the three-list loop. The target's allocation puts the first loop's 
 the same register as the OUTER loop's, which is what one pseudo does. Two swapped pairs
 remain (`ver` against the hoisted constant 1, and `&version`/-1 against `l`). Declaration
 placement and four spellings of the version tests do not move them.
+
+## The code the map does not name
+
+The map names one address per symbol, and the census counted only named functions. So
+"every SUPPORT function written" said nothing about the 110 SPAN_CAP'd regions:
+**124,832 bytes**, about 14% of SUPPORT's code, that nothing scored. `eqlocal.py` searches
+those regions for each of our unnamed functions with the scorer's masked compare. It also
+classifies what is left by byte identity against the named functions:
+
+- **~107 KB are byte-identical COPIES of named template members.** The original build
+  emitted every implicitly-instantiated `VIMap`/`VIMultiMap`/`VIPool`/`VIArray` member
+  into each TU that used it, and the map names one copy. Our TUs call a single explicit
+  instantiation instead, so they emit none. This is a build-structure difference, not
+  unknown code. A relinkable build would need implicit instantiation per TU in the
+  original order.
+- **13 KB is matched by 41 of our 65 unnamed functions** (drdp statics, `AppendString`×4,
+  `icmp`, static initialisers...).
+- **~5.5 KB is unique and unmatched**, and it lines up with our 24 unnamed functions not
+  found yet: the PSS player's helpers and callbacks, the sound device's
+  `SoundCall`/`SoundCmd` statics, two `usocket` and two `buffer` internals,
+  `connection_init`, `CdStreamDone`, and two static initialisers. That is the real
+  remainder of SUPPORT beyond the named opens.
