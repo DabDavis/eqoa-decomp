@@ -389,20 +389,32 @@ void VIAtmosphere::ProcessTransitions(VIScene &sc, float hour, float vol)
         else
             m_overcast = 0;
 
+        // The sun's loop is a guarded do-while with its counter cleared
+        // FIRST.  As a `for`, the copied entry test reads `i`, and combine
+        // folds `i = 0` into it (`blez n`) and re-emits the clear just
+        // before the branch -- after the `fa` conversion, which then wins
+        // the sched2 tie on insn order and reorg drops `move s0,zero` into
+        // the Sprite call's slot.  Guarded on `n` alone, the test never
+        // reads `i`, the clear stays where it is written, and `lw a1` takes
+        // the slot as in the target.
+        i = 0;
         float fa = (float)alpha;
         int   pal = ((VISimpleSprite *)sc.Sprite(m_sun))->GetMaterialPal();
         int   n = r->GetMaterialPalSize(pal);
 
-        for (i = 0; i < n; i++)
+        if (n > 0)
         {
-            m = r->GetMaterialPalEntry(pal, i);
-
-            for (j = 0; j < m->m_numLayers; j++)
+            do
             {
-                c = m->GetLayerColor(j);
-                c.a = alpha;
-                m->SetLayerColor(j, c);
-            }
+                m = r->GetMaterialPalEntry(pal, i);
+
+                for (j = 0; j < m->m_numLayers; j++)
+                {
+                    c = m->GetLayerColor(j);
+                    c.a = alpha;
+                    m->SetLayerColor(j, c);
+                }
+            } while (++i < n);
         }
         pal = ((VISimpleSprite *)sc.Sprite(m_corona))->GetMaterialPal();
         n = r->GetMaterialPalSize(pal);

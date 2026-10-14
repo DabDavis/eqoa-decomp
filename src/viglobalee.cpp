@@ -408,11 +408,22 @@ int VICdStreamInit()
             break;
     }
 
-    sCdSend[0] = 1;
+    // The command word goes in last, as in every other caller, through a
+    // pointer taken FIRST: the expander emits a global's lui when its name
+    // is expanded and a constant when the value is, and the target's
+    // `lui sCdSend` leads the five luis while its `li 1` trails them.  sched1
+    // and sched2 both break this all-equal tie on insn order, so only an
+    // address expanded before the other stores and a value after them gives
+    // that (`sCdSend[0] = 1` first: li second; last: lui last).  The value
+    // cannot come from a variable set earlier: then update_equiv_regs moves
+    // the li in after sched1, `li a0` falls behind `sw sCdRecv` (weight 0
+    // beats 1), and sCdRecv's lui takes a0.
+    int *send = sCdSend;
     sCdRecv[0] = 0;
     sCdBusy = 0;
     sCdStatus = 0;
     last_buffer = 0;
+    send[0] = 1;
     CdStreamCall(0);
     return 0;
 }
