@@ -347,8 +347,13 @@ int VIPrimBuffer::Vertex(VIVect3S16 &v)
     case VIPrimBufferTypePackVUNCG:
     {
         char *p = m_verts + m_numVerts * 16;
+        // The header is computed BEFORE g is read: the split 0x6D028001 then
+        // precedes g's `lui` in insn order and wins sched1's LUID tie, which
+        // keeps the `lui`/`lhu` pair two insns apart -- short enough to outrank
+        // the m_prims product in local-alloc and take v1.
+        int hdr = (m_prims[m_numPrims].m_numVerts << 2) | 0x6D028001;
         unsigned short g = PrimVertexGroup;
-        *(int *)(p + 0) = (m_prims[m_numPrims].m_numVerts << 2) | 0x6D028001;
+        *(int *)(p + 0) = hdr;
         VIVect3S16 *pv = (VIVect3S16 *)(p + 4);
         pv->x = v.x;
         pv->y = v.y;

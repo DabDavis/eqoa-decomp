@@ -1509,15 +1509,15 @@ int VIRaster::EndBillboards()
 {
     if (m_numBillboards <= 0)
         return -1;
-    // The last billboard's word is addressed by the expression, not through
-    // q: as a variable it ties the product, the count and the sum into one
-    // register and drags the hoisted 16/48 constants with it.  q then walks
-    // the closing quadword and the end of the packet.
-    char *p = (char *)m_dmaTag;
-    ((unsigned int *)(m_numBillboards * 48 + (int)p))[3] |= 0x100;
+    // The billboards start one tag past m_dmaTag, and that address is taken
+    // FIRST: the last billboard's flag word then addresses off the tag
+    // pointer as the add's addend with no LOG_LINK back to its load, so
+    // r5900_madd_profitable_p lets combine fuse the multiply and the add into
+    // a madd, split after reload into a mult into a scratch (a0) and an addu.
+    char *p = (char *)(m_dmaTag + 1);
+    ((unsigned int *)((char *)m_dmaTag + m_numBillboards * 48))[3] |= 0x100;
     unsigned int *q;
     unsigned int mscalf = (VIBbRender - VIBbInit) | 0x15000000;
-    p += 16;
     char *e = p + m_numBillboards * 48;
     ((unsigned int *)e)[8] = 0;
     q = (unsigned int *)(e + 32);
@@ -2352,6 +2352,12 @@ int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
     VIVect2I p1;
     int w;
     int i;
+    // One glyph variable for BOTH loops: set twice, it is a global pseudo,
+    // so local-alloc never ties it to the madd's sum and the width loop's
+    // three locals sort into v0/v1/a0.  And `mode` is NOT reused for the
+    // slot offset: with its few refs `w` outranks it in global-alloc and
+    // takes its s0 preference.
+    int glyph;
     VIRFont *f = m_fonts.Value(font);
     int n = f->Cache(*this, s, 256, m_glyphs);
     if (n < 0)
@@ -2360,7 +2366,10 @@ int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
         return -1;
     w = 0;
     for (i = 0; i < n; i++)
-        w += f->Char(m_glyphs[i])->m_width + 1;
+    {
+        glyph = m_glyphs[i];
+        w += f->Char(glyph)->m_width + 1;
+    }
     p0.x = at.x;
     p0.y = at.y;
     switch (mode)
@@ -2385,22 +2394,21 @@ int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
     for (i = 0; i < n; i++)
     {
         BeginTriFan();
-        int slot = f->Char(m_glyphs[i])->m_slot;
+        glyph = m_glyphs[i];
+        int slot = f->Char(glyph)->m_slot;
         // Named in the loop, so loop.c hoists &p1 into a callee-saved
         // register -- which is what spills `c` to the stack.
         VIVect2I *pp1 = &p1;
         Color(c);
-        // `mode` is dead after the switch and is REUSED for the slot offset:
-        // the target keeps both in s1.
-        mode = slot * (int)sizeof(VIRFontSlot);
+        int off = slot * (int)sizeof(VIRFontSlot);
         p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[0]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
         Vertex(p0);
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[1]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
         Vertex(VIVect2I(p1.x, p0.y));
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[2]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
         Vertex(*pp1);
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[3]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
         Vertex(VIVect2I(p0.x, p1.y));
         EndTriFan();
         p0.x = p1.x + 1;
@@ -2422,8 +2430,12 @@ int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
         return -1;
     int w = 0;
     int i;
+    int glyph;
     for (i = 0; i < n; i++)
-        w += f->Char(m_glyphs[i])->m_width + 1;
+    {
+        glyph = m_glyphs[i];
+        w += f->Char(glyph)->m_width + 1;
+    }
     p0.x = at.x;
     p0.y = at.y;
     switch (mode)
@@ -2448,22 +2460,21 @@ int VIRaster::DrawCenteredString(int font, const VIVect2I &at,
     for (i = 0; i < n; i++)
     {
         BeginTriFan();
-        int slot = f->Char(m_glyphs[i])->m_slot;
+        glyph = m_glyphs[i];
+        int slot = f->Char(glyph)->m_slot;
         // Named in the loop, so loop.c hoists &p1 into a callee-saved
         // register -- which is what spills `c` to the stack.
         VIVect2I *pp1 = &p1;
         Color(c);
-        // `mode` is dead after the switch and is REUSED for the slot offset:
-        // the target keeps both in s1.
-        mode = slot * (int)sizeof(VIRFontSlot);
+        int off = slot * (int)sizeof(VIRFontSlot);
         p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[0]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[0]);
         Vertex(p0);
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[1]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[1]);
         Vertex(VIVect2I(p1.x, p0.y));
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[2]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[2]);
         Vertex(*pp1);
-        UV(((VIRFontSlot *)(f->m_slots + mode))->m_uv[3]);
+        UV(((VIRFontSlot *)(f->m_slots + off))->m_uv[3]);
         Vertex(VIVect2I(p0.x, p1.y));
         EndTriFan();
         p0.x = p1.x + 1;
@@ -2505,20 +2516,24 @@ int VIRaster::DrawCenteredString(int font, const VIVect3 &at,
     m_dirtyLights = 1;
     int w = 0;
     int i;
+    int glyph;
     for (i = 0; i < n; i++)
-        w += f->Char(m_glyphs[i])->m_width + 1;
+    {
+        glyph = m_glyphs[i];
+        w += f->Char(glyph)->m_width + 1;
+    }
     p0.x = q.x;
     p0.y = q.y;
-    // p1.x first: the pair of stores comes out reversed, p0.x then p1.x.
-    p1.x = p0.x - (w >> 1);
-    p0.x = p1.x;
+    p0.x -= w >> 1;
     p0.y -= f->m_charHeight >> 1;
+    p1.x = p0.x;
     p1.y = p0.y;
     p1.y += f->m_charHeight;
     for (i = 0; i < n; i++)
     {
         BeginTriFan();
-        int slot = f->Char(m_glyphs[i])->m_slot;
+        glyph = m_glyphs[i];
+        int slot = f->Char(glyph)->m_slot;
         Color(c);
         int off = slot * (int)sizeof(VIRFontSlot);
         p1.x = p0.x + f->Char(m_glyphs[i])->m_width;
@@ -2563,12 +2578,15 @@ int VIRaster::CalcCenteredStringScreenRect(int font, const VIVect3 &at,
     q.x = (int)(v.x * hw + hw);
     q.y = (int)(-v.y * hh + hh);
     int w = f->GetStringWidth(s, 1);
-    r.min.x = q.x;
-    r.min.y = q.y;
+    r.min = q;
     r.min.x -= w >> 1;
-    r.max.x = r.min.x + w;
     r.min.y -= f->m_charHeight >> 1;
-    r.max.y = r.min.y;
+    // max is a COPY of min: through operator='s reference parameter cse does
+    // not forward the stores, so both += re-read r.max (reload_cse turns the
+    // .y read into the target's `move v1,a1`) -- and those reads are the refs
+    // that put r in s0 ahead of this and &v.
+    r.max = r.min;
+    r.max.x += w;
     r.max.y += f->m_charHeight;
     return 0;
 }
@@ -3306,6 +3324,15 @@ static inline void TessNormal(VIVect3 &o, const VIVect3S8 &n, float s)
     o.z = (float)n.z * s;
 }
 
+// The UV goes through a helper like the normal and the colour: the scale is
+// ONE by-value load, and through the unflagged reference the .x store is
+// ordered before the .y load (the third vertex's late `lh 14`).
+static inline void TessUV(VIVect2 &o, const VIVect2S16 &n, float s)
+{
+    o.x = (float)n.x * s;
+    o.y = (float)n.y * s;
+}
+
 static inline void TessColor(VIColor32F &o, const VIVect4S8 &c, float s)
 {
     o.r = (float)c.x * s;
@@ -3323,21 +3350,21 @@ int VIRaster::TessTriangle(VIVect3 &a, VIVect3 &b, VIVect3 &c,
     float *nScale = (float *)0x70000218;
     float *cScale = (float *)0x7000021C;
     t[0].m_pos = a;
-    t[0].m_uv.Set((float)va->m_uv.x * *uvScale, (float)va->m_uv.y * *uvScale);
+    TessUV(t[0].m_uv, va->m_uv, *uvScale);
     TessNormal(t[0].m_normal, va->m_normal, *nScale);
     TessColor(t[0].m_color, va->m_color, *cScale);
     t[0].m_pos.x += t[0].m_normal.x * 0.01f;
     t[0].m_pos.y += t[0].m_normal.y * 0.01f;
     t[0].m_pos.z += t[0].m_normal.z * 0.01f;
     t[1].m_pos = b;
-    t[1].m_uv.Set((float)vb->m_uv.x * *uvScale, (float)vb->m_uv.y * *uvScale);
+    TessUV(t[1].m_uv, vb->m_uv, *uvScale);
     TessNormal(t[1].m_normal, vb->m_normal, *nScale);
     TessColor(t[1].m_color, vb->m_color, *cScale);
     t[1].m_pos.x += t[1].m_normal.x * 0.01f;
     t[1].m_pos.y += t[1].m_normal.y * 0.01f;
     t[1].m_pos.z += t[1].m_normal.z * 0.01f;
     t[2].m_pos = c;
-    t[2].m_uv.Set((float)vc->m_uv.x * *uvScale, (float)vc->m_uv.y * *uvScale);
+    TessUV(t[2].m_uv, vc->m_uv, *uvScale);
     TessNormal(t[2].m_normal, vc->m_normal, *nScale);
     TessColor(t[2].m_color, vc->m_color, *cScale);
     t[2].m_pos.x += t[2].m_normal.x * 0.01f;

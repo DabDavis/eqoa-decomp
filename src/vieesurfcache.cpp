@@ -305,24 +305,29 @@ int VIEESurfCache::Allocate(VIEESurfAlloc &a)
     int n = m_freeMap.Key(m_buckets.Value(i).m_free) & 0x00ffffff;
     if (RemoveFromFreeMap(i) < 0)
         return -1;
-    VIPool<VIEEBucket> *bk = &m_buckets;
     if (m_buckets.Value(i).m_psm == 255)
     {
         if (n - a.m_size >= 8192)
         {
-            int p = m_buckets.Value(i).m_addr + a.m_size;
-            if (p & 8191)
+            // An if/ELSE, not `if (p & 8191) p = ...`: the join label then
+            // has two uses, cse's extended block ends there instead of
+            // skipping the arm, and everything after it is recomputed --
+            // gcse's reaching register for &m_buckets is the extra s1.
+            int q = m_buckets.Value(i).m_addr + a.m_size;
+            int p;
+            if (q & 8191)
             {
-                int t = p + 8192;
-                p = t - (p & 8191);
+                int t = q + 8192;
+                p = t - (q & 8191);
             }
+            else
+                p = q;
             VIEEBucket b;
             b.m_addr = p;
-            bk = &m_buckets;
-            b.m_size = n - (p - bk->Value(i).m_addr);
+            b.m_size = n - (p - m_buckets.Value(i).m_addr);
             b.m_psm = 255;
             b.m_free = -1;
-            int k = bk->Insert(b, bk->Next(i));
+            int k = m_buckets.Insert(b, m_buckets.Next(i));
             if (k < 0)
                 return -1;
             if (AddToFreeMap(k) < 0)
@@ -333,19 +338,19 @@ int VIEESurfCache::Allocate(VIEESurfAlloc &a)
     if (a.m_size < n)
     {
         VIEEBucket b;
-        b.m_addr = bk->Value(i).m_addr + a.m_size;
+        b.m_addr = m_buckets.Value(i).m_addr + a.m_size;
         b.m_size = n - a.m_size;
         b.m_psm = a.m_psm;
         b.m_free = -1;
-        int k = bk->Insert(b, bk->Next(i));
+        int k = m_buckets.Insert(b, m_buckets.Next(i));
         if (k < 0)
             return -1;
         if (AddToFreeMap(k) < 0)
             return -1;
     }
-    bk->Value(i).m_size = a.m_size;
-    bk->Value(i).m_psm = a.m_psm;
-    bk->Value(i).m_free = -1;
+    m_buckets.Value(i).m_size = a.m_size;
+    m_buckets.Value(i).m_psm = a.m_psm;
+    m_buckets.Value(i).m_free = -1;
     m_used += a.m_size;
     return 0;
 }
@@ -357,19 +362,23 @@ int VIEESurfCache::Allocate(VIEESurfAlloc &a)
 int VIEESurfCache::Deallocate(VIEESurfAlloc &a)
 {
     int i = a.m_bucket;
+    // ONE `k` for the first Prev() and both Insert() results, ONE `q` for
+    // both Next() results: merged, each outranks its rival in global-alloc
+    // (k takes s0 ahead of &m_buckets, q takes s1 ahead of gcse's copy of it).
+    int k;
 
     if (i != m_buckets.Begin())
     {
-        int p = m_buckets.Prev(i);
-        if (m_buckets.Value(p).m_free != -1
-            && m_buckets.Value(p).m_psm == m_buckets.Value(i).m_psm)
+        k = m_buckets.Prev(i);
+        if (m_buckets.Value(k).m_free != -1
+            && m_buckets.Value(k).m_psm == m_buckets.Value(i).m_psm)
         {
-            if (RemoveFromFreeMap(p) < 0)
+            if (RemoveFromFreeMap(k) < 0)
                 return -1;
-            m_buckets.Value(p).m_size += m_buckets.Value(i).m_size;
+            m_buckets.Value(k).m_size += m_buckets.Value(i).m_size;
             if (m_buckets.Erase(i) < 0)
                 return -1;
-            i = p;
+            i = k;
         }
     }
 
@@ -389,21 +398,28 @@ int VIEESurfCache::Deallocate(VIEESurfAlloc &a)
 
     if ((m_buckets.Value(i).m_addr & ~8191) != m_buckets.Value(i).m_addr)
     {
-        int p = m_buckets.Value(i).m_addr;
-        if (p & 8191)
+        // An if/ELSE (the target's `move` in the `beqz` delay slot): its join
+        // ends cse's extended block, so &m_buckets.Value(i) is recomputed
+        // after it.  The end is named so the test and b.m_size share it.
+        int addr = m_buckets.Value(i).m_addr;
+        int p;
+        if (addr & 8191)
         {
-            int t = p + 8192;
-            p = t - (p & 8191);
+            int t = addr + 8192;
+            p = t - (addr & 8191);
         }
-        if (p < m_buckets.Value(i).m_addr + m_buckets.Value(i).m_size)
+        else
+            p = addr;
+        int end = m_buckets.Value(i).m_addr + m_buckets.Value(i).m_size;
+        if (p < end)
         {
             VIEEBucket b;
             b.m_addr = p;
-            b.m_size = m_buckets.Value(i).m_addr + m_buckets.Value(i).m_size - p;
+            b.m_size = end - p;
             b.m_psm = a.m_psm;
             b.m_free = -1;
             m_buckets.Value(i).m_size -= b.m_size;
-            int k = m_buckets.Insert(b, m_buckets.Next(i));
+            k = m_buckets.Insert(b, m_buckets.Next(i));
             if (k < 0)
                 return -1;
             if (AddToFreeMap(i) < 0)
@@ -416,28 +432,30 @@ int VIEESurfCache::Deallocate(VIEESurfAlloc &a)
     {
         if (m_buckets.Value(i).m_size >= 8192)
         {
-            int n = m_buckets.Value(i).m_size;
-            if (n & 8191)
+            // The rounded size is only computed when there is a remainder,
+            // and compared against the size still in its register: the
+            // target's `beqz` goes straight past the split.
+            int s = m_buckets.Value(i).m_size;
+            if (s & 8191)
             {
-                int t = n + 8192;
-                n = t - (n & 8191);
-            }
-            if (n != m_buckets.Value(i).m_size)
-            {
-                VIEEBucket b;
-                b.m_addr = (m_buckets.Value(i).m_addr
-                            + m_buckets.Value(i).m_size) & ~8191;
-                b.m_size = m_buckets.Value(i).m_addr
-                         + m_buckets.Value(i).m_size - b.m_addr;
-                b.m_psm = a.m_psm;
-                b.m_free = -1;
-                m_buckets.Value(i).m_psm = 255;
-                m_buckets.Value(i).m_size -= b.m_size;
-                int k = m_buckets.Insert(b, m_buckets.Next(i));
-                if (k < 0)
-                    return -1;
-                if (AddToFreeMap(k) < 0)
-                    return -1;
+                int t = s + 8192;
+                int n = t - (s & 8191);
+                if (n != s)
+                {
+                    VIEEBucket b;
+                    int end = m_buckets.Value(i).m_addr + m_buckets.Value(i).m_size;
+                    b.m_addr = end & ~8191;
+                    b.m_size = end - b.m_addr;
+                    b.m_psm = a.m_psm;
+                    b.m_free = -1;
+                    m_buckets.Value(i).m_psm = 255;
+                    m_buckets.Value(i).m_size -= b.m_size;
+                    k = m_buckets.Insert(b, m_buckets.Next(i));
+                    if (k < 0)
+                        return -1;
+                    if (AddToFreeMap(k) < 0)
+                        return -1;
+                }
             }
             m_buckets.Value(i).m_psm = 255;
         }
@@ -458,16 +476,16 @@ int VIEESurfCache::Deallocate(VIEESurfAlloc &a)
                     i = p;
                 }
             }
-            int r = m_buckets.Next(i);
-            if (r != m_buckets.End())
+            q = m_buckets.Next(i);
+            if (q != m_buckets.End())
             {
-                if (m_buckets.Value(r).m_free != -1
-                    && m_buckets.Value(r).m_psm == m_buckets.Value(i).m_psm)
+                if (m_buckets.Value(q).m_free != -1
+                    && m_buckets.Value(q).m_psm == m_buckets.Value(i).m_psm)
                 {
-                    if (RemoveFromFreeMap(r) < 0)
+                    if (RemoveFromFreeMap(q) < 0)
                         return -1;
-                    m_buckets.Value(i).m_size += m_buckets.Value(r).m_size;
-                    if (m_buckets.Erase(r) < 0)
+                    m_buckets.Value(i).m_size += m_buckets.Value(q).m_size;
+                    if (m_buckets.Erase(q) < 0)
                         return -1;
                 }
             }
