@@ -1913,23 +1913,30 @@ int VIRaster::Init(void *p, int w, int h, int first)
     if (!m_firstFrame)
         sceGsResetGraph(0, 1, 2, 0);
     sceGsSetDefDBuffDc(DBuffer, 10, 640, 448, 3, 49, 1);
+    // Statement order from a sweep (phase 61 wave 8: 4,041 orders, 58 -> 46),
+    // not proven original.  What it fixes: sched1 prefers, among stores ready
+    // together, the one whose register DIES there -- the LAST store in source
+    // carries the DBuffer base's death and the last `= 1` store the constant's,
+    // and each jumps the queue.  OPEN (46): the target's stores come out in
+    // plain source order with [12] last in the FlushCache delay slot, which
+    // needs no store to win that tie; no statement order gives it.
     DBuffer[76] = (DBuffer[76] & ~0x1FFL) | 140;
     DBuffer[48] = c.r | ((long)c.g << 8) | ((long)c.b << 16) |
                   ((long)c.a << 24) | ((long)0x3F800000 << 32);
     DBuffer[94] = c.r | ((long)c.g << 8) | ((long)c.b << 16) |
                   ((long)c.a << 24) | ((long)0x3F800000 << 32);
-    ((int *)DBuffer)[4] = (((int *)DBuffer)[4] & ~0x1FF) | 70;
     DBuffer[28] &= ~0x1FFL;
     DBuffer[58] = (DBuffer[58] & ~0x1FFL) | 70;
     DBuffer[74] = (DBuffer[74] & ~0x1FFL) | 70;
     DBuffer[14] = (DBuffer[14] & ~0x1FFL) | 140;
     DBuffer[30] = (DBuffer[30] & ~0x1FFL) | 140;
     DBuffer[60] = (DBuffer[60] & ~0x1FFL) | 140;
-    DBuffer[86] = 1;
     DBuffer[24] = 1;
     DBuffer[40] = 1;
     DBuffer[70] = 1;
+    DBuffer[86] = 1;
     DBuffer[12] &= ~0x1FFL;
+    ((int *)DBuffer)[4] = (((int *)DBuffer)[4] & ~0x1FF) | 70;
     FlushCache(0);
     m_p456C = 16.0f;
     m_p4570 = 8388608.0f;
