@@ -579,43 +579,36 @@ void VIMatrix44::SwapRows(int i, int j)
     m[j].Set(t);
 }
 
-// NOT YET BYTE-EXACT, 57/245 (was 71).  The scale loop's counter IS the
-// else branch's pivot `i` -- one function-scope variable, so both live in s3
-// as in the target.  Left: the target materialises `&inv.x` into a temporary
-// and copies it (`addiu v0,sp,16` + `move s7,v0`, the y/z stores of 1.0f
-// through v0) where cse2 here merges the two into s7; the pattern is an
-// inline helper's `this` (its constant stores fail try_constants, so the
-// zero stores at +4/+8 survive), but `inv.Set(1, 1, 1)` merges the same way.
+// Phase 61 wave 5 (57 -> 0).  Three source facts, each read off a pass:
+// `inv.Set(1, 1, 1)` is an inline with a `this` -- its 1.0f stores fail
+// try_constants, so +4/+8 keep that pointer (`swc1 4(v0)`) and the zeroing
+// ctor's +4/+8 stores survive; the scale loop INDEXES `inv` and `scale`, so
+// both walkers are loop.c-reduced givs (initialised in the preheader, counter
+// reversed to 2..-1); and the else branch takes `&inv.x` afresh, which gcse's
+// PRE re-materialises at the end of the entry block -- cse2 then makes it a
+// copy of the Set's pointer (`move s7,v0`) and the preheader's walker a copy
+// of it (`move s4,s7`).  A pointer named at the top is propagated instead.
 void VIMatrix44::ConvertTo(VIQuat &q, VIVect3 &scale, VIVect3 &t) const
 {
     int nxt[3] = { 1, 2, 0 };
     float s;
     VIVect3 inv;
-    float *iv = &inv.x;
-    float *ivp = iv;
-    float *sc = &scale.x;
-
-    iv[0] = 1.0f;
-    iv[1] = 1.0f;
-    iv[2] = 1.0f;
+    inv.Set(1.0f, 1.0f, 1.0f);
 
     t.x = m[3].x;
     t.y = m[3].y;
     t.z = m[3].z;
 
-    const float *row = &m[0].x;
     int i;
     for (i = 0; i < 3; i++)
     {
-        *sc = row[0] * row[0] + row[1] * row[1] + row[2] * row[2];
+        float *sc = &(&scale.x)[i];
+        *sc = m[i].x * m[i].x + m[i].y * m[i].y + m[i].z * m[i].z;
         if (*sc > 0.0f)
         {
             *sc = *sc * (1.0f / sqrtf(*sc));
-            *ivp = 1.0f / *sc;
+            (&inv.x)[i] = 1.0f / *sc;
         }
-        ivp++;
-        row += 4;
-        sc++;
     }
 
     float tr = m[0].x * inv.x + m[1].y * inv.y + m[2].z * inv.z;
@@ -632,6 +625,7 @@ void VIMatrix44::ConvertTo(VIQuat &q, VIVect3 &scale, VIVect3 &t) const
     else
     {
         float *qq = &q.x;
+        float *iv = &inv.x;
         i = 0;
         if (m[1].y > m[0].x)
             i = 1;

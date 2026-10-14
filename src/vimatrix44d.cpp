@@ -810,39 +810,34 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, double &scale, VIVect3D &t) const
     }
 }
 
-// OPEN, 111/338 (was 143/337).  As the float twin: the scale loop's counter
-// IS the else branch's pivot `i`.  Left: the target's `&inv.x` temporary
-// copied into s8 (gcse's copy propagation merges the two here).
+// Phase 61 wave 5 (111 -> 0): the float twin's three facts (an inline Set,
+// an INDEXED scale loop, `&inv.x` taken afresh in the else branch), plus two
+// of its own -- the loop names `sc` before the row (the reduced givs'
+// increments come out in reverse discovery order: inv, row, counter, sc), and
+// `mkk` is bound before `ivk`, so the `k * 8` both share is created first and
+// takes the lower spill slot (reload numbers slots by pseudo).
 void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
 {
     int nxt[3] = { 1, 2, 0 };
     double s;
     VIVect3D inv;
-    double *iv = &inv.x;
-    double *ivp = iv;
-    double *sc = &scale.x;
-
-    iv[0] = 1.0;
-    iv[1] = 1.0;
-    iv[2] = 1.0;
+    inv.Set(1.0, 1.0, 1.0);
 
     t.x = m[3].x;
     t.y = m[3].y;
     t.z = m[3].z;
 
-    const double *row = &m[0].x;
     int i;
     for (i = 0; i < 3; i++)
     {
+        double *sc = &(&scale.x)[i];
+        const double *row = &m[i].x;
         *sc = row[0] * row[0] + row[1] * row[1] + row[2] * row[2];
         if (*sc > 0.0)
         {
             *sc = *sc * (1.0 / sqrt(*sc));
-            *ivp = 1.0 / *sc;
+            (&inv.x)[i] = 1.0 / *sc;
         }
-        ivp++;
-        row += 4;
-        sc++;
     }
 
     double tr = m[0].x * inv.x + m[1].y * inv.y + m[2].z * inv.z;
@@ -859,6 +854,7 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
     else
     {
         double *qq = &q.x;
+        double *iv = &inv.x;
         i = 0;
         if (m[1].y > m[0].x)
             i = 1;
@@ -871,12 +867,12 @@ void VIMatrix44D::ConvertTo(VIQuatD &q, VIVect3D &scale, VIVect3D &t) const
         const double *mi = (const double *)(i * 32 + (unsigned)m);
         const double *mj = (const double *)(j * 32 + (unsigned)m);
         const double *mk = (const double *)(k * 32 + (unsigned)m);
-        const double &ivi = iv[i];
-        const double &ivj = iv[j];
-        const double &ivk = iv[k];
         const double &mii = mi[i];
+        const double &ivi = iv[i];
         const double &mjj = mj[j];
+        const double &ivj = iv[j];
         const double &mkk = mk[k];
+        const double &ivk = iv[k];
         s = sqrt((mii * ivi - (mjj * ivj + mkk * ivk)) + 1.0);
         double &qi = qq[i];
         qi = s * 0.5;

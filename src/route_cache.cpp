@@ -92,12 +92,19 @@ void route_cache_touch(route_cache_t *pCache, const drdp_addr_t *pAddress,
     }
     else
     {
-        // The inequality FIRST: with `pByAddress &&` leading, thread_jumps
-        // redirects both else-entries past the re-test (the first if already
-        // decided it) and global-alloc then hands pAddress/pRoute/&m_byRoute
-        // other registers -- 54 words.  OPEN, 3/165: the target re-tests in
-        // the written order (address, route, inequality) and is not threaded.
-        if (pByAddress != pByRoute && pByAddress && pByRoute)
+        // NON-ORIGINAL (phase 61 wave 5): the empty asm emits nothing; it is
+        // an INSN between the else-label and the re-test of pByAddress, which
+        // is all that stops thread_jumps (before cse1 AND after cse2) from
+        // redirecting the first `bnez` past the re-test.  The natural order
+        // compiled with -fno-thread-jumps is byte-exact, so threading is the
+        // ONLY difference; whatever the original had here (a dead store, a
+        // trace macro) is not known.  Without it: 54 words (or 3 with the
+        // inequality written first).  A FAKEMATCH: counted as byte-exact, but
+        // the source here is not believed original.  -fno-thread-jumps as a
+        // library-wide flag is REFUTED: on the whole tree it loses 20 exact
+        // functions, connection/drdp/endpoint/vtree/vlist among them.
+        __asm__ __volatile__ ("");
+        if (pByAddress && pByRoute && pByAddress != pByRoute)
         {
             vtree_remove(&pCache->m_byAddress, pByRoute);
             vtree_remove(&pCache->m_byRoute, pByRoute);

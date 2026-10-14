@@ -83,11 +83,16 @@ int VIEffectVolume::GlobalInit(VIScene *sc)
     {
         float h;
 
-        v[0].Set(-0.1f, -0.5f, -0.1f);
-        v[1].Set(0.1f, -0.5f, -0.1f);
-        v[2].Set(0.1f, -0.5f, 0.1f);
-        v[3].Set(-0.1f, -0.5f, 0.1f);
+        // The drop height goes in through `-h`, not as a literal (157 -> 0):
+        // an inlined Set whose argument is a CONSTANT keeps its `this` for
+        // the store (try_constants cannot validate a float immediate store)
+        // where a computed argument lets the store fold onto sp -- the
+        // target's y stores are sp-based and its z stores are not.
         h = 0.5f;
+        v[0].Set(-0.1f, -h, -0.1f);
+        v[1].Set(0.1f, -h, -0.1f);
+        v[2].Set(0.1f, -h, 0.1f);
+        v[3].Set(-0.1f, -h, 0.1f);
         VIMatrix44 m;
         float a = (float)i / 30.0f * 2.0f * 3.1415927f;
         m.RotateY(a);
@@ -115,10 +120,10 @@ int VIEffectVolume::GlobalInit(VIScene *sc)
 
         fx = sFallEffect[1][i];
         h = 0.4f;
-        v[0].Set(-0.1f, -0.4f, -0.1f);
-        v[1].Set(0.1f, -0.4f, -0.1f);
-        v[2].Set(0.1f, -0.4f, 0.1f);
-        v[3].Set(-0.1f, -0.4f, 0.1f);
+        v[0].Set(-0.1f, -h, -0.1f);
+        v[1].Set(0.1f, -h, -0.1f);
+        v[2].Set(0.1f, -h, 0.1f);
+        v[3].Set(-0.1f, -h, 0.1f);
         m.RotateX(sinf(a) * h);
         m.Mul(v[0], t[0]); v[0] = t[0];
         m.Mul(v[1], t[1]); v[1] = t[1];

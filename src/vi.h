@@ -354,6 +354,9 @@ public:
         x = v.x; y = v.y; z = v.z;
         return *this;
     }
+    // VIVect3::Set's twin (phase 61 wave 5): an inline with a `this`, whose
+    // stores of a constant fail try_constants -- ConvertTo's 1.0 at +8/+16.
+    void Set(double _x, double _y, double _z) { x = _x; y = _y; z = _z; }
 
     double Magnitude() const;
     int    Normalize();

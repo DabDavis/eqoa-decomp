@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,646 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,650 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; phase 61 in progress)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -6357,13 +6357,21 @@ Long form, with the not-written list:
 
 ## Phase 61 result: finishing SUPPORT (in progress)
 
-**2,891/3,284 → 3,646/3,751 byte-exact, plus all 65 unnamed functions.** Every named
+**2,891/3,284 → 3,650/3,751 byte-exact, plus all 65 unnamed functions.** Every named
 SUPPORT function is written. The denominator grew as the census learnt to see more
 (written-but-unscored functions, `SPAN_CAP`s, phantom instantiations removed). Worked by up
 to ten agents in isolated lanes (`_lane.py`), each merged three-way into main and checked
 whole-tree before every publish. The long form is
 `claude-notes/decomp-phase61-finishing-support-20261013.md`; the levers, by lane and wave, are
 in the memory file `feedback_phase61_esf_levers.md`.
+
+**One of those is a FAKEMATCH**, counted because the bytes are identical but not believed to be
+the original source: `route_cache_touch` carries an empty `__asm__ __volatile__ ("")`. It emits
+no code; it is an insn between an else-label and a re-test, which is all that stops
+`thread_jumps` from redirecting a branch past that re-test. The natural order compiled with
+`-fno-thread-jumps` is byte-exact, but that flag on the whole tree loses 20 exact functions
+(connection, drdp, endpoint, vtree and vlist among them), so it was not the library's build.
+Whatever the original had there is not known. It is labelled in the source.
 
 **Byte-exact is not correct.** The scorer masks every field the candidate's own relocations
 name, so a `jal` matches any `jal` and a `%hi/%lo` pair matches any address. Three new checks
