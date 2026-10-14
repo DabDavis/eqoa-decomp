@@ -385,7 +385,11 @@ int VIClipStack::PushPortal(VICamera &cam, int n, VIVect3 *p)
 
         d = p[i];
         d -= cam.m_position;
-        float t = Dot(d, cam.m_dir);
+        // A NAMED reference: a flagged pointer, so the +4/+8 loads off it are
+        // free to move above the stores to `d` (handed `cam.m_dir` the
+        // inline's copy is unflagged and they stay behind them).
+        const VIVect3 &dir = cam.m_dir;
+        float t = Dot(d, dir);
         m_verts[m_numVerts] = d;
         m_verts[m_numVerts] *= cam.m_far / t;
         m_verts[m_numVerts] += cam.m_position;

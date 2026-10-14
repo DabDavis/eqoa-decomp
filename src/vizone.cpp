@@ -492,26 +492,27 @@ int VIZone::InsertActor(VISceneInsertVars &v)
     return 0;
 }
 
-// OPEN at 6 of 45, and a SCHEDULER difference, not source: the 0x0FFFFFFF
-// mask lands in a0, so its `lui` anti-depends on the `lw t0,72(a0)` that
-// reads `this`.  The target issues the two in the SAME cycle; ours waits a
-// cycle (.sched2: insn 166 is not ready at t=1), and `li a2,24` takes the slot.
+// node = 0 belongs INSIDE the arm (reorg moves it into the size test's delay
+// slot either way, but in the preheader it takes the ALU slot that otherwise
+// lets `li 24` jump ahead of the mask), and the node array is a named pointer
+// read before the loop.  The "scheduler" residue phase 61 recorded was source.
 int VIZone::FindLeaf(const VIVect3 &at) const
 {
-    int node = 0;
-
     if (m_tree.m_nodes.m_size != 0)
     {
+        int node = 0;
+        const VIZoneNode *nodes = m_tree.m_nodes.m_data;
+
         do
         {
-            float d = m_tree.m_nodes.m_data[node].m_plane.Distance(at);
+            float d = nodes[node].m_plane.Distance(at);
 
             node &= 0x0FFFFFFF;
 
             if (0.0f <= d)
-                node = m_tree.m_nodes.m_data[node].m_front;
+                node = nodes[node].m_front;
             else
-                node = m_tree.m_nodes.m_data[node].m_back;
+                node = nodes[node].m_back;
         }
         while ((node & 0x40000000) == 0);
 

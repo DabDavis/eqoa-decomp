@@ -2736,6 +2736,7 @@ int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
     VIMatrix44 m;
     int        zone = -1;
     int        i;
+    int        none = -1;   // a VARIABLE: see the test below
 
     for (i = 0; i < m_display.m_size; i++)
     {
@@ -2743,11 +2744,11 @@ int VIScene::RenderDeferredList(VICamera &cam, int actors, int rooms)
         VISceneDisplayElem &e0 = list.m_data[i];
         int z = e0.m_a;
 
-        // -1 is tested FIRST (`li v0,-1; beq` then the spilled `zone`), as
-        // the target does; what is left is that `li` being scheduled above the
-        // element load and taking a0 instead of v0 (6 words; the other order
-        // scores 3 but tests the operands the wrong way round).
-        if (z != -1 && z != zone)
+        // -1 is tested FIRST, through a function-scope variable: live across
+        // the whole loop it gets no hard register, so reload rematerialises
+        // its constant as `li v0,-1` right at the beq.  A literal -1 is a
+        // one-insn pseudo that sched1 drops into the mult stall (in a0).
+        if (z != none && z != zone)
             m_world.m_zones[z].SetPretranslations(*m_raster, cam);
 
         zone = z;
@@ -3230,10 +3231,12 @@ int VIScene::SetupTimeOfDayLights(VICamera &cam, VITerrainProfileBlend &b)
 
         int n = 1;
 
-        for (int it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+        // `i` again: one counter for both loops lowers its priority below
+        // the camera's view pointer, which then takes s0 (11 words to 5).
+        for (i = q.m_map.Begin(); i != q.m_map.End(); i = q.m_map.Next(i))
         {
             VIPointLight *l =
-                (VIPointLight *)m_sprites.Value(q.m_map.Value(it).m_b);
+                (VIPointLight *)m_sprites.Value(q.m_map.Value(i).m_b);
 
             pl.m_position.Zero();
             pl.m_range = l->m_bsphere.r;
@@ -3241,7 +3244,7 @@ int VIScene::SetupTimeOfDayLights(VICamera &cam, VITerrainProfileBlend &b)
             VIColor32F c = l->m_color;
 
             pl.m_color = c;
-            m_raster->SetPointLight(n, q.m_map.Value(it).m_matrix, pl);
+            m_raster->SetPointLight(n, q.m_map.Value(i).m_matrix, pl);
             m_raster->EnablePointLight(n, 1);
             n++;
         }
@@ -3254,6 +3257,13 @@ int VIScene::SetupTimeOfDayLights(VICamera &cam, VITerrainProfileBlend &b)
 }
 
 // ------------------------------------------------------------------ sound --
+
+// The query map's walk through inline wrappers: handed `q.m_map` each call
+// takes a fresh copy of its address (`addiu a0,sp,16` at every call), where
+// called directly gcse merges it into a callee-saved register.
+static inline int QBegin(VIMultiMap<float, VIEmitterEntry> &m) { return m.Begin(); }
+static inline int QEnd(VIMultiMap<float, VIEmitterEntry> &m) { return m.End(); }
+static inline int QNext(VIMultiMap<float, VIEmitterEntry> &m, int i) { return m.Next(i); }
 
 // Three passes.  The streamed music: of the stream-audio emitters at the
 // camera, the highest priority one plays on BGM slot 1 (restarted when it
@@ -3276,14 +3286,14 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
             int best = -1;
             int pri  = 0;
 
-            for (it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+            for (it = QBegin(q.m_map); it != QEnd(q.m_map); it = QNext(q.m_map, it))
             {
                 int s = q.m_map.Value(it).m_b;
 
                 if (!(((VIStreamAudioSprite *)m_sprites.Value(s))->GetPriority() < pri))
                 {
                     best = s;
-                    pri = ((VIStreamAudioSprite *)m_sprites.Value(s))->GetPriority();
+                    pri = ((VIStreamAudioSprite *)m_sprites.Value(best))->GetPriority();
                 }
             }
 
@@ -3315,14 +3325,17 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
 
     if (ok)
     {
-        for (it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+        for (it = QBegin(q.m_map); it != QEnd(q.m_map); it = QNext(q.m_map, it))
         {
-            int            s   = q.m_map.Value(it).m_b;
-            VISoundSprite *snd = (VISoundSprite *)m_sprites.Value(s);
+            int       s   = q.m_map.Value(it).m_b;
+            // The sprite slot by REFERENCE: its address is held across Play
+            // and the pointer re-read through it after the call.
+            VISprite *&sp = m_sprites.Value(s);
 
-            if (snd->m_flags != m_p638 - 1)
+            if (((VISoundSprite *)sp)->m_flags != m_p638 - 1)
             {
-                snd->m_channel = m_sound->Play(snd->m_sound, 0, VISOUNDCLASS_SFX);
+                ((VISoundSprite *)sp)->m_channel =
+                    m_sound->Play(((VISoundSprite *)sp)->m_sound, 0, VISOUNDCLASS_SFX);
 
                 if (((VISoundSprite *)m_sprites.Value(s))->m_channel <= 0)
                     continue;
@@ -3330,11 +3343,11 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
 
             VIVect3 d;
             VIVect3 right;
-            VIActor *a = (VIActor *)q.m_map.Value(it).m_a;
+            const VIVect3 &cp = cam.m_position;
 
-            d.x = cam.m_position.x - a->m_location.x;
+            d.x = cp.x - ((VIActor *)q.m_map.Value(it).m_a)->m_location.x;
             d.y = 0.0f;
-            d.z = cam.m_position.z - a->m_location.z;
+            d.z = cp.z - ((VIActor *)q.m_map.Value(it).m_a)->m_location.z;
             right.x = cam.m_dir.z;
             right.y = 0.0f;
             right.z = -cam.m_dir.x;
@@ -3343,9 +3356,9 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
 
             float pan = d.x * right.x + d.z * right.z;
 
-            snd = (VISoundSprite *)m_sprites.Value(s);
+            VISoundSprite *snd = (VISoundSprite *)m_sprites.Value(s);
 
-            float t = cam.m_position.Distance(((VIActor *)q.m_map.Value(it).m_a)->m_location)
+            float t = cp.Distance(((VIActor *)q.m_map.Value(it).m_a)->m_location)
                       / (((VIActor *)q.m_map.Value(it).m_a)->m_scale
                          * m_sprites.Value(s)->m_bsphere.r);
 
@@ -3380,8 +3393,8 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
         {
             int found = 0;
 
-            for (it = m_sprites.Begin(); it != m_sprites.End(); it = m_sprites.Next(it))
-                if (it == m_p5B8[k])
+            for (int i = m_sprites.Begin(); i != m_sprites.End(); i = m_sprites.Next(i))
+                if (i == m_p5B8[k])
                 {
                     found = 1;
                     break;
@@ -3403,7 +3416,7 @@ int VIScene::UpdateSoundEmitters(VICamera &cam)
     {
         int j = 0;
 
-        for (it = q.m_map.Begin(); it != q.m_map.End(); it = q.m_map.Next(it))
+        for (it = QBegin(q.m_map); it != QEnd(q.m_map); it = QNext(q.m_map, it))
             m_p5B8[j++] = q.m_map.Value(it).m_b;
     }
 
@@ -3744,10 +3757,12 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.min.x, bb.min.y, bb.min.z);
-        // The first corner uses the assignment's returned reference: that
-        // materialises &b before Vertex(a), so &a and &b take s0/s1 up front
-        // as in the target (83 words to 26).
+        // Each corner is the min (or max) corner COPIED, then one component
+        // overwritten: the copy's dead store goes and the overwrite lands
+        // last, which is the target's store order (26 words to 0).  The first
+        // corner also uses the assignment's returned reference, which
+        // materialises &b before Vertex(a) so &a and &b take s0/s1 up front.
+        a = bb.min;
         (b = a).x += len;
         m_raster->Vertex(a);
         m_raster->Vertex(b);
@@ -3764,7 +3779,8 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.max.x, bb.min.y, bb.min.z);
+        a = bb.min;
+        a.x = bb.max.x;
         b = a;
         b.x -= len;
         m_raster->Vertex(a);
@@ -3782,7 +3798,8 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.min.x, bb.max.y, bb.min.z);
+        a = bb.min;
+        a.y = bb.max.y;
         b = a;
         b.x += len;
         m_raster->Vertex(a);
@@ -3800,7 +3817,8 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.min.x, bb.min.y, bb.max.z);
+        a = bb.min;
+        a.z = bb.max.z;
         b = a;
         b.x += len;
         m_raster->Vertex(a);
@@ -3818,7 +3836,7 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.max.x, bb.max.y, bb.max.z);
+        a = bb.max;
         b = a;
         b.x -= len;
         m_raster->Vertex(a);
@@ -3836,7 +3854,8 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.min.x, bb.max.y, bb.max.z);
+        a = bb.max;
+        a.x = bb.min.x;
         b = a;
         b.x += len;
         m_raster->Vertex(a);
@@ -3854,7 +3873,8 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.max.x, bb.min.y, bb.max.z);
+        a = bb.max;
+        a.y = bb.min.y;
         b = a;
         b.x -= len;
         m_raster->Vertex(a);
@@ -3872,7 +3892,8 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->BeginLines();
         m_raster->Color(c);
         m_raster->Normal(n);
-        a.Set(bb.max.x, bb.max.y, bb.min.z);
+        a = bb.max;
+        a.z = bb.min.z;
         b = a;
         b.x -= len;
         m_raster->Vertex(a);

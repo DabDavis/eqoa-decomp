@@ -23,11 +23,14 @@ int VIParticleSystem::Init(long time, VIRaster *r, int maxParticles)
 
     m_freeParticles.Init();
 
-    for (int i = 0; i < m_maxParticles; i++)
+    // One counter for both loops: the reversed history loop keeps it in s0.
+    int i;
+
+    for (i = 0; i < m_maxParticles; i++)
         m_freeParticles.AddTail(&m_particles[i]);
 
-    for (int j = 0; j < 8; j++)
-        m_dtHistory[j] = 1.0f / 30.0f;
+    for (i = 0; i < 8; i++)
+        m_dtHistory[i] = 1.0f / 30.0f;
 
     m_deltaTime = 0.0f;
     return 0;
@@ -141,7 +144,9 @@ int VIParticleSystem::ReleaseParticleDefinition(int i, VIDictionary &d)
 
 int VIParticleSystem::ReleaseAllParticleDefinitions(VIDictionary &d)
 {
-    for (int i = m_definitions.Begin(); i != m_definitions.End(); i = m_definitions.Begin())
+    int i;
+
+    while ((i = m_definitions.Begin()) != m_definitions.End())
         ReleaseParticleDefinition(i, d);
 
     m_definitions.Clear();
@@ -204,7 +209,7 @@ int VIParticleSystem::Render(long time, VIRaster &r)
 
             while (p->m_next)
             {
-                VIVect3    &vel = (VIVect3 &)p->m_f2C;
+                VIVect3    &vel = p->m_vel;
                 VIParticle *next = (VIParticle *)p->m_next;
 
                 v = vel;
@@ -213,7 +218,7 @@ int VIParticleSystem::Render(long time, VIRaster &r)
                 if (bb == 0)
                     left = r.BeginBillboards(&bb, n);
 
-                VIVect3 &pos = (VIVect3 &)p->m_f20;
+                VIVect3 &pos = p->m_pos;
 
                 e->m_space.Mul(pos, bb->m_location);
                 bb->m_width = p->m_size;
@@ -221,18 +226,18 @@ int VIParticleSystem::Render(long time, VIRaster &r)
                 bb->m_frame = p->m_frame << 2;
                 bb->m_color = e->m_attributes.m_gradient[(int)(p->m_age * 31.0f * p->m_gradRepeat) & 31];
                 pos += v;
-                if (p->m_f20 < e->m_dynBounds.min.x)
-                    e->m_dynBounds.min.x = p->m_f20;
-                if (p->m_f24 < e->m_dynBounds.min.y)
-                    e->m_dynBounds.min.y = p->m_f24;
-                if (p->m_f28 < e->m_dynBounds.min.z)
-                    e->m_dynBounds.min.z = p->m_f28;
-                if (p->m_f20 > e->m_dynBounds.max.x)
-                    e->m_dynBounds.max.x = p->m_f20;
-                if (p->m_f24 > e->m_dynBounds.max.y)
-                    e->m_dynBounds.max.y = p->m_f24;
-                if (p->m_f28 > e->m_dynBounds.max.z)
-                    e->m_dynBounds.max.z = p->m_f28;
+                if (p->m_pos.x < e->m_dynBounds.min.x)
+                    e->m_dynBounds.min.x = p->m_pos.x;
+                if (p->m_pos.y < e->m_dynBounds.min.y)
+                    e->m_dynBounds.min.y = p->m_pos.y;
+                if (p->m_pos.z < e->m_dynBounds.min.z)
+                    e->m_dynBounds.min.z = p->m_pos.z;
+                if (p->m_pos.x > e->m_dynBounds.max.x)
+                    e->m_dynBounds.max.x = p->m_pos.x;
+                if (p->m_pos.y > e->m_dynBounds.max.y)
+                    e->m_dynBounds.max.y = p->m_pos.y;
+                if (p->m_pos.z > e->m_dynBounds.max.z)
+                    e->m_dynBounds.max.z = p->m_pos.z;
                 bb++;
                 n--;
                 if (--left == 0)
@@ -248,7 +253,7 @@ int VIParticleSystem::Render(long time, VIRaster &r)
                     v *= e->m_attractorK * m_deltaTime;
                     vel += v;
                 }
-                p->m_f30 += p->m_gravity * m_deltaTime;
+                p->m_vel.y += p->m_gravity * m_deltaTime;
                 p->m_age += p->m_ageRate * m_deltaTime;
                 p->m_size += p->m_growth * m_deltaTime;
                 if (1.0f <= p->m_age)

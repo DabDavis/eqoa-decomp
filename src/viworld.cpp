@@ -551,32 +551,48 @@ int VIWorld::Stream(VISceneBBoxStreamVars &v)
     return 0;
 }
 
+// The two arrays and the start node are set in BOTH arms (the target
+// computes them in the loop preheader and again on the empty path), and the
+// node array is a named pointer read before the loop -- off the member, gcse
+// leaves a copy of it for the first iteration.
 int VIWorld::FindLeaf(const VIVect3 &at, int &zone, int &leaf) const
 {
-    const VIArray<VIWorldLeaf> &leaves = m_tree.m_leaves;
-    const VIArray<VIZone>      &zones  = m_zones;
-    int node = 0;
+    const VIArray<VIWorldLeaf> *leaves;
+    const VIArray<VIZone>      *zones;
+    int node;
 
     if (m_tree.m_nodes.m_size != 0)
     {
+        node = 0;
+        leaves = &m_tree.m_leaves;
+        zones = &m_zones;
+
+        const VIWorldNode *nodes = m_tree.m_nodes.m_data;
+
         do
         {
-            float d = m_tree.m_nodes.m_data[node].m_plane.Distance(at);
+            float d = nodes[node].m_plane.Distance(at);
 
             node &= 0x0FFFFFFF;
 
             if (0.0f <= d)
-                node = m_tree.m_nodes.m_data[node].m_front;
+                node = nodes[node].m_front;
             else
-                node = m_tree.m_nodes.m_data[node].m_back;
+                node = nodes[node].m_back;
         }
         while ((node & 0x40000000) == 0);
 
         node &= 0x0FFFFFFF;
     }
+    else
+    {
+        node = 0;
+        leaves = &m_tree.m_leaves;
+        zones = &m_zones;
+    }
 
-    zone = leaves[node].m_a;
-    leaf = zones[zone].FindLeaf(at);
+    zone = (*leaves)[node].m_a;
+    leaf = (*zones)[zone].FindLeaf(at);
 
     if (leaf < 0)
         return -1;

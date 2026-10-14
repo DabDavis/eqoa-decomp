@@ -964,6 +964,10 @@ int VIHSprite::CalcNodeTransform(int i, VIMatrix44 &m, VIScene &sc, VIMatrix44 &
     return 0;
 }
 
+// The two SetModelView calls are ONE jal in the target: jump2 cross-jumps them
+// only because each arm carries the whole tail.  With the tail after the if/else
+// the fall-through arm ends in the call, flow puts a (use 0) after it, and
+// find_cross_jump stops on the CALL_INSN vs INSN mismatch.
 int VIHSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned int flags)
 {
     int hit = 0;
@@ -980,13 +984,15 @@ int VIHSprite::Raster(VICamera &cam, VIScene &sc, VIRaster &r, unsigned int flag
         {
             t.Mul(m_nodes.m_data[m_attach.Value(i).m_node].m_world, m);
             r.SetModelView(t);
+            if (sc.RasterSprite(cam, m_attach.Value(i).m_sprite, flags))
+                hit = 1;
         }
         else
         {
             r.SetModelView(m);
+            if (sc.RasterSprite(cam, m_attach.Value(i).m_sprite, flags))
+                hit = 1;
         }
-        if (sc.RasterSprite(cam, m_attach.Value(i).m_sprite, flags))
-            hit = 1;
     }
     return hit;
 }
@@ -1041,11 +1047,15 @@ int VIHSprite::Collide(VICollRay &ray, VISceneFilter &f, VIScene &sc, VICollide 
     return hit;
 }
 
+// Raster's duplicated tail, plus ONE function-scope `s` set in both arms: set
+// twice it is a global pseudo with no v0 suggestion, so the object goes to t1
+// and the function pointer takes v0 (per-arm locals tie the object to v0).
 int VIHSprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc, VIRaster &r)
 {
     VIMatrix44 m;
     VIMatrix44 t;
     int hit = 0;
+    VISprite *s;
     if (Process(CalcLODLevelIndex(seg, r), sc) < 0)
         return -1;
     CalcTransAboutCenter(*r.GetModelView(), sc, m);
@@ -1057,15 +1067,22 @@ int VIHSprite::Pick(VIPickSegment &seg, VISceneFilter &f, VIScene &sc, VIRaster 
         {
             t.Mul(m_nodes.m_data[m_attach.Value(i).m_node].m_world, m);
             r.SetModelView(t);
+            s = sc.Sprite(m_attach.Value(i).m_sprite);
+            if (s->Pick(seg, f, sc, r))
+            {
+                f.m_hitAttachment = i;
+                hit = 1;
+            }
         }
         else
         {
             r.SetModelView(m);
-        }
-        if (sc.Sprite(m_attach.Value(i).m_sprite)->Pick(seg, f, sc, r))
-        {
-            f.m_hitAttachment = i;
-            hit = 1;
+            s = sc.Sprite(m_attach.Value(i).m_sprite);
+            if (s->Pick(seg, f, sc, r))
+            {
+                f.m_hitAttachment = i;
+                hit = 1;
+            }
         }
     }
     return hit;
@@ -1463,6 +1480,22 @@ int VIHSprite::ProcessPlayTiming(int i, VIScene &sc)
     return 0;
 }
 
+// A frame copied member by member with the rotation BLOCK-moved (VIQuat's
+// implicit assignment, ldl/ldr), not through VIHSpriteFrame's user operator=.
+static inline void CopyFrame(VIHSpriteFrame &d, const VIHSpriteFrame &f)
+{
+    d.m_rot = f.m_rot;
+    d.m_scale = f.m_scale;
+    d.m_trans = f.m_trans;
+}
+
+// Phase 61 (306 -> 130 wrong): m_plays named at every use (loop.c hoists
+// the invariant this+120 into its own register, a copy of the Begin
+// argument); `&a.m_scale` a float pointer for the packed scale/translation
+// (the extra callee-saved pseudo is what pushes `this` and `p` to the stack);
+// e->m_c read before the lod test; the play node re-derived for the m_a == 1
+// update; frames copied with the rotation block-moved.  OPEN: register
+// naming in the copy and blend blocks.
 int VIHSprite::ProcessPlayList(int lod, VIScene &sc)
 {
     VIHSpriteFrame a;
@@ -1471,85 +1504,94 @@ int VIHSprite::ProcessPlayList(int lod, VIScene &sc)
     if (sc.GetTime() == m_playTime)
         return 0;
     m_playTime = sc.GetTime();
-    VIPool<VIHSpritePlay> *pool = &m_plays;
-    for (int p = pool->Begin(); p != pool->End(); p = pool->Next(p))
+    for (int p = m_plays.Begin(); p != m_plays.End(); p = m_plays.Next(p))
     {
-        VIHSpriteAnim *an = sc.Animation(pool->Value(p).m_animID);
+        VIHSpriteAnim *an = sc.Animation(m_plays.Value(p).m_animID);
         if (ProcessPlayTiming(p, sc) < 0)
             return -1;
-        float weight = pool->Value(p).m_weight;
-        int frameA = pool->Value(p).m_frameA;
-        int frameB = pool->Value(p).m_frameB;
-        float t = pool->Value(p).m_frameT;
-        int count = pool->Value(p).m_numNodes;
-        int pn = pool->Value(p).m_firstNode;
+        float weight = m_plays.Value(p).m_weight;
+        int frameA = m_plays.Value(p).m_frameA;
+        int frameB = m_plays.Value(p).m_frameB;
+        float t = m_plays.Value(p).m_frameT;
+        int count = m_plays.Value(p).m_numNodes;
+        int pn = m_plays.Value(p).m_firstNode;
         if (count > 0)
         {
             do
             {
                 VIHSpritePlayNode *e = &m_playNodes.Value(pn);
                 VIHSpriteNode *n = &m_nodes.m_data[e->m_b];
+                int fc = e->m_c;
                 if (lod < n->m_lod)
                 {
-                    if (e->m_a == 2)
-                    {
-                        a = e->m_frame;
-                        b = m_playNodes.Value(pn).m_frame;
-                    }
-                    else
+                    if (e->m_a != 2)
                     {
                         if (an->m_format == VIHSpriteAnimFormatFrame)
                         {
-                            a = ((VIHSpriteFrame *)an->m_frames)[e->m_c + frameA];
-                            b = ((VIHSpriteFrame *)an->m_frames)[e->m_c + frameB];
+                            VIHSpriteFrame *fa =
+                                &((VIHSpriteFrame *)an->m_frames)[fc + frameA];
+                            VIHSpriteFrame *fb =
+                                &((VIHSpriteFrame *)an->m_frames)[fc + frameB];
+                            CopyFrame(a, *fa);
+                            CopyFrame(b, *fb);
                         }
                         else
                         {
                             VIHSpritePackFrame *pa =
-                                &((VIHSpritePackFrame *)an->m_frames)[e->m_c + frameA];
+                                &((VIHSpritePackFrame *)an->m_frames)[fc + frameA];
                             VIHSpritePackFrame *pb =
-                                &((VIHSpritePackFrame *)an->m_frames)[e->m_c + frameB];
+                                &((VIHSpritePackFrame *)an->m_frames)[fc + frameB];
+                            short *sa = &pa->m_scaleTrans.x;
+                            short *sb = &pb->m_scaleTrans.x;
+                            float *st = &a.m_scale;
                             a.m_rot.x = (float)pa->m_rot.x * (1.0f / 32767.0f);
                             a.m_rot.y = (float)pa->m_rot.y * (1.0f / 32767.0f);
                             a.m_rot.z = (float)pa->m_rot.z * (1.0f / 32767.0f);
                             a.m_rot.w = (float)pa->m_rot.w * (1.0f / 32767.0f);
-                            a.m_scale = (float)pa->m_scaleTrans.x * (1.0f / 512.0f);
-                            a.m_trans.x = (float)pa->m_scaleTrans.y * (1.0f / 512.0f);
-                            a.m_trans.y = (float)pa->m_scaleTrans.z * (1.0f / 512.0f);
-                            a.m_trans.z = (float)pa->m_scaleTrans.w * (1.0f / 512.0f);
+                            st[0] = (float)sa[0] * (1.0f / 512.0f);
+                            st[1] = (float)sa[1] * (1.0f / 512.0f);
+                            st[2] = (float)sa[2] * (1.0f / 512.0f);
+                            st[3] = (float)sa[3] * (1.0f / 512.0f);
                             b.m_rot.x = (float)pb->m_rot.x * (1.0f / 32767.0f);
                             b.m_rot.y = (float)pb->m_rot.y * (1.0f / 32767.0f);
                             b.m_rot.z = (float)pb->m_rot.z * (1.0f / 32767.0f);
                             b.m_rot.w = (float)pb->m_rot.w * (1.0f / 32767.0f);
-                            b.m_scale = (float)pb->m_scaleTrans.x * (1.0f / 512.0f);
-                            b.m_trans.x = (float)pb->m_scaleTrans.y * (1.0f / 512.0f);
-                            b.m_trans.y = (float)pb->m_scaleTrans.z * (1.0f / 512.0f);
-                            b.m_trans.z = (float)pb->m_scaleTrans.w * (1.0f / 512.0f);
+                            b.m_scale = (float)sb[0] * (1.0f / 512.0f);
+                            b.m_trans.x = (float)sb[1] * (1.0f / 512.0f);
+                            b.m_trans.y = (float)sb[2] * (1.0f / 512.0f);
+                            b.m_trans.z = (float)sb[3] * (1.0f / 512.0f);
                         }
-                        if (e->m_a == 1)
+                        if (m_playNodes.Value(pn).m_a == 1)
                         {
-                            e->m_a = 2;
-                            m_playNodes.Value(pn).m_frame = a;
+                            m_playNodes.Value(pn).m_a = 2;
+                            CopyFrame(m_playNodes.Value(pn).m_frame, a);
                         }
-                    }
-                    if (pool->Value(p).m_interpolate)
-                    {
-                        c.m_rot.Slerp(a.m_rot, b.m_rot, t);
-                        c.m_scale = a.m_scale + (b.m_scale - a.m_scale) * t;
-                        c.m_trans.x = a.m_trans.x + (b.m_trans.x - a.m_trans.x) * t;
-                        c.m_trans.y = a.m_trans.y + (b.m_trans.y - a.m_trans.y) * t;
-                        c.m_trans.z = a.m_trans.z + (b.m_trans.z - a.m_trans.z) * t;
                     }
                     else
                     {
-                        c = a;
+                        CopyFrame(a, e->m_frame);
+                        CopyFrame(b, m_playNodes.Value(pn).m_frame);
                     }
-                    switch (pool->Value(p).m_blendMode)
+                    if (!m_plays.Value(p).m_interpolate)
+                    {
+                        c.m_rot = a.m_rot;
+                        c.m_scale = a.m_scale;
+                        c.m_trans.x = a.m_trans.x;
+                        c.m_trans.y = a.m_trans.y;
+                        c.m_trans.z = a.m_trans.z;
+                    }
+                    else
+                    {
+                        c.m_rot.Slerp(a.m_rot, b.m_rot, t);
+                        c.m_scale = a.m_scale + (b.m_scale - a.m_scale) * t;
+                        c.m_trans.x = (b.m_trans.x - a.m_trans.x) * t + a.m_trans.x;
+                        c.m_trans.y = (b.m_trans.y - a.m_trans.y) * t + a.m_trans.y;
+                        c.m_trans.z = (b.m_trans.z - a.m_trans.z) * t + a.m_trans.z;
+                    }
+                    switch (m_plays.Value(p).m_blendMode)
                     {
                     case 0:
-                        n->m_frame.m_rot = c.m_rot;
-                        n->m_frame.m_scale = c.m_scale;
-                        n->m_frame.m_trans = c.m_trans;
+                        CopyFrame(n->m_frame, c);
                         break;
                     case 1:
                         {
@@ -1559,18 +1601,14 @@ int VIHSprite::ProcessPlayList(int lod, VIScene &sc)
                         c.m_trans -= n->m_frame.m_trans;
                         c.m_trans *= weight;
                         c.m_trans += n->m_frame.m_trans;
-                        n->m_frame.m_rot = c.m_rot;
-                        n->m_frame.m_scale = c.m_scale;
-                        n->m_frame.m_trans = c.m_trans;
+                        CopyFrame(n->m_frame, c);
                         }
                         break;
                     }
                 }
                 else
                 {
-                    n->m_frame.m_rot = n->m_rest.m_rot;
-                    n->m_frame.m_scale = n->m_rest.m_scale;
-                    n->m_frame.m_trans = n->m_rest.m_trans;
+                    CopyFrame(n->m_frame, n->m_rest);
                 }
                 pn = m_playNodes.Next(pn);
                 count--;

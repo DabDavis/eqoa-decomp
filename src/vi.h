@@ -2906,51 +2906,29 @@ public:
 //
 // VIParticleSystem::Init hands __builtin_vec_new `n * 104` and then runs gcc's
 // own array-init loop over it: an out-of-line VILNode constructor plus fourteen
-// inline `sw zero` at +0x20..+0x54.  So a particle is 104 bytes on a VILNode,
-// with sixteen uninitialised bytes either side of the zeroed run.
+// inline `sw zero` at +0x20..+0x54.  So a particle is 104 bytes on a VILNode.
+// Phase 61: the fourteen stores are MEMBER constructors, not a body: Init's
+// loop strength-reduces a second pointer at +0x48 (each member ctor's `this`
+// is a giv of its own, and the last 16-byte member wins the giv combination),
+// which fourteen plain-float stores never produce.  The 0x48 member must zero
+// LAST, so every member ahead of it is a constructed object too.
 // ---------------------------------------------------------------------------
 class VIParticle : public VILNode
 {
 public:
     VIParticle()
     {
-        m_f20 = 0;
-        m_f24 = 0;
-        m_f28 = 0;
-        m_f2C = 0;
-        m_f30 = 0;
-        m_f34 = 0;
-        m_f38 = 0;
-        m_f3C = 0;
-        m_f40 = 0;
-        m_f44 = 0;
-        m_f48 = 0;
-        m_f4C = 0;
-        m_f50 = 0;
-        m_f54 = 0;
     }
 
-    // Phase 61: the fields Render steps.  m_f20 is the position and m_f2C
-    // the velocity (VIVect3s in all but name -- the constructor's fourteen
-    // `sw zero`s are what keep them plain floats).
     float m_age;      // +0x10  0 -> 1 over the life
     float m_ageRate;  // +0x14  1 / lifespan
     float m_friction; // +0x18
     float m_gradRepeat; // +0x1C
-    float m_f20;      // +0x20  position
-    float m_f24;
-    float m_f28;
-    float m_f2C;      // +0x2C  velocity
-    float m_f30;
-    float m_f34;
-    float m_f38;
-    float m_f3C;
-    float m_f40;
-    float m_f44;
-    float m_f48;
-    float m_f4C;
-    float m_f50;
-    float m_f54;      // +0x54
+    VIVect3 m_pos;    // +0x20
+    VIVect3 m_vel;    // +0x2C
+    VIColor32F m_c38; // +0x38
+    VIColor32F m_c48; // +0x48  (0x38/0x48 are never read by name; any
+                      //  16-byte zeroing class fits)
     float m_size;     // +0x58
     float m_growth;   // +0x5C
     float m_gravity;  // +0x60

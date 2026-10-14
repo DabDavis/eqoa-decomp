@@ -326,12 +326,12 @@ int VIParticleEmitter::Update()
     {
         if (m_attributes.m_pattern)
         {
-            (VIVect3 &)p->m_f20 = m_attributes.m_pattern[rand() % m_attributes.m_patternSize];
-            (VIVect3 &)p->m_f20 = (VIVect3 &)p->m_f20 * m_direction;
-            (VIVect3 &)p->m_f20 += at;
+            p->m_pos = m_attributes.m_pattern[rand() % m_attributes.m_patternSize];
+            p->m_pos = p->m_pos * m_direction;
+            p->m_pos += at;
         }
         else
-            (VIVect3 &)p->m_f20 = at;
+            p->m_pos = at;
         at += d;
         m_particles.AddTail(p);
         m_numParticles++;
@@ -400,16 +400,16 @@ int VIParticleEmitter::Update()
         }
         dir = dir * m_direction;
         off = off * m_direction;
-        (VIVect3 &)p->m_f20 += off;
+        p->m_pos += off;
         dir *= m_attributes.m_velocity + VIRAND * m_attributes.m_velocityVar;
-        (VIVect3 &)p->m_f2C = dir;
+        p->m_vel = dir;
         if (m_attributes.m_inheritVelocity != 0.0f)
         {
             b = m_location;
             b -= m_lastLocation;
             b *= invDt;
             b *= m_attributes.m_inheritVelocity;
-            (VIVect3 &)p->m_f2C += b;
+            p->m_vel += b;
         }
     }
     return 0;

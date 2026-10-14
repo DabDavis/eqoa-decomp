@@ -1109,57 +1109,62 @@ int VICSprite::SetDeath(int on, int erase, VIScene &sc)
     VISoundDevice *sd = sc.m_sound;
     int i;
 
-    if (!on)
-        return 0;
+    // The store goes BEFORE the test (it fills the branch's delay slot) and
+    // the body nests under `if (on)` so the test threads to the one bottom
+    // `return 0`.
     m_dead = on;
-    if (erase)
+    if (on)
     {
-        for (i = 0; i < 2; i++)
+        if (erase)
         {
-            if (m_cur[i].m_play != -1)
+            for (i = 0; i < 2; i++)
             {
-                if (ErasePlay(m_cur[i].m_play, sc) < 0)
-                    return -1;
-                if (sd)
+                if (m_cur[i].m_play != -1)
                 {
-                    if (m_cur[i].m_flags != -1)
+                    if (ErasePlay(m_cur[i].m_play, sc) < 0)
+                        return -1;
+                    if (sd)
                     {
-                        sd->Stop(m_cur[i].m_flags);
-                        m_cur[i].m_flags = -1;
+                        if (m_cur[i].m_flags != -1)
+                        {
+                            sd->Stop(m_cur[i].m_flags);
+                            m_cur[i].m_flags = -1;
+                        }
                     }
+                    m_cur[i].m_play = -1;
+                    m_cur[i].m_anim = 0;
                 }
-                m_cur[i].m_play = -1;
-                m_cur[i].m_anim = 0;
-            }
-            if (m_prev[i].m_play != -1)
-            {
-                if (ErasePlay(m_prev[i].m_play, sc) < 0)
-                    return -1;
-                if (sd)
+                if (m_prev[i].m_play != -1)
                 {
-                    if (m_prev[i].m_flags != -1)
+                    if (ErasePlay(m_prev[i].m_play, sc) < 0)
+                        return -1;
+                    if (sd)
                     {
-                        sd->Stop(m_prev[i].m_flags);
-                        m_prev[i].m_flags = -1;
+                        if (m_prev[i].m_flags != -1)
+                        {
+                            sd->Stop(m_prev[i].m_flags);
+                            m_prev[i].m_flags = -1;
+                        }
                     }
+                    m_prev[i].m_play = -1;
+                    m_prev[i].m_anim = 0;
                 }
-                m_prev[i].m_play = -1;
-                m_prev[i].m_anim = 0;
             }
         }
-    }
-    if (SetLocomotion((VICSpriteAnimID)14, sc) < 0)
-        return -1;
-    if (!erase)
-        return 0;
-    for (i = 0; i < 2; i++)
-    {
-        if (m_cur[i].m_play == -1)
-            continue;
-        SetPlayFrame(m_cur[i].m_play,
-                     (float)(sc.Animation(m_plays.Value(m_cur[i].m_play).m_animID)
-                                 ->GetNumFramesPerNode() - 1),
-                     sc);
+        if (SetLocomotion((VICSpriteAnimID)14, sc) < 0)
+            return -1;
+        if (erase)
+        {
+            for (i = 0; i < 2; i++)
+            {
+                if (m_cur[i].m_play == -1)
+                    continue;
+                SetPlayFrame(m_cur[i].m_play,
+                             (float)(sc.Animation(m_plays.Value(m_cur[i].m_play).m_animID)
+                                         ->GetNumFramesPerNode() - 1),
+                             sc);
+            }
+        }
     }
     return 0;
 }
@@ -1759,6 +1764,7 @@ int VICSprite::SetAnimation(VICSpriteAnimID id, int layer, VIScene &sc)
 {
     int ids[2];
     int idx;
+    int play;
 
     if (m_animTime < sc.GetTime())
     {
@@ -1793,7 +1799,12 @@ int VICSprite::SetAnimation(VICSpriteAnimID id, int layer, VIScene &sc)
     if (m_dead)
         id = VICSpriteAnimID14;
 
-    if (m_cur[layer].m_play != -1 && m_prev[layer].m_play != -1)
+    // -1 as a VARIABLE: one long-lived register serves both tests and the
+    // store after ErasePlay (s5 in the target); `play` holds each Add*Play
+    // result so the final test reads the call's v0, not memory (182 -> 168).
+    int none = -1;
+
+    if (m_cur[layer].m_play != none && m_prev[layer].m_play != none)
     {
         if (!IsBlendComplete(m_cur[layer].m_play, sc))
         {
@@ -1812,7 +1823,7 @@ int VICSprite::SetAnimation(VICSpriteAnimID id, int layer, VIScene &sc)
         }
         if (ErasePlay(m_prev[layer].m_play, sc) < 0)
             return -1;
-        m_prev[layer].m_play = -1;
+        m_prev[layer].m_play = none;
     }
 
 check:
@@ -1864,29 +1875,32 @@ rank:
             {
                 m_cur[0].m_anim = id;
                 m_cur[0].m_sync = m_entries[id].m_sync;
-                m_cur[0].m_play = AddInterpolatedPlayWithSync(m_entries[id].m_animation[0],
-                                                              m_cur[1].m_play, 250, sc);
+                play = AddInterpolatedPlayWithSync(m_entries[id].m_animation[0],
+                                                   m_cur[1].m_play, 250, sc);
+                m_cur[0].m_play = play;
             }
             else
             {
                 m_cur[layer].m_anim = id;
                 m_cur[layer].m_sync = m_entries[id].m_sync;
-                m_cur[layer].m_play = AddInterpolatedPlay(
+                play = AddInterpolatedPlay(
                     m_entries[m_cur[layer].m_anim].m_animation[layer],
                     (VIPlaybackType)m_entries[m_cur[layer].m_anim].m_sync,
                     m_entries[m_cur[layer].m_anim].m_weight, 250, sc);
+                m_cur[layer].m_play = play;
             }
         }
         else
         {
             m_cur[layer].m_anim = id;
             m_cur[layer].m_sync = m_entries[id].m_sync;
-            m_cur[layer].m_play = AddPlay(
+            play = AddPlay(
                 m_entries[m_cur[layer].m_anim].m_animation[layer],
                 (VIPlaybackType)m_entries[m_cur[layer].m_anim].m_sync,
                 m_entries[m_cur[layer].m_anim].m_weight, sc);
+            m_cur[layer].m_play = play;
         }
-        if (m_cur[layer].m_play < 0)
+        if (play < 0)
             return -1;
     }
 

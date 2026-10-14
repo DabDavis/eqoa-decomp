@@ -136,7 +136,10 @@ void VIBolt::Update(int dt, VIVect3 &a, VIVect3 &b, VIMatrix44 &m)
 {
     VIVect3 d;
     VIVect3 t;
-    int     i, j;
+    // The dead `j = 0` is worth its insn: gcse sizes its PRE hash table off
+    // the insn count, and the reaching registers it creates (&s, this+428,
+    // this+856) are numbered -- and so given spill slots -- in bucket order.
+    int     i, j = 0;
 
     m_harmonics[0].Update(dt);
     m_harmonics[1].Update(dt);
@@ -230,7 +233,8 @@ void VILightning::SetLocation(const VIVect3 &a, const VIVect3 &b)
 
     VIVect3 right;
     VIVect3 up(0.0f, 1.0f, 0.0f);
-    VIVect3 d = b - a;
+    VIVect3 d = b;
+    d -= a;
 
     Cross(right, up, d);
     up = Cross(d, right);

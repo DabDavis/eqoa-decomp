@@ -262,7 +262,10 @@ int VIBBox::Intersects(const VIVect3 &a, const VIVect3 &b) const
             return 0;
     }
 
+    // n is set AGAIN for the max faces: the second set is a copy the loop
+    // keeps (`move s4,s6`), and LineIntersection's `this` is taken off it.
     const float *mx = &max.x;
+    n = &pl.n.x;
     for (i = 0; i < 3; i++)
     {
         pl.n.Zero();
