@@ -123,3 +123,23 @@ EQ_RIG=/tmp/rig ./exp.sh "baseline" ""
 EQ_RIG=/tmp/rig ./exp.sh "latency 1" \
   's|(eq_attr "type" "load") (eq_attr "cpu" "r5900")) 2 0)|(eq_attr "type" "load") (eq_attr "cpu" "r5900")) 1 0)|'
 ```
+
+---
+
+## Phase 61 (2026-10-14): tested on the REAL compiler, and REFUTED
+
+The "target models an EE load as single-cycle" reading above is wrong. A copy of the real
+`ee-gcc2.95.3-107` `cc1plus.exe` was patched so that `insn_cost` returns 1 for exactly the
+r5900 load rows. That was verified by interpreting the patched function over all 450 insn
+codes × 24 alternatives: 653 rows changed, nothing else.
+
+**With load latency 1, 1,520 of the 3,510 matched functions regress and none of the 176
+open ones closes.** Store 2→1 costs 891 and closes 0. Xfer 2→1 costs 33 and closes 0. FPU
+types 3→4 costs 171 and closes 0.
+
+The libcall-pair flip this note demonstrated is real, but it does not generalise: BlendAccum
+is now matched from SOURCE (component-wise maths through references) and regresses at
+latency 1. The settled compiler's latency model is the target's.
+
+Long form: `decomp/README.md`, "Phase 61: the latency-1 hypothesis tested on the REAL
+compiler". Tools: `decomp/rig_lat/`.

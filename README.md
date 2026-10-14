@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,521 of 3,752 byte-exact**, phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,539 of 3,752 byte-exact**, phase 61 in progress)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -977,6 +977,28 @@ several of the 23, regresses **none** of the 141.
 Long form: `claude-notes/decomp-which-pass-diverges-20260822.md`.
 
 
+### Phase 61 correction: three of the four rows were SOURCE
+
+**The `sched2`, `sched` and `lreg` rows above are refuted as toolchain limits.** Phase 61
+closed all of them from source:
+- `BlendAccum` (both float and both double);
+- `__ml__FRC8VIVect4DRC11VIMatrix44D`;
+- all six double and float `Distance`/`DistanceSquared`.
+
+What did it was writing the component-wise vector maths through REFERENCES. That means
+VIVect3's own operators, or static inline helpers of the same shape for
+VIVect2/2I/4/3D/4D. The "value kept live" pattern was the
+inline expansion of a by-reference operand, not a scheduler tie or an allocator choice.
+Min/max written as inline functions on `a > b`, rather than the `VIMIN`/`VIMAX` macros,
+closed the VIRect/VIBRect/VIBBox bounders in the same pass.
+
+**The `loop` row stands** (`VIMatrix33::Transpose` 19/34). So do the two `Invert`s,
+`VIMatrix44::ConvertTo`, `VIRect::DistanceSquared` and the two `PointInSolid`s; Phase 8c's
+load ready-delay is still the best explanation for the scheduler-ordered residue elsewhere.
+The lesson for any "toolchain" verdict: it is a hypothesis until every source shape that
+produces the same RTL has been tried. Here the missing shape was the C++ operator, not a
+different C expression.
+
 ## Phase 8b: the compiler hunt — no better binary exists
 
 A found compiler beats a patched one, so before touching gcc: is there a build that already
@@ -1078,6 +1100,53 @@ Windows/MSVC host**. Under glibc that format means flag `I` plus width 64, so ev
 prints inside 62 spaces of padding; a wrong-host build announces itself that way.
 
 Long form: `claude-notes/decomp-scheduler-rig-20260822.md`.
+
+### Phase 61: the latency-1 hypothesis tested on the REAL compiler, and refuted
+
+Phase 8c's rig was 2.9-ee, so it could not score this tree. Phase 61 patched the real one
+instead: a copy of `ee-gcc2.95.3-107`'s `cc1plus.exe` (MSVC 6 build, SN v1.07).
+- **The patch.** `insn_cost`'s only call to `result_ready_cost` is redirected to a 56-byte
+  stub in the `.text` slack. The stub returns 1 for exactly the r5900 load rows.
+- **The proof it is exactly the md change.** A small x86 interpreter ran all 450 insn codes
+  × 24 alternatives through the original and the patched function: 653 load rows change
+  from 2 to 1 and nothing else does. The rig corpus reproduces 8c's `libcall_pair` flip.
+
+Whole tree, one change at a time, against an unpatched baseline of the same source:
+
+| change | matched that regress | open that close |
+|---|---|---|
+| r5900 load ready-delay 2 → 1 | **1,520 of 3,510** | **0** |
+| store 2 → 1 | 891 | 0 |
+| xfer 2 → 1 | 33 | 0 |
+| FPU multiply-add types 3 → 4 | 171 | 0 |
+
+**So the settled compiler's latency model IS the target's.** The `libcall_pair` flip is
+real, but no single latency number explains it. The typical latency-1 regression is the
+target hoisting the epilogue `lq ra` early, which is latency-2 behaviour.
+`BlendAccum`, the shape 8c set out to explain, is now matched from source (see the Phase 8
+correction above) and REGRESSES at latency 1. What remains of the scheduler residue must be
+narrower than a latency number: haifa's ready-list tie-breaks, or how argument loads that
+feed a call are costed.
+
+The r5900 costs as this binary actually computes them:
+
+| Class | Cost |
+|---|---|
+| load, store, xfer | 2 |
+| SN's type 26 | 2 |
+| ALU, hilo | 1 |
+| imul | 4 |
+| idiv | 37 |
+| single-precision FPU add/mul/madd/abs/neg/cmp/cvt | 3 |
+| single-precision fdiv/fsqrt | 6 |
+| double fmul | 8 |
+| double fdiv | 36 |
+| double fsqrt | 112 |
+| SN's VU0 types 28/29 | 3 |
+
+Tools: `rig_lat/` (`patch_lat1.py`, `verify_variant.py`, the interpreter `emu.py`,
+`cmp_runs.py`) and the regression lists in `rig_lat/logs/`. They patch a COPY under a
+lane's `tc/`, never `toolchains/`, and the lane's `eqcheck.py` takes `EQ_TC_DIR`.
 
 
 ## Phase 8d: the double `Distance` family — `cse`, and a source finding

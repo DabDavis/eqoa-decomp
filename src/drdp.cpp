@@ -617,15 +617,11 @@ int drdp_endpoint_create(drdp_t *pDrdp, endpoint_t **ppEndpoint)
         iResult = -1;
         goto done;
     }
-    if (pDrdp->m_endpointBlock[1].remaining != 0)
-    {
-        if (pDrdp->m_endpointBlock[0].remaining == 0)
-            i = 1;
-        else
-            i = pDrdp->m_endpointBlock[1].remaining < pDrdp->m_endpointBlock[0].remaining ? 1 : 0;
-    }
-    else
+    if (pDrdp->m_endpointBlock[1].remaining == 0
+        || (pDrdp->m_endpointBlock[0].remaining != 0 && pDrdp->m_endpointBlock[1].remaining >= pDrdp->m_endpointBlock[0].remaining))
         i = 0;
+    else
+        i = 1;
     iResult = endpoint_create(&pEndpoint, pDrdp, pDrdp->m_endpointBlock[i].next);
     if (iResult)
         goto done;
@@ -640,6 +636,10 @@ int drdp_endpoint_create(drdp_t *pDrdp, endpoint_t **ppEndpoint)
         }
         else
         {
+
+
+
+
 
 
 
@@ -1139,24 +1139,20 @@ int drdp_handle_segment(drdp_t *pDrdp, buffer_t *pBuffer, uns64 uiRoute)
     segment_header_t header;
     endpoint_t *pEndpoint;
     int iResult;
-
     buffer_read_segment_header(pBuffer, &header, uiRoute,
                                endpoint_get_id(pDrdp->m_pSystemEndpoint));
-
     if (header.m_uiFlags & 0x20000)
     {
         drdp_format_endpoint1(header.m_uiSrc);
         drdp_terminate_connections_to_endpoint(pDrdp, header.m_uiSrc);
-        return 0;
+        goto done;
     }
-
     pEndpoint = (endpoint_t *)vtree_lookup(&pDrdp->m_endpoints, &header.m_uiDst);
     if (!pEndpoint)
     {
         drdp_handle_segment_endpoint_not_local(pDrdp, &header, pBuffer);
-        return 0;
+        goto done;
     }
-
     if (header.m_uiFlags & 0x8000)
     {
         drdp_format_endpoint1(header.m_uiSrc);
@@ -1164,10 +1160,12 @@ int drdp_handle_segment(drdp_t *pDrdp, buffer_t *pBuffer, uns64 uiRoute)
         drdp_format_endpoint3(uiRoute);
         drdp_format_endpoint4(header.m_uiRoute);
     }
-
     iResult = endpoint_handle_segment(pEndpoint, &header, pBuffer);
-    if (iResult == 0)
-        return 0;
+    if (iResult)
+        goto out;
+done:
+    iResult = 0;
+out:
     return iResult;
 }
 
@@ -1387,6 +1385,8 @@ int drdp_process_udp(drdp_t *pDrdp, const void *pData, int iSize)
 }
 
 
+
+
 // The one entry point a datagram arrives through.  A port of zero in the
 // six-byte prefix is the ICMP socket, not the UDP one.
 int drdp_process_packet(drdp_t *pDrdp, const void *pData, int iSize)
@@ -1538,80 +1538,77 @@ int drdp_process_packet(drdp_t *pDrdp, const void *pData, int iSize)
     return drdp_process_icmp(pDrdp, pData, iSize);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Read ONE datagram off whichever socket has one.  The starting socket
 // rotates, so a busy UDP socket cannot starve the ICMP one.
 int drdp_receive_packet(drdp_t *pDrdp, void *pData, int iSize, int *piRead, int iTimeout)
 {
     int iResult;
     int i;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     VASSERT( drdp_is_valid( pDrdp ) );   // 1604
-
     pDrdp->m_uiTimeRecv = pDrdp->m_uiTime;
-
     if (iTimeout)
     {
         iResult = usocket_select(&pDrdp->m_socket[0], pDrdp->m_iNumSocket, iTimeout);
         if (iResult)
-            return iResult;
+            goto out;
     }
-
     for (i = 0; i < pDrdp->m_iNumSocket; i++)
     {
         do
@@ -1619,20 +1616,18 @@ int drdp_receive_packet(drdp_t *pDrdp, void *pData, int iSize, int *piRead, int 
             iResult = usocket_recvfrom(pDrdp->m_socket[pDrdp->m_iSocket], pData, iSize, piRead);
         }
         while (iResult == -6);
-
         if (!iResult)
         {
             pDrdp->m_iBytesRecv += *piRead;
             break;
         }
-
-        pDrdp->m_iSocket = (pDrdp->m_iSocket + 1) % pDrdp->m_iNumSocket;
+        pDrdp->m_iSocket++;
+        pDrdp->m_iSocket %= pDrdp->m_iNumSocket;
     }
-
     iResult = -1;
     if (i != pDrdp->m_iNumSocket)
         iResult = 0;
-
+out:
     return iResult;
 }
 
@@ -1708,6 +1703,11 @@ int drdp_get_sw_endpoint_status(drdp_t *pDrdp, uns64 uiId)
         return 0;
     return 2;
 }
+
+
+
+
+
 
 // Which machine an endpoint id lives behind.  A hardware id IS its own route;
 // a software id is looked up, and a leader that does not know falls back on
@@ -3255,29 +3255,19 @@ char *drdp_format_endpoint(char *pName, uns64 uiId)
     uns8 ucIp[4];
     uns16 usPort;
     uns16 usDrdpPort;
-
     if (uiId == (uns64)-1)
-    {
         memcpy(pName, INVALID_NAME, sizeof(INVALID_NAME));
-        return pName;
-    }
-
-    if (drdp_is_hardware_endpoint(uiId))
+    else if (drdp_is_hardware_endpoint(uiId))
     {
         drdp_endpoint_to_address(uiId, ucIp, &usPort, &usDrdpPort);
-
         if (drdp_is_local_hardware_endpoint(uiId))
-        {
             sprintf(pName, "local:%u", usDrdpPort);
-            return pName;
-        }
-
-        sprintf(pName, "%u.%u.%u.%u:%u:%u", ucIp[0], ucIp[1], ucIp[2], ucIp[3],
-                usPort, usDrdpPort);
-        return pName;
+        else
+            sprintf(pName, "%u.%u.%u.%u:%u:%u", ucIp[0], ucIp[1], ucIp[2], ucIp[3],
+                    usPort, usDrdpPort);
     }
-
-    sprintf(pName, "0x%x", (int)uiId);
+    else
+        sprintf(pName, "0x%x", (int)uiId);
     return pName;
 }
 
@@ -3394,13 +3384,11 @@ int drdp_is_local_hardware_endpoint(uns64 uiId)
 {
     int iResult;
 
-    if (uiId != (uns64)-1)
-    {
-        iResult = ( uiId & 0xffffffffffff0000 ) == 0xffffffffffff0000 ? 1 : 0;
-        return iResult;
-    }
-
-    return 0;
+    if (uiId == (uns64)-1)
+        iResult = 0;
+    else
+        iResult = ( uiId & 0xffffffffffff0000 ) == 0xffffffffffff0000;
+    return iResult;
 }
 
 int drdp_is_remote_hardware_endpoint(uns64 uiId)

@@ -84,6 +84,44 @@ inline int uns16_diff(uns16 a, uns16 b)
     return (int16)(a - b);
 }
 
+// A message list starts empty and unsorted.
+inline void message_list_init(message_list_t *pList)
+{
+    vlist_init(&pList->list, message_get_vlink_offset(0), 0, 0);
+}
+
+// The rest of the message-list API is inline too.  connection_send_guaranteed
+// goes through it for EVERY list operation: each call's parameter is then a
+// pseudo set inside a loop, loop.c hoists `&messages` into a callee-saved
+// register, and the target's `move a0,s4` comes out where `&messages.list`
+// spelt at the call rematerialises `addiu a0,sp,16` (18 wrong words to 0).
+inline void message_list_add_tail(message_list_t *pList, message_t *pMessage)
+{
+    vlist_add_tail(&pList->list, pMessage);
+}
+
+inline message_t *message_list_peek_head(message_list_t *pList)
+{
+    return (message_t *)vlist_peek_head(&pList->list);
+}
+
+inline message_t *message_list_remove_head(message_list_t *pList)
+{
+    return (message_t *)vlist_remove_head(&pList->list);
+}
+
+inline int message_list_get_size(message_list_t *pList)
+{
+    return vlist_get_size(&pList->list);
+}
+
+// The by-seqnum list has the same front end; connection_move_delayed_to_arrivals
+// peeks through it (3 wrong words to 0: the test is on v0, not on a copy).
+inline message_t *message_seqnum_peek_head(message_seqnum_t *pSeqnum)
+{
+    return (message_t *)vlist_peek_head(&pSeqnum->list);
+}
+
 // The idle period a software pair waits before it resets.
 #define CONNECTION_IDLE_RESET 120000
 
@@ -185,44 +223,6 @@ int connection_get_vnode_offset(int iIndex)
 {
     return iIndex * 16 + 4;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1034,20 +1034,20 @@ int connection_send_best_effort(connection_t *pConnection, const uns8 *pData, in
 
 
 
-// A message list starts empty and unsorted.
-inline void message_list_init(message_list_t *pList)
-{
-    vlist_init(&pList->list, message_get_vlink_offset(0), 0, 0);
-}
+
+
+
+
+
+
+
+
+
 
 // A guaranteed message is FRAGMENTED at 1300 bytes and every fragment gets its
 // own sequence number, so a five-megabyte send is four thousand messages.  All
 // of them are built into a local list first and only moved onto the send queue
 // when the whole set succeeded -- a half-sent message is worse than none.
-inline void message_list_add_tail(message_list_t *pList, message_t *pMessage)
-{
-    vlist_add_tail(&pList->list, pMessage);
-}
 int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int iSize,
                                int iType)
 {
@@ -1081,17 +1081,17 @@ int connection_send_guaranteed(connection_t *pConnection, const uns8 *pData, int
             goto out;
         message_list_add_tail(&messages, pMessage);
     }
-    vlist_get_size(&messages.list);
-    while (vlist_peek_head(&messages.list))
+    message_list_get_size(&messages);
+    while (message_list_peek_head(&messages))
     {
-        message_get_seqnum((message_t *)vlist_peek_head(&messages.list));
-        message_get_size((message_t *)vlist_peek_head(&messages.list));
-        vlist_add_tail(&pConnection->m_sendQueue.list, vlist_remove_head(&messages.list));
+        message_get_seqnum(message_list_peek_head(&messages));
+        message_get_size(message_list_peek_head(&messages));
+        vlist_add_tail(&pConnection->m_sendQueue.list, message_list_remove_head(&messages));
     }
     iResult = 0;
 out:
-    while (vlist_peek_head(&messages.list))
-        message_destroy((message_t *)vlist_remove_head(&messages.list));
+    while (message_list_peek_head(&messages))
+        message_destroy(message_list_remove_head(&messages));
     return iResult;
 }
 
@@ -1238,41 +1238,41 @@ int connection_is_closed(connection_t *pConnection)
 // one that has already gone away.
 int connection_send_internal(connection_t *pConnection, const uns8 *pData, int iSize, int iType)
 {
-    int iResult = iType;
+    int iResult;
     VASSERT(!connection_is_closed(pConnection));   // 1242
     VASSERT(!endpoint_is_closed(pConnection->m_pEndpoint));   // 1243
     if (connection_is_terminated(pConnection))
         iResult = 0;
     else
     {
-        switch (iResult)
+        int iError;
+
+        switch (iType)
         {
         case CONNECTION_MESSAGE_TYPE_BEST_EFFORT:
-            iResult = connection_send_best_effort(pConnection, pData, iSize);
+            iError = connection_send_best_effort(pConnection, pData, iSize);
             break;
         case CONNECTION_MESSAGE_TYPE_GUARANTEED:
         case CONNECTION_MESSAGE_TYPE_SYSTEM:
-            iResult = connection_send_guaranteed(pConnection, pData, iSize, iType);
+            iError = connection_send_guaranteed(pConnection, pData, iSize, iType);
             break;
         default:
-            iResult = connection_send_state(pConnection, pData, iSize, iType);
+            iError = connection_send_state(pConnection, pData, iSize, iType);
             break;
         }
-        if (iResult == 0)
+        if (iError == 0)
         {
-            route_resort(pConnection);
             iResult = 0;
+            route_resort(pConnection);
         }
         else
+        {
             connection_terminate_reason(pConnection, 1, 7);
+            iResult = iError;
+        }
     }
     return iResult;
 }
-
-
-
-
-
 
 
 
@@ -1681,7 +1681,6 @@ void connection_get_next_message(connection_t *pConnection, message_list_t **ppL
 {
     message_list_t *pList;
     message_t *pMessage;
-
     *ppList = 0;
     pList = &pConnection->m_sendQueue;
     pMessage = (message_t *)vlist_peek_head(&pList->list);
@@ -1707,20 +1706,21 @@ void connection_get_next_message(connection_t *pConnection, message_list_t **ppL
     if (pMessage)
     {
         uns32 uiTime = connection_message_get_desired_flush_time(pConnection, pMessage);
-
-        if (!iHave || (int)(uiTime - *puiTime) < 0)
+        if (iHave)
+        {
+            if ((int)(uiTime - *puiTime) < 0)
+            {
+                *puiTime = uiTime;
+                *ppList = pList;
+            }
+        }
+        else
         {
             *puiTime = uiTime;
             *ppList = pList;
         }
     }
 }
-
-
-
-
-
-
 
 
 
@@ -2336,7 +2336,6 @@ void connection_record_guaranteed_ack(connection_t *pConnection, uns16 usSeqnum,
 {
     message_t *pMessage;
     message_t *pNext;
-
     for (pMessage = (message_t *)vlist_peek_head(&pConnection->m_outstanding.list); pMessage;
          pMessage = pNext)
     {
@@ -2346,7 +2345,6 @@ void connection_record_guaranteed_ack(connection_t *pConnection, uns16 usSeqnum,
             || message_get_type(pMessage) == CONNECTION_MESSAGE_TYPE_SYSTEM)
         {
             int iAhead = (int16)(message_get_seqnum(pMessage) - usSeqnum);
-
             if (iAhead <= 0)
             {
                 vlist_remove(&pConnection->m_outstanding.list, pMessage);
@@ -2355,31 +2353,33 @@ void connection_record_guaranteed_ack(connection_t *pConnection, uns16 usSeqnum,
             else if (iAhead != 1)
             {
                 uns32 uiBit = iAhead - 2;
-
-                if (uiBit < 64 && ((uns64)1 << uiBit) & uiMask)
+                if (uiBit < 64)
                 {
-                    vlist_remove(&pConnection->m_outstanding.list, pMessage);
-                    message_destroy(pMessage);
+                    uns64 uiFlag = 1;
+                    uiFlag <<= uiBit;
+                    if (uiFlag & uiMask)
+                {
+                        vlist_remove(&pConnection->m_outstanding.list, pMessage);
+                        message_destroy(pMessage);
+                    }
                 }
             }
         }
     }
-    pConnection->m_uiTxMask = uiMask;
     pConnection->m_usTxAck = usSeqnum;
+    pConnection->m_uiTxMask = uiMask;
 }
 
 // One acknowledgement per state channel, the array ending at channel 248.
 void connection_record_state_acks(connection_t *pConnection, const state_ack_t *pAcks)
 {
-    const state_ack_t *pAck;
+    int i;
     int iChannel;
     uns16 usSeqnum;
-
-    for (pAck = pAcks; (iChannel = pAck->m_ucChannel, usSeqnum = pAck->m_usSeqnum,
-            iChannel != CONNECTION_STATE_CHANNEL_COUNT); pAck++)
+    for (i = 0; (iChannel = pAcks[i].m_ucChannel, usSeqnum = pAcks[i].m_usSeqnum,
+            iChannel != CONNECTION_STATE_CHANNEL_COUNT); i++)
     {
         state_channel_t *pChannel = &pConnection->m_pChannels[iChannel];
-
         if ((int16)(usSeqnum - pChannel->m_usTxAck) > 0)
         {
             if (pChannel->m_ucWhere == 2
@@ -2617,14 +2617,15 @@ void connection_record_acks(connection_t *pConnection, segment_body_t *pBody)
 
 
 
+
+
 // A guaranteed message that arrived in order, or one that completes a run of
 // them: a FRAGMENT is held until the last piece lands, and then all of them
 // are copied into one message and that is what the application sees.
 void connection_move_delayed_to_arrivals(connection_t *pConnection)
 {
     message_t *pMessage;
-
-    while ((pMessage = (message_t *)vlist_peek_head(&pConnection->m_delayed.list)) != 0
+    while ((pMessage = message_seqnum_peek_head(&pConnection->m_delayed)) != 0
            && message_get_seqnum(pMessage) == (uns16)(pConnection->m_usRxSeqnum + 1))
     {
         pConnection->m_usRxSeqnum = pConnection->m_usRxSeqnum + 1;
@@ -2643,7 +2644,6 @@ void connection_move_delayed_to_arrivals(connection_t *pConnection)
             uns32 uiTotal = 0;
             uns32 uiOffset;
             int iResult;
-
             vlist_add_tail(&pConnection->m_arrivals.list, pMessage);
             for (pPiece = (message_t *)vlist_peek_head(&pConnection->m_arrivals.list); pPiece;
                  pPiece = (message_t *)vlist_get_next(&pConnection->m_arrivals.list, pPiece))
@@ -2818,7 +2818,6 @@ void connection_log_parse_failure(connection_t *pConnection, const char *pFormat
         pConnection->m_pLogger->hack(pConnection->m_szName, szText);
     }
 }
-
 
 
 
@@ -3356,24 +3355,25 @@ int connection_parse_segment_body(connection_t *pConnection, const segment_heade
                 pConnection->m_uiCstat[2]++;
                 goto out;
             }
-            uns8 ucChannel;
-
-            for (j = 0; (ucChannel = pBody->m_acks[j].m_ucChannel) != CONNECTION_STATE_CHANNEL_COUNT; j++)
+            int iChannel;
+            uns16 usAck;
+            for (j = 0; (iChannel = pBody->m_acks[j].m_ucChannel, usAck = pBody->m_acks[j].m_usSeqnum,
+                    iChannel != CONNECTION_STATE_CHANNEL_COUNT); j++)
             {
-                state_channel_t *pChannel = &pConnection->m_pChannels[ucChannel];
-                if (uns16_ge(pBody->m_acks[j].m_usSeqnum, pChannel->m_usTx))
+                state_channel_t *pChannel = &pConnection->m_pChannels[iChannel];
+                if (uns16_ge(usAck, pChannel->m_usTx))
                 {
                     iResult = -1;
                     connection_log_parse_failure(pConnection, "can't ack more than we've sent, yo: seqnum (%u) >= connection->state_channel[channel].tx (%u)\n",
-                                                 pBody->m_acks[j].m_usSeqnum, pChannel->m_usTx);
+                                                 usAck, pChannel->m_usTx);
                     pConnection->m_uiCstat[2]++;
                     goto out;
                 }
-                if (pBody->m_iArrival && uns16_lt(pBody->m_acks[j].m_usSeqnum, pChannel->m_usTxAck))
+                if (pBody->m_iArrival && uns16_lt(usAck, pChannel->m_usTxAck))
                 {
                     iResult = -1;
                     connection_log_parse_failure(pConnection, "can't ack less than we've already acked: seqnum (%u) < connection->state_channel[channel].ack (%u)\n",
-                                                 pBody->m_acks[j].m_usSeqnum, pChannel->m_usTxAck);
+                                                 usAck, pChannel->m_usTxAck);
                     pConnection->m_uiCstat[2]++;
                     goto out;
                 }
@@ -3582,7 +3582,6 @@ int connection_handle_segment(connection_t *pConnection, const segment_header_t 
     segment_body_t body;
     int iResult;
     int iOffset;
-
     memset(&body, 0, sizeof(body));
     iOffset = message_get_vlink_offset(0);
     vlist_init(&body.m_messages.list, iOffset, 0, 0);
@@ -3599,8 +3598,8 @@ int connection_handle_segment(connection_t *pConnection, const segment_header_t 
         connection_record_segment(pConnection, pHeader, &body);
         iResult = 0;
     }
-    while (vlist_peek_head(&body.m_messages.list))
-        message_destroy((message_t *)vlist_remove_head(&body.m_messages.list));
+    while (message_list_peek_head(&body.m_messages))
+        message_destroy(message_list_remove_head(&body.m_messages));
     return iResult;
 }
 
@@ -3672,6 +3671,7 @@ uns32 connection_get_instance_local(connection_t *pConnection)
 {
     return pConnection->m_uiInstanceLocal;
 }
+
 
 
 

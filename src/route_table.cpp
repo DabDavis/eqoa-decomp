@@ -23,17 +23,17 @@ int rte_get_key_offset(int iIndex)
 
 
 
-
-
-
-
-
-
-
-
 // The range handed in is always contained in exactly one existing entry --
 // `init` seeds the tree with one covering everything and nothing ever leaves a
 // hole -- which is what the two asserts say.
+//
+// The "add an entry for the range" tail is written out in EACH of the three
+// partial-overlap arms: jump2 cross-jumps the lo and hi copies into one and
+// leaves the split arm's own (its tree pointer lives in another register).
+// The second-level `lo`/`hi` tests name the RANGE first where the exact-match
+// test names the entry first -- swapped operands are what stop thread_jumps
+// from skipping the re-test (97 wrong words to 0, with block-scoped
+// neighbours for the lo/hi arms).
 void route_table_update_range(route_table_t *pTable, uns64_range_t *pRange, uns64 uiRoute)
 {
     route_table_entry_t *pRte =
@@ -75,29 +75,43 @@ void route_table_update_range(route_table_t *pTable, uns64_range_t *pRange, uns6
         free(pNext);
         return;
     }
-    if (pRte->m_range.lo == pRange->lo)
+    if (pRange->lo == pRte->m_range.lo)
     {
         pRte->m_range.lo = pRange->hi + 1;
         if (uiRoute == (uns64)-1)
             return;
-        pPrev = (route_table_entry_t *)vtree_get_prev(&pTable->m_tree, pRte);
-        if (pPrev && pPrev->m_range.hi + 1 == pRange->lo && pPrev->m_uiRoute == uiRoute)
+        route_table_entry_t *pLeft =
+            (route_table_entry_t *)vtree_get_prev(&pTable->m_tree, pRte);
+
+        if (pLeft && pLeft->m_range.hi + 1 == pRange->lo && pLeft->m_uiRoute == uiRoute)
         {
-            pPrev->m_range.hi = pRange->hi;
+            pLeft->m_range.hi = pRange->hi;
             return;
         }
+        pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
+        pRte->m_range.lo = pRange->lo;
+        pRte->m_range.hi = pRange->hi;
+        pRte->m_uiRoute = uiRoute;
+        vtree_insert(&pTable->m_tree, pRte);
     }
-    else if (pRte->m_range.hi == pRange->hi)
+    else if (pRange->hi == pRte->m_range.hi)
     {
         pRte->m_range.hi = pRange->lo - 1;
         if (uiRoute == (uns64)-1)
             return;
-        pNext = (route_table_entry_t *)vtree_get_next(&pTable->m_tree, pRte);
-        if (pNext && pRange->hi + 1 == pNext->m_range.lo && uiRoute == pNext->m_uiRoute)
+        route_table_entry_t *pRight =
+            (route_table_entry_t *)vtree_get_next(&pTable->m_tree, pRte);
+
+        if (pRight && pRange->hi == pRight->m_range.lo - 1 && uiRoute == pRight->m_uiRoute)
         {
-            pNext->m_range.lo = pRange->lo;
+            pRight->m_range.lo = pRange->lo;
             return;
         }
+        pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
+        pRte->m_range.lo = pRange->lo;
+        pRte->m_range.hi = pRange->hi;
+        pRte->m_uiRoute = uiRoute;
+        vtree_insert(&pTable->m_tree, pRte);
     }
     else
     {
@@ -109,12 +123,12 @@ void route_table_update_range(route_table_t *pTable, uns64_range_t *pRange, uns6
         vtree_insert(&pTable->m_tree, pNew);
         if (uiRoute == (uns64)-1)
             return;
+        pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
+        pRte->m_range.lo = pRange->lo;
+        pRte->m_range.hi = pRange->hi;
+        pRte->m_uiRoute = uiRoute;
+        vtree_insert(&pTable->m_tree, pRte);
     }
-    pRte = (route_table_entry_t *)malloc(sizeof(*pRte));
-    pRte->m_range.lo = pRange->lo;
-    pRte->m_range.hi = pRange->hi;
-    pRte->m_uiRoute = uiRoute;
-    vtree_insert(&pTable->m_tree, pRte);
 }
 
 void route_table_update(route_table_t *pTable, uns64 uiId, uns64 uiRoute)
@@ -166,7 +180,6 @@ int route_table_find(route_table_t *pTable, uns64 uiId, uns64 *puiRoute)
 {
     uns64_range_t range;
     route_table_entry_t *pRte;
-    uns64 uiRoute;
 
     range.lo = uiId;
     range.hi = uiId;
@@ -175,10 +188,14 @@ int route_table_find(route_table_t *pTable, uns64 uiId, uns64 *puiRoute)
     if (uiId > pTable->m_uiHi)
         return -1;
     pRte = (route_table_entry_t *)vtree_lookup(&pTable->m_tree, &range);
-    uiRoute = pRte ? pRte->m_uiRoute : (uns64)-1;
-    if (uiRoute == 0)
-        return -1;
-    *puiRoute = uiRoute;
+    if (!pRte)
+        *puiRoute = (uns64)-1;
+    else
+    {
+        if (pRte->m_uiRoute == 0)
+            return -1;
+        *puiRoute = pRte->m_uiRoute;
+    }
     return 0;
 }
 

@@ -159,3 +159,24 @@ apart. Only the relocation can.
 `_tu.py` now also reports a matched function that stops being EMITTED. A template member
 is only instantiated when it is used, so a source change can silently drop a matched
 function that the row loop never sees.
+
+## The latency hypothesis, tested on the real compiler
+
+Several lanes had filed their stuck functions under "the R5900 load ready-delay divergence"
+(phase 8c). A rig agent patched a COPY of the real `ee-gcc2.95.3-107` `cc1plus.exe`.
+`insn_cost`'s call to `result_ready_cost` now goes to a 56-byte stub that returns 1 for the
+r5900 load rows only. That was verified by interpreting the patched function over every insn
+code × alternative: 653 rows change and nothing else. Then it scored the whole tree.
+**Latency 1 breaks 1,520 of 3,510 matched functions and closes none of the 176 open.**
+Store, xfer and FPU single-number changes were all strictly worse. The settled compiler's
+latency model is the target's. The remaining instruction-order residue has a narrower
+cause: ready-list tie-breaks, or how argument loads feeding a call are costed.
+`decomp/README.md` (Phase 8c addendum) has the table and `decomp/rig_lat/` the tools.
+
+## Alias analysis (the viwalkcontrol question) and ParseSpellEffectObj
+
+`ParseSpellEffectObj` 44 → 22. One function-scope `int k` serves both the ParseObject
+sub-loop and the three-list loop. The target's allocation puts the first loop's counter in
+the same register as the OUTER loop's, which is what one pseudo does. Two swapped pairs
+remain (`ver` against the hoisted constant 1, and `&version`/-1 against `l`). Declaration
+placement and four spellings of the version tests do not move them.

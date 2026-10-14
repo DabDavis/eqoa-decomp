@@ -163,18 +163,15 @@ static const float ShakeSample[4][6] =
     { 1.0f, 0.5f, -0.5f, -1.0f, -0.5f, 0.5f },
 };
 
-// Both crosses and the position lerp go through VIVect3 expressions returning
-// by VALUE: the frame is exactly 32 bytes longer than a component-wise version
-// -- two 16-byte temporaries -- and the SAME slot that later holds
-// `(m_manualXyz - pos) * k` is written with the second cross's result and never
-// read.  That dead store survives because a call follows it before the slot is
-// reused (Phase 11); the first cross's identical dead store does not, because
-// nothing is called between it and the second.
-inline void Cross(VIVect3 &out, const VIVect3 &a, const VIVect3 &b)
+// Both crosses return by VALUE: the frame is exactly 32 bytes longer than a
+// component-wise version -- two 16-byte temporaries -- and the SAME slot that
+// later holds the lerp's scaled delta is written with the second cross's
+// result and never read.  That dead store survives because a call follows it
+// before the slot is reused (Phase 11); the first cross's identical dead store
+// does not, because nothing is called between it and the second.
+static inline VIVect3 CrossV(const VIVect3 &a, const VIVect3 &b)
 {
-    out.x = a.y * b.z - a.z * b.y;
-    out.y = -a.x * b.z + a.z * b.x;
-    out.z = a.x * b.y - a.y * b.x;
+    return VIVect3(a.y * b.z - a.z * b.y, -a.x * b.z + a.z * b.x, a.x * b.y - a.y * b.x);
 }
 
 inline VIVect3 operator-(const VIVect3 &a, const VIVect3 &b)
@@ -192,13 +189,15 @@ inline VIVect3 operator*(const VIVect3 &a, float f)
     return VIVect3(a.x * f, a.y * f, a.z * f);
 }
 
-// OPEN at 56 of 312.  Everything structural is settled -- the easing curve, the
-// basis, the slerp, the position lerp, the direction rebuilt from the euler
-// pair and the shake table walk -- and every remaining word is which of nine
-// pointer pseudos loses a callee-saved register: the target spills &hpr,
-// &m_manualXyz and &m_manualHpr and keeps the six local addresses, ours spills
-// a different three.  Eight source permutations move the boundary without
-// landing on it.
+// Through an inline wrapper the Euler call's &hpr is rematerialised and the
+// pseudo cse would have shared with the quaternion calls is the one spilled.
+static inline void ToEulerZXY(VIMatrix44 &m, VIVect3 &hpr)
+{
+    m.ConvertToEulerZXY(hpr);
+}
+
+// The scaled delta is a NAMED local: as an unnamed temporary it takes the
+// slot after the sum's instead of the cross's dead slot.
 void VICameraEffect::Apply(VIVect3 &pos, VIVect3 &dir)
 {
     if (m_manualTerp > 0.0f)
@@ -233,12 +232,10 @@ void VICameraEffect::Apply(VIVect3 &pos, VIVect3 &dir)
             pu->y = 1.0f;
             up.z = 0.0f;
 
-            Cross(right, up, fwd);
-            Cross(up, fwd, right);
-            // Neither normalisation can see the other's vector, so the two
-            // statements commute; this order is 12 words closer.
-            up.Normalize();
+            right = CrossV(up, fwd);
+            up = CrossV(fwd, right);
             right.Normalize();
+            up.Normalize();
 
             m.m[0].x = right.x;
             m.m[0].y = right.y;
@@ -250,16 +247,17 @@ void VICameraEffect::Apply(VIVect3 &pos, VIVect3 &dir)
             m.m[2].y = fwd.y;
             m.m[2].z = fwd.z;
 
-            m.ConvertToEulerZXY(hpr);
+            ToEulerZXY(m, hpr);
 
             from.ConvertFrom(hpr);
             to.ConvertFrom(*pmh);
             q.Slerp(from, to, k);
             q.ConvertTo(hpr);
 
-            xyz = pos + VIVect3((pmx->x - pos.x) * k,
-                                (pmx->y - pos.y) * k,
-                                (pmx->z - pos.z) * k);
+            VIVect3 dd((pmx->x - pos.x) * k, (pmx->y - pos.y) * k,
+                       (pmx->z - pos.z) * k);
+
+            xyz = pos + dd;
         }
         else
         {

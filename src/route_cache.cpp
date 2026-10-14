@@ -80,55 +80,54 @@ void route_cache_touch(route_cache_t *pCache, const drdp_addr_t *pAddress,
     pByRoute = (route_cache_entry_t *)vtree_lookup(&pCache->m_byRoute, pRoute);
     if (!pByAddress && !pByRoute)
     {
-        route_cache_entry_t *pEntry = (route_cache_entry_t *)malloc(sizeof(*pEntry));
-
-        if (!pEntry)
+        pByAddress = (route_cache_entry_t *)malloc(sizeof(*pByAddress));
+        if (!pByAddress)
             return;
-        pEntry->m_address = *pAddress;
-        pEntry->m_route = *pRoute;
-        pEntry->m_uiExpire = uiNow + ROUTE_CACHE_EXPIRE;
-        vlist_insert(&pCache->m_byExpire, pEntry);
-        vtree_insert(&pCache->m_byAddress, pEntry);
-        vtree_insert(&pCache->m_byRoute, pEntry);
-        drdp_format_addr1(&pEntry->m_address);
-        drdp_format_addr2(&pEntry->m_route);
-        return;
-    }
-    if (pByAddress && pByRoute && pByAddress != pByRoute)
-    {
-        vtree_remove(&pCache->m_byAddress, pByRoute);
-        vtree_remove(&pCache->m_byRoute, pByRoute);
-        vlist_remove(&pCache->m_byExpire, pByRoute);
-        drdp_format_addr1(&pByRoute->m_address);
-        drdp_format_addr2(&pByRoute->m_route);
-        drdp_format_addr1(pAddress);
-        drdp_format_addr2(pRoute);
-        free(pByRoute);
-        pByRoute = 0;
-    }
-    if (!pByAddress)
-        pByAddress = pByRoute;
-    if (drdp_addr_t_cmp(&pByAddress->m_address, pAddress))
-    {
-        vtree_remove(&pCache->m_byAddress, pByAddress);
         pByAddress->m_address = *pAddress;
-        vtree_insert(&pCache->m_byAddress, pByAddress);
-    }
-    else if (drdp_addr_t_cmp(&pByAddress->m_route, pRoute))
-    {
-        vtree_remove(&pCache->m_byRoute, pByAddress);
         pByAddress->m_route = *pRoute;
-        vtree_insert(&pCache->m_byRoute, pByAddress);
-    }
-    drdp_format_addr1(&pByAddress->m_address);
-    drdp_format_addr2(&pByAddress->m_route);
-    drdp_format_addr1(pAddress);
-    drdp_format_addr2(pRoute);
-    if (pByAddress->m_uiExpire != uiNow + ROUTE_CACHE_EXPIRE)
-    {
-        vlist_remove(&pCache->m_byExpire, pByAddress);
         pByAddress->m_uiExpire = uiNow + ROUTE_CACHE_EXPIRE;
         vlist_insert(&pCache->m_byExpire, pByAddress);
+        vtree_insert(&pCache->m_byAddress, pByAddress);
+        vtree_insert(&pCache->m_byRoute, pByAddress);
+    }
+    else
+    {
+        if (pByAddress && pByRoute && pByAddress != pByRoute)
+        {
+            vtree_remove(&pCache->m_byAddress, pByRoute);
+            vtree_remove(&pCache->m_byRoute, pByRoute);
+            vlist_remove(&pCache->m_byExpire, pByRoute);
+            drdp_format_addr1(&pByRoute->m_address);
+            drdp_format_addr2(&pByRoute->m_route);
+            drdp_format_addr1(pAddress);
+            drdp_format_addr2(pRoute);
+            free(pByRoute);
+            pByRoute = 0;
+        }
+        if (!pByAddress)
+            pByAddress = pByRoute;
+        if (drdp_addr_t_cmp(&pByAddress->m_address, pAddress))
+        {
+            vtree_remove(&pCache->m_byAddress, pByAddress);
+            pByAddress->m_address = *pAddress;
+            vtree_insert(&pCache->m_byAddress, pByAddress);
+        }
+        else if (drdp_addr_t_cmp(&pByAddress->m_route, pRoute))
+        {
+            vtree_remove(&pCache->m_byRoute, pByAddress);
+            pByAddress->m_route = *pRoute;
+            vtree_insert(&pCache->m_byRoute, pByAddress);
+        }
+        drdp_format_addr1(&pByAddress->m_address);
+        drdp_format_addr2(&pByAddress->m_route);
+        drdp_format_addr1(pAddress);
+        drdp_format_addr2(pRoute);
+        if (pByAddress->m_uiExpire != uiNow + ROUTE_CACHE_EXPIRE)
+        {
+            vlist_remove(&pCache->m_byExpire, pByAddress);
+            pByAddress->m_uiExpire = uiNow + ROUTE_CACHE_EXPIRE;
+            vlist_insert(&pCache->m_byExpire, pByAddress);
+        }
     }
     drdp_format_addr1(&pByAddress->m_address);
     drdp_format_addr2(&pByAddress->m_route);

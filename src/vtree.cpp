@@ -326,7 +326,7 @@ void *vtree_iterate(vtree_t *tree, void *object, int dir)
 {
     vnode_t *node = vtree_node(tree, object);
     vnode_t *nil = &tree->nil;
-// The successor/predecessor walk, written once for both directions.
+// Successor/predecessor, both directions; the child walk re-spells `&tree->nil` (loop.c hoists it: `move a1,s1`).
 
     VASSERT(object != 0);
     if (node->child[dir] == nil)
@@ -342,7 +342,7 @@ void *vtree_iterate(vtree_t *tree, void *object, int dir)
     else
     {
         node = node->child[dir];
-        while (node->child[dir ^ 1] != nil)
+        while (node->child[dir ^ 1] != &tree->nil)
             node = node->child[dir ^ 1];
     }
     return vtree_object(tree, node);

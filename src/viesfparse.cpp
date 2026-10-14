@@ -3661,7 +3661,8 @@ int VIESFParse::ParseAdpcmObj()
 
     w->SetSampleRate(rate);
 
-    if (w->Create(*m_sound, channels, 16, (blocks - 1 - loop) * 28, loop) < 0) return -1;
+    int last = blocks - 1;
+    if (w->Create(*m_sound, channels, 16, (last - loop) * 28, loop) < 0) return -1;
 
     if (m_file->ReadBegin(type, version) < 0) return -1;
 
@@ -3671,7 +3672,7 @@ int VIESFParse::ParseAdpcmObj()
         return -1;
     }
 
-    int n = blocks * (channels * 16);
+    int n = blocks * (channels << 4);
 
     switch (w->Format())
     {
@@ -3696,8 +3697,8 @@ int VIESFParse::ParseAdpcmObj()
                     AdpcmToPcm(b, n, pcm);
 
                     short *d = (short *)p;
-                    short *l = (short *)(pcm + 56);
-                    short *r = (short *)(pcm + half + 56);
+                    short *l = (short *)&pcm[56];
+                    short *r = (short *)&pcm[half + 56];
 
                     for (int k = 0; k < half - (loop * 56 + 56); k += 2)
                     {
@@ -4262,6 +4263,7 @@ int VIESFParse::ParseSpellEffectObj()
     VIResourceType rt;
     int j;
     int n;
+    int k;
 
     int ver = m_file->ObjectVersion();
 
@@ -4292,7 +4294,7 @@ int VIESFParse::ParseSpellEffectObj()
             if (m_scene->m_raster)
             {
                 int c = m_file->NumSubObjects();
-                for (int k = 0; k < c; k++)
+                for (k = 0; k < c; k++)
                     if (ParseObject() < 0) return -1;
             }
 
@@ -4316,7 +4318,7 @@ int VIESFParse::ParseSpellEffectObj()
     if (!read)
         if (m_file->ReadBegin(type, version) < 0) return -1;
 
-    for (int k = 0; k < 3; k++)
+    for (k = 0; k < 3; k++)
     {
         VISpellEventList *l;
 

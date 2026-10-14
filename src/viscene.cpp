@@ -3745,8 +3745,10 @@ int VIScene::RasterActorBBox(VICamera &cam, int i)
         m_raster->Color(c);
         m_raster->Normal(n);
         a.Set(bb.min.x, bb.min.y, bb.min.z);
-        b = a;
-        b.x += len;
+        // The first corner uses the assignment's returned reference: that
+        // materialises &b before Vertex(a), so &a and &b take s0/s1 up front
+        // as in the target (83 words to 26).
+        (b = a).x += len;
         m_raster->Vertex(a);
         m_raster->Vertex(b);
         b = a;

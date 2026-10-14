@@ -368,8 +368,8 @@ void route_flush(route_t *pRoute)
     drdp_remap_address_to_route(pRoute->m_pDrdp, &address, &route);
     buffer_append_uns16(&buffer, drdp_get_port_drdp(pRoute->m_pDrdp));
     buffer_append_uns16(&buffer, usPort);
-    drdp_format_endpoint1(pRoute->m_uiId);
     iStart = buffer.position;
+    drdp_format_endpoint1(pRoute->m_uiId);
     drdp_get_time(pRoute->m_pDrdp);
     route_flush_reset_connection(pRoute, &buffer);
     route_flush_reset_endpoint(pRoute, &buffer);
@@ -398,12 +398,9 @@ void route_flush(route_t *pRoute)
             goto done;
         if (iResult < -1)
             continue;
-        if (iResult == -1)
+        switch (iResult)
         {
-            connections_by_desired_flush_time_resort(&pRoute->m_connections, pConnection);
-            continue;
-        }
-        if (iResult == 0)
+        case 0:
         {
             segment_header_t header;
 
@@ -427,6 +424,11 @@ void route_flush(route_t *pRoute)
             buffer_appendm_uns8(&buffer, cbuffer.data, cbuffer.position);
             iDebug |= connection_get_debug(pConnection);
             connections_by_desired_flush_time_resort(&pRoute->m_connections, pConnection);
+            break;
+        }
+        case -1:
+            connections_by_desired_flush_time_resort(&pRoute->m_connections, pConnection);
+            break;
         }
     }
 done:

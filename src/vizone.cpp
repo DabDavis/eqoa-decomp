@@ -492,6 +492,10 @@ int VIZone::InsertActor(VISceneInsertVars &v)
     return 0;
 }
 
+// OPEN at 6 of 45, and a SCHEDULER difference, not source: the 0x0FFFFFFF
+// mask lands in a0, so its `lui` anti-depends on the `lw t0,72(a0)` that
+// reads `this`.  The target issues the two in the SAME cycle; ours waits a
+// cycle (.sched2: insn 166 is not ready at t=1), and `li a2,24` takes the slot.
 int VIZone::FindLeaf(const VIVect3 &at) const
 {
     int node = 0;
