@@ -12,7 +12,7 @@ def run(src: str, syms: list[str], show=False):
     o = C.BUILD / (src + ".o"); asm = C.BUILD / (src + ".s")
     for f in (o, asm):
         if f.exists(): f.unlink()
-    r = subprocess.run(C.driver(C.TOOLCHAIN) + ["-S"] + C.FLAGS + [str(C.SRC/(src+".cpp")), "-o", str(asm)],
+    r = subprocess.run(C.compile_cmd(src) + [str(C.SRC/(src+".cpp")), "-o", str(asm)],
                        capture_output=True, text=True, cwd=C.BUILD)
     if not asm.exists():
         print(r.stderr); return

@@ -18,7 +18,7 @@ def build_and_score(st, img, tu, syms):
     o = C.BUILD / (tu + ".o"); asm = C.BUILD / (tu + ".s")
     for f in (o, asm):
         if f.exists(): f.unlink()
-    r = subprocess.run(C.driver(C.TOOLCHAIN) + ["-S"] + C.FLAGS +
+    r = subprocess.run(C.compile_cmd(tu) +
                        [str(C.SRC/(tu+".cpp")), "-o", str(asm)],
                        capture_output=True, text=True, cwd=C.BUILD)
     if not asm.exists():

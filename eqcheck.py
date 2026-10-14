@@ -70,6 +70,23 @@ ASSEMBLER = HERE / "toolchains/ee-gcc2.95.3-114/lib/gcc-lib/ee/2.95.3/ps2eeas.ex
 FLAGS = ["-O2", "-G0", "-fno-exceptions"]
 
 
+# Phase 61: the one TU the original did NOT build with the settled compiler.
+# libgcc's L__main object came prebuilt in the SDK's libgcc.a, compiled as C by
+# the ee-gcc 2.9 (990721/991111) family: `__do_global_dtors` is byte-exact only
+# there, at -O2 -G0 (2.95.3 gives 18 wrong as C, 19 as C++; 2.9 saves with `sd`
+# into 16-byte slots where 2.95 uses `sq`).  Swept over every toolchain on disk,
+# eight flag sets and both languages.  Pinned per file -- toolchain, flags and
+# language -- and so immune to --flags/--toolchain.
+TU_OVERRIDE = {"libgcc2_main": ("ee-gcc2.9-990721", ["-O2", "-G0", "-x", "c"])}
+
+
+def compile_cmd(stem: str, tc: str | None = None, flags: list[str] | None = None) -> list[str]:
+    """The `-S` command for src/<stem>.cpp, up to the source path."""
+    if stem in TU_OVERRIDE:
+        tc, flags = TU_OVERRIDE[stem]
+    return driver(tc or TOOLCHAIN) + ["-S"] + list(FLAGS if flags is None else flags)
+
+
 def driver(name: str):
     d = HERE / "toolchains" / name
     for c in ("bin/ee-gcc", "bin/ee-gcc.exe", "ee/bin/gcc"):
@@ -96,7 +113,7 @@ def build(tc: str, flags: list[str], gnu_as: bool = False) -> tuple[list[Path], 
             err.append(r.stderr)
             continue
         asm = BUILD / (s.stem + ".s")
-        r = subprocess.run(driver(tc) + ["-S"] + flags + [str(s), "-o", str(asm)],
+        r = subprocess.run(compile_cmd(s.stem, tc, flags) + [str(s), "-o", str(asm)],
                            capture_output=True, text=True, cwd=BUILD)
         err.append(r.stderr)
         if asm.exists():

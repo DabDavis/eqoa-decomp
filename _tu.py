@@ -26,7 +26,7 @@ def main():
     before = set(C.obj_functions(o)) if o.exists() else set()
     for f in (o, asm):
         if f.exists(): f.unlink()
-    r = subprocess.run(C.driver(C.TOOLCHAIN) + ["-S"] + C.FLAGS + [str(C.SRC / (tu + ".cpp")), "-o", str(asm)],
+    r = subprocess.run(C.compile_cmd(tu) + [str(C.SRC / (tu + ".cpp")), "-o", str(asm)],
                        capture_output=True, text=True, cwd=C.BUILD)
     if not asm.exists():
         print("BUILD FAILED (compile)\n" + r.stderr); return 2

@@ -2961,6 +2961,7 @@ __cl__8VICameraR7VIVect3T1
 __cl__8VICameraR8VIRasterR7VIVect3T2f
 __cl__8VICameraR8VIRasterf
 __cl__8VIPlaneDRC8VIVect3DN21
+__do_global_dtors
 __lt__C8VIStringRC8VIString
 __ml__C6VIQuatRC6VIQuat
 __ml__C7VIQuatDRC7VIQuatD
