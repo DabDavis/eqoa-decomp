@@ -2124,7 +2124,11 @@ int VIRaster::Flip()
     sceGsSyncV(0);
     sceGsSwapDBuffDc(DBuffer, m_frame);
     // Through an int copy: read straight off the member, fold narrows the
-    // load to `lbu`; the target loads the whole word.
+    // load to `lbu`; the target loads the whole word.  OPEN (13): the target
+    // re-masks `odd & 1` at both tests (`andi v0,t1,1`).  Combine drops that
+    // mask from reg_nonzero_bits, which is exact for a one-set pseudo; any
+    // two-set spelling (`int odd = ~frame; odd &= 1;`) keeps it, but then the
+    // NOT and the AND share odd's register where the target has v1 and t1 (16).
     int frame = m_frame;
     unsigned char odd = ~frame & 1;
     long fb0 = (int)(DBuffer[12] & 0x1FF);
@@ -2698,7 +2702,12 @@ int VIRaster::UploadMatrices(_sceDmaTag **tag)
         ((float *)p)[3] = 0.0f;
     }
     p += 16;
-    ((float *)p)[0] = *(float *)0x70000210;
+    // Through a STRUCT member.  `((float *)p)[0]` folds to `*(float *)p`, and
+    // expr.c sets MEM_IN_STRUCT_P on an INDIRECT_REF only when its address is
+    // a PLUS_EXPR, so true_dependence finds the RInitOffset load (a scalar at a
+    // fixed lo_sum address) in conflict and holds it two cycles behind this
+    // store.  An aggregate member at a varying address cannot alias it.
+    ((VIQWord *)p)->m_f[0] = *(float *)0x70000210;
     unsigned int mscal = RInitOffset | 0x14000000;
     ((float *)p)[1] = *(float *)0x70000214;
     ((float *)p)[2] = *(float *)0x70000218;

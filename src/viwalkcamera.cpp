@@ -255,8 +255,14 @@ int VIWalkCamera::Init(const VIVect3 &pos, const VIVect3 &angles,
 {
     InitParms();
 
-    // Read off the `lui` sequence (Phase 21), which is the only order this
-    // block preserves: the stores are rescheduled past recognition.
+    // m_distSnapSpeed and m_collisionRadius are set TWICE (phase 61): flow
+    // deletes the first stores as dead, but each constant's load stays at its
+    // first mention, so the loads come out in one order and the stores in
+    // another.  sched1 issues every constant load first (doubles first, then
+    // source order), `sw zero` next (the call's only TRUE memory dependence),
+    // then the stores that kill their register in source order, then the
+    // first uses of the three shared constants -- and local-alloc numbers the
+    // FP registers by lifetime, so the register map follows the store order.
     m_lookAtHeight = 1.68f;
     m_autoOrbit = 1;
     m_minOrbitDistance = 1.5f;
@@ -268,13 +274,15 @@ int VIWalkCamera::Init(const VIVect3 &pos, const VIVect3 &angles,
     m_distSnapSpeed = 23.5f;
     m_collisionRadius = 0.5f;
     m_defOrbitDistance = 11.75f;
+    m_distDamping = 0.00999999978f;
     m_defOrbitPitch = 0.523598790f;
     m_altOrbitPitch = 1.04719758f;
+    m_collisionRadius = 0.5f;
     m_targetHeight = 1.10000002f;
     m_lookAtHeightAbove = 1.68f;
     m_snapSpeed = 3.14159274f;
+    m_distSnapSpeed = 23.5f;
     m_last.m_dist = 1.5f;
-    m_distDamping = 0.00999999978f;
 
     SetLocation(pos, angles, cam, scene);
     m_effect.Reset();

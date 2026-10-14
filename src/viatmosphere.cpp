@@ -9,6 +9,30 @@ static inline VIVect3 operator*(const VIVect3 &v, float f)
     return VIVect3(v.x * f, v.y * f, v.z * f);
 }
 
+// Out-parameter forms of `o = v * f` and `o = u + v` (phase 61).  VIVect3 has
+// a user operator=, so `c = cam.m_dir * 5.0f` builds the by-value result in a
+// stack temporary and copies it; the target has no temporary -- the products
+// go straight into `c`.  All loads come before the stores.
+static inline void ScaleTo(VIVect3 &o, const VIVect3 &v, float f)
+{
+    float x = v.x * f;
+    float y = v.y * f;
+    float z = v.z * f;
+    o.x = x;
+    o.y = y;
+    o.z = z;
+}
+
+static inline void AddTo(VIVect3 &o, const VIVect3 &u, const VIVect3 &v)
+{
+    float x = u.x + v.x;
+    float y = u.y + v.y;
+    float z = u.z + v.z;
+    o.x = x;
+    o.y = y;
+    o.z = z;
+}
+
 static inline VIVect3 operator+(const VIVect3 &a, const VIVect3 &b)
 {
     return VIVect3(a.x + b.x, a.y + b.y, a.z + b.z);
@@ -1603,15 +1627,19 @@ void VIAtmosphere::ProcessWeather(VIScene &sc, VICamera &cam)
     VIVect3       c;
     VIEnvRay      env;
 
-    // No `cm` reference anywhere: every camera access is the MEMBER, so the
-    // compound operators get it as an unflagged inline parameter -- `.x` folds
-    // to 60(this), `.y`/`.z` go through one this+60 pseudo that is spilled and
-    // re-read after every stack store, as the target does (221 -> 90 with the
-    // vector-op reseat below).
-    c = cam.m_dir * 5.0f;
-    a = c;
-    a += cam.m_position;
-    d = a;
+    // m_camera is the MEMBER at every use, so the compound operators get it as
+    // an unflagged inline parameter -- `.x` folds to 60(this), `.y`/`.z` go
+    // through one this+60 pseudo that is spilled and re-read after every stack
+    // store, as the target does (221 -> 90).  The camera POSITION is the
+    // opposite: a named const reference is a FLAGGED pointer, so its y/z loads
+    // rise above c's stores (50 -> 2).  And the sum is built in `d` and copied
+    // to `a`: every store here ties at one sched1 priority (each feeds the
+    // unflagged m_camera.y load), so LUID order decides, and d's surviving
+    // intermediate z must come before a.z (2 -> 0).
+    const VIVect3 &pos = cam.m_position;
+    ScaleTo(c, cam.m_dir, 5.0f);
+    AddTo(d, c, pos);
+    a = d;
     d -= m_camera;
     n = (int)(m_intensity * m_numParticles);
     k = (int)(n * m_effectMix);

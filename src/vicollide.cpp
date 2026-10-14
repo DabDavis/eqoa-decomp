@@ -683,7 +683,7 @@ static inline float VZ(const VIVect3 &v) { return v.z; }
 // Byte-exact, and so is its ray twin, on two facts (phase 61, wave 4).
 //
 // Each vertex component is read through its OWN binding of the vertex to an
-// inline reference parameter (VX/VY/VZ below).  Bound to `V[vert]`, the
+// inline reference parameter (VX/VY/VZ above).  Bound to `V[vert]`, the
 // parameter receives the EXPAND_SUM address (plus (mult vert 12) vp), which
 // the inliner forces into the parameter's pseudo in TWO steps -- p = vert*12;
 // p = p + vp -- and cse cannot record a value whose set reads its own
