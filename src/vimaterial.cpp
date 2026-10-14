@@ -363,6 +363,13 @@ int VIMaterial::CopyLayer(int src, int dst, VIRaster &r, VIDictionary &d)
     return 0;
 }
 
+// The y wrap goes through a reference helper: the target re-derives
+// `&m_layers[i].m_uvOffset` as `addiu v1,v0,112` and works at 4(v1).
+static inline void WrapY(VIVect2 &v)
+{
+    v.y -= (float)(int)v.y;
+}
+
 // 0x003FCC70.  Scroll every textured layer's UV offset by its rate over the
 // time since the last call, and wrap each component back into (-1, 1).
 int VIMaterial::Process(long time)
@@ -372,16 +379,16 @@ int VIMaterial::Process(long time)
         float dt = (float)(int)(time - m_time) * 0.001f;
         for (int i = 0; i < m_numLayers; i++)
         {
-            if (Layer(this, i)->m_texture < 0)
+            if (m_layers[i].m_texture < 0)
                 continue;
-            VIVect2 &uv = Layer(this, i)->m_uvOffset;
-            uv.x += Layer(this, i)->m_uvRate.x * dt;
-            uv.y += Layer(this, i)->m_uvRate.y * dt;
+            VIVect2 &uv = m_layers[i].m_uvOffset;
+            uv.x += m_layers[i].m_uvRate.x * dt;
+            uv.y += m_layers[i].m_uvRate.y * dt;
             if (1.0f < uv.x || uv.x < -1.0f)
                 uv.x -= (float)(int)uv.x;
             if (1.0f < m_layers[i].m_uvOffset.y ||
                 m_layers[i].m_uvOffset.y < -1.0f)
-                m_layers[i].m_uvOffset.y -= (float)(int)m_layers[i].m_uvOffset.y;
+                WrapY(m_layers[i].m_uvOffset);
         }
         m_time = time;
     }
@@ -407,64 +414,81 @@ int VIMaterial::ConstructTextPass(int i, VIRaster &r, VIQWord *q)
 {
     VIColor32F col;
 
+    // Every block below writes its whole quadword and steps q in BOTH arms:
+    // the arms' identical tails are cross-jumped after scheduling, which is
+    // what leaves only the differing constant (and m_flags' load) per arm.
     if ((Layer(this, i)->m_flags & 6) == 0)
+    {
         q->m_w[0] = 1;
+        q->m_w[1] = 0;
+        q->m_w[2] = 0;
+        q->m_w[3] = 0;
+        q++;
+    }
     else
+    {
         q->m_w[0] = 3;
-    q->m_w[1] = 0;
-    q->m_w[2] = 0;
-    q->m_w[3] = 0;
-    q++;
+        q->m_w[1] = 0;
+        q->m_w[2] = 0;
+        q->m_w[3] = 0;
+        q++;
+    }
 
     q->m_d[0] = 0x1000000000008008;
     q->m_d[1] = 14;
     q++;
 
     long test;
-    long testz;
     if (Layer(this, i)->m_blendMode)
     {
         test = 0x33001;
-        testz = 0x53001;
+        if (m_flags & 1)
+            test = 0x53001;
     }
     else
     {
         test = 0x3080B;
-        testz = 0x5080B;
+        if (m_flags & 1)
+            test = 0x5080B;
     }
-    if (m_flags & 1)
-        test = testz;
     q->m_d[0] = test;
     q->m_d[1] = 71;
     q++;
 
-    long alpha;
     switch (Layer(this, i)->m_blendMode)
     {
     case 1:
-        alpha = 0x8000000048;
+        q->m_d[0] = 0x8000000048;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 2:
-        alpha = 0x8000000042;
+        q->m_d[0] = 0x8000000042;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 3:
-        alpha = 0x8000000044;
+        q->m_d[0] = 0x8000000044;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 4:
-        alpha = 0x8000000089;
+        q->m_d[0] = 0x8000000089;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 0:
     default:
-        alpha = 0x8000000064;
+        q->m_d[0] = 0x8000000064;
+        q->m_d[1] = 66;
+        q++;
         break;
     }
-    q->m_d[0] = alpha;
-    q->m_d[1] = 66;
-    q++;
 
-    long clamp = (int)Layer(this, i)->m_flags;
-    clamp = (clamp >> 1) & 1;
-    if (Layer(this, i)->m_flags & 4)
+    // One load of the flags for both bits.
+    long f = (int)Layer(this, i)->m_flags;
+    long clamp = (f >> 1) & 1;
+    if (f & 4)
         clamp |= 4;
     q->m_d[0] = clamp;
     q->m_d[1] = 8;
@@ -516,7 +540,7 @@ int VIMaterial::ConstructTextPass(int i, VIRaster &r, VIQWord *q)
     col.b *= 128.0f;
     col.a *= 128.0f;
     if (blend)
-        col.a *= 0.5f;
+        ((float *)&col)[3] *= 0.5f;
     q->m_f[0] = col.r;
     q->m_f[1] = col.g;
     q->m_f[2] = col.b;
@@ -562,32 +586,40 @@ int VIMaterial::ConstructSolidFillPass(int i, VIRaster &r, VIQWord *q)
     q->m_d[1] = 71;
     q++;
 
-    // The target's shape is ONE `alpha` assigned in every case and stored
-    // after the switch (`li v1,66` lands in each case's delay slot); spelled
-    // that way the branch structure is exact but the case registers swap
-    // (v0/v1) and the join schedules the store pair after the GetZBufferReg
-    // call, 60 words against 44.  Left as the stores-in-the-cases spelling.
-    switch (Layer(this, i)->m_blendMode)
+    // Both words and the step in EVERY case: the identical tails `li 66; sd;
+    // sd; addiu` are cross-jumped into the join after scheduling, which is
+    // why `li v1,66` sits in each case's delay slot.  The subscript (not
+    // Layer()) keeps `this` as the load's alias base, so the load is not
+    // held behind col's zero stores.
+    switch (m_layers[i].m_blendMode)
     {
     case 1:
         q->m_d[0] = 0x8000000048;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 2:
         q->m_d[0] = 0x8000000042;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 3:
         q->m_d[0] = 0x8000000044;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 4:
         q->m_d[0] = 0x8000000089;
+        q->m_d[1] = 66;
+        q++;
         break;
     case 0:
     default:
         q->m_d[0] = 0x8000000064;
+        q->m_d[1] = 66;
+        q++;
         break;
     }
-    q->m_d[1] = 66;
-    q++;
 
     long z = r.GetZBufferReg();
     long psm = z & 0x0F000000;
@@ -616,7 +648,7 @@ int VIMaterial::ConstructSolidFillPass(int i, VIRaster &r, VIQWord *q)
     col.b *= 255.0f;
     col.a *= 255.0f;
     if (blend)
-        col.a *= 0.5f;
+        ((float *)&col)[3] *= 0.5f;
     q->m_f[0] = col.r;
     q->m_f[1] = col.g;
     q->m_f[2] = col.b;

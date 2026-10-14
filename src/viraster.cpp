@@ -26,10 +26,9 @@ extern int   VIEEDMASync(int wait);
 extern "C" void FlushCache(int mode);
 void VIEEDMASend(int chan, void *tag);
 // (Phase 61: `VIEEDMAStart`/`VIEEDMAKick` were guesses -- Flush calls these two.)
-extern "C" void VIVu0MulMatrix(void *d, const void *a, const void *b);
-extern "C" void VIVu0InverseMatrix(void *d, const void *m);
-extern "C" void VIVu0ApplyMatrix(void *m, const void *v, void *d);
-extern "C" void VIVu0Normalize(void *v);
+// (Phase 61: `VIVu0MulMatrix`/`InverseMatrix`/`ApplyMatrix`/`Normalize` were
+// guesses -- CalcMatrices calls VIMatrix44::Mul/InvertAffine/SubMatrixMul and
+// VIVect3::Normalize, whose `int` result is what puts the test in v1.)
 // (Phase 61: `VIVu0UnitMatrix`/`VIVu0CopyMatrix` were guesses -- CalcClipToScreen
 // calls VIMatrix44::Identity, Store2D/Restore2D sceVu0CopyMatrix.)
 int VIEEDebugVU1Memory(int a, int b);
@@ -912,13 +911,17 @@ int VIRaster::ReleaseFont(int i, VIDictionary &d)
 
 int VIRaster::CalcMatrices()
 {
-    VIVu0MulMatrix((void *)0x70000080, (void *)0x70000000, (void *)0x70000040);
-    VIVu0MulMatrix((void *)0x70000140, (void *)0x70000080, (void *)0x700000C0);
-    VIVu0InverseMatrix((void *)0x70000100, (void *)0x70000000);
-    VIVu0ApplyMatrix((void *)0x70000100, (void *)0x700001A0, (void *)0x70000180);
-    VIVu0Normalize((void *)0x70000180);
+    ((VIMatrix44 *)0x70000080)->Mul(*(VIMatrix44 *)0x70000000,
+                                    *(VIMatrix44 *)0x70000040);
+    ((VIMatrix44 *)0x70000140)->Mul(*(VIMatrix44 *)0x70000080,
+                                    *(VIMatrix44 *)0x700000C0);
+    ((VIMatrix44 *)0x70000100)->InvertAffine(*(VIMatrix44 *)0x70000000);
+    ((VIMatrix44 *)0x70000100)->SubMatrixMul(*(VIVect3 *)0x700001A0,
+                                             *(VIVect3 *)0x70000180);
+    ((VIVect3 *)0x70000180)->Normalize();
     if (*(unsigned char *)0x70000222 != 0)
-        VIVu0ApplyMatrix((void *)0x70000100, (void *)0x700001C0, (void *)0x70000190);
+        ((VIMatrix44 *)0x70000100)->Mul(*(VIVect3 *)0x700001C0,
+                                        *(VIVect3 *)0x70000190);
     return 0;
 }
 
@@ -1506,11 +1509,13 @@ int VIRaster::EndBillboards()
 {
     if (m_numBillboards <= 0)
         return -1;
-    // ONE pointer walks the last billboard's word, the closing quadword and
-    // the end of the packet -- all three land in the same register.
+    // The last billboard's word is addressed by the expression, not through
+    // q: as a variable it ties the product, the count and the sum into one
+    // register and drags the hoisted 16/48 constants with it.  q then walks
+    // the closing quadword and the end of the packet.
     char *p = (char *)m_dmaTag;
-    unsigned int *q = (unsigned int *)(m_numBillboards * 48 + (int)p);
-    q[3] |= 0x100;
+    ((unsigned int *)(m_numBillboards * 48 + (int)p))[3] |= 0x100;
+    unsigned int *q;
     unsigned int mscalf = (VIBbRender - VIBbInit) | 0x15000000;
     p += 16;
     char *e = p + m_numBillboards * 48;
@@ -2463,9 +2468,10 @@ int VIRaster::DrawCenteredString(int font, const VIVect3 &at,
 {
     VIVect2I p0;
     VIVect2I p1;
+    // f before q and v: its load is scheduled ahead of their zeroing stores.
+    VIRFont *f = m_fonts.Value(font);
     VIVect2I q;
     VIVect4 v;
-    VIRFont *f = m_fonts.Value(font);
     int n = f->Cache(*this, s, 256, m_glyphs);
     if (n < 0)
         return -1;
@@ -2492,8 +2498,9 @@ int VIRaster::DrawCenteredString(int font, const VIVect3 &at,
         w += f->Char(m_glyphs[i])->m_width + 1;
     p0.x = q.x;
     p0.y = q.y;
-    p0.x -= w >> 1;
-    p1.x = p0.x;
+    // p1.x first: the pair of stores comes out reversed, p0.x then p1.x.
+    p1.x = p0.x - (w >> 1);
+    p0.x = p1.x;
     p0.y -= f->m_charHeight >> 1;
     p1.y = p0.y;
     p1.y += f->m_charHeight;
@@ -2945,6 +2952,9 @@ int VIRaster::BeginBillboards(VIBillboard **bb, int count)
                 ((float *)p)[1] = m_aspectY;
                 ((float *)p)[2] = 128.0f;
                 ((float *)p)[3] = 128.0f;
+                // The step in both arms: cross-jumped with the stores after
+                // scheduling, which is what orders the join's quadword.
+                p += 16;
             }
             else
             {
@@ -2952,8 +2962,8 @@ int VIRaster::BeginBillboards(VIBillboard **bb, int count)
                 ((float *)p)[1] = m_aspectY;
                 ((float *)p)[2] = 128.0f;
                 ((float *)p)[3] = 64.0f;
+                p += 16;
             }
-            p += 16;
             ((unsigned int *)p)[0] = 0;
             ((unsigned int *)p)[3] = 0x14000000;
             ((unsigned int *)p)[1] = 0;
@@ -3124,6 +3134,14 @@ int VIRaster::DrawPrimBufferPackVUNCG(int prim, int pal, unsigned int flags)
 // enough for per-vertex lighting to show the falloff, and each resulting
 // strip goes out as its own unpacked packet, all four attribute rows per
 // vertex, closed by an MSCAL of the strip program.
+// The light's sphere is built round a by-value sum: the target's frame puts
+// the sphere at sp+80 and the sum's temporary at sp+96, which is the order a
+// temporary made while constructing a declared object gets its slot.
+static inline VIVect3 operator+(const VIVect3 &a, const VIVect3 &b)
+{
+    return VIVect3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
 int VIRaster::DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags)
 {
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
@@ -3135,9 +3153,7 @@ int VIRaster::DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags)
     VIVect3 v[3];
     ((VIMatrix44 *)0x70000100)->Mul(*(VIVect3 *)0x700001C0, v[0]);
     {
-        VIVect3 c(v[0]);
-        c += m_preTransAt;
-        VISphere s(c, *(float *)0x700001CC);
+        VISphere s(v[0] + m_preTransAt, *(float *)0x700001CC);
         box.max = s.c;
         box.min = s.c;
         box.min -= s.r;

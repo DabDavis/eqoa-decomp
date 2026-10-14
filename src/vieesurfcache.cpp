@@ -784,34 +784,38 @@ int VIEESurfCache::ConstructDMAPacket(VISurface &s, VIEESurfCacheInfo &c,
         (*tag)->m_id = 16;
         (*tag)->m_addr = 0;
         (*tag)->m_qwc = 5;
-        _sceDmaTag *d = *tag;
-        *tag = d + 6;
-        VIEEXferPacket *x = (VIEEXferPacket *)(d + 1);
-        x->m_vif[0] = 0;
-        x->m_vif[3] = 0x50000004;
-        x->m_vif[2] = 0x11000000;
-        x->m_vif[1] = 0;
-        x->m_gif = 0x1000000000008003;
-        x->m_regs = 14;
+        // VIRaster's packet idiom: the first VIF word and the GIF/A+D longs
+        // off the base, the other VIF words through p -- the target folds the
+        // base-relative ones and keeps p for the rest.
+        char *base = (char *)*tag;
+        *tag = (_sceDmaTag *)(base + 96);
+        ((unsigned int *)base)[4] = 0;
+        char *p = base + 16;
+        ((unsigned int *)p)[3] = 0x50000004;
+        ((unsigned int *)p)[2] = 0x11000000;
+        ((unsigned int *)p)[1] = 0;
+        ((long *)base)[4] = 0x1000000000008003;
+        ((long *)base)[5] = 14;
+        p = base + 48;
         if (c.m_tex.m_psm == 20)
         {
-            long q = ((long)c.m_clut.m_psm << 56) | 0x1000000000000;
-            x->m_ad[0].m_value = (((long)c.m_clutAddr >> 8) << 32) | q;
-            x->m_ad[0].m_reg = 80;
-            x->m_ad[1].m_value = 0;
-            x->m_ad[1].m_reg = 81;
-            x->m_ad[2].m_value = 0x200000008;
-            x->m_ad[2].m_reg = 82;
+            ((long *)p)[0] = (((long)c.m_clutAddr >> 8) << 32) |
+                             (((long)c.m_clut.m_psm << 56) | 0x1000000000000);
+            ((long *)p)[1] = 80;
+            ((long *)base)[8] = 0;
+            ((long *)base)[9] = 81;
+            ((long *)base)[10] = 0x200000008;
+            ((long *)base)[11] = 82;
         }
         else
         {
-            long q = ((long)c.m_clut.m_psm << 56) | 0x1000000000000;
-            x->m_ad[0].m_value = (((long)c.m_clutAddr >> 8) << 32) | q;
-            x->m_ad[0].m_reg = 80;
-            x->m_ad[1].m_value = 0;
-            x->m_ad[1].m_reg = 81;
-            x->m_ad[2].m_value = 0x1000000010;
-            x->m_ad[2].m_reg = 82;
+            ((long *)p)[0] = (((long)c.m_clutAddr >> 8) << 32) |
+                             (((long)c.m_clut.m_psm << 56) | 0x1000000000000);
+            ((long *)p)[1] = 80;
+            ((long *)base)[8] = 0;
+            ((long *)base)[9] = 81;
+            ((long *)base)[10] = 0x1000000010;
+            ((long *)base)[11] = 82;
         }
 
         int ha = s.m_paletteHeader;
@@ -844,19 +848,24 @@ int VIEESurfCache::ConstructDMAPacket(VISurface &s, VIEESurfCacheInfo &c,
         x->m_vif[3] = 0x50000004;
         x->m_gif = 0x1000000000008003;
         x->m_regs = 14;
+        // The A+D walker is set before the TBW choice: the target computes
+        // it in that branch's delay slot.
+        VIGifAD *ad = x->m_ad;
         int tbw;
         if (c.m_tex.m_psm == 19 || c.m_tex.m_psm == 20)
             tbw = VIMAX(w >> 6, 2);
         else
             tbw = VIMAX(w >> 6, 1);
-        x->m_ad[0].m_value = (((long)c.m_levelAddr[k] >> 8) << 32)
-                           | ((long)tbw << 48)
-                           | ((long)c.m_tex.m_psm << 56);
-        x->m_ad[0].m_reg = 80;
-        x->m_ad[1].m_value = 0;
-        x->m_ad[1].m_reg = 81;
-        x->m_ad[2].m_value = (long)w | ((long)h << 32);
-        x->m_ad[2].m_reg = 82;
+        ad->m_value = (((long)c.m_levelAddr[k] >> 8) << 32)
+                    | ((long)tbw << 48)
+                    | ((long)c.m_tex.m_psm << 56);
+        ad->m_reg = 80;
+        ad++;
+        ad->m_value = 0;
+        ad->m_reg = 81;
+        ad++;
+        ad->m_value = (long)w | ((long)h << 32);
+        ad->m_reg = 82;
         w >>= 1;
         h >>= 1;
         int la = s.m_levels[k].m_header;
@@ -870,17 +879,17 @@ int VIEESurfCache::ConstructDMAPacket(VISurface &s, VIEESurfCacheInfo &c,
     (*tag)->m_id = 16;
     (*tag)->m_addr = 0;
     (*tag)->m_qwc = 3;
-    _sceDmaTag *d = *tag;
-    *tag = d + 4;
-    VIEEXferPacket *x = (VIEEXferPacket *)(d + 1);
-    x->m_vif[0] = 0;
-    x->m_vif[3] = 0x50000002;
-    x->m_vif[1] = 0;
-    x->m_vif[2] = 0;
-    x->m_gif = 0x1000000000008001;
-    x->m_regs = 14;
-    x->m_ad[0].m_value = 1;
-    x->m_ad[0].m_reg = 63;
+    char *base = (char *)*tag;
+    *tag = (_sceDmaTag *)(base + 64);
+    ((unsigned int *)base)[4] = 0;
+    char *p = base + 16;
+    ((unsigned int *)p)[3] = 0x50000002;
+    ((unsigned int *)p)[2] = 0;
+    ((unsigned int *)p)[1] = 0;
+    ((long *)base)[4] = 0x1000000000008001;
+    ((long *)base)[5] = 14;
+    ((long *)base)[6] = 1;
+    ((long *)base)[7] = 63;
     return 0;
 }
 

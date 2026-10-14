@@ -438,23 +438,25 @@ int VIRaster::PickPrimBufferPackVUNC(VIPickSegment &seg, VIPrimBuffer &pb,
                 c = cq + 12;
                 PickColor(c2, *(VIVect4U8 *)c);
                 c = cq + 16;
-                cq = c;
                 verts += 32;
                 flip = 0;
                 int q = 0;
                 int k = pb.m_prims[prim].m_numVerts;
+                // The copy just before the loop: the sum stays in c (the
+                // walker) and cq takes the copy, as the target has them.
+                cq = c;
                 for (k -= 2; k; k--)
                 {
                     p0 = p1;
                     p1 = p2;
                     c0 = c1;
                     c1 = c2;
-                    q++;
                     v = (VIPrimVertexPackVUNC *)verts;
                     PickPos(p2, v->m_pos, pb.m_scale.x);
                     PickColor(c2, *(VIVect4U8 *)c);
                     c += 4;
                     verts += 32;
+                    q++;
                     if (q == 4)
                     {
                         cq += 16;
@@ -713,6 +715,14 @@ int VIRaster::CalcHitColor(VIPickSegment &seg, VIVect3 &a, VIVect3 &b,
             return 1;
         }
     }
-    PickColorTo(seg.m_hitColor, ca);
+    // The fallback's stores are fenced off from the destructor calls: the
+    // target issues `move a0`/`li a1,2` only after the last store, which only
+    // a loop note (a scheduling barrier) gives.  The reference is taken
+    // outside it so `seg`'s use there is not loop-weighted (seg keeps s4).
+    VIColor32F &hc = seg.m_hitColor;
+    do
+    {
+        PickColorTo(hc, ca);
+    } while (0);
     return 0;
 }
