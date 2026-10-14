@@ -81,13 +81,16 @@ VIColor32 *VICSpriteCust::GetTintColor(VICSpriteTint tint)
 // not hoisted above the inner loop, `i` stays a biv, and the outer `i * 32`
 // is strength-reduced to the `addiu a1,a1,32` the target has.  Written down-
 // counting, PRE hoists `i + 1` and the outer loop keeps an `sll`: 377 -> 296.
-// What is left is the 400-insn constant block after the last call -- the
-// stores are in target order, the reload registers are not.
+//
+// It returns an int, 0 (phase 61 wave 5, 296 -> 0).  The target is six insns
+// longer and carries a `move v0,zero` among the Tints stores; that one live
+// v0 is what the whole 400-insn constant block was missing -- with it every
+// spill, reload register and store lands where the target has them.
 //
 // The faces go race by race in the order 6, 2, 4, 1, 8, 3, 7, 0, 10, 5, the
 // four male faces then the four female -- read off the target's store order,
 // which a constant block this size keeps in source order (619 -> 377 words).
-void VICSpriteCust::SetResources(VIRaster &r, VIDictionary &d)
+int VICSpriteCust::SetResources(VIRaster &r, VIDictionary &d)
 {
     int i, j;
 
@@ -273,4 +276,5 @@ void VICSpriteCust::SetResources(VIRaster &r, VIDictionary &d)
     Tints[12].Set(0, 200, 180, 255);
     Tints[13].Set(150, 0, 60, 255);
     Tints[14].Set(240, 240, 0, 255);
+    return 0;
 }

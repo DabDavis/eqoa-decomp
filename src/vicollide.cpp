@@ -1859,21 +1859,27 @@ int VICollide::QueryBufferPackVGF(const VIBBox &w, const VIBBox &o,
 // gets tested exactly once.  And the two slab rejections are the ONLY exits
 // that skip that fallback: if the sphere centre is further than its radius
 // from the edge's plane, v0 is not tested at all.
-// OPEN, 27/334, from 189 on the CollideNoCaps lens: the cross and dot
-// products and the normal's projection are inline `const VIVect3 &` helpers,
-// `e` is COPY-constructed from v1 (it is the one vector the target never
-// zeroes), the second cross product comes BEFORE the sqrtf (its stores sit
-// ahead of the sqrt's NaN branch), the whole body is the `0 < lsq` arm with
-// the degenerate case in the else, the hit point is built in `q`, the normal
-// in place in m_hitNormal, and `if (!over)` scales first.  What is left: the
-// target reads its 0.0f out of pl.d (60) where ours reads q.x (16) -- cse
-// picks the memory copy by ctor order -- and one local-alloc FP swap in the
-// normal's projection.
+// From 189 on the CollideNoCaps lens: the cross and dot products are inline
+// `const VIVect3 &` helpers, the second cross product comes BEFORE the sqrtf
+// (its stores sit ahead of the sqrt's NaN branch), the whole body is the
+// `0 < lsq` arm with the degenerate case in the else, the hit point is built
+// in `q`, the normal in place in m_hitNormal, and `if (!over)` scales first.
+// Phase 61 wave 5 (27 -> 0), both read off cse/local-alloc:
+// - `e` is DEFAULT-constructed and assigned.  Its three zero stores are dead
+//   (flow deletes them, which is why the target "never zeroes" e), but at cse
+//   time e.x is the head of the 0.0 class; `e = v1` overwrites it, and a class
+//   whose head is removed promotes its NEWEST member -- pl.d at 60, the slot
+//   the target loads its 0.0f from.  Copy-constructed, q.x (16) stays head.
+// - `k` holds e.q for both edge tests and is REUSED for the projection, with
+//   the sum written out so it lands in k itself: set in two blocks, k is
+//   global, so local-alloc cannot tie it to the partial sum and global.c gives
+//   it f4 -- the register it already had.  A Dot3() call returns through a
+//   temp that cse makes canonical, which is local and ties.
 int VICollide::Collide(VICollSphere &s, VIVect3 &v0, VIVect3 &v1)
 {
     int     hit = 0;
     int     over = 0;
-    VIVect3 e(v1);
+    VIVect3 e;
     VIVect3 q;
     VIVect3 cp;
     VIPlane pl;
@@ -1885,6 +1891,7 @@ int VICollide::Collide(VICollSphere &s, VIVect3 &v0, VIVect3 &v1)
     float   chord;
     float   k;
 
+    e = v1;
     e -= v0;
 
     Cross3(pl.n, s.m_dir, e);
@@ -1934,14 +1941,18 @@ int VICollide::Collide(VICollSphere &s, VIVect3 &v0, VIVect3 &v1)
         q *= t;
         q += s.m_start;
 
-        if (!(0.0f < Dot3(e, q) - Dot3(v0, e)))
+        k = e.x * q.x + e.y * q.y + e.z * q.z;
+        if (!(0.0f < k - Dot3(v0, e)))
             goto vertex;
-        if (!(Dot3(e, q) - Dot3(v1, e) < 0.0f))
+        if (!(k - Dot3(v1, e) < 0.0f))
             goto vertex;
 
         s.m_hitNormal = q;
         s.m_hitNormal -= v0;
-        k = Dot3(s.m_hitNormal, e);
+        {
+            const VIVect3 &h = s.m_hitNormal;
+            k = h.x * e.x + h.y * e.y + h.z * e.z;
+        }
         SubScaled(s.m_hitNormal, e, k);
         if (!over)
             s.m_hitNormal *= s.m_invRadius;

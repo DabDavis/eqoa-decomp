@@ -1760,6 +1760,16 @@ int VICSprite::Process(VICamera &cam, const VIVect3 &at, VIScene &sc)
 // one has stopped.  Then the old play is kept as m_prev for the cross-fade,
 // the new one started -- synced to layer 1 when the humanoid's two layers
 // agree -- and the layer's sound and particle triggers re-armed.
+//
+// Phase 61 wave 5 (168 -> 0): the exits are the source.  Every place the
+// target keeps an address in a register across a label, cse followed a jump
+// into it, which needs the label to have ONE use: the Freeze/Erase/Stop
+// failures `goto fail` (the play < 0 block) so the erase label is reached
+// only from IsBlendComplete; `(id != 0 && id != 17) || anim >= 14` is one
+// condition so its inner label has one use; and the "already playing"
+// return is `goto done`, a direct jump, so the join's &m_cur[layer].m_anim
+// (t1) reaches the AddPlay arm.  That drops one use of the gcse'd this+4492,
+// whose priority then falls below &m_cur[layer].m_play's: s8/s7 as target.
 int VICSprite::SetAnimation(VICSpriteAnimID id, int layer, VIScene &sc)
 {
     int ids[2];
@@ -1819,10 +1829,10 @@ int VICSprite::SetAnimation(VICSpriteAnimID id, int layer, VIScene &sc)
             if (id == 0)
                 goto check;
             if (FreezePlayback(m_cur[layer].m_play, sc) < 0)
-                return -1;
+                goto fail;
         }
         if (ErasePlay(m_prev[layer].m_play, sc) < 0)
-            return -1;
+            goto fail;
         m_prev[layer].m_play = none;
     }
 
@@ -1847,11 +1857,8 @@ rank:
         {
             if (id != 15 || m_cur[layer].m_anim != 0)
             {
-                if (layer == 0)
-                    return 0;
-                if (id != 0 && id != 17)
-                    return 0;
-                if (m_cur[layer].m_anim >= 14)
+                if (layer == 0 || (id != 0 && id != 17) ||
+                    m_cur[layer].m_anim >= 14)
                     return 0;
             }
         }
@@ -1862,7 +1869,7 @@ rank:
         m_idleTime = sc.GetTime();
 
     if (id == m_cur[layer].m_anim && m_cur[layer].m_play != -1)
-        return 0;
+        goto done;
 
     if (m_prev[layer].m_play == -1)
     {
@@ -1870,7 +1877,7 @@ rank:
         if (m_cur[layer].m_play != -1)
         {
             if (StopPlayback(m_cur[layer].m_play, sc) < 0)
-                return -1;
+                goto fail;
             if (m_skelType == 1 && layer == 0 && m_cur[1].m_anim == id)
             {
                 m_cur[0].m_anim = id;
@@ -1901,7 +1908,10 @@ rank:
             m_cur[layer].m_play = play;
         }
         if (play < 0)
+        {
+fail:
             return -1;
+        }
     }
 
     if (m_skelType != 1)
@@ -1947,6 +1957,8 @@ rank:
     if (layer == 0 && SetItemAction(0, sc) < 0)
         return -1;
     return 1;
+done:
+    return 0;
 }
 
 // A whole second character: the hierarchy's containers, every field, the

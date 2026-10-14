@@ -3171,147 +3171,184 @@ int VIRaster::DrawPrimBufferPackVUNCG(int prim, int pal, unsigned int flags)
 // The light's sphere is built round a by-value sum: the target's frame puts
 // the sphere at sp+80 and the sum's temporary at sp+96, which is the order a
 // temporary made while constructing a declared object gets its slot.
+//
+// Phase 61 wave 5 (336 -> 0), each shape read off a pass, not guessed:
+// - BoxAround is an inline taking the box BY REFERENCE: `box` sits at sp+0,
+//   and an inline's pointer argument that is the bare frame base is copied
+//   into a pseudo (sp+K is substituted as a constant), so &box.max becomes
+//   the same pseudo as the ctor's (s2) and the max stores through it
+//   invalidate cse's memory -- the target's reloads of s.c.z and of max.
+// - One scale load per vertex (TessPos's by-value float); b and c share the
+//   `sc` pointer, so loop.c hoists it out of the k loop, while the j loop's
+//   single use is folded back into an absolute `lui at` by combine.
+// - Plain `for` loops: gcse's PRE hoists each latch `+1` into both arms,
+//   which is the target's early `addiu sN,sN,1` + spill in every arm.
+// - i, prims, k are declared together at the top: the PRE reaching registers
+//   are made in gcse hash-bucket order ((13258 + N + K) mod S), which is the
+//   spill-slot order 180/184/188/192, and `prims++` in the BODY (not the for
+//   increment) puts prims+1 ahead of k+1 on the insert edge, so sched1 kills
+//   prims before c is born and the two share s4.
+// - The vertex walk keeps b and c and rotates a/b/c at the top of the j loop,
+//   like v[]; a prim is a 32-byte header, numVerts * 32, a 16-byte tail
+//   (the earlier `a = verts` spelling skipped 32 bytes too few per prim).
+// - `strips` is re-read from the member inside the n loop (loop.c hoists it)
+//   and the m loop's bound re-indexes it, which gcse turns into the target's
+//   `move v1,t2` copy; m_start is read off m_tess directly.
+// - Each qword's stores in index order: sched1 issues the store that kills
+//   the walker (the last one) first, giving the target's [0],[3],[1],[2].
 static inline VIVect3 operator+(const VIVect3 &a, const VIVect3 &b)
 {
     return VIVect3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
+static inline void BoxAround(VIBBox &b, const VISphere &s)
+{
+    b.min = s.c;
+    b.min -= s.r;
+    b.max = s.c;
+    b.max += s.r;
+}
+
+static inline void TessPos(VIVect3 &o, const VIVect3S16 &p, float s)
+{
+    o.x = (float)p.x * s;
+    o.y = (float)p.y * s;
+    o.z = (float)p.z * s;
+}
+
 int VIRaster::DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags)
 {
+    int i, prims, k;
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
-    if (*(unsigned char *)0x70000222 == 0)
-        return 0;
-    if (m_tessellate == 0)
-        return 0;
-    VIBBox box;
-    VIVect3 v[3];
-    ((VIMatrix44 *)0x70000100)->Mul(*(VIVect3 *)0x700001C0, v[0]);
+    if (*(unsigned char *)0x70000222 != 0 && m_tessellate != 0)
     {
-        VISphere s(v[0] + m_preTransAt, *(float *)0x700001CC);
-        box.max = s.c;
-        box.min = s.c;
-        box.min -= s.r;
-        box.max += s.r;
-        if (!box.Intersects(pb->m_bbox))
-            return 0;
-    }
-    VIBBox lbox;
-    VIBBox tbox;
-    VISphere ls(v[0], *(float *)0x700001CC);
-    lbox.max = ls.c;
-    lbox.max += ls.r;
-    lbox.min = ls.c;
-    lbox.min -= ls.r;
-    char *verts = pb->m_verts;
-    int prims = 0;
-    int i = 0;
-    while (i < pb->m_numMaterials)
-    {
-        int mat = m_materialPals.Value(pal)->m_mats.m_data[pb->m_materials[i].m_matIdx];
-        int ds = MaterialHasDepthSort(mat);
-        if (!(((VIMaterial *)mat)->m_flags & 0x20) ||
-            !(ds ? (flags & 1) : (flags & 2)))
+        VIBBox box;
+        VIVect3 v[3];
+        ((VIMatrix44 *)0x70000100)->Mul(*(VIVect3 *)0x700001C0, v[0]);
         {
-            i++;
-            prims += pb->m_materials[i - 1].m_numPrims;
-            verts += pb->m_materials[i - 1].m_numVerts << 4;
-            continue;
+            VISphere s(v[0] + m_preTransAt, *(float *)0x700001CC);
+            BoxAround(box, s);
         }
-        i++;
-        AddMaterial(mat, &m_dmaTag);
-        for (int k = 0; k < pb->m_materials[i - 1].m_numPrims; k++, prims++)
+        if (box.Intersects(pb->m_bbox))
         {
-            VIPrimPrim *pp = &pb->m_prims[prims];
-            if (!box.Intersects(pp->m_bbox))
+            VIBBox lbox;
+            VIBBox tbox;
+            VISphere ls(v[0], *(float *)0x700001CC);
+            BoxAround(lbox, ls);
+            char *verts = pb->m_verts;
+            prims = 0;
+            for (i = 0; i < pb->m_numMaterials; i++)
             {
-                verts += (pp->m_numVerts << 5) + 48;
-                continue;
-            }
-            verts += 32;
-            VIPrimVertexPackVUNCG *a = (VIPrimVertexPackVUNCG *)verts;
-            verts += 32;
-            VIPrimVertexPackVUNCG *b = (VIPrimVertexPackVUNCG *)verts;
-            float sc = *(float *)0x70000210;
-            v[1].x = (float)a->m_pos.x * sc;
-            v[1].y = (float)a->m_pos.y * sc;
-            v[1].z = (float)a->m_pos.z * sc;
-            v[1] += m_preTrans[a->m_preTrans];
-            v[2].x = (float)b->m_pos.x * sc;
-            v[2].y = (float)b->m_pos.y * sc;
-            v[2].z = (float)b->m_pos.z * sc;
-            v[2] += m_preTrans[b->m_preTrans];
-            for (int j = 2; j < pp->m_numVerts; j++)
-            {
-                verts += 32;
-                VIPrimVertexPackVUNCG *c = (VIPrimVertexPackVUNCG *)verts;
-                v[0] = v[1];
-                v[1] = v[2];
-                v[2].x = (float)c->m_pos.x * *(float *)0x70000210;
-                v[2].y = (float)c->m_pos.y * *(float *)0x70000210;
-                v[2].z = (float)c->m_pos.z * *(float *)0x70000210;
-                v[2] += m_preTrans[c->m_preTrans];
-                tbox.Init(3, v);
-                if (lbox.Intersects(tbox))
+                int mat = pb->m_materials[i].m_matIdx;
+                mat = m_materialPals.Value(pal)->m_mats[mat];
+                int ds = MaterialHasDepthSort(mat);
+                if ((((VIMaterial *)mat)->m_flags & 0x20) &&
+                    (ds ? (flags & 1) : (flags & 2)))
                 {
-                    if (!(j & 1))
-                        TessTriangle(v[0], v[1], v[2], a, b, c);
-                    else
-                        TessTriangle(v[2], v[1], v[0], c, b, a);
-                    for (int n = 0; n < m_tess.m_numStrips; n++)
+                    AddMaterial(mat, &m_dmaTag);
+                    for (k = 0; k < pb->m_materials[i].m_numPrims; k++)
                     {
-                        VIRasterTessStrip *st = &m_tess.m_strips[n];
-                        m_dmaTag->m_id = 16;
-                        int qwc = (st->m_count << 2) + 3;
-                        m_dmaTag->m_addr = 0;
-                        m_dmaTag->m_qwc = qwc;
-                        char *q = (char *)m_dmaTag;
-                        m_dmaTag = (_sceDmaTag *)(q + (qwc << 4) + 16);
-                        ((unsigned int *)q)[4] = 0;
-                        ((unsigned int *)(q + 16))[1] = 0;
-                        ((unsigned int *)(q + 16))[2] = 0;
-                        ((unsigned int *)(q + 16))[3] =
-                            (((st->m_count << 2) + 1) << 16) | 0x6C008000;
-                        ((unsigned int *)(q + 32))[0] = st->m_count;
-                        ((unsigned int *)(q + 32))[3] = 0;
-                        ((unsigned int *)(q + 32))[1] = 0;
-                        ((unsigned int *)(q + 32))[2] = 0;
-                        VIVect4 *o = (VIVect4 *)(q + 48);
-                        VITessVertex *t = &m_tess.m_out[st->m_start];
-                        for (int m = 0; m < st->m_count; m++)
+                        if (box.Intersects(pb->m_prims[prims].m_bbox))
                         {
-                            o->x = t->m_pos.x;
-                            o->y = t->m_pos.y;
-                            o->z = t->m_pos.z;
-                            o->w = 1.0f;
-                            o++;
-                            o->x = t->m_uv.x;
-                            o->y = t->m_uv.y;
-                            o->z = 1.0f;
-                            o->w = 0.0f;
-                            o++;
-                            o->x = t->m_normal.x;
-                            o->y = t->m_normal.y;
-                            o->z = t->m_normal.z;
-                            o->w = 0.0f;
-                            o++;
-                            o->x = t->m_color.r;
-                            o->y = t->m_color.g;
-                            o->z = t->m_color.b;
-                            o->w = t->m_color.a;
-                            o++;
-                            t++;
+                            float *sc = (float *)0x70000210;
+                            verts += 32;
+                            VIPrimVertexPackVUNCG *b = (VIPrimVertexPackVUNCG *)verts;
+                            verts += 32;
+                            VIPrimVertexPackVUNCG *c = (VIPrimVertexPackVUNCG *)verts;
+                            verts += 32;
+                            TessPos(v[1], b->m_pos, *sc);
+                            v[1] += m_preTrans[b->m_preTrans];
+                            TessPos(v[2], c->m_pos, *sc);
+                            v[2] += m_preTrans[c->m_preTrans];
+                            for (int j = 2; j < pb->m_prims[prims].m_numVerts; j++)
+                            {
+                                VIPrimVertexPackVUNCG *a = b;
+                                b = c;
+                                c = (VIPrimVertexPackVUNCG *)verts;
+                                verts += 32;
+                                v[0] = v[1];
+                                v[1] = v[2];
+                                TessPos(v[2], c->m_pos, *(float *)0x70000210);
+                                v[2] += m_preTrans[c->m_preTrans];
+                                tbox.Init(3, v);
+                                if (lbox.Intersects(tbox))
+                                {
+                                    if (!(j & 1))
+                                        TessTriangle(v[0], v[1], v[2], a, b, c);
+                                    else
+                                        TessTriangle(v[2], v[1], v[0], c, b, a);
+                                    for (int n = 0; n < m_tess.m_numStrips; n++)
+                                    {
+                                        VIRasterTessStrip *strips = m_tess.m_strips;
+                                        VIRasterTessStrip *st = &strips[n];
+                                        int qwc = (st->m_count << 2) + 3;
+                                        m_dmaTag->m_id = 16;
+                                        m_dmaTag->m_addr = 0;
+                                        m_dmaTag->m_qwc = qwc;
+                                        int bytes = (qwc << 4) + 16;
+                                        char *q = (char *)m_dmaTag;
+                                        m_dmaTag = (_sceDmaTag *)(q + bytes);
+                                        VIVect4 *o = (VIVect4 *)(q + 16);
+                                        ((unsigned int *)o)[0] = 0;
+                                        ((unsigned int *)o)[1] = 0;
+                                        ((unsigned int *)o)[2] = 0;
+                                        ((unsigned int *)o)[3] =
+                                            (((st->m_count << 2) + 1) << 16) | 0x6C008000;
+                                        o++;
+                                        ((unsigned int *)o)[0] = st->m_count;
+                                        ((unsigned int *)o)[1] = 0;
+                                        ((unsigned int *)o)[2] = 0;
+                                        ((unsigned int *)o)[3] = 0;
+                                        o++;
+                                        VITessVertex *t = &m_tess.m_out[m_tess.m_strips[n].m_start];
+                                        for (int m = 0; m < strips[n].m_count; m++)
+                                        {
+                                            o->x = t->m_pos.x;
+                                            o->y = t->m_pos.y;
+                                            o->z = t->m_pos.z;
+                                            o->w = 1.0f;
+                                            o++;
+                                            o->x = t->m_uv.x;
+                                            o->y = t->m_uv.y;
+                                            o->z = 1.0f;
+                                            o->w = 0.0f;
+                                            o++;
+                                            o->x = t->m_normal.x;
+                                            o->y = t->m_normal.y;
+                                            o->z = t->m_normal.z;
+                                            o->w = 0.0f;
+                                            o++;
+                                            o->x = t->m_color.r;
+                                            o->y = t->m_color.g;
+                                            o->z = t->m_color.b;
+                                            o->w = t->m_color.a;
+                                            o++;
+                                            t++;
+                                        }
+                                        unsigned int mscal = RStrip5Offset | 0x14000000;
+                                        ((unsigned int *)o)[0] = 0;
+                                        ((unsigned int *)o)[1] = 0;
+                                        ((unsigned int *)o)[2] = 0;
+                                        ((unsigned int *)o)[3] = mscal;
+                                        FlushDMABufferIfFull();
+                                    }
+                                }
+                            }
+                            verts += 16;
                         }
-                        ((unsigned int *)o)[0] = 0;
-                        ((unsigned int *)o)[1] = 0;
-                        ((unsigned int *)o)[3] = RStrip5Offset | 0x14000000;
-                        ((unsigned int *)o)[2] = 0;
-                        FlushDMABufferIfFull();
+                        else
+                        {
+                            verts += (pb->m_prims[prims].m_numVerts << 5) + 48;
+                        }
+                        prims++;
                     }
                 }
-                a = b;
-                b = c;
+                else
+                {
+                    prims += pb->m_materials[i].m_numPrims;
+                    verts += pb->m_materials[i].m_numVerts << 4;
+                }
             }
-            verts += 16;
         }
     }
     return 0;

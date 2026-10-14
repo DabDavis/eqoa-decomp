@@ -179,12 +179,19 @@ int VIColorBuffer::Allocate()
 }
 
 // One word into the VIF stream at m_tags, four to a quadword: m_pad1C is the
-// quadword cursor and BuildI the word within it.  A POST-increment in the
+// quadword cursor and BuildI the word within it.  Indexed through VIQWord
+// (160 -> 104): the cast-and-add spelling expands the three address terms in
+// another order and the first EMIT's registers swap.  OPEN (the last 14
+// words): in the two tail EMITs the target gives BuildI*4 the lower register
+// than the m_tags load -- local-alloc ranks them equal (2 refs, 3-insn life
+// each) and breaks the tie by birth, so the target's sched1 must load m_tags
+// before BuildI there; ours loads BuildI first (5 dependents to m_tags' 4,
+// haifa's depend-count tie-break).  A POST-increment in the
 // address: BuildI is loaded once and `BuildI + 1` is computed before the
 // word's store, where a separate `BuildI++` reloads it after the store.
 #define EMIT(w)                                                       \
     {                                                                 \
-        *(unsigned int *)(m_tags + m_pad1C * 16 + BuildI++ * 4) = (w);\
+        ((VIQWord *)m_tags)[m_pad1C].m_w[BuildI++] = (w);             \
         if (BuildI == 4)                                              \
         {                                                             \
             BuildI = 0;                                               \
@@ -194,13 +201,30 @@ int VIColorBuffer::Allocate()
 
 // A DMA tag at pBuildDMATag: the id byte, the address, the quadword count --
 // with both values computed before the first byte is stored.
-#define SetTag(id, qwc, addr)                                         \
+// The tag is written through sceDmaTag's own shape -- a POINTER `next`, the
+// type pBuildDMATag itself is read through -- not cast stores.  Phase 61
+// wave 5, read off the alias checks (186 -> 176): the target reloads
+// pBuildDMATag after the address store (a store of the pointer's own type
+// may alias it) yet schedules the BuildPLeft reload ABOVE that store (a
+// struct field at a varying address never conflicts with a fixed int
+// global).  Cast `unsigned int` stores give neither.
+struct VICBTag
+{
+    unsigned short m_qwc;
+    unsigned char  m_mark;
+    unsigned char  m_id;
+    VICBTag       *m_next;
+    unsigned int   m_p[2];
+};
+#define BTAG (*(VICBTag **)&pBuildDMATag)
+
+#define SetTag(id_, qwc, addr)                                        \
     {                                                                 \
         int q_ = (qwc);                                               \
         unsigned int a_ = (addr);                                     \
-        ((unsigned char *)pBuildDMATag)[3] = (id);                    \
-        pBuildDMATag[1] = a_;                                         \
-        ((unsigned short *)pBuildDMATag)[0] = q_;                     \
+        BTAG->m_id = (id_);                                           \
+        BTAG->m_next = (VICBTag *)a_;                                 \
+        BTAG->m_qwc = q_;                                             \
     }
 
 // The material table at m_headers: two words per material, the material and
@@ -224,24 +248,29 @@ int VIColorBuffer::Color(VIColor32 &c)
         if (m_pad10 == pBuildSource->m_numMaterials)
             return -1;
         BuildM++;
-        VIPrimMaterial *mat = &pBuildSource->m_materials[BuildM];
-        BuildMLeft = mat->m_numPrims;
-        ((VIColorBufferHeader *)m_headers)[m_pad10].m_mat = mat->m_matIdx;
+        BuildMLeft = pBuildSource->m_materials[BuildM].m_numPrims;
+        ((VIColorBufferHeader *)m_headers)[m_pad10].m_mat =
+            pBuildSource->m_materials[BuildM].m_matIdx;
         ((VIColorBufferHeader *)m_headers)[m_pad10].m_vert = m_vertCursor;
     }
 
     if (BuildPLeft == 0)
     {
         BuildP++;
-        VIPrimPrim *prim = &pBuildSource->m_prims[BuildP];
-        BuildPLeft = prim->m_numVerts;
+        BuildPLeft = pBuildSource->m_prims[BuildP].m_numVerts;
         if (pBuildSource->m_type != 2)
             return -1;
 
+        // The INTEGER is the first operand (176 -> 14, and the s0 frame
+        // gone): `m_verts + i*16` is a pointer sum, which C++ always builds
+        // pointer-first, so local-alloc ties the sum to the m_verts load and
+        // the `n & 3` test further down is left only t0 -- n then needs a
+        // callee-saved register.  Integer-first, the sum ties to the shift
+        // (expand_binop keeps a REG first operand) and m_verts dies early.
         SetTag(48, BuildPLeft * 2 + 2,
-               (unsigned int)(pBuildSource->m_verts + BuildVQSource * 16));
+               BuildVQSource * 16 + (unsigned int)pBuildSource->m_verts);
         BuildVQSource += 2;
-        pBuildDMATag += 4;
+        BTAG++;
         m_vertCursor++;
 
         // The tag step is written in BOTH arms (jump2 cross-jumps them after
@@ -251,15 +280,14 @@ int VIColorBuffer::Color(VIColor32 &c)
         if ((n & 3) == 0)
         {
             SetTag(48, n / 4, (unsigned int)(m_tags + m_pad1C * 16));
-            pBuildDMATag += 4;
-            m_vertCursor++;
+            BTAG++;
         }
         else
         {
             SetTag(48, n / 4 + 1, (unsigned int)(m_tags + m_pad1C * 16));
-            pBuildDMATag += 4;
-            m_vertCursor++;
+            BTAG++;
         }
+        m_vertCursor++;
 
         EMIT(0x01000104);
         EMIT((pBuildSource->m_prims[BuildP].m_numVerts << 16) | 0x6E008004);
@@ -296,7 +324,7 @@ int VIColorBuffer::Color(VIColor32 &c)
     if (BuildMLeft == 0)
     {
         SetTag(96, 0, 0);
-        pBuildDMATag += 4;
+        BTAG++;
         m_vertCursor++;
         m_pad10++;
     }

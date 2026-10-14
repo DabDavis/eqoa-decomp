@@ -4024,8 +4024,8 @@ public:
     static int GetRobeTexture(int robe, VICSpriteTextSlot slot);
     static int GetHelm(VICSpriteArmorSet set);
     static VIColor32 *GetTintColor(VICSpriteTint tint);
-    // Phase 61: void, and the raster is not used.
-    static void SetResources(VIRaster &r, VIDictionary &d);
+    // Phase 61 wave 5: returns int 0 (the target sets v0); the raster is unused.
+    static int  SetResources(VIRaster &r, VIDictionary &d);
 
     static VIColor32 Tints[15];
     static int       Armor[9][5];
