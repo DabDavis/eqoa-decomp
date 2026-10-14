@@ -674,18 +674,31 @@ int VICollide::Collide(VICollRay &r, const VISphere &v)
 // The inner count is `numVerts - 2` tested against ZERO, so a prim written with
 // fewer than two vertices underflows and runs about four billion times.  Only
 // Begin+End with no Vertex can produce one; nothing that draws does.
-// OPEN, 118/208, and so is its ray twin.  Every other walker in the family is
-// byte-exact from the same body, so this is not the shape: under packing 0 the
-// target keeps b.m_verts in a callee-saved register and multiplies by 12 with
-// `mult`+`addu`, where ours spills it and gcc folds the reload into `mtlo`
-// +`madd`.  That is regclass, not reload: every use of vp is the addend of an
-// r5900 madd, whose constraint prefers LO, so the pseudo's preferred class is
-// LO01_REG and it never competes for a GPR.  The target's three loads of each
-// vertex also go through three copies of the address (`move a1,v1; move
-// a0,v1`), which looks like reload_cse rewriting two of three identical
-// address computations as moves -- a guess, untested: no spelling tried here
-// gets cse to leave three.  The fetch is `Set(p->x, p->y, p->z)` because the target
-// issues all three loads before the stores (121 -> 118).
+// One component of one vertex, through a reference binding -- see
+// CollideBufferV for why the fetch is three bindings and not one.
+static inline float VX(const VIVect3 &v) { return v.x; }
+static inline float VY(const VIVect3 &v) { return v.y; }
+static inline float VZ(const VIVect3 &v) { return v.z; }
+
+// Byte-exact, and so is its ray twin, on two facts (phase 61, wave 4).
+//
+// Each vertex component is read through its OWN binding of the vertex to an
+// inline reference parameter (VX/VY/VZ below).  Bound to `V[vert]`, the
+// parameter receives the EXPAND_SUM address (plus (mult vert 12) vp), which
+// the inliner forces into the parameter's pseudo in TWO steps -- p = vert*12;
+// p = p + vp -- and cse cannot record a value whose set reads its own
+// destination, so the three computations survive.  Combine makes each one a
+// madd; with SEVEN madd uses (not three) vp outranks np-1 in global-alloc,
+// takes s3 instead of a stack slot, every madd picks its GPR alternative and
+// is split back to mult+addu, and reload_cse turns the 2nd and 3rd addu into
+// the target's `move a1,v1; move a0,v1` (lowest-numbered holder wins, hence
+// the a3->a2->v1 chain in the second fetch).  The constant 12 likewise has
+// 6 uses instead of 2, so caller-save is profitable (refs 20 > 4*3 calls) and
+// it lives in t2.  One `Set` call keeps the three loads ahead of the stores.
+//
+// And `n` is read BEFORE `mat`.  That moves mat's load later in the LUID
+// order, so sched1 issues it while `prim` is still live: mat then conflicts
+// with prim, cannot reuse prim's s4, and the hoisted constant 1 takes it.
 int VICollide::CollideBufferV(VICollSphere &s, VICollBuffer &b)
 {
     VIVect3 a;
@@ -711,20 +724,20 @@ int VICollide::CollideBufferV(VICollSphere &s, VICollBuffer &b)
             {
                 if (!Cull(s, b.m_prims[prim].m_bbox))
                 {
-                    int mat = b.m_prims[prim].m_matIdx;
                     int n = b.m_prims[prim].m_numVerts;
+                    int mat = b.m_prims[prim].m_matIdx;
                     n = n - 2;
 
-                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); c.Set(p->x, p->y, p->z); }
+                    c.Set(VX(((VIVect3 *)vp)[vert]), VY(((VIVect3 *)vp)[vert]), VZ(((VIVect3 *)vp)[vert]));
                     vert++;
-                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
+                    d.Set(VX(((VIVect3 *)vp)[vert]), VY(((VIVect3 *)vp)[vert]), VZ(((VIVect3 *)vp)[vert]));
                     vert++;
                     int flip = 0;
                     while (n != 0)
                     {
                         a = c;
                         c = d;
-                        { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
+                        d.Set(VX(((VIVect3 *)vp)[vert]), VY(((VIVect3 *)vp)[vert]), VZ(((VIVect3 *)vp)[vert]));
                         if (flip == 0)
                         {
                             if (Collide(s, mat, a, c, d))
@@ -762,14 +775,16 @@ int VICollide::CollideBufferV(VICollSphere &s, VICollBuffer &b)
 // parallel to the plane and it goes straight to the edges -- and because
 // Collide(s, v0, v1) falls through to a vertex test on its FIRST endpoint, the
 // three calls cover all three vertices exactly once.
-// OPEN, 16/173, and all sixteen are one register rotation: the target holds
-// `this`/v1/v2 in s3/s4/s5 where ours holds v1/v2/`this` in s3/s4/s5, and the
-// four uses of each are a three-way tie the allocator breaks the other way.
-// Two levers got it here.  `ds -= s.m_radius` sits ABOVE the `de < 0` guard --
-// the guard's delay slot carries it -- and the two early exits are `goto done`
-// and not `return hit`: a `return hit` gives gcc a block whose only reaching
-// definition is the initial 0, so it folds to `move v0,zero`, where the shared
-// exit has two and keeps the accumulator (`move v0,s2`).
+// The edge tests are written TWICE, once per arm of `ds != de`, and jump2
+// cross-jumps the copies into one -- but only after register allocation, so
+// global-alloc counts both: `this` gets 9 refs to v0/v1/v2's 7, which ranks it
+// first among the call-saved and gives the target's s3=this, s4=v1, s5=v2.
+// Written once (shared tail) the four are a 5-ref tie broken by live length,
+// and v1/v2 take s3/s4 (16 words).  `ds -= s.m_radius` sits ABOVE the
+// `de < 0` guard -- the guard's delay slot carries it -- and the two early
+// exits are `goto done` and not `return hit`: a `return hit` gives gcc a block
+// whose only reaching definition is the initial 0, so it folds to
+// `move v0,zero`, where the shared exit has two and keeps the accumulator.
 int VICollide::Collide(VICollSphere &s, int idx, VIVect3 &v0, VIVect3 &v1,
                        VIVect3 &v2)
 {
@@ -819,15 +834,22 @@ int VICollide::Collide(VICollSphere &s, int idx, VIVect3 &v0, VIVect3 &v1,
                             s.m_hitIdx = idx;
                             goto done;
                         }
+                        if (Collide(s, v0, v1))
+                            hit = 1;
+                        if (Collide(s, v1, v2))
+                            hit = 1;
+                        if (Collide(s, v2, v0))
+                            hit = 1;
                     }
-
-                    hit = 0;
-                    if (Collide(s, v0, v1))
-                        hit = 1;
-                    if (Collide(s, v1, v2))
-                        hit = 1;
-                    if (Collide(s, v2, v0))
-                        hit = 1;
+                    else
+                    {
+                        if (Collide(s, v0, v1))
+                            hit = 1;
+                        if (Collide(s, v1, v2))
+                            hit = 1;
+                        if (Collide(s, v2, v0))
+                            hit = 1;
+                    }
                 }
             }
         }
@@ -957,22 +979,25 @@ done:
 // runs the two cap spheres itself.  Three details are not guessable -- t is
 // CLAMPED UP to zero rather than rejected, the sqrt term is ADDED so this finds
 // the FAR intersection with the tube, and m_hitIdx is never written.
-// OPEN, 9/284, and all nine are one FP register swap: the target holds k in
-// $f12 and c.m_radius in $f14, ours the other way round -- equal refs, and the
-// live lengths (62 vs 65 insns) put the radius first.  It came from 211 on the
-// same lens as the capsule above: every cross product, dot product and the
-// normal's projection is an INLINE helper taking `const VIVect3 &`, so loads
-// through &r.m_dir / &c.m_dir are unflagged pseudos that may alias the stack
-// and stay between the stores.  The second cross product lands in `v`, the hit
-// point is `v = r.m_delta; v *= t; v += r.m_start;`, and the normal is built
-// IN PLACE in r.m_hitNormal and normalised there.
+// `k` is ONE variable for the squared length and its reciprocal root, and
+// that is a register-allocation fact: the sqrtf libcall's argument copy into
+// $f12 gives the merged pseudo a COPY preference for $f12, it outranks the
+// radius, and the radius goes to $f14.  With a separate `lsq` the
+// preference is lsq's alone, k and the radius tie at 5 refs, and the shorter
+// live range (the radius, 62 insns to 65) takes $f12 first (9 words).
+// It came from 211 on the same lens as the capsule above: every cross
+// product, dot product and the normal's projection is an INLINE helper taking
+// `const VIVect3 &`, so loads through &r.m_dir / &c.m_dir are unflagged
+// pseudos that may alias the stack and stay between the stores.  The second
+// cross product lands in `v`, the hit point is `v = r.m_delta; v *= t;
+// v += r.m_start;`, and the normal is built IN PLACE in r.m_hitNormal and
+// normalised there.
 int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
 {
     int      hit = 0;
     VIVect3  v;
     VIVect3  h;
     VIPlane  pl;
-    float    lsq;
     float    k;
     float    d;
     float    t;
@@ -981,11 +1006,11 @@ int VICollide::CollideNoCaps(VICollRay &r, const VICylinder &c)
     float    along;
 
     Cross3(pl.n, r.m_dir, c.m_dir);
-    lsq = Dot3(pl.n, pl.n);
-    if (!(0.0f < lsq))
+    k = Dot3(pl.n, pl.n);
+    if (!(0.0f < k))
         goto done;
 
-    k = 1.0f / sqrtf(lsq);
+    k = 1.0f / sqrtf(k);
     pl.n.x = pl.n.x * k;
     pl.n.y = pl.n.y * k;
     pl.n.z = pl.n.z * k;
@@ -1271,7 +1296,7 @@ int VICollide::CollideBufferPackVGF(VICollSphere &s, VICollBuffer &b)
 
 // And the three ray walkers.
 
-// OPEN, 118/208 -- the same one register as the sphere twin above.
+// Byte-exact -- the same body as the sphere twin above.
 int VICollide::CollideBufferV(VICollRay &r, VICollBuffer &b)
 {
     VIVect3 a;
@@ -1297,13 +1322,13 @@ int VICollide::CollideBufferV(VICollRay &r, VICollBuffer &b)
             {
                 if (!Cull(r, b.m_prims[prim].m_bbox))
                 {
-                    int mat = b.m_prims[prim].m_matIdx;
                     int n = b.m_prims[prim].m_numVerts;
+                    int mat = b.m_prims[prim].m_matIdx;
                     n = n - 2;
 
-                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); c.Set(p->x, p->y, p->z); }
+                    c.Set(VX(((VIVect3 *)vp)[vert]), VY(((VIVect3 *)vp)[vert]), VZ(((VIVect3 *)vp)[vert]));
                     vert++;
-                    { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
+                    d.Set(VX(((VIVect3 *)vp)[vert]), VY(((VIVect3 *)vp)[vert]), VZ(((VIVect3 *)vp)[vert]));
                     vert++;
 
                     int flip = 0;
@@ -1311,7 +1336,7 @@ int VICollide::CollideBufferV(VICollRay &r, VICollBuffer &b)
                     {
                         a = c;
                         c = d;
-                        { VIVect3 *p = (VIVect3 *)(vp + vert * 12); d.Set(p->x, p->y, p->z); }
+                        d.Set(VX(((VIVect3 *)vp)[vert]), VY(((VIVect3 *)vp)[vert]), VZ(((VIVect3 *)vp)[vert]));
                         if (flip == 0)
                         {
                             if (Collide(r, mat, a, c, d))

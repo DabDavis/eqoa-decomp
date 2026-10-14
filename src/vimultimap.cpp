@@ -318,8 +318,9 @@ template <class K, class V> int VIMultiMap<K, V>::Insert(const K &k, const V &v)
 {
     int p = 0;
     int side = 0;
+    int c = m_root;
 
-    if (m_root != 0)
+    if (c != 0)
     {
         // The node array and the key are LOCALS, read once before the walk:
         // spelled as m_nodes / the reference inside the loop, gcse's PRE
@@ -329,10 +330,10 @@ template <class K, class V> int VIMultiMap<K, V>::Insert(const K &k, const V &v)
         // takes the loop and hoists the constant as the target does.
         Node *nodes = m_nodes;
         K key = k;
-        p = m_root;
-        for (;;)
+        // `p = c` at the TOP of the walk (see VIMap::Insert).
+        do
         {
-            int c;
+            p = c;
             if (key < nodes[p].m_key)
             {
                 side = 1;
@@ -352,10 +353,7 @@ template <class K, class V> int VIMultiMap<K, V>::Insert(const K &k, const V &v)
                 side = 0;
                 c = nodes[p].m_right;
             }
-            if (c == 0)
-                break;
-            p = c;
-        }
+        } while (c != 0);
     }
 
     int x = AddNode(p, side);
@@ -370,71 +368,55 @@ template <class K, class V> int VIMultiMap<K, V>::Insert(const K &k, const V &v)
     new (&NODE(n)->m_key) K(k);
     new (&NODE(n)->m_value) V(v);
 
-    // The parent is a LOCAL here and is NOT one in EraseFixup: with it, the
-    // target keeps `q * sizeof(Node)` in one register across the whole body
-    // and the two uncle-is-red arms CROSS-JOIN into a single tail.  Written
-    // out as NODE(NODE(x)->m_parent) every time, each colour store forces the
-    // index to be re-loaded -- the store may alias the very word it came
-    // from -- and the arms stop being identical, which costs 20 words.
+    // The fix-up REUSES the walk's `p` (parent) and `c` (uncle): see
+    // VIMap::Insert in vimap.cpp for the global-alloc reasoning.
     while (x != m_root && NODE(NODE(x)->m_parent)->m_color != 0)
     {
-        int q = NODE(x)->m_parent;
-        // STEPPING STONE, not believed to be the original spelling: the
-        // uncle `y` is one variable for the loop body and is REUSED below for
-        // the first half's post-rotate parent.  That asymmetry is what moves
-        // global-alloc's priorities so q lands in a1 (q stays the post-rotate
-        // parent in the second half, which is now byte-exact).  Spelled
-        // symmetrically -- q, or a fresh local, in both halves -- the arm is
-        // 73 words wrong instead of 24, with q in a2 by its preference for
-        // the post-rotate `q * sizeof(Node)` pseudo.  What is left is
-        // register choice at the loop top and in the first half (nodes,
-        // q*20, NODE(q), the uncle's scale) plus the preheader's li/move
-        // pair, which sched1 orders by register weight.
-        int y;
-        if (q == NODE(NODE(q)->m_parent)->m_left)
+        p = NODE(x)->m_parent;
+        if (p == NODE(NODE(p)->m_parent)->m_left)
         {
-            y = NODE(NODE(q)->m_parent)->m_right;
-            if (NODE(y)->m_color != 0)
+            c = NODE(NODE(p)->m_parent)->m_right;
+            if (NODE(c)->m_color != 0)
             {
-                NODE(q)->m_color = 0;
-                NODE(y)->m_color = 0;
-                NODE(NODE(q)->m_parent)->m_color = 1;
-                x = NODE(q)->m_parent;
+                NODE(p)->m_color = 0;
+                NODE(c)->m_color = 0;
+                NODE(NODE(p)->m_parent)->m_color = 1;
+                x = NODE(p)->m_parent;
             }
             else
             {
-                if (x == NODE(q)->m_right)
+                if (x == NODE(p)->m_right)
                 {
-                    x = q;
+                    x = p;
                     LeftRotate(x);
                 }
-                y = NODE(x)->m_parent;
-                NODE(y)->m_color = 0;
-                NODE(NODE(y)->m_parent)->m_color = 1;
-                RightRotate(NODE(y)->m_parent);
+                p = NODE(x)->m_parent;
+                NODE(p)->m_color = 0;
+                NODE(NODE(p)->m_parent)->m_color = 1;
+                RightRotate(NODE(p)->m_parent);
             }
         }
         else
         {
-            y = NODE(NODE(q)->m_parent)->m_left;
-            if (NODE(y)->m_color != 0)
+            c = NODE(NODE(p)->m_parent)->m_left;
+            if (NODE(c)->m_color != 0)
             {
-                NODE(q)->m_color = 0;
-                NODE(y)->m_color = 0;
-                NODE(NODE(q)->m_parent)->m_color = 1;
-                x = NODE(q)->m_parent;
+                NODE(p)->m_color = 0;
+                NODE(c)->m_color = 0;
+                NODE(NODE(p)->m_parent)->m_color = 1;
+                x = NODE(p)->m_parent;
             }
             else
             {
-                if (x == NODE(q)->m_left)
+                if (x == NODE(p)->m_left)
                 {
-                    x = q;
+                    x = p;
                     RightRotate(x);
                 }
-                q = NODE(x)->m_parent;
-                NODE(q)->m_color = 0;
-                NODE(NODE(q)->m_parent)->m_color = 1;
-                LeftRotate(NODE(q)->m_parent);
+                p = NODE(x)->m_parent;
+                NODE(p)->m_color = 0;
+                NODE(NODE(p)->m_parent)->m_color = 1;
+                LeftRotate(NODE(p)->m_parent);
             }
         }
     }

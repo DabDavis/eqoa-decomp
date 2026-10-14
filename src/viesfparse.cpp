@@ -2568,15 +2568,23 @@ int VIESFParse::ParseGroupSpriteMembers(VIGroupSprite &g)
     if (m_file->ReadBegin(type, version) < 0) return -1;
     if (type != 0x2C30) return -1;
 
-    m_file->Read(g.m_numMembers);
+    // OPEN (29/114).  The target steps TWO registers for m_sprite: Find's
+    // out-param is a single-use DEST_REG giv, which loop.c's combine_givs
+    // never uses as a combiner, and ShareSprite's load is a DEST_ADDR giv,
+    // which never absorbs a DEST_REG one -- so they stay apart only if cse
+    // has not merged the two addresses.  Through `m` (set outside the loop,
+    // an opaque invariant to express_from) they do stay apart; still open:
+    // where `m` is computed, and the 72/76 and 88/92 register swaps (the
+    // preheader init order sets each giv's live length, hence its priority).
     VIGroupMember *m = g.m_members;
+    m_file->Read(g.m_numMembers);
 
     for (int i = 0; i < g.m_numMembers; i++)
     {
         m_file->Read(id);
 
         if (m_dict->Find(id, rt, m[i].m_sprite) == 0
-            || m_scene->ShareSprite(m[i].m_sprite) < 0)
+            || m_scene->ShareSprite(g.m_members[i].m_sprite) < 0)
             return -1;
 
         m_file->Read(g.m_members[i].m_loc.x);
@@ -3700,6 +3708,12 @@ int VIESFParse::ParseAdpcmObj()
                     short *l = (short *)&pcm[56];
                     short *r = (short *)&pcm[half + 56];
 
+                    // OPEN.  The target's bound is `half - (loop + 1) * 56`: fold
+                    // never distributes a MULT_EXPR, so split_tree finds no
+                    // constant to reassociate, `half` stays live and the loop
+                    // comes out as the target's `mult; addu R56; subu half`.
+                    // That spelling scores worse (154) only because local-alloc
+                    // then puts the 56 in s0 and `this` moves to s1.
                     for (int k = 0; k < half - (loop * 56 + 56); k += 2)
                     {
                         d[0] = *l++;

@@ -285,18 +285,25 @@ int VILoader::Allocate()
     return 0;
 }
 
+// ONE `r` for both remainders, and that is local-alloc's input: a pseudo that
+// DIES TWICE is never local (local_alloc wants REG_N_DEATHS == 1), so the
+// truncated position remainder goes to global-alloc after every local has its
+// register and lands in a2.  With separate `r`/`m` it is local, tied to v0
+// by the truncate of __umoddi3's result, and every register around it moves
+// (17 words); `unsigned long r` keeps a 64-bit subtract (5).
 int VILoader::Align(VILoaderTrans &t)
 {
     t.m_readSize = t.m_size;
     t.m_readOffset = t.m_offset;
 
     int a = m_files[t.m_file].m_file.AsynchAlignment();
-    unsigned long r = t.m_position % a;
+    unsigned int r = t.m_position % a;
     t.m_position -= r;
     t.m_offset += r;
     t.m_readSize += r;
-    unsigned int m = t.m_readSize % a;
-    if (m) m = a - m;
-    t.m_readSize += m;
+    r = t.m_readSize % a;
+    if (r)
+        r = a - r;
+    t.m_readSize += r;
     return 0;
 }
