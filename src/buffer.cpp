@@ -10,26 +10,28 @@
 // BACKWARDS.  Everything else in the file is one line over that pair.
 #include "drdp.h"
 
-// The overflow guard is one `||` in both directions: two `if`s would give two
-// stores of `error = 1`, and the target branches to a single one.
+// The overflow guard is one `||` in both directions, and the store of
+// `overflow = 1` is the ELSE arm: the target falls through into the copy and
+// both tests branch to the one store at the bottom.
 static void buffer_read_bytes(buffer_t *buffer, void *value, int size)
 {
-    if (buffer->position + size > buffer->size || buffer->overflow)
+    if (!(buffer->position + size > buffer->size || buffer->overflow))
     {
-        buffer->overflow = 1;
-        return;
-    }
-    if (buffer->swap)
-    {
-        uns8 *p = (uns8 *)value + size - 1;
-        for (int i = 0; i < size; i++)
-            *p-- = buffer->data[buffer->position + i];
+        if (buffer->swap)
+        {
+            // Indexed, not a walking pointer: loop.c's giv is what puts the
+            // `value + size - 1` setup after the `size > 0` guard.
+            for (int i = 0; i < size; i++)
+                ((uns8 *)value)[size - 1 - i] = buffer->data[buffer->position + i];
+        }
+        else
+        {
+            memcpy(value, buffer->data + buffer->position, size);
+        }
+        buffer->position += size;
     }
     else
-    {
-        memcpy(value, buffer->data + buffer->position, size);
-    }
-    buffer->position += size;
+        buffer->overflow = 1;
 }
 
 // The append side tests read_only and the read side does not -- and neither
@@ -38,22 +40,21 @@ static void buffer_append_bytes(buffer_t *buffer, const void *value, int size)
 {
     if (buffer->read_only)
         return;
-    if (buffer->position + size > buffer->size || buffer->overflow)
+    if (!(buffer->position + size > buffer->size || buffer->overflow))
     {
-        buffer->overflow = 1;
-        return;
-    }
-    if (buffer->swap)
-    {
-        const uns8 *p = (const uns8 *)value + size - 1;
-        for (int i = 0; i < size; i++)
-            buffer->data[buffer->position + i] = *p--;
+        if (buffer->swap)
+        {
+            for (int i = 0; i < size; i++)
+                buffer->data[buffer->position + i] = ((const uns8 *)value)[size - 1 - i];
+        }
+        else
+        {
+            memcpy(buffer->data + buffer->position, value, size);
+        }
+        buffer->position += size;
     }
     else
-    {
-        memcpy(buffer->data + buffer->position, value, size);
-    }
-    buffer->position += size;
+        buffer->overflow = 1;
 }
 
 int buffer_bytes_remaining(buffer_t *buffer)

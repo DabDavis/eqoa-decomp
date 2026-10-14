@@ -124,7 +124,7 @@ def main(argv):
     objs = [C.BUILD / f"{t}.o" for t in tus] if tus else \
            [C.BUILD / f"{s.stem}.o" for s in sorted(C.SRC.glob("*.cpp"))]
     covered = []                  # (addr, size) of unnamed target code we now match
-    n_unnamed = n_match = 0
+    n_unnamed = n_match = n_copies = 0
     for obj in objs:
         if not obj.exists():
             continue
@@ -138,6 +138,20 @@ def main(argv):
             except KeyError:
                 s_ = None
             if s_ is not None and s_.span > 0:
+                # A NAMED function whose layout lands in unnamed code, not at
+                # its map address, is this TU's own COPY of something the map
+                # names elsewhere (a per-TU RTTI function, a template member):
+                # score it there, and credit it if it is exact.
+                if last is not None:
+                    pred = last[1] + (off - last[0])
+                    if pred != s_.addr and any(lo <= pred < hi for lo, hi, _ in regions):
+                        k, w, t = score_at(img, obj, n, pred)
+                        if k == "match":
+                            n_copies += 1
+                            covered.append((pred, size))
+                            rows.append(("copy", n, [pred]))
+                            last = (off, pred)
+                            continue
                 last = (off, s_.addr)
                 continue                      # named: eqcheck scores it
             n_unnamed += 1
@@ -159,9 +173,13 @@ def main(argv):
                 rows.append(("none", n, guess))
         if rows:
             m = sum(1 for r in rows if r[0] == "match")
-            print(f"{obj.stem}: {m}/{len(rows)} unnamed functions found exact in the unnamed code")
+            nu = sum(1 for r in rows if r[0] != "copy")
+            print(f"{obj.stem}: {m}/{nu} unnamed functions found exact in the unnamed code")
             for k, n, hits in rows:
-                if k == "match":
+                if k == "copy":
+                    if verbose:
+                        print(f"    {'COPY  ' + hex(hits[0]):40s} {n}")
+                elif k == "match":
                     if verbose:
                         print(f"    {'MATCH ' + ', '.join(hex(h) for h in hits):40s} {n}")
                 elif hits:
@@ -178,20 +196,29 @@ def main(argv):
         if x.span > 8:
             bodies.setdefault(img.read(x.addr, x.span), x.name)
     total = sum(hi - lo for lo, hi, _ in regions)
-    left_dup = left_uniq = 0
+    left_dup = left_uniq = left_pad = 0
     uniq = []
+
+    def dup_at(pos, hi):
+        hit = None
+        for b, nm in bodies.items():
+            if len(b) <= hi - pos and img.read(pos, len(b)) == b:
+                if hit is None or len(b) > len(hit):
+                    hit = b
+        return hit
+
     for lo, hi, host in regions:
         pos = lo
         while pos < hi:
             if pos in cov:
                 pos += 4; continue
-            hit = None
-            for b, nm in bodies.items():
-                if len(b) <= hi - pos and img.read(pos, len(b)) == b:
-                    if hit is None or len(b) > len(hit):
-                        hit = b
+            hit = dup_at(pos, hi)
             if hit:
                 left_dup += len(hit); pos += len(hit)
+            elif (pos % 8 == 4 and img.read(pos, 4) == b"\0\0\0\0"
+                  and (pos + 4 >= hi or pos + 4 in cov or dup_at(pos + 4, hi))):
+                # the one-word nop that 8-aligns the next function
+                left_pad += 4; pos += 4
             else:
                 left_uniq += 4
                 if uniq and uniq[-1][1] == pos:
@@ -199,10 +226,11 @@ def main(argv):
                 else:
                     uniq.append((pos, pos + 4, host))
                 pos += 4
-    print(f"\nunnamed functions in our objects: {n_unnamed}, {n_match} found exact in the image")
+    print(f"\nunnamed functions in our objects: {n_unnamed}, {n_match} found exact in the image"
+          f"; plus {n_copies} per-TU copies of named functions exact at their layout")
     print(f"unnamed target code: {total} bytes -- {len(cov) * 4} matched by those, "
           f"{left_dup} byte-identical COPIES of named functions (not emitted by our TUs), "
-          f"{left_uniq} unique and unmatched")
+          f"{left_pad} alignment padding, {left_uniq} unique and unmatched")
     if verbose:
         for lo, hi, host in sorted(uniq, key=lambda u: u[0] - u[1])[:40]:
             print(f"    {hi - lo:6d}  {lo:#x}  after {host}")

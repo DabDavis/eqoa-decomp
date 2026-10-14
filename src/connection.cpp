@@ -182,13 +182,13 @@ static void connection_init(connection_t *pConnection)
     pConnection->m_usRxSeqnum = 0;
     pConnection->m_usTxAck = 0;
     pConnection->m_uiTxMask = 0;
+    pConnection->m_iRetryTime = 5000;
     pConnection->m_iWarnTime = 30000;
     pConnection->m_iFailTime = 60000;
-    pConnection->m_iRetryTime = 5000;
     memset(pConnection->m_uiCstat, 0, sizeof(pConnection->m_uiCstat));
     pConnection->m_pLogger = 0;
-    pConnection->m_iLastRouteFlushNumber = -1;
     pConnection->m_pChannels = 0;
+    pConnection->m_iLastRouteFlushNumber = -1;
 }
 
 // The tag has to match AND the endpoint has to still own it, so a connection

@@ -240,3 +240,20 @@ Left:
   `viwave`/`vixm` emit weak `__tf7VISound` copies that differ only in their addends.
 - TU-LOCAL symbols are keyed by TU. Twelve "duplicate" `__static_initialization_and_destruction_0`
   rows were twelve different functions.
+
+### Unnamed code: down to one function
+
+**64 of our 65 unnamed functions are now exact**, plus 6 per-TU copies of named RTTI
+functions exact at their layout (`eqlocal.py` credits a named function scored at its own
+TU's layout address inside unnamed code). The unique unmatched code is **620 bytes, all of
+it `_setLoadImageTags`** in the PSS player. Everything else in the 124,832 unnamed bytes is
+accounted for:
+- 18,020 bytes are matched by our functions;
+- 106,440 bytes are byte-identical copies of named template members that our TUs do not emit
+  (implicit per-TU instantiation in the original build);
+- 288 bytes are alignment nops.
+
+The last pass found:
+- the 396 "unknown" bytes after `uns64_range_t_cmp` are buffer.cpp's first two statics;
+- function order within a TU is a source fact (sce_playpss);
+- store order through one pointer is a source fact (`connection_init`).

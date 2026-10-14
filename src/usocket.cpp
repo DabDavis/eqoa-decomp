@@ -75,67 +75,67 @@ static int usocket_open_internal(int *piFd, int iType, ipaddress_t *pLocal,
     int iResult = -1;
     int iFd = -1;
 
+    // Only the IP types carry a port, each fixing its own zero up to -1
+    // ("any"); the case bodies are in the target's order, not the enum's.
     memset(&param, 0, sizeof(param));
     switch (iType)
     {
-    case USOCKET_TYPE_UDP:
-        param.m_iProtocol = 0;
-        param.m_iPort = pLocal->m_usPort;
-        break;
     case USOCKET_TYPE_ICMP:
         param.m_iProtocol = 3;
         break;
-    case USOCKET_TYPE_TCP_CONNECT:
-        param.m_iProtocol = 2;
+    case USOCKET_TYPE_UDP:
+        param.m_iProtocol = 0;
         param.m_iPort = pLocal->m_usPort;
+        if (param.m_iPort == 0)
+            param.m_iPort = -1;
         break;
     case USOCKET_TYPE_TCP_LISTEN:
         param.m_iProtocol = 1;
         param.m_iPort = pLocal->m_usPort;
+        if (param.m_iPort == 0)
+            param.m_iPort = -1;
+        break;
+    case USOCKET_TYPE_TCP_CONNECT:
+        param.m_iProtocol = 2;
+        param.m_iPort = pLocal->m_usPort;
+        if (param.m_iPort == 0)
+            param.m_iPort = -1;
         break;
     }
-    if (param.m_iPort == 0)
-        param.m_iPort = -1;
-
     iResult = sceInetCreate(cd, net_buf, &param);
-    if (iResult > 0)
+    if (iResult <= 0)
+        goto fail;
+    // The create's value is copied out and iResult REUSED for the open, so
+    // nothing propagates it back into iFd's uses.  All three failures share
+    // the one `iResult = -1` block, which sits between the control call and
+    // the copy-out.
+    iFd = iResult;
+    iResult = sceInetOpen(cd, net_buf, iFd, -1);
+    if (iResult != 0)
+        goto fail;
+    if (iType == USOCKET_TYPE_UDP || iType == USOCKET_TYPE_TCP_CONNECT ||
+        iType == USOCKET_TYPE_TCP_LISTEN)
     {
-        iFd = iResult;
-        if (sceInetOpen(cd, net_buf, iFd, -1) == 0)
+        char aucInfo[76];
+        if (sceInetControl(cd, net_buf, iFd, 1, aucInfo, 76) != 1)
         {
-            if (iType == USOCKET_TYPE_UDP || iType == USOCKET_TYPE_TCP_CONNECT ||
-                iType == USOCKET_TYPE_TCP_LISTEN)
-            {
-                char aucInfo[76];
-
-                if (sceInetControl(cd, net_buf, iFd, 1, aucInfo, 76) != 1)
-                    iResult = -1;
-                else
-                {
-                    memcpy(pLocal->m_ucIp, aucInfo + 20, 4);
-                    pLocal->m_usPort = *(uns16 *)(aucInfo + 32);
-                    *piFd = iFd;
-                    iResult = 0;
-                    iFd = -1;
-                }
-            }
-            else
-            {
-                *piFd = iFd;
-                iResult = 0;
-                iFd = -1;
-            }
-        }
-        else
+        fail:
             iResult = -1;
+            goto done;
+        }
+        memcpy(pLocal->m_ucIp, aucInfo + 20, 4);
+        pLocal->m_usPort = *(uns16 *)(aucInfo + 32);
     }
-    else
-        iResult = -1;
-
+    *piFd = iFd;
+    iResult = 0;
+    iFd = -1;
+done:
     if (iFd != -1)
         usocket_close_internal(iFd);
     return iResult;
 }
+
+
 
 static int usocket_set_options(int iFd)
 {
@@ -733,37 +733,37 @@ static int usocket_recvfrom_internal(usocket_t *usocket, ipaddress_t *pAddress,
     {
         int iFlags = 0;
         int iPort;
-
         iResult = VIUSocketRecv(usocket, pData, iSize > 1984 ? 1984 : iSize,
                                 &iFlags, &addr, &iPort);
-        if (iResult < 0)
-            goto error;
-        memset(pAddress, 0, sizeof(*pAddress));
-        *piRead = iResult;
+        if (iResult >= 0)
+        {
+            memset(pAddress, 0, sizeof(*pAddress));
+            *piRead = iResult;
+            iResult = 0;
+        }
+        else
+            iResult = uerror_remap_os_error_code(iResult);
     }
     else
     {
-        int iFlags = 0;
-        int iPort;
-
+        int iFlags = 0, iPort;
         memset(&addr, 0, sizeof(addr));
         iResult = VIUSocketRecv(usocket, pData, iSize > 1984 ? 1984 : iSize,
                                 &iFlags, &addr, &iPort);
         if (iResult < 0)
-            goto error;
-        sceaddr_to_ipaddress(&addr, pAddress);
-        if (usocket->type == USOCKET_TYPE_UDP)
-            pAddress->m_usPort = (uns16)iPort;
-        else if (usocket->type == USOCKET_TYPE_ICMP)
-            pAddress->m_usPort = 0;
-        *piRead = iResult;
+            iResult = uerror_remap_os_error_code(iResult);
+        else
+        {
+            sceaddr_to_ipaddress(&addr, pAddress);
+            switch (usocket->type)
+            {
+            case USOCKET_TYPE_UDP:  pAddress->m_usPort = (uns16)iPort; break;
+            case USOCKET_TYPE_ICMP: pAddress->m_usPort = 0;            break;
+            }
+            *piRead = iResult;
+            iResult = 0;
+        }
     }
-    iResult = 0;
-    if (iResult)
-        usocket->m_ucFlags &= ~1;
-    return iResult;
-error:
-    iResult = uerror_remap_os_error_code(iResult);
     if (iResult)
         usocket->m_ucFlags &= ~1;
     return iResult;
