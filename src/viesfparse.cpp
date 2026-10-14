@@ -246,52 +246,59 @@ int VIESFParse::ParseResourceFile(const char *path, int n, VIScene &sc,
 // about the type -- it hands one back -- so this is where an ESF tag becomes a
 // call.  The cases are in source order; the comparison tree the compiler builds
 // over them is not.
+//
+// Phase 61 wave 5: each case is `if (X() < 0) return -1; break;` into ONE
+// `return 0` after the switch.  That return is then the block that falls into
+// the epilogue, so jump2's cross-jump finds no `li v0,-1` before the return
+// label and leaves the 0xA000 arm's own `return -1` in place for ReadBegin's
+// branch to fold into; every case tail cross-jumps into case 0x8000's.  With
+// `>= 0 return 0; goto fail;` the bottom `fail:` block was the fall-through and
+// swallowed every -1 copy (7 words).
 int VIESFParse::ParseObject()
 {
     unsigned short type, version;
 
     if (m_progress) m_progress(m_progressArg);
 
-    if (m_file->ReadBegin(type, version) < 0) goto fail;
+    if (m_file->ReadBegin(type, version) < 0)
+        return -1;
 
     switch (type)
     {
-    case 0x2000: if (ParseSimpleSpriteObj() >= 0) return 0; goto fail;
-    case 0x2200: if (ParseHSpriteObj() >= 0) return 0; goto fail;
-    case 0x2700: if (ParseCSpriteObj() >= 0) return 0; goto fail;
-    case 0x2600: if (ParseHSpriteAnimObj() >= 0) return 0; goto fail;
-    case 0x2A00: if (ParseLODSpriteObj() >= 0) return 0; goto fail;
-    case 0x2B00: if (ParsePointLightObj() >= 0) return 0; goto fail;
-    case 0xB100: if (ParseSoundSpriteObj() >= 0) return 0; goto fail;
-    case 0xC100: if (ParseParticleSpriteObj() >= 0) return 0; goto fail;
-    case 0x2C00: if (ParseGroupSpriteObj() >= 0) return 0; goto fail;
-    case 0x2D00: if (ParsePointSpriteObj() >= 0) return 0; goto fail;
-    case 0x2E00: if (ParseStreamAudioSpriteObj() >= 0) return 0; goto fail;
-    case 0x2F00: if (ParseFloraSpriteObj() >= 0) return 0; goto fail;
-    case 0xC300: if (ParseEffectVolumeSpriteObj() >= 0) return 0; goto fail;
-    case 0x6000: if (ParseActorObj() >= 0) return 0; goto fail;
-    case 0x1001: if (ParseSurfaceArrayObj() >= 0) return 0; goto fail;
-    case 0x1000: if (ParseSurfaceObj() >= 0) return 0; goto fail;
-    case 0x7000: if (ParseFontObj() >= 0) return 0; goto fail;
-    case 0x1110: if (ParseMaterialPalObj() >= 0) return 0; goto fail;
-    case 0xB000: if (ParseAdpcmObj() >= 0) return 0; goto fail;
-    case 0xC000: if (ParseParticleDefinitionObj() >= 0) return 0; goto fail;
-    case 0xB030: if (ParseXmObj() >= 0) return 0; goto fail;
-    case 0xC200: if (ParseSpellEffectObj() >= 0) return 0; goto fail;
+    case 0x2000: if (ParseSimpleSpriteObj() < 0) return -1; break;
+    case 0x2200: if (ParseHSpriteObj() < 0) return -1; break;
+    case 0x2700: if (ParseCSpriteObj() < 0) return -1; break;
+    case 0x2600: if (ParseHSpriteAnimObj() < 0) return -1; break;
+    case 0x2A00: if (ParseLODSpriteObj() < 0) return -1; break;
+    case 0x2B00: if (ParsePointLightObj() < 0) return -1; break;
+    case 0xB100: if (ParseSoundSpriteObj() < 0) return -1; break;
+    case 0xC100: if (ParseParticleSpriteObj() < 0) return -1; break;
+    case 0x2C00: if (ParseGroupSpriteObj() < 0) return -1; break;
+    case 0x2D00: if (ParsePointSpriteObj() < 0) return -1; break;
+    case 0x2E00: if (ParseStreamAudioSpriteObj() < 0) return -1; break;
+    case 0x2F00: if (ParseFloraSpriteObj() < 0) return -1; break;
+    case 0xC300: if (ParseEffectVolumeSpriteObj() < 0) return -1; break;
+    case 0x6000: if (ParseActorObj() < 0) return -1; break;
+    case 0x1001: if (ParseSurfaceArrayObj() < 0) return -1; break;
+    case 0x1000: if (ParseSurfaceObj() < 0) return -1; break;
+    case 0x7000: if (ParseFontObj() < 0) return -1; break;
+    case 0x1110: if (ParseMaterialPalObj() < 0) return -1; break;
+    case 0xB000: if (ParseAdpcmObj() < 0) return -1; break;
+    case 0xC000: if (ParseParticleDefinitionObj() < 0) return -1; break;
+    case 0xB030: if (ParseXmObj() < 0) return -1; break;
+    case 0xC200: if (ParseSpellEffectObj() < 0) return -1; break;
     case 0xA000:
         {
             VIResourceDir dir;
             if (ParseResourceDirObj(0, dir) < 0) return -1;
             return 0;
         }
-    case 0x8000: if (ParseWorldObj(0) >= 0) return 0; goto fail;
+    case 0x8000: if (ParseWorldObj(0) < 0) return -1; break;
     default:
-        if (m_file->ReadEnd() < 0) goto fail;
-        return 0;
+        if (m_file->ReadEnd() < 0) return -1;
+        break;
     }
     return 0;
-fail:
-    return -1;
 }
 
 // The sprite dispatcher.  Same shape as ParseObject, but it hands the sprite

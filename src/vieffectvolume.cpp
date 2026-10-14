@@ -493,7 +493,11 @@ int VIEffectVolume::Render(VICamera &cam, VIMatrix44 &m)
         float x = b.m[0].w * b.m[0].x + b.m[1].w * b.m[1].x + b.m[2].w * b.m[2].x;
         float y = b.m[0].w * b.m[0].y + b.m[1].w * b.m[1].y + b.m[2].w * b.m[2].y;
         float z = b.m[0].w * b.m[0].z + b.m[1].w * b.m[1].z + b.m[2].w * b.m[2].z;
-        b.m[0].w = b.m[1].w = b.m[2].w = 0.0f;
+        // Through a float view, not the members: `b.m[i].w` stores are marked
+        // in-struct, and the alias check exempts a struct store at a varying
+        // (sp) address from a fixed scalar global, so sched2 hoists the
+        // mScene load above them.  These plain stores keep it behind (6 -> 0).
+        ((float *)&b)[3] = ((float *)&b)[7] = ((float *)&b)[11] = 0.0f;
         b.m[3].x = -x;
         b.m[3].y = -y;
         b.m[3].z = -z;
