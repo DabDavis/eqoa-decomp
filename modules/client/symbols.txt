@@ -1321,8 +1321,8 @@
 0x00BF09C8  [CODE]  func_00BF09C8
 0x00BF0A40  [CODE]  func_00BF0A40
 0x00BF0A90  [CODE]  func_00BF0A90
-0x00BF0AA8  [CODE]  func_00BF0AA8
-0x00BF0AB0  [CODE]  func_00BF0AB0
+0x00BF0AA8  [CODE]  End__Ct5VIMap2ZiZ13VIGuildMember  # name provisional: VIMap<int, VIGuildMember> copy (phase 62)
+0x00BF0AB0  [CODE]  Find__Ct5VIMap2ZiZ13VIGuildMemberRCi  # name provisional: VIMap<int, VIGuildMember> copy, 68-byte nodes (phase 62)
 0x00BF0B18  [CODE]  func_00BF0B18
 0x00BF0B58  [CODE]  func_00BF0B58
 0x00BF0BA8  [CODE]  func_00BF0BA8
@@ -1341,12 +1341,12 @@
 0x00BF0D38  [CODE]  Recv0468__13VIClientGuildR11VIMemStream  # name provisional (phase 62 dispatcher)
 0x00BF0EC8  [CODE]  func_00BF0EC8
 0x00BF0F20  [CODE]  func_00BF0F20
-0x00BF0F50  [CODE]  func_00BF0F50
+0x00BF0F50  [CODE]  UpdateMember__13VIClientGuildR11VIMemStream  # name provisional: inserts or updates one guild member (phase 62)
 0x00BF1040  [CODE]  func_00BF1040
 0x00BF1088  [CODE]  func_00BF1088
 0x00BF1118  [CODE]  func_00BF1118
 0x00BF1138  [CODE]  func_00BF1138
-0x00BF11D8  [CODE]  func_00BF11D8
+0x00BF11D8  [CODE]  __rs__FR11VIMemStreamR13VIGuildMember  # name provisional: the 48-byte guild member's reader (phase 62)
 0x00BF1250  [CODE]  func_00BF1250
 0x00BF12A8  [CODE]  func_00BF12A8
 0x00BF12B0  [CODE]  func_00BF12B0
@@ -1381,7 +1381,7 @@
 0x00BF2380  [CODE]  func_00BF2380
 0x00BF2478  [CODE]  func_00BF2478
 0x00BF2530  [CODE]  func_00BF2530
-0x00BF25E8  [CODE]  func_00BF25E8
+0x00BF25E8  [CODE]  Insert__t5VIMap2ZiZ13VIGuildMemberRCiRC13VIGuildMember  # name provisional: VIMap<int, VIGuildMember> copy (phase 62)
 0x00BF2908  [CODE]  func_00BF2908
 0x00BF2CC0  [CODE]  func_00BF2CC0
 0x00BF2D00  [CODE]  func_00BF2D00
@@ -5572,10 +5572,10 @@
 0x00CB7678  [CODE]  func_00CB7678
 0x00CB7688  [CODE]  func_00CB7688
 0x00CB7710  [CODE]  func_00CB7710
-0x00CB7788  [CODE]  __7VIBuddy  # name provisional (phase 62 dispatcher)
+0x00CB7788  [CODE]  __14VIPlayerRecord  # name provisional (phase 62 dispatcher): the 40-byte record VIBuddy derives from
 0x00CB77D0  [CODE]  func_00CB77D0
 0x00CB77F8  [CODE]  func_00CB77F8
-0x00CB7850  [CODE]  ReadBuddy__FR11VIMemStreamR7VIBuddy  # name provisional (phase 62 dispatcher)
+0x00CB7850  [CODE]  __rs__FR11VIMemStreamR14VIPlayerRecord  # name provisional (phase 62 dispatcher): returns the stream
 0x00CB78E8  [CODE]  func_00CB78E8
 0x00CB7980  [CODE]  func_00CB7980
 0x00CB7A18  [CODE]  func_00CB7A18

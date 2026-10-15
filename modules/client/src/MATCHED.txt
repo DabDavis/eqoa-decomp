@@ -10,4 +10,8 @@ ShowMsg__8VIClientUs
 ShowText__8VIClientPCUs
 Shutdown__8VIClient
 Skip__11VIMemStreami
+UpdateMember__13VIClientGuildR11VIMemStream
+__14VIPlayerRecord
+__rs__FR11VIMemStreamR13VIGuildMember
+__rs__FR11VIMemStreamR14VIPlayerRecord
 client_main__FPcT0

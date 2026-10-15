@@ -6549,10 +6549,10 @@ closes and the next one opens CLIENT.
 
 ## Phase 62: CLIENT (opened 2026-10-15)
 
-**13 of 5,973 CLIENT functions byte-exact (1,728 bytes), 139 named, and the network opcode
+**17 of 5,973 CLIENT functions byte-exact (2,308 bytes), 144 named, and the network opcode
 dispatcher written in full** (`VIClient::ProcessMessage`, 2,093 instructions; its compare
-tree matches the target's 102 tests exactly; 611 words open). Source is
-`modules/client/src/`; every tool takes `EQMODULE=CLIENT`.
+tree matches the target's 102 tests exactly; **17 words open**, all one register tie in
+`0x00B1`). Source is `modules/client/src/`; every tool takes `EQMODULE=CLIENT`.
 
 - **The game is ONE object.** `client_main` builds a `VIClient` on its stack; its
   constructor builds the whole engine as members. `game.h` declares what has been
@@ -6565,6 +6565,21 @@ tree matches the target's 102 tests exactly; 611 words open). Source is
     build;
   - hold the root with a far dummy case and search one half at a time;
   - try one value per gap between existing values.
+- **Two stores of a field's address that nothing reads are an inline reader taking an
+  8-byte object BY VALUE.** Under EABI two 4-byte words are BLKmode, so the inliner stores
+  the parameter into a block temporary and cse forwards the read. Hence
+  `VIMemStream::operator>>(VIMemStreamInt)` and `s >> id;` (611 → 390).
+- **A constructor call that gets a fresh `addiu a0,sp,N` while every later use of the
+  object shares one register is a SYNTHESIZED inline constructor.** An inlined `this` is
+  substituted as a constant; a direct call's argument is copied into a pseudo first and
+  cse shares it. `VIBuddy` derives from a 40-byte `VIPlayerRecord` whose own constructor is
+  out of line (55 → 28).
+- A third `unsigned int` (390 → 55), and a load that belongs before a call because it
+  fills that call's delay slot (28 → 17).
+- **A value held in TWO callee-saved registers, one for an `if` test and one for an arm, is
+  a `const` local initialised from a call.** g++ expands the call into a temporary and
+  copies it into the `const`; cse folds the test onto the temporary, and the branch-target
+  arm keeps the variable (`VIClientGuild::UpdateMember`, 16 → 0).
 - The long form, with every lever and the open items, is
   `claude-notes/decomp-phase62-client-20261015.md`; the dispatcher's case-by-case map is
   `claude-notes/decomp-phase62-dispatcher-survey-20261015.md`.

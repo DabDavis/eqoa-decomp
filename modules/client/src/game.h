@@ -45,6 +45,8 @@ void drdp_destroy(drdp_t *pDrdp);
 // all words (phase 62 survey, from Write/Read/the dispatcher's inline ctor).
 // The constructor and destructor are INLINE: the dispatcher builds one on its
 // stack and frees an owned buffer on the way out.
+struct VIMemStreamInt;
+
 class VIMemStream
 {
 public:
@@ -76,6 +78,12 @@ public:
     // when they are laid out, so they take block temporaries: 0x03D5's byte sits at
     // sp+224, after the record, not with the other cases' bytes at sp+2112.
     bool ReadBool() { unsigned char b; Read(&b, 1, 1); return b != 0; }
+    // The same read as a chainable operator (the guild member's reader chains it).
+    VIMemStream &operator>>(bool &v) { unsigned char b; Read(&b, 1, 1); v = b != 0; return *this; }
+
+    // An inline reader that takes its target BY VALUE as an 8-byte object (see
+    // VIMemStreamInt below).
+    inline VIMemStream &operator>>(VIMemStreamInt v);
 
     char       *m_wbuf;                               // +0x00: Write's buffer, freed if owned
     const char *m_rbuf;                               // +0x04: Read's source
@@ -86,6 +94,29 @@ public:
     int         m_dryRun;                             // +0x18: advance without copying
     int         m_owned;                              // +0x1C
 };
+
+// What an int field is read through in VIPlayerRecord's reader, the VIMemStreamArray.h element
+// loop and the dispatcher's 0x03D6: the target's address stored TWICE into a
+// block temporary just before ReadSigned, and never read back.  That is an
+// inlined function's parameter living in memory: under EABI an 8-byte struct of
+// two 4-byte words is BLKmode (its 4-byte alignment is below DImode's), so the
+// inliner store_expr's it into the simulated argument area, built in place by
+// the constructor, and cse forwards the read.  A 4-byte wrapper travels in a
+// register and leaves no store.  Both words are the field's address, which
+// suits a two-way description of a field (read into it, write from it); the
+// names are provisional, only the shape is measured.
+struct VIMemStreamInt
+{
+    int       *m_in;
+    const int *m_out;
+    VIMemStreamInt(int &v) : m_in(&v), m_out(&v) {}
+};
+
+inline VIMemStream &VIMemStream::operator>>(VIMemStreamInt v)
+{
+    ReadSigned(*v.m_in);
+    return *this;
+}
 
 // The game window behind VIClient+0x2BB78 (its methods sit between
 // VIWndGame.cpp:4007 and VIWndGuild.cpp:503).
@@ -155,19 +186,48 @@ public:
     VIItemArray m_array;                              // +0x2DC
 };
 
-// A buddy-list record: 172 bytes, the value of VIClient::m_buddies.
-class VIBuddy
+// A 40-byte player record, shared by two larger records: VIBuddy below and a
+// 48-byte one (+0x28 an int, +0x2C a bool) that func_00BF0F50 keeps in its own
+// map, read by func_00BF11D8.  Its constructor is OUT of line and covers these
+// 40 bytes only, so a record that embeds it gets a SYNTHESIZED inline
+// constructor: that is why 0x03D5 hands the call a fresh `sp+48` (an inlined
+// `this` is substituted as a constant) while every later use of the record
+// shares one pseudo.  The class name is provisional.
+class VIPlayerRecord
 {
 public:
-    VIBuddy();                                                  // 0x00CB7788, name provisional
-    int            m_id;                           // +0x00: the map key
-    char           m_p04[0x28 - 0x04];
-    int            m_online;                       // +0x28: 0x03D5 stores (byte != 0)
-    unsigned short m_name[64];                     // +0x2C: 128 bytes, read wide
+    VIPlayerRecord();                              // 0x00CB7788, name provisional
+    int  m_id;                                     // +0x00: -1; the buddy map's key
+    char m_name[24];                               // +0x04: zeroed
+    int  m_p1C;                                    // +0x1C: -1
+    int  m_p20;                                    // +0x20: -1
+    int  m_p24;                                    // +0x24: -1
 };
 
+// Its reader returns the stream, as every reader here does (VIMemStreamArray.h's
+// element loop reads `s >> a[i]` for any T), so the readers are operator>>.
+VIMemStream &operator>>(VIMemStream &s, VIPlayerRecord &r);    // 0x00CB7850, name provisional
+
+// A buddy-list record: 172 bytes, the value of VIClient::m_buddies.
+class VIBuddy : public VIPlayerRecord
+{
+public:
+    int            m_online;                       // +0x28: 0x03D5 stores (byte != 0)
+    unsigned short m_wname[64];                    // +0x2C: 128 bytes, read wide
+};
+
+// A guild member: 48 bytes, the value of VIClientGuild::m_members.  The same
+// record plus an int and a bool (4 bytes on this ABI).  Names provisional.
+class VIGuildMember : public VIPlayerRecord
+{
+public:
+    int  m_rank;                                   // +0x28
+    bool m_online;                                 // +0x2C: a byte != 0
+};
+
+VIMemStream &operator>>(VIMemStream &s, VIGuildMember &m);      // 0x00BF11D8, name provisional
+
 void ReadNetItem(VIMemStream &s, VINetItem &item);              // 0x00CBB040, name provisional
-void ReadBuddy(VIMemStream &s, VIBuddy &b);                     // 0x00CB7850, name provisional
 
 // An entity: CLIENT's VIEntity.cpp.  The vptr sits at +0x54, after the class's
 // own data, and its first virtual is the destructor (a `delete` calls vtable
@@ -187,6 +247,10 @@ class VIClientGuild
 {
 public:
     void Recv0468(VIMemStream &s);                              // 0x00BF0D38, name provisional
+    void UpdateMember(VIMemStream &s);                          // 0x00BF0F50, name provisional
+
+    char                      m_p000[0x288];
+    VIMap<int, VIGuildMember> m_members;                        // +0x288: 68-byte nodes
 };
 
 class VIClientPart2EF24
@@ -443,7 +507,7 @@ public:
     int           m_p2BD78;                             // +0x2BD78: group reset: 0
     char          m_g2BD7C[0x2BE4C - (0x2BD7C)];
     int           m_p2BE4C;                             // +0x2BE4C: group reset: 0
-    int           m_p2BE50;                             // +0x2BE50: 0x007E / 0x007F
+    unsigned int  m_p2BE50;                             // +0x2BE50: 0x007E / 0x007F (unsigned: its -1 is lui+ori)
     unsigned char m_p2BE54;                             // +0x2BE54: 0x007F
     char          m_g2BE55[0x2BE6C - (0x2BE55)];
     int           m_charCount;                          // +0x2BE6C: 0x002E / 0x0065 / 0x002F decrement it

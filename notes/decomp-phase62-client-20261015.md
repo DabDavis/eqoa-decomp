@@ -6,7 +6,9 @@ native build of the decomp) and every server/Go-client fix needs CLIENT's semant
 the phase starts here. **State at the end of day one: 13 of 5,973 functions byte-exact
 (1,728 bytes), 139 named, and the opcode dispatcher written in full** (2,093 instructions;
 its compare tree matches the target exactly; 611 words wrong, the rest of the residue
-diagnosed below).
+diagnosed below). **Later the same day: 17 of 5,973 exact, and the dispatcher at 17 wrong
+words**, all in one case (`0x00B1`, a register-allocation tie measured to the pseudo
+below); findings 4-8.
 
 The dispatcher's map, case by case, is `decomp-phase62-dispatcher-survey-20261015.md`.
 
@@ -126,18 +128,77 @@ shifted every case after it (821 → 708).
   known to be address-taken when they are laid out, so they get block temporaries; that is
   why the read is an inline `VIMemStream::ReadBool()` (639 → 611).
 
-**4. Open: `0x03D6` stores `&id` to `sp+48` and `sp+52` before reading it, and never reads
-them back.**
-- Emulating the two stores (a diagnostic, not kept) re-aligns the rest of the function:
-  real differences fall from ~650 to 188. So these two words are the main remaining source
-  fact.
-- Inline wrappers taking `id` by reference produce no such stores; neither a read wrapper
-  nor a map-remove wrapper does.
-- The other open items:
-  - `0x03D5`: the record's address reaches the constructor fresh where ours comes from
-    `s2`, and the source/temp registers of its 172-byte copy are swapped.
-  - `0x00B1`: a two-register tie.
-  - Several later cases, to be read once `0x03D6` aligns them.
+**4. `0x03D6`'s two dead `&id` stores are an inline reader taking an 8-byte object BY VALUE
+(611 → 390).** The target stores `&id` to `sp+48` and `sp+52` around `jal ReadSigned` and
+never reads them. The same pair sits before every int read in `ReadBuddy` (now
+`operator>>(VIMemStream &, VIPlayerRecord &)`), in the `VIMemStreamArray.h` element loop
+(`func_00CB8B40`) and in `func_00BF11D8`, so it is one shared helper. `integrate.c` says
+which parameter does it: one whose RTL is a MEM is `store_expr`'d into the inlined
+function's simulated argument area, a block temporary, and cse forwards the read. Under
+EABI an 8-byte struct of two 4-byte words is BLKmode (its 4-byte alignment is below
+DImode's, and MIPS is STRICT_ALIGNMENT), so it lives in memory; a 4-byte wrapper travels in
+a register and leaves no store; brace-initialising one adds a `memset` and a copy, while a
+CONSTRUCTOR builds it in place, which is the target's two `sw`. So: `struct VIMemStreamInt
+{ int *m_in; const int *m_out; VIMemStreamInt(int &v) }` and an inline
+`VIMemStream::operator>>(VIMemStreamInt)`, and the case reads `s >> id;`. Both words being
+the field's address suits a two-way field description (read into it, write from it); the
+names are provisional, the shape is measured.
+
+**5. `+0x2BE50` is an `unsigned int` too (390 → 55)** -- finding 2's lever again: 0x007F
+stores -1 there as `lui`+`ori`.
+
+**6. `VIBuddy` is not one class: a 40-byte record with an out-of-line constructor, and a
+SYNTHESIZED inline constructor around it (55 → 28).** The function called at 0x03D5's start
+(`0x00CB7788`, mapped as `__7VIBuddy`) initialises only bytes 0-0x27 -- `m_id` -1, a
+24-byte name zeroed, three words -1 -- exactly what `ReadBuddy` reads. It has a second
+caller, `func_00BF0F50`, building a 48-byte record (the same 40 + an int + a bool, read by
+`func_00BF11D8`, kept in a map with a 68-byte node). Why it matters to the code: an
+argument costing more than 2 is copied into a pseudo before a call (`calls.c`,
+`precompute_register_parameters`, on whenever `flag_expensive_optimizations`), and cse then
+shares that pseudo with every later `&r` -- our `addiu s2,sp,48` before the constructor.
+Inside an INLINED function, `this` is a register; integration substitutes its constant
+equivalent, so the call gets a fresh `addiu a0,sp,48` and the dead parameter copy is
+deleted. The target is the mix of the two -- fresh at the constructor, one shared pseudo
+after -- which is a synthesized inline `VIBuddy::VIBuddy()` calling an out-of-line base
+constructor. The same change put the 172-byte copy's source in `a1`, closing the copy's
+register swap too. The map now says `__14VIPlayerRecord` and
+`__rs__FR11VIMemStreamR14VIPlayerRecord` (it returns the stream, as every reader here does).
+
+**7. `0x0036` reads the old value BEFORE the byte (28 → 17).** The target's `lw s1,17180(s0)`
+sits in the delay slot of the byte read's `jal`, and reorg only fills a call's slot from
+before the call. `int old = m_pC31C;` moves above `s.Read(&a, 1, 1)`.
+
+**8. The record readers confirm 4 and 6 from outside the dispatcher: four more functions
+exact, three on the first build** (`modules/client/src/viplayerrecord.cpp`,
+`viclientguild.cpp`).
+- `VIPlayerRecord`'s reader is `s >> r.m_id; s.ReadString(r.m_name, 24); s >> r.m_p1C;`
+  `s >> r.m_p20; s >> r.m_p24; return s;`, with the by-value int helper: first build.
+- Its constructor needs all four `-1` stores BEFORE the `memset`. The first store emitted is
+  the last written (phase 16's "the last store of a constant is hoisted").
+- The guild's 48-byte record, `VIGuildMember : VIPlayerRecord` (+0x28 an int, +0x2C a
+  `bool`), reads as ONE chain: `s >> (VIPlayerRecord &)m >> m.m_rank >> m.m_online;` then
+  `return s;`. The second and third reads take the stream the first call RETURNED (`move
+  s0,v0`), which is what a chain does. That needed an inline `operator>>(bool &)`: first
+  build.
+- `VIClientGuild::UpdateMember` (insert-or-update into the map at guild+0x288) keeps the
+  `Find` result in TWO callee-saved registers: `s0` for the `== End()` test, a copy in `s2`
+  for the update arm. **`const int i = m_members.Find(m.m_id);`** (16 → 0). With `const`,
+  g++ expands the call into a temporary and copies it into `i`, where a plain `int` takes
+  the call's result directly. cse folds the test's use onto the temporary, but the `else`
+  arm is a branch target where that equivalence is not known, so it keeps `i`. Six other
+  spellings (helpers with and without the index, a reference, a pointer, `unsigned`, the
+  arms swapped) left it at 16 or worse.
+
+**Open: `0x00B1`, `&targets` and `&d` in `s5`/`s3` swapped (17 words).** Measured off the
+`-da` dumps: gcse's PRE creates both address pseudos (950 `sp+48`, 951 `sp+2176`, 952
+`sp+2180`) ahead of the loop, in expression-index order. Global allocation ranks by
+`floor_log2(refs) * refs / live_length`: 950 is 3 refs over 30 insns and 952 is 2 over 20,
+both exactly 0.1, so the lower pseudo number wins `s3`. The target gave `&d` the first pick,
+so either one live range differs by an insn that is gone by the final code, or the refs
+differ. The PRE order cannot be the lever: expression 63 (`sp+48`) is first set by the very
+first case's wide-string buffer, which dozens of cases share. Tried and unchanged at 17:
+declaration order, `for`/`while`/pointer loops, `targets + i`, `(int)n`, a nested block, a
+pointer copy for the call; a pointer used in the loop makes it worse.
 
 ## What the notes had wrong (from the survey)
 

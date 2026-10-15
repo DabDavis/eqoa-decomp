@@ -341,7 +341,7 @@ claim the image contradicts.
 | +0x2BB84 | window * | 0x002E, 0x0065, 0x002F (and func_00BD30E8) | char-select/login message window; `func_00C21668(id)`, `func_00C215F8(text)` |
 | +0x2BB88 | window * | 0x0012 | `func_00C23460(name)` |
 | +0x2BD70/74/78, +0x2BE4C | int | 0x069A/0x062F tail | group: leader(-1)/in-group (`func_00BD7A68` returns +0x2BD74)/… |
-| +0x2BE50 / +0x2BE54 | int / u8 | 0x007E, 0x007F | |
+| +0x2BE50 / +0x2BE54 | **unsigned int** / u8 | 0x007E, 0x007F | unsigned: 0x007F's -1 is `lui`+`ori` (phase 62 finding 5) |
 | +0x2BE6C | int | 0x002E, 0x0065, 0x002F | character count (0x002C's parser writes it) |
 | +0x2CEE4 | float | 0x00F8 | passed in `$f12` |
 | +0x2EC70 | `VIMap<int, T>`, sizeof(T)=172 | 0x03D5, 0x03D6 | buddy list (node = 16-B header + key + value = 192 B) |
@@ -414,7 +414,11 @@ line 422). 32 bytes, all `int`/pointers:
 * CLIENT, new: `VIMemStream`; the player record at +0xC2DC; the item list (VIItemList.h;
   `func_00BBC8D0` reads one from a stream); the 0x003B item (≥ 0x2E4 bytes, a VIArray
   member at +0x2DC); the 172-byte buddy record (`func_00CB7788` clears it,
-  `func_00CB7850(stream, rec)` reads it, `+0x28` online flag, `+0x2C` wide name[64]);
+  `func_00CB7850(stream, rec)` reads it, `+0x28` online flag, `+0x2C` wide name[64]) --
+  **corrected later the same day**: `func_00CB7788` initialises only the first 40 bytes, a
+  record shared with a 48-byte one, and the buddy record derives from it (now
+  `VIPlayerRecord::VIPlayerRecord` and `operator>>(VIMemStream &, VIPlayerRecord &)`; phase 62
+  finding 6);
   the three window classes behind `m_2BB78/84/88`; one class per vtable-slot sub-object.
 * `func_00C0B970` **is byte-identical to SUPPORT's `GetString__13VIStringTableii`**
   (88 B): CLIENT compiled its own VIStringTable.cpp (an assert hint

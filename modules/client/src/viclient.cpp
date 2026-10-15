@@ -10441,9 +10441,9 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     case 0x03D5:
     {
         VIBuddy r;
-        ReadBuddy(s, r);
+        s >> r;
         r.m_online = s.ReadBool();
-        s.ReadString(r.m_name, 128);
+        s.ReadString(r.m_wname, 128);
         int i = m_buddies.Find(r.m_id);
         if (i == m_buddies.End())
             m_buddies.Insert(r.m_id, r);
@@ -10455,7 +10455,7 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     case 0x03D6:
     {
         int id;
-        s.ReadSigned(id);
+        s >> id;
         m_buddies.Erase(m_buddies.Find(id));
         break;
     }
@@ -10592,8 +10592,8 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     case 0x0036:
     {
         unsigned char a;
-        s.Read(&a, 1, 1);
         int old = m_pC31C;
+        s.Read(&a, 1, 1);
         s.ReadSigned(m_pC31C);
         if (m_pC31C != old)
             QuestStage(a, m_pC31C - old);
