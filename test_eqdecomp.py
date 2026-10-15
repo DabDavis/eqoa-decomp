@@ -867,6 +867,264 @@ def test_permuter_reduce_reverts_brace_groups():
        f"the control removed a brace group without group reverts: {out1!r}")
 
 
+# --- other modules (MCERR first) ----------------------------------------------
+
+def _sweep_vs_map(funcs, mod, st, img, lib):
+    """(missed, split): named SUPPORT code symbols with no sweep start, and named
+    functions a sweep start falls strictly inside."""
+    import bisect
+    starts = sorted({mod.base + s for s, _ in funcs})
+    named = [s for s in st.sized if mod.base + 0x40 <= s.addr < lib and img.func(s, trim=True)]
+    have = set(starts)
+    missed = [s.name for s in named if s.addr not in have]
+    split = []
+    for s in named:
+        i = bisect.bisect_right(starts, s.addr)
+        if i < len(starts) and starts[i] < s.addr + len(img.func(s, trim=True)):
+            split.append(s.name)
+    return missed, split
+
+
+def test_module_sweep_finds_every_support_function():
+    """
+    The sweep that seeds MCERR's (and later CLIENT's) map, checked on the one
+    module whose map is REAL: every named SUPPORT code symbol must be a sweep
+    start, no start may fall inside a named function, and the library tail must
+    begin at crt0's `_start`.
+
+    Negative controls, one per rule: without the branch-reach rule a function
+    with two returns ends at the first (128 named functions split, measured);
+    without the call-target split AND the loop rule a function that never
+    returns swallows the next (2 missed: `_VIAssertf` and `_uassertf`, which
+    follow a loop, so either rule alone recovers both).
+    """
+    import eqmodule as M
+    mod, st, img = E.load("SUPPORT")
+    funcs = M.sweep(img.data)
+    lib = mod.base + M.library_start(img.data, funcs)
+    ck(lib == 0x004C1AD8, f"library tail at {lib:#x}, not crt0's _start at 0x004C1AD8")
+    missed, split = _sweep_vs_map(funcs, mod, st, img, lib)
+    ck(not missed, f"no sweep start for {len(missed)} named functions: {missed[:5]}")
+    ck(not split, f"the sweep splits {len(split)} named functions: {split[:5]}")
+    _, split = _sweep_vs_map(M.sweep(img.data, reach_rule=False), mod, st, img, lib)
+    ck(len(split) > 50, f"without the reach rule only {len(split)} functions split")
+    missed, _ = _sweep_vs_map(M.sweep(img.data, split_calls=False, loop_rule=False),
+                              mod, st, img, lib)
+    ck(missed, "without the call-target split and the loop rule no function was missed")
+
+
+def test_relocate_rebuilds_the_dump_from_the_modules_own_table():
+    """
+    `eqdecomp.relocate` applies SUPPORT's own relocation table at its base, and
+    every word of its code must equal the in-world dump.  That is what lets the
+    callee and data-reference checks run with no dump, and on modules that no
+    dump holds at all.
+
+    Negative control: the un-relocated image must differ from the dump at more
+    than 10,000 code words, or agreeing proved nothing.
+    """
+    if not C.DUMP.is_file():
+        raise Skipped(f"no resident dump at {C.DUMP}")
+    mod, _, img = E.load("SUPPORT")
+    d = C.load_dump(C.DUMP)
+    ram = E.relocate(mod, img.data)
+    _, hi = E.code_extent(img.data)
+    words = range(mod.base + 0x40, mod.base + hi, 4)
+    bad = [hex(va) for va in words if ram[va:va + 4] != d[va:va + 4]]
+    ck(not bad, f"{len(bad)} code words differ from the dump, first at {bad[:3]}")
+    raw = sum(1 for va in words if img.read(va, 4) != d[va:va + 4])
+    ck(raw > 10000, f"the un-relocated image differs from the dump at only {raw} words")
+
+
+def test_module_imports_name_every_import_call():
+    """
+    MCERR names none of its own functions, but its import table names every call
+    INTO SUPPORT and SLUS.  Relocated with stand-in addresses, each such call in
+    its own code must resolve to that import's name through `eqcalls.calls`.
+
+    Negative control: relocating with a stride other than the one `load` named
+    the stand-ins at must lose every one of those names.
+    """
+    try:
+        mod, st, img = E.load("MCERR")
+    except FileNotFoundError as e:
+        raise Skipped(str(e))
+    names = E.module_imports(img.data)
+    own = [s for s in st.sized if s.tag == "CODE"]
+    want = {mod.base + site: names[imp] for site, kind, imp, _ in E.module_relocations(img.data)
+            if kind == E.R_JAL and imp and img.data[site + 3] >> 2 == 3
+            and any(s.addr <= mod.base + site < s.end for s in own)}
+
+    def resolved(d):
+        return {va: nm for s in own for va, kind, nm in C.calls(st, img, d, s) if kind == "jal"}
+
+    got = resolved(E.relocate(mod, img.data))
+    ck(len(want) > 20, f"only {len(want)} import calls in MCERR's own code")
+    wrong = [(hex(va), nm, got.get(va)) for va, nm in want.items() if got.get(va) != nm]
+    ck(not wrong, f"{len(wrong)} import calls misnamed: {wrong[:3]}")
+    stride = E.IMPORT_STRIDE
+    try:
+        E.IMPORT_STRIDE = 8
+        bad = resolved(E.relocate(mod, img.data))
+    finally:
+        E.IMPORT_STRIDE = stride
+    ck(all(bad.get(va) != nm for va, nm in want.items()),
+       "a mismatched stride still named the imports: the names do not come from the relocations")
+
+
+def test_mcerr_base_agrees_with_its_region_dump():
+    """
+    MCERR's base, 0x002A8180, is where it sat in the one dump that holds it.
+    Relocated there, every LOCAL relocation site in its code must equal that
+    dump's word (imports are stand-ins here, so they are not compared).
+
+    Negative control: 0x10010 bytes off, which moves every field kind, no site
+    may still agree.
+    """
+    path = E.ROOT / "claude-eqoa-iso/decrypted_modules/MCERR_SNR1_0x002A8180.bin"
+    mod = E.MODULES["MCERR"]
+    if not path.is_file() or not mod.image.is_file():
+        raise Skipped(f"no MCERR image or region dump ({path.name})")
+    data, region = mod.image.read_bytes(), path.read_bytes()
+    local = [site for site, kind, imp, _ in E.module_relocations(data)
+             if not imp and kind in (E.R_JAL, E.R_HI16, E.R_LO16)]
+
+    def agree(base):
+        ram = E.relocate(E.Module(mod.name, mod.image, mod.symbols, base), data)
+        return sum(1 for s in local if ram[base + s:base + s + 4] == region[s:s + 4])
+
+    ck(len(local) > 200, f"only {len(local)} local code relocations")
+    n = agree(mod.base)
+    ck(n == len(local), f"{len(local) - n} of {len(local)} local sites disagree at {mod.base:#x}")
+    ck(agree(mod.base + 0x10010) == 0, "a wrong base still agrees: the comparison is vacuous")
+
+
+def test_eqmodule_selects_the_modules_paths():
+    """
+    EQMODULE=MCERR moves SRC/BUILD/MATCHED under modules/mcerr and puts SUPPORT's
+    headers on the compiler's path.  Unset, SUPPORT is untouched.  An unknown
+    module is refused, never quietly scored against SUPPORT.
+    """
+    import os
+    import subprocess
+    here = Path(__file__).resolve().parent
+    probe = "import eqcheck as C; print(C.SRC); print(' '.join(C.compile_cmd('x')))"
+
+    def run(module):
+        env = {k: v for k, v in os.environ.items() if k != "EQMODULE"}
+        if module:
+            env["EQMODULE"] = module
+        return subprocess.run([sys.executable, "-c", probe], cwd=here, env=env,
+                              capture_output=True, text=True)
+
+    r = run("MCERR")
+    ck(r.returncode == 0, f"EQMODULE=MCERR does not import: {r.stderr[-300:]}")
+    src, cmd = r.stdout.splitlines()[:2]
+    ck(src == str(here / "modules/mcerr/src"), f"MCERR's SRC is {src}")
+    ck(f"-I{here / 'src'}" in cmd.split(), "MCERR's TUs do not get SUPPORT's headers")
+    src, cmd = run(None).stdout.splitlines()[:2]
+    ck(src == str(here / "src") and " -I" not in cmd, "unset EQMODULE moved SUPPORT's paths")
+    ck(run("NOSUCH").returncode != 0, "an unknown EQMODULE was accepted")
+
+
+def test_placeholder_names_are_recognised_exactly():
+    """A seeded `func_<VA>` / `data_<VA>` is unnamed to the checkers; a real name never is."""
+    ck(E.is_placeholder("func_002A8280") and E.is_placeholder("data_002B1080"),
+       "a seeded placeholder is not recognised")
+    ck(not E.is_placeholder("func_2A8280"), "a short address passed as a placeholder")
+    ck(not E.is_placeholder("Draw__10VIWndMcErr"), "a real name taken for a placeholder")
+
+
+def test_module_sweep_ends_a_loop_that_never_returns():
+    """
+    SETUP +0x22C18 calls a function in a loop that never exits (`b` back, no
+    `jr ra`), and nothing calls the function after it, so only the loop rule can
+    start one at +0x22C40.
+
+    Negative control: without the loop rule +0x22C40 is not a start.  Positive
+    control on SUPPORT, with the call/export splits switched off so the rule has
+    work to do: every start it adds must be a real start -- a named function, or
+    one the full sweep starts (six, measured; one is a static after playPss's).
+    """
+    import eqmodule as M
+    mod = E.MODULES["SETUP"]
+    if not mod.image.is_file():
+        raise Skipped(f"no SETUP image at {mod.image}")
+    data = mod.image.read_bytes()
+    ck(0x22C40 in {s for s, _ in M.sweep(data)}, "the loop rule did not start SETUP +0x22C40")
+    ck(0x22C40 not in {s for s, _ in M.sweep(data, loop_rule=False)},
+       "+0x22C40 is a start without the loop rule: this test no longer tests it")
+    smod, st, img = E.load("SUPPORT")
+    real = {s.addr - smod.base for s in st.symbols} | {s for s, _ in M.sweep(img.data)}
+    off = {s for s, _ in M.sweep(img.data, split_calls=False, loop_rule=False)}
+    added = {s for s, _ in M.sweep(img.data, split_calls=False)} - off
+    ck(len(added) >= 5, f"the loop rule adds only {len(added)} starts to an unsplit SUPPORT")
+    wrong = sorted(hex(smod.base + s) for s in added - real)
+    ck(not wrong, f"the loop rule starts a function where SUPPORT has none: {wrong[:5]}")
+
+
+def test_assert_hints_read_the_file_off_the_relocation():
+    """
+    A seeded hint names the file an assert passes, read off the LO16 relocation:
+    CLIENT +0xF5BE0 asserts `Old(k-1) < Old(k)` from VIKeyDiff.h:118 through a
+    `lui` hoisted out of its loop (the old claude-eqoa-iso map said
+    VIMemStreamArray.h:118), and +0x57408 is a `_VIAssertf` whose line goes to
+    `__VIAssertf_line`, not a2 (VIStringTable.cpp:245; the old map said
+    VIMemStreamVector.h).
+
+    Negative control: +0x2B628 holds no assert -- the old map anchored one there
+    because its function ran on into the next -- and must get no assert hint.
+    """
+    import eqmodule as M
+    mod = E.MODULES["CLIENT"]
+    if not mod.image.is_file():
+        raise Skipped(f"no CLIENT image at {mod.image}")
+    data = mod.image.read_bytes()
+    h, count = M.hints(mod, data, M.sweep(data))
+    ck(count["assert"] > 70, f"only {count['assert']} CLIENT functions assert")
+    ck("VIKeyDiff.h:118" in h.get(0xF5BE0, []), f"+0xF5BE0 hints {h.get(0xF5BE0)}")
+    ck("VIStringTable.cpp:245" in h.get(0x57408, []), f"+0x57408 hints {h.get(0x57408)}")
+    ck(not any(":" in x for x in h.get(0x2B628, [])), f"+0x2B628 hints {h.get(0x2B628)}")
+
+
+def test_old_map_labels_skip_jump_table_cases():
+    """
+    The old STATION map's vtable pass read the jump tables at +0x9D520 as a
+    VIWindowManager vtable, so its `vfunc3` is a case label at +0x3D64, inside
+    the function at +0x3190.  Such a label must be dropped, not moved onto the
+    function; a label that IS a start is kept.
+
+    Negative control: the label kept is one the old map placed on a real start.
+    """
+    import eqmodule as M
+    mod = E.MODULES["STATION"]
+    if not mod.image.is_file() or not (E.ROOT / M.OLD_MAP.format("STATION")).is_file():
+        raise Skipped("no STATION image or old map")
+    data = mod.image.read_bytes()
+    h, count = M.hints(mod, data, M.sweep(data))
+    ck(count["old_dropped"] > 300, f"only {count['old_dropped']} old labels dropped")
+    ck(not any("VIWindowManager::vfunc3" == x[4:] for x in h.get(0x3190, [])),
+       "a jump-table case label was moved onto the function holding the switch")
+    ck("old:VIWnd::method_002B7978" in h.get(0x2B7978 - mod.base, []),
+       "a label on a real start was not kept")
+
+
+def test_symbol_map_row_takes_a_trailing_hint():
+    """
+    The parser SKIPS a row it cannot match, so a hint the regex refused would
+    drop the row without a word.  A `# hint` after the name must parse to the
+    same address and name as the row without it.
+
+    Negative control: a row with a second bare word is still refused.
+    """
+    rx = E.SymbolTable._LINE
+    plain = rx.match("0x00BBD430  [CODE]  func_00BBD430")
+    hinted = rx.match("0x00BBD430  [CODE]  func_00BBD430  # VIItemList.h:326; old:X::y")
+    ck(plain and hinted, "a hinted row does not parse")
+    ck(plain.groups() == hinted.groups(), f"the hint changed the row: {hinted.groups()}")
+    ck(not rx.match("0x00BBD430  [CODE]  func_00BBD430  stray"), "a two-word row was accepted")
+
+
 def main():
     tests = [(n, f) for n, f in sorted(globals().items())
              if n.startswith("test_") and callable(f)]

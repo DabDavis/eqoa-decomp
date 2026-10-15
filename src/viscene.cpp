@@ -2824,12 +2824,17 @@ int VIScene::Render(VICamera &cam)
     m_raster->SetModelView(cam.m_view);
     m_clipStack.Reset();
     m_display.Init(1000);
+    // Statement order from the phase-61 eqperm batch (2026-10-15), the NATURAL
+    // subset of a reduced find: v.m_world first, `d` read before the zeroing
+    // run, the test spelled `d > 500.0f` -- 45 -> 42 wrong, not proven original.
+    // The find's other hunks (a duplicated store, no-op statements) were fakery.
+    v.m_world = 0;
 
     v.m_scene = this;
-    v.m_world = 0;
     v.m_camera = &cam;
     v.m_raster = m_raster;
     v.m_clip = &m_clipStack;
+    float d = cam.m_far;
     v.m_numVerts = 0;
     v.m_verts = 0;
     v.m_numPlanes = 0;
@@ -2837,8 +2842,7 @@ int VIScene::Render(VICamera &cam)
     v.m_p28 = 0;
     v.m_p2C = !(m_p00 & 1);
     v.m_zone = -1;
-    float d = cam.m_far;
-    if (500.0f < d)
+    if (d > 500.0f)
         d = 500.0f;
     v.m_viewDist = d;
 

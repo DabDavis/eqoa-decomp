@@ -675,6 +675,15 @@ def ee_predefines(drv: list[str]) -> list[str]:
     raise SystemExit(f"cannot read the EE cpp's predefines off `-v`:\n{r.stderr}")
 
 
+def _includes() -> list[str]:
+    """The TU's own directory, and SUPPORT's headers for another module's TUs
+    (the same path `eqcheck.compile_cmd` gives the compiler)."""
+    inc = ["-I", str(C.SRC)]
+    if E.MODULE != "SUPPORT":
+        inc += ["-I", str(C.HERE / "src")]
+    return inc
+
+
 def dump_macros(drv: list[str], src: Path) -> str:
     """Every macro defined at the end of `src`, as `#define` lines.  SN's cpp
     writes NOTHING for `-dM`, to a file or to stdout (measured), so the host's
@@ -685,7 +694,7 @@ def dump_macros(drv: list[str], src: Path) -> str:
     own = set(re.findall(r"^#define\s+(\w+)", subprocess.run(
         cpp + ["/dev/null"], capture_output=True, text=True).stdout, re.M))
     ee = {re.match(r"-[DU](\w+)", p).group(1) for p in pre}
-    r = subprocess.run(cpp + pre + ["-I", str(C.SRC), str(src)],
+    r = subprocess.run(cpp + pre + _includes() + [str(src)],
                        capture_output=True, text=True)
     if r.returncode:
         raise SystemExit(f"dumping the macros failed:\n{r.stderr}")
@@ -741,7 +750,7 @@ def cmd_setup(a) -> int:
 
     # the prefix, preprocessed once, and the macros it leaves defined
     (rd / f"{stem}.cpp").write_text(pre_text)
-    inc = ["-I", str(C.SRC)]
+    inc = _includes()
     r = subprocess.run(drv + ["-E"] + C.FLAGS + inc + [f"{stem}.cpp", "-o", "prefix.ii"],
                        capture_output=True, text=True, cwd=rd)
     if r.returncode or not (rd / "prefix.ii").exists():

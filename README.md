@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; phase 61 in progress)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -33,6 +33,7 @@ decomp goes ahead.
 | `_lane.py` | isolated copies of `src/` + `build/`, so several functions are ground at once |
 | `eqperm.py` | **the permuter**: random source rewrites of one open function, built and scored ~25/s on 7 cores, unattended; `reduce` strips a find back to the hunks it needs (singly, then in pairs and adjacent runs, since an added `{`/`}` pair is two or three hunks that build only together); `--alloc W` adds the ALLOCATION-ORDER term: priority gaps, read from the candidate's own `-dl`/`-dg` dumps, of the call-crossing pseudos the target allocated in the other order -- a gradient through ties the byte score cannot see; `--length W` penalises a different instruction count, because the alignment grade can prefer a SHORTER function that aligns well; `--anchor N` workers never drift from the start text; `batch LIST` runs a list of searches back to back, then reduces every run's best find several at once and writes one summary table, for an unattended night (needs `pip install tree-sitter tree-sitter-cpp`; `claude-notes/decomp-eqperm-textbox-20261015.md`) |
 | `eqperm_mut.py` | its mutations, on tree-sitter's C++ syntax tree: statement order, temporaries and named references, declaration position and scope, if/else polarity, operand order, `+=` forms, `&a[i]` vs `a + i` |
+| `eqmodule.py` | the modules that do not name their own functions (MCERR first): `seed` sweeps the image into a symbol map for the repository, `status` counts named and byte-exact, `imports` lists the import table, `sweepcheck` holds the sweep against SUPPORT's real map. See "Other modules" below |
 
 ## Running it outside this project tree
 
@@ -45,9 +46,10 @@ compiler** — the inputs it is scored against are supplied by whoever runs it:
 | Input | Put it at | Comes from |
 |---|---|---|
 | `SUPPORT_decompressed_SNR1.bin`, `SUPPORT_symbol_map.txt` | `$EQOA_ROOT/claude-eqoa-iso/decrypted_modules/` | the SUPPORT module, decrypted and decompressed off your own *EverQuest Online Adventures: Frontiers* disc (SLUS-20744) |
+| `MCERR_decompressed_SNR1.bin` | the same directory | the MCERR module, the same way; only `EQMODULE=MCERR` reads it |
 | the compiler and the assembler | `toolchains/ee-gcc2.95.3-107/` and `toolchains/ee-gcc2.95.3-114/` | the [decompme/compilers](https://github.com/decompme/compilers/releases) releases (the second is only for its SN `ps2eeas.exe`) |
-| an EE memory dump taken in-world | `$EQOA_ROOT/memory-dumps/inworld-eqoa.live.eememory` | PCSX2; only `eqcalls.py` and two tests read it, and they skip loudly without it |
-| `objdump` for the R5900 | `$PS2DEV/ee/bin/` (default `~/ps2dev/ps2dev`) | the ps2dev toolchain |
+| an EE memory dump taken in-world (OPTIONAL) | `$EQOA_ROOT/memory-dumps/inworld-eqoa.live.eememory` | PCSX2. Without it, `eqcalls.relocated()` rebuilds the relocated copy from the image's own relocation table, which agrees with the dump in every word of SUPPORT's code; three tests that compare the two skip |
+| `as`, `objcopy`, `objdump`, `readelf` for the R5900 | `$PS2DEV/ee/bin/` (default `~/ps2dev/ps2dev`) | the ps2dev toolchain |
 | `wine` | on `PATH` | runs the SN assembler |
 
 `EQOA_ROOT` defaults to this directory's parent. `./test_eqdecomp.py` is the first
@@ -73,6 +75,94 @@ that used to sit inline in the root `CLAUDE.md`. Use it to find *which* phase se
 thing; the section for that phase below, and the phase's own note in `claude-notes/`, are
 where the working is. Phases 20, 29 and 37 have no section here — see the log and their
 note files.
+
+## Other modules: `EQMODULE` (2026-10-15)
+
+SUPPORT is one of five EE modules, and the only one that names its own functions:
+
+| Module | Own code | Functions (sweep) | Names it exports | What it is |
+|---|---|---|---|---|
+| SUPPORT | 887 KB | 4,376 | 4,102 | the engine (the count includes the unnamed statics and per-TU template copies) |
+| CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat |
+| STATION | 587 KB | 2,339 | 1 (`station_main`) | login, server select, character creation |
+| SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA |
+| MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key |
+
+All five share SUPPORT's build: no `$gp`, `sq ra` saves. Each ends in the same runtime
+tail: crt0, libgcc, soft float and the C++ runtime, saving `ra` with `sd`. That tail is
+GPL runtime and is not decompiled. UTIL is IOP code (R3000), with another compiler.
+
+- **`EQMODULE=MCERR` in front of any tool selects the module.** SUPPORT is the default.
+  - `SRC`/`BUILD`/`MATCHED` move to `modules/mcerr/src`, `modules/mcerr/build` and
+    `modules/mcerr/src/MATCHED.txt`, so two modules never share a scorer's directory.
+  - The compile command adds SUPPORT's `src/` to the include path: a module's classes
+    derive from SUPPORT's.
+  - `eqperm.py` preprocesses with the same path.
+- **The map is ours.** `eqmodule.py seed MCERR` writes `modules/mcerr/symbols.txt` from the
+  image, and from then on it is kept BY HAND: each `func_<VA>` / `data_<VA>` placeholder
+  is renamed to the mangled name its source defines. eqcheck finds targets by name, and
+  the checkers count a placeholder as unnamed, never as a mismatch.
+- **All four are seeded** (2026-10-15): `modules/{mcerr,client,station,setup}/symbols.txt`,
+  at the bases the older claude-eqoa-iso maps were made at (CLIENT `0x00BB4980`, STATION
+  `0x002B6A80`, SETUP `0x00566B00`).
+  - A placeholder can end in `# hint`, which the parser ignores. A hint is never a name.
+    - `File.cpp:N`: the function asserts from there, read off this image (a fact).
+    - `File.cpp~`: it sits between two functions that do (inferred).
+    - `old:<label>`: the old map's RTTI guess, STATION and SETUP only.
+  - Hint counts: CLIENT 81 asserts and 364 spans; STATION 16, 12 and 601 old labels;
+    SETUP 488 old labels.
+  - **The old maps' labels were not copied blind.**
+    - CLIENT's are assert anchors made on its own `jal`-target boundaries. 27 of its 74
+      name the wrong file or the wrong function: `VIMemStreamArray.h:118` for
+      `VIKeyDiff.h:118`, read through a `lui` hoisted out of a loop. So the asserts are
+      re-read off the relocations instead.
+    - STATION's and SETUP's vtable pass read jump tables as vtables. Their 315 and 228
+      "methods" are case labels, so they are dropped.
+- **The sweep that seeds it is checked on the one real map.**
+  - A function ends at `jr ra`, or at a tail `j` to another function, plus the delay
+    slot, unless a branch inside it reaches further.
+  - A `jal` target or an export inside a swept function splits it.
+  - A prologue straight after a `syscall` starts a new function.
+  - A loop that never exits ends one: an unconditional branch back that no branch
+    reaches past, then padding and a prologue. SETUP `+0x22C40` has no caller, and
+    only this rule splits it.
+  - On SUPPORT it finds all 3,685 named code symbols and splits none, and it puts the
+    tail at crt0's `_start`, `0x004C1AD8`.
+  - Each rule is its own negative control: without the branch-reach rule 128 named
+    functions split; without both the call-target split and the loop rule 2 are
+    missed. Either rule alone recovers both, since `_VIAssertf` and `_uassertf` follow
+    a loop.
+  - With the call splits off, every start the loop rule adds is a real one: 6, one of
+    them a static after `playPss`'s.
+- **No module needs a memory dump.** `eqcalls.relocated()` applies the module's own
+  relocation table at its base.
+  - An SNR1 relocation is `(site, (import << 8) | type, target)`, with the ELF type
+    numbers: 2 = 32-bit word, 4 = `j`/`jal`, 5 = HI16, 6 = LO16.
+  - Import 0 is the module itself. Any other value is that symbol-table entry, bound
+    by name.
+  - **This corrects `claude-eqoa-iso/CLAUDE.md`, which reads 2 as `jal` and the high
+    bits as an addend** (`audit.md` found the same).
+  - SUPPORT rebuilt this way equals the in-world dump in every word of its code, and
+    eqcallcheck and eqrefcheck print identical reports from either. SUPPORT still
+    prefers the dump when it is present.
+  - Another module's imports land on stand-in addresses, named from its own import
+    table. Every call into SUPPORT and SLUS reads by name with no dump.
+  - MCERR's base, `0x002A8180`, agrees with its region dump at every local site.
+
+`modules/mcerr/README.md` has what MCERR's image already says. Tests:
+`test_module_sweep_finds_every_support_function`,
+`test_relocate_rebuilds_the_dump_from_the_modules_own_table`,
+`test_module_imports_name_every_import_call`, `test_mcerr_base_agrees_with_its_region_dump`,
+`test_eqmodule_selects_the_modules_paths`, `test_placeholder_names_are_recognised_exactly`,
+`test_module_sweep_ends_a_loop_that_never_returns`,
+`test_assert_hints_read_the_file_off_the_relocation`,
+`test_old_map_labels_skip_jump_table_cases`, `test_symbol_map_row_takes_a_trailing_hint`.
+
+**Merged into `decomp/` on 2026-10-15** from lane `decomp-mm`: the twelve tools it changed
+plus `modules/` (`_publish.py` kept main's newer copy, which already exports `modules/`).
+Verified neutral for SUPPORT: test_eqdecomp 46/46, a whole-tree eqcheck identical line for
+line to the run before it (3,665/3,751, no regression), and `eqcallcheck -a` / `eqrefcheck -a`
+byte-identical to the kit's reference outputs.
 
 ## Facts about the oracle, established and asserted
 
@@ -6357,7 +6447,7 @@ which is now the only thing between four functions and byte-exact
 Long form, with the not-written list:
 `claude-notes/decomp-phase60-the-asset-parsers-20260829.md`.
 
-## Phase 61 result: finishing SUPPORT (in progress)
+## Phase 61 result: finishing SUPPORT (closed 2026-10-15)
 
 **2,891/3,284 → 3,665/3,751 byte-exact, plus all 65 unnamed functions.** Every named
 SUPPORT function is written. The denominator grew as the census learnt to see more
@@ -6441,3 +6531,41 @@ Harness changes:
 - `_tu.py` reports a matched function that stops being emitted;
 - the duplicate test masks relocations;
 - TU-local symbols are keyed per TU.
+
+**How it closed (2026-10-15).** 21 named functions stay open, each with a diagnosis in its
+source; every one is a register-allocation or scheduler tie whose deciding source shape was
+not found. The permuter `eqperm.py` was built for exactly this residue, and an unattended
+overnight batch searched the 20 opens other than `TextBox`. It closed none. Of its 16 reduced
+finds, by eqcheck's count 5 were better, 4 equal and 7 WORSE (`VICSprite::Copy` 182 → 275):
+the permuter's own score, an alignment grade plus allocation and length terms, does not rank
+the way eqcheck counts. All five better finds failed the fakematch rule (`decltype`
+temporaries, single-use references, dead locals, no-op statements, a duplicated store), and
+`BufferedRead`'s also swapped `BufferFlush()` and `BufferClear()`, a behaviour change the masked
+`jal` targets hide and the callee check exists to catch. Scored on their own, the NATURAL
+subsets gave one gain: `VIScene::Render` 45 → 42 from three plain reorderings, applied and
+labelled in the source as a batch order, not proven original. The others got worse
+(`SetupTimeOfDayLights` 5 → 9, `ConstructDMAPacket` 90 → 93). With no new lever left, the phase
+closes and the next one opens CLIENT.
+
+## Phase 62: CLIENT (opened 2026-10-15)
+
+**13 of 5,973 CLIENT functions byte-exact (1,728 bytes), 139 named, and the network opcode
+dispatcher written in full** (`VIClient::ProcessMessage`, 2,093 instructions; its compare
+tree matches the target's 102 tests exactly; 611 words open). Source is
+`modules/client/src/`; every tool takes `EQMODULE=CLIENT`.
+
+- **The game is ONE object.** `client_main` builds a `VIClient` on its stack; its
+  constructor builds the whole engine as members. `game.h` declares what has been
+  measured, and `viclient.cpp`'s `CHK`s fail the build if an offset moves.
+- **`viclient.cpp` is line-padded.** The dispatcher's `VIASSERT(!HaveCorpse)` is an
+  immediate `10306` and must stay on that line.
+- **A sparse switch's compare tree records cases that left no code.** Two empty cases and
+  three separately written labels were needed before the tree matched. The method:
+  - a throwaway TU holding only the switch is the oracle, about a quarter-second per
+    build;
+  - hold the root with a far dummy case and search one half at a time;
+  - try one value per gap between existing values.
+- The long form, with every lever and the open items, is
+  `claude-notes/decomp-phase62-client-20261015.md`; the dispatcher's case-by-case map is
+  `claude-notes/decomp-phase62-dispatcher-survey-20261015.md`.
+

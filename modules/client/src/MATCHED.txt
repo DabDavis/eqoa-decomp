@@ -1,0 +1,13 @@
+Disconnect__8VIClientii
+FindEntity__8VIClienti
+IsRunning__8VIClient
+ReadSigned__11VIMemStreamRi
+ReadString__11VIMemStreamPUsUi
+ReadString__11VIMemStreamPcUi
+ReadUnsigned__11VIMemStreamRUi
+Read__11VIMemStreamPvii
+ShowMsg__8VIClientUs
+ShowText__8VIClientPCUs
+Shutdown__8VIClient
+Skip__11VIMemStreami
+client_main__FPcT0

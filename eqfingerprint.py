@@ -147,7 +147,7 @@ def verdicts(fp: dict) -> list[str]:
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("-m", "--module", default="SUPPORT", choices=sorted(E.MODULES))
+    p.add_argument("-m", "--module", default=E.MODULE, choices=sorted(E.MODULES))
     p.add_argument("--region", default="SUPPORT_DATA",
                    help="symbol tag to scan (default the engine region)")
     p.add_argument("--pattern", help="restrict to symbols matching this regex")

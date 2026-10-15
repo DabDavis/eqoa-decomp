@@ -20,6 +20,7 @@ canary in test_eqdecomp.py rather than assumed here:
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
@@ -105,6 +106,8 @@ class Module:
 def _p(rel: str) -> Path:
     return ROOT / rel
 
+HERE = Path(__file__).resolve().parent
+
 MODULES = {
     "SUPPORT": Module(
         name="SUPPORT",
@@ -112,7 +115,48 @@ MODULES = {
         symbols=_p("claude-eqoa-iso/decrypted_modules/SUPPORT_symbol_map.txt"),
         base=0x003E3D00,
     ),
+    # The other EE modules export only their entry points, so their symbol maps
+    # are OURS: seeded from the image by `eqmodule.py seed`, kept in the
+    # repository, and each placeholder renamed as its function is written.  The
+    # base is where the module sat in the dump its addresses were checked
+    # against (MCERR_SNR1_0x002A8180.bin: all 282 local jal targets agree).
+    "MCERR": Module(
+        name="MCERR",
+        image=_p("claude-eqoa-iso/decrypted_modules/MCERR_decompressed_SNR1.bin"),
+        symbols=HERE / "modules/mcerr/symbols.txt",
+        base=0x002A8180,
+    ),
+    # The bases the old claude-eqoa-iso maps were made at, so their labels land:
+    # CLIENT's map is RELATIVE and this is where the in-world dump holds it (all
+    # 3,008 of its starts are sweep starts here); STATION's and SETUP's maps put
+    # their data at 0x00349858 and 0x005DDBF0, which is each base below plus the
+    # data offset in the image's own header (+0x18).
+    "CLIENT": Module(
+        name="CLIENT",
+        image=_p("claude-eqoa-iso/decrypted_modules/CLIENT_decompressed_SNR1.bin"),
+        symbols=HERE / "modules/client/symbols.txt",
+        base=0x00BB4980,
+    ),
+    "STATION": Module(
+        name="STATION",
+        image=_p("claude-eqoa-iso/decrypted_modules/STATION_decompressed_SNR1.bin"),
+        symbols=HERE / "modules/station/symbols.txt",
+        base=0x002B6A80,
+    ),
+    "SETUP": Module(
+        name="SETUP",
+        image=_p("claude-eqoa-iso/decrypted_modules/SETUP_decompressed_SNR1.bin"),
+        symbols=HERE / "modules/setup/symbols.txt",
+        base=0x00566B00,
+    ),
 }
+
+# Which module the tools work on: `EQMODULE=MCERR ./_tu.py ...`.  SUPPORT when
+# unset.  `load()`, eqcheck's SRC/BUILD/MATCHED and every CLI default read it,
+# so a second module is an environment variable, not a flag on every tool.
+MODULE = os.environ.get("EQMODULE", "SUPPORT").upper()
+if MODULE not in MODULES:
+    raise SystemExit(f"EQMODULE={MODULE}: not one of {', '.join(sorted(MODULES))}")
 
 
 # ---------------------------------------------------------------------------
@@ -431,7 +475,10 @@ class SymbolTable:
     candidate is padded too.
     """
 
-    _LINE = re.compile(r"^(0x[0-9A-Fa-f]+)\s+(?:\[([^\]]*)\]\s+)?(\S+)\s*$")
+    # a seeded map row may end in `# hint` (what an assert or the old RE map says
+    # about a placeholder); a row this does not match is SKIPPED, so the hint
+    # must stay optional here or every hinted row would silently vanish
+    _LINE = re.compile(r"^(0x[0-9A-Fa-f]+)\s+(?:\[([^\]]*)\]\s+)?(\S+)\s*(?:#.*)?$")
 
     # no real function in these modules approaches this; a larger derived span
     # means the gap crossed a region boundary, not that the function is huge
@@ -511,6 +558,14 @@ class SymbolTable:
     def find(self, pattern: str) -> list[Symbol]:
         rx = re.compile(pattern)
         return [s for s in self.symbols if rx.search(s.name)]
+
+    def add_foreign(self, name: str, addr: int, tag: str) -> None:
+        """A name outside the image (an import's stand-in address): it resolves
+        addresses but is never scored."""
+        sym = Symbol(name=name, addr=addr, span=0, tag=tag)
+        self.symbols.append(sym)
+        self.foreign.append(sym)
+        self._by_name.setdefault(name, sym)
 
     def at(self, addr: int) -> Symbol | None:
         best = None
@@ -714,15 +769,170 @@ def disasm(data: bytes, vma: int = 0) -> list[tuple[int, int, str]]:
 
 # --- helpers -----------------------------------------------------------------
 
-def load(module_name: str = "SUPPORT") -> tuple[Module, SymbolTable, Image]:
-    mod = MODULES[module_name]
+def load(module_name: str | None = None) -> tuple[Module, SymbolTable, Image]:
+    mod = MODULES[module_name or MODULE]
     if not mod.image.exists():
         raise FileNotFoundError(f"module image missing: {mod.image}")
     if not mod.symbols.exists():
         raise FileNotFoundError(f"symbol map missing: {mod.symbols}")
     img = Image(mod)
     st = SymbolTable(mod, bounds=(img.base, img.base + len(img.data)))
+    if mod.name != "SUPPORT":
+        for k, name in module_imports(img.data).items():
+            st.add_foreign(name, import_address(k), "IMPORT")
     return mod, st, img
+
+
+# --- a module's own tables ---------------------------------------------------
+#
+# Every SNR1 module carries the tables the loader links it with: header
+# +0x04/+0x08 is the relocation table and its count, +0x0C/+0x10 the symbol
+# table, 12 bytes an entry each.  A relocation is (site, (import << 8) | type,
+# target) and the types are the ELF numbers: 2 a 32-bit word, 4 a j/jal, 5 HI16,
+# 6 LO16.  Import 0 is this module (address = base + target); anything else is
+# that entry of the symbol table, bound by NAME at load (address = the symbol's
+# + target).  Measured 2026-10-15: SUPPORT relocated this way equals the
+# in-world dump in every word of its code, and MCERR equals its region dump at
+# every local site.
+
+R_WORD, R_JAL, R_HI16, R_LO16 = 2, 4, 5, 6
+
+
+def module_relocations(data: bytes) -> list[tuple[int, int, int, int]]:
+    """(site, type, import, target) for every relocation in an SNR1 image."""
+    table, count = struct.unpack_from("<II", data, 4)
+    out = []
+    for i in range(count):
+        site, info, target = struct.unpack_from("<III", data, table + 12 * i)
+        out.append((site, info & 0xFF, info >> 8, target))
+    return out
+
+
+def _cstr(data: bytes, off: int) -> str:
+    end = data.find(b"\0", off)
+    return data[off:end].decode("latin-1")
+
+
+def module_symbols(data: bytes) -> list[tuple[str, int]]:
+    """(name, value) per symbol-table entry; value 0 is an import."""
+    table, count = struct.unpack_from("<II", data, 0x0C)
+    return [(_cstr(data, n), v) for n, v, _ in
+            (struct.unpack_from("<III", data, table + 12 * k) for k in range(count))]
+
+
+def module_imports(data: bytes) -> dict[int, str]:
+    """Import index -> name, for every index a relocation uses."""
+    syms = module_symbols(data)
+    used = {imp for _, _, imp, _ in module_relocations(data) if imp}
+    out = {}
+    for k in sorted(used):
+        name, value = syms[k]
+        if value or not name:
+            raise ValueError(f"relocation import {k} is {name!r} = {value:#x}, not an import")
+        out[k] = name
+    return out
+
+
+# Where SUPPORT's imports resolved at load (SLUS and the linker's own symbols),
+# read once out of the in-world dump.  They are build-specific, so they are
+# only used for the image whose md5 is SUPPORT_IMAGE_MD5.
+SUPPORT_IMAGE_MD5 = "c47e958fe5e4d213de8f01761145c136"
+SUPPORT_IMPORTS = {
+    1: 0x00116D38, 2: 0x00117828, 3: 0x00100920, 4: 0x00131470, 5: 0x001192B0,
+    6: 0x001192C0, 7: 0x001193B8, 8: 0x00116C70, 9: 0x001192D0, 10: 0x0013C460,
+    11: 0x00119328, 12: 0x00117BC0, 13: 0x00116558, 14: 0x001009D0, 15: 0x0014C89C,
+    16: 0x0012E928, 17: 0x00130B70, 18: 0x00133304, 19: 0x00133030, 20: 0x00133E80,
+    21: 0x001331C0, 22: 0x00117850, 23: 0x00117B58, 24: 0x00117DF8, 25: 0x00143DB8,
+    26: 0x00143788, 27: 0x00143990, 28: 0x00131298, 29: 0x001443C8, 30: 0x0013E430,
+    31: 0x0013E460, 32: 0x00144410, 33: 0x0013EEB8, 34: 0x0013C090, 35: 0x0013F278,
+    36: 0x0013F088, 37: 0x001404B8, 38: 0x00140950, 39: 0x001309BC, 40: 0x0011B5C0,
+    41: 0x0011BA60, 42: 0x0011AE38, 43: 0x0011B060, 44: 0x0011B880, 45: 0x0013C210,
+    46: 0x0013C1E0, 47: 0x0013BF60, 48: 0x0013C220, 49: 0x0013C1F0, 50: 0x00114130,
+    51: 0x00113FF8, 52: 0x00114630, 53: 0x00132BE0, 54: 0x00114320, 55: 0x001148D0,
+    56: 0x00113AA0, 57: 0x00113978, 58: 0x00113E10, 59: 0x00114818, 60: 0x00113AD8,
+    61: 0x00113CF8, 62: 0x00114700, 63: 0x0013CCC0, 64: 0x0013BEC0, 65: 0x0013CD28,
+    66: 0x0013BEE0, 67: 0x0011BBB0, 68: 0x001338A8, 69: 0x00132F04, 70: 0x001339E0,
+    71: 0x00135598, 72: 0x00132E50, 73: 0x00133A38, 74: 0x001008D8, 75: 0x001197B0,
+    76: 0x00126470, 77: 0x00126368, 78: 0x00127830, 79: 0x001270C0, 80: 0x00125FC8,
+    81: 0x00125CB0, 82: 0x00126EB0, 83: 0x001266D8, 84: 0x00126FC0, 85: 0x001265E8,
+    86: 0x00127328, 87: 0x001165E8, 88: 0x00116DD0, 89: 0x001170B8, 90: 0x00119A70,
+    91: 0x0013BEF0, 92: 0x0013CDF8, 93: 0x0013CD90, 94: 0x0013BF10, 95: 0x00131EF8,
+    96: 0x00126560, 97: 0x001260C0, 98: 0x001271E8, 99: 0x001314C0, 100: 0x00131EE8,
+    101: 0x0013C580, 102: 0x0013C5A0, 103: 0x00134040, 104: 0x00133CC8, 105: 0x001030E8,
+    106: 0x0010B880, 107: 0x00111C40, 108: 0x00111BB0, 109: 0x00110FE0, 110: 0x00110D78,
+    111: 0x00110EC0, 112: 0x001115A8, 113: 0x00110E90, 114: 0x00111160, 115: 0x00118290,
+    116: 0x00118478, 117: 0x00118778, 118: 0x00118660, 119: 0x00118A40, 120: 0x00118800,
+    121: 0x00118CF0, 122: 0x001185E0, 123: 0x00118B78, 124: 0x00118C30, 125: 0x00130928,
+    126: 0x001356F8, 127: 0x001257C0, 128: 0x00114DC8, 129: 0x001256E8, 130: 0x00125840,
+    131: 0x00125C78, 132: 0x00124B88, 133: 0x00124C28, 134: 0x001688F0, 135: 0x0013BFE0,
+    136: 0x0013C000, 137: 0x0013C070, 138: 0x0013C0E0, 139: 0x0013C030, 140: 0x0013BFF0,
+    141: 0x00124AE8, 142: 0x00124D88, 143: 0x00124CD0, 144: 0x00124D40, 145: 0x00125188,
+    146: 0x00124DD0, 147: 0x0013C200, 148: 0x00124E98, 149: 0x0013C100, 150: 0x00125058,
+    151: 0x0013C110, 152: 0x00137B58, 153: 0x00133478, 154: 0x00137B28, 155: 0x00123DA0,
+    156: 0x00123C60, 157: 0x0011D038, 158: 0x0011C728, 159: 0x0011D450, 160: 0x0011D3A8,
+    161: 0x0011D240, 162: 0x0011C708, 163: 0x001164B8, 164: 0x0011CF90, 165: 0x00116838,
+    166: 0x00116BB0, 167: 0x0011D270, 168: 0x0011D388, 169: 0x0012F840, 170: 0x0015ED40,
+    171: 0x0011B2E0, 172: 0x0011B7B8, 173: 0x00142EF0, 174: 0x0011BCA8, 175: 0x0011BCD8,
+    176: 0x001400B0, 177: 0x00140C10, 178: 0x00140338, 179: 0x0011BD70, 180: 0x00143058,
+    181: 0x0011BDA8, 182: 0x001406F0, 183: 0x00160900, 184: 0x00170A18, 185: 0x01F80000,
+    186: 0x00080000, 187: 0xFFFFFFFF, 188: 0x00144650, 189: 0x00100200, 190: 0x00144A38,
+    191: 0x0012E6D0, 192: 0x0012DE58, 193: 0x0013E0A0, 194: 0x0013C290, 195: 0x0013C4F0,
+}
+
+# Any other module's imports get stand-in addresses, 64 KB apart so that an
+# import plus a field offset still names that import: no tool needs the real
+# address, only the NAME, and the module's own symbol table carries it.
+IMPORT_BASE, IMPORT_STRIDE = 0x01000000, 0x10000
+EE_RAM = 32 * 1024 * 1024
+
+# A seeded map names every function it cannot name yet `func_<VA>`; a callee or
+# global with such a name is UNNAMED to the checkers, never a mismatch.
+_PLACEHOLDER = re.compile(r"^(?:func|data)_[0-9A-F]{8}$")
+
+
+def is_placeholder(name: str) -> bool:
+    return bool(_PLACEHOLDER.match(name))
+
+
+def import_address(k: int) -> int:
+    return IMPORT_BASE + IMPORT_STRIDE * k
+
+
+def relocate(mod: Module, data: bytes) -> bytearray:
+    """A 32 MB EE image holding the module at its base with every relocation
+    applied: the same words its loader writes, so the tools that name callees
+    and data references need no memory dump."""
+    if mod.name == "SUPPORT":
+        if hashlib.md5(data).hexdigest() != SUPPORT_IMAGE_MD5:
+            raise SystemExit("SUPPORT image is not the build SUPPORT_IMPORTS belongs to")
+        resolve = SUPPORT_IMPORTS.__getitem__
+    else:
+        resolve = import_address
+    ram = bytearray(EE_RAM)
+    ram[mod.base:mod.base + len(data)] = data
+    for site, kind, imp, target in module_relocations(data):
+        addr = ((resolve(imp) if imp else mod.base) + target) & 0xFFFFFFFF
+        at = mod.base + site
+        w = struct.unpack_from("<I", ram, at)[0]
+        if kind == R_WORD:
+            w = addr
+        elif kind == R_JAL:
+            w = (w & 0xFC000000) | ((addr >> 2) & 0x03FFFFFF)
+        elif kind == R_HI16:
+            w = (w & 0xFFFF0000) | (((addr + 0x8000) >> 16) & 0xFFFF)
+        elif kind == R_LO16:
+            w = (w & 0xFFFF0000) | (addr & 0xFFFF)
+        else:
+            raise ValueError(f"{mod.name}: relocation type {kind} at +{site:#x}")
+        struct.pack_into("<I", ram, at, w)
+    return ram
+
+
+def code_extent(data: bytes) -> tuple[int, int]:
+    """(first, end) image offsets of the code: the j/jal/HI16/LO16 sites, which
+    can only sit in instructions, bound it (the library tail included)."""
+    sites = [s for s, kind, _, _ in module_relocations(data) if kind in (R_JAL, R_HI16, R_LO16)]
+    return min(sites), max(sites) + 4
 
 
 def vu0_census(data: bytes) -> tuple[int, int]:

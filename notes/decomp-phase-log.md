@@ -167,11 +167,11 @@ byte-exact (`ParseObject` 7/230, both `Parse*LODSpriteLevels` 12/72,
 over their failure sites was swept and none moves it.
 Finding: `decomp-phase60-the-asset-parsers-20260829.md`.
 
-**Phase 61 — FINISHING SUPPORT (in progress).**  "Keep going until SUPPORT is finished",
+**Phase 61 — FINISHING SUPPORT (closed 2026-10-15).**  "Keep going until SUPPORT is finished",
 worked by up to ten agents in isolated LANES (`_lane.py`: own `src/`+`build/`, a `.base/`
 snapshot, three-way `git merge-file` back into main). **Every named SUPPORT function is
 written** (the last "unwritten" one, `VIRStrip6`, is a VU1 label equal to `VIEEUnloadIrx`'s
-entry -- `SPAN_ALIAS`), and **2,891 -> 3,665 of 3,751 byte-exact** so far. The phase's real
+entry -- `SPAN_ALIAS`), and **2,891 -> 3,665 of 3,751 byte-exact**. The phase's real
 finding is that **byte-exact is not correct**: the scorer masks every relocated field, so
 `eqcallcheck.py` (jal targets against the relocated dump) found 84 "matched" functions calling
 the WRONG function -- every `DestroyPool` walked with `Erase` instead of `Next`, VIXm's spu/xm
@@ -187,8 +187,15 @@ and the large late gains came from deriving gcc's own rules from its 990721 sour
 reference parameters lose the POINTER flag (alias.c), loop.c's hoisting COUNT, gcse's
 computable hash order, cse's skip-blocks and struct-member invalidation, strict aliasing on at
 -O2, cross-jumping after sched2, the Insert family's copy-preference rule, plus simulators of
-global and local allocation (`decomp/regalloc/`). Findings:
-`decomp-phase61-finishing-support-20261013.md`, `decomp-alias-rule-inline-ref-params-20261014.md`.
+global and local allocation (`decomp/regalloc/`). **It closed on the permuter's verdict**: 21
+named opens remain, all register-allocation or scheduler ties, each diagnosed in its source.
+`eqperm.py` (tree-sitter mutations, ~25 builds/s) ran the 20 opens other than `TextBox`
+overnight and closed none; its 5 better finds were all fakery (one swapped two calls behind
+the masked `jal`s), and their natural subsets gave a single labelled gain (`VIScene::Render`
+45 -> 42). The same day the multi-module tooling (`EQMODULE`, `modules/` for CLIENT, STATION,
+SETUP and MCERR) merged into `decomp/`, verified neutral. Findings:
+`decomp-phase61-finishing-support-20261013.md`, `decomp-alias-rule-inline-ref-params-20261014.md`,
+`decomp-eqperm-textbox-20261015.md`.
 
 **Phase 57 — the RASTER'S DMA HALF.**  `viraster.cpp` again: 24 more of `VIRaster`'s
 167 functions written and 16 byte-exact, taking the file to 128 written.  Phase 56 wrote

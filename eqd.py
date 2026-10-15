@@ -113,7 +113,7 @@ def cmd_diff(a):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="eqd", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("-m", "--module", default="SUPPORT", choices=sorted(E.MODULES))
+    p.add_argument("-m", "--module", default=E.MODULE, choices=sorted(E.MODULES))
     sub = p.add_subparsers(dest="cmd", required=True)
 
     q = sub.add_parser("list"); q.add_argument("pattern"); q.set_defaults(fn=cmd_list)

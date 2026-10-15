@@ -10,7 +10,7 @@ import eqdecomp as E, eqdiff as D
 
 p = argparse.ArgumentParser()
 p.add_argument("obj"); p.add_argument("symbol")
-p.add_argument("-m", "--module", default="SUPPORT")
+p.add_argument("-m", "--module", default=E.MODULE)
 p.add_argument("--no-target", action="store_true")
 a = p.parse_args()
 

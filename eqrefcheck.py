@@ -974,7 +974,7 @@ def main(argv):
     verbose = "-v" in argv
     tus = [a for a in argv if not a.startswith("-")]
     _, st, img = E.load()
-    d = K.load_dump(K.DUMP)
+    d = K.relocated(img)
     names = Names(st)
     matched = set(C.MATCHED.read_text().split()) if C.MATCHED.exists() else set()
     objs = [C.BUILD / f"{t}.o" for t in tus] if tus else \

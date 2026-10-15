@@ -66,6 +66,22 @@ def load_dump(path: Path) -> bytes:
     return path.read_bytes()
 
 
+def relocated(img=None):
+    """The relocated copy of the current module (EQMODULE), indexed by VA.
+
+    SUPPORT reads the in-world dump when there is one.  Without it, and for every
+    other module, the copy is rebuilt from the image's own relocation table
+    (`eqdecomp.relocate`): over SUPPORT's code that agrees with the dump word for
+    word, and eqcallcheck and eqrefcheck print the same reports from either.
+    Another module's imports land on stand-in addresses that `eqdecomp.load`
+    names from the module's own import table."""
+    if img is None:
+        img = E.load()[2]
+    if img.module.name == "SUPPORT" and DUMP.is_file():
+        return load_dump(DUMP)
+    return E.relocate(img.module, img.data)
+
+
 def word(d: bytes, va: int) -> int:
     return struct.unpack_from("<I", d, va)[0]
 
@@ -160,7 +176,8 @@ def calls(st, img, d: bytes, sym) -> list[tuple[int, str, str]]:
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("-d", "--dump", type=Path, default=DUMP)
+    p.add_argument("-d", "--dump", type=Path,
+                   help="a relocated dump to read (default: the module's own relocated copy)")
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("calls", help="resolve every relocated site in a function")
     c.add_argument("symbol")
@@ -169,13 +186,15 @@ def main(argv=None):
     sub.add_parser("verify", help="prove the dump is this image's own link map")
     args = p.parse_args(argv)
 
-    _, st, img = E.load("SUPPORT")
-    d = load_dump(args.dump)
+    _, st, img = E.load()
+    d = load_dump(args.dump) if args.dump else relocated(img)
 
     if args.cmd == "verify":
+        if img.module.name != "SUPPORT" or not (args.dump or DUMP.is_file()):
+            raise SystemExit("verify checks SUPPORT's in-world dump against the image")
         same, diff, kinds = verify(img, d)
         tot = same + diff
-        print(f"{args.dump}")
+        print(f"{args.dump or DUMP}")
         print(f"  {same}/{tot} words identical ({100*same/tot:.2f}%), {diff} differ")
         for op, n in sorted(kinds.items(), key=lambda x: -x[1]):
             nm = {2: "j", 3: "jal", 15: "lui", 9: "addiu", 13: "ori",

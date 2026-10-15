@@ -37,8 +37,13 @@ sys.path.insert(0, str(HERE))
 import eqdecomp as E
 import eqdiff as D
 
-SRC = HERE / "src"
-BUILD = HERE / "build"
+# SUPPORT's source is src/; every other module's is modules/<name>/src, with its
+# own build/ and MATCHED.txt, so two modules never share a scorer's directory.
+if E.MODULE == "SUPPORT":
+    SRC, BUILD = HERE / "src", HERE / "build"
+else:
+    SRC = HERE / "modules" / E.MODULE.lower() / "src"
+    BUILD = HERE / "modules" / E.MODULE.lower() / "build"
 MATCHED = SRC / "MATCHED.txt"
 
 # Settled in Phase 1/2: ee-gcc 2.95.x at -O2.  -G0 follows from the fingerprint
@@ -82,9 +87,14 @@ TU_OVERRIDE = {"libgcc2_main": ("ee-gcc2.9-990721", ["-O2", "-G0", "-x", "c"])}
 
 def compile_cmd(stem: str, tc: str | None = None, flags: list[str] | None = None) -> list[str]:
     """The `-S` command for src/<stem>.cpp, up to the source path."""
-    if stem in TU_OVERRIDE:
+    if stem in TU_OVERRIDE and E.MODULE == "SUPPORT":
         tc, flags = TU_OVERRIDE[stem]
-    return driver(tc or TOOLCHAIN) + ["-S"] + list(FLAGS if flags is None else flags)
+    cmd = driver(tc or TOOLCHAIN) + ["-S"] + list(FLAGS if flags is None else flags)
+    if E.MODULE != "SUPPORT":
+        # another module's classes derive from SUPPORT's (VIWnd, VIUIWindow), so
+        # its TUs include SUPPORT's headers
+        cmd.append("-I" + str(HERE / "src"))
+    return cmd
 
 
 def driver(name: str):
@@ -166,22 +176,18 @@ def masked_body(obj: Path, symbol: str) -> bytes:
     return bytes(b)
 
 
-_CALLEE = {"dump": None, "warned": False, "syms": {}}
+_CALLEE = {"dump": None, "syms": {}}
 
 
 def callee_mismatches(st, img, obj: Path, symbol: str, sym) -> list[tuple[int, str, str]]:
     """(offset, target callee, our callee) for every jal that names a different
-    function from the target's -- empty when they agree, or when there is no
-    relocated dump to read the target's callees from (then warned once)."""
+    function from the target's -- empty when they agree.  The target's callees
+    come from the module's relocated copy (`eqcalls.relocated`), which no longer
+    needs a memory dump; an unnamed or placeholder callee is never a mismatch."""
     import eqcalls as K
     import eqcallcheck as CC
     if _CALLEE["dump"] is None:
-        if not K.DUMP.is_file():
-            if not _CALLEE["warned"]:
-                print(f"note: no {K.DUMP.name}; callees are NOT checked", file=sys.stderr)
-                _CALLEE["warned"] = True
-            return []
-        _CALLEE["dump"] = K.load_dump(K.DUMP)
+        _CALLEE["dump"] = K.relocated(img)
     key = (str(obj), obj.stat().st_mtime_ns)
     syms = _CALLEE["syms"].get(key)
     if syms is None:
@@ -190,7 +196,8 @@ def callee_mismatches(st, img, obj: Path, symbol: str, sym) -> list[tuple[int, s
             if kind in ("jal", "j")}
     have = CC.candidate_calls(obj, symbol, syms)
     return [(off, t, have[off]) for off, t in sorted(want.items())
-            if off in have and "+0x" not in t and not t.startswith("0x") and have[off] != t]
+            if off in have and "+0x" not in t and not t.startswith("0x")
+            and not E.is_placeholder(t) and have[off] != t]
 
 
 def score(st, img, obj: Path, symbol: str):
@@ -248,7 +255,7 @@ def main(argv=None):
     objs, err = build(a.toolchain, a.flags.split(), a.gnu_as)
     if err:
         print(err, file=sys.stderr)
-    _, st, img = E.load("SUPPORT")
+    _, st, img = E.load()
 
     rx = re.compile(a.filter) if a.filter else None
     rows, matched = [], []
@@ -302,7 +309,7 @@ def main(argv=None):
                 note = f"   [{res.reloc}]"
             print(f"  MATCH   {tot:>4}i  {name}{note}")
         elif kind == "no-target":
-            print(f"  NO-TGT        {name}   (not a symbol in SUPPORT)")
+            print(f"  NO-TGT        {name}   (not a symbol in {E.MODULE})")
         elif kind == "build-failed":
             print(f"  BUILD FAILED  {name}")
         elif kind == "duplicate":

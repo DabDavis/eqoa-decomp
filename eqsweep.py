@@ -103,7 +103,7 @@ def main(argv=None):
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("variants", help="python file defining HEADERS and BODIES")
     p.add_argument("symbol")
-    p.add_argument("-m", "--module", default="SUPPORT")
+    p.add_argument("-m", "--module", default=E.MODULE)
     p.add_argument("--trim", action="store_true", default=True)
     p.add_argument("-n", "--top", type=int, default=15)
     # A sweep scores POSITIONALLY, so a variant whose layout is right but whose

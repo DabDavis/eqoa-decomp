@@ -75,7 +75,7 @@ def main(argv):
     allfuncs = "-a" in argv
     tus = [a for a in argv if not a.startswith("-")]
     _, st, img = E.load()
-    d = K.load_dump(K.DUMP)
+    d = K.relocated(img)
     matched = set(C.MATCHED.read_text().split()) if C.MATCHED.exists() else set()
     objs = [C.BUILD / f"{t}.o" for t in tus] if tus else \
            [C.BUILD / f"{s.stem}.o" for s in sorted(C.SRC.glob("*.cpp"))]
@@ -104,7 +104,7 @@ def main(argv):
                 if off not in have:
                     continue        # a `j` within the function, or the shapes differ
                 checked += 1
-                if "+0x" in tname or tname.startswith("0x"):
+                if "+0x" in tname or tname.startswith("0x") or E.is_placeholder(tname):
                     unnamed += 1
                     continue
                 if have[off] != tname:
