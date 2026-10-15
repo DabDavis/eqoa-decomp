@@ -319,6 +319,18 @@ int VIUIWindow::TextBox(const unsigned short *s, int x, int row, int w,
     // cross-jumped copy), or i's life is 49+ insns shorter.  Thirteen
     // spellings of the loop body (++i, s + i, &s[i] + 1, ternary x/fit,
     // swapped tests, != 0, ...) leave the RTL unchanged at 103.
+    // eqperm (claude-notes/decomp-eqperm-textbox-20261015.md) pinned two
+    // facts the real source must satisfy.  (1) A CROSS-JUMPED copy does it:
+    // `buf[n] = 0; i = fit;` written into BOTH arms of the fit site's
+    // copy-if fixes the rotation, 8/467 -- but the target keeps `i = fit`
+    // in the join, so its extra refs to `i` are somewhere else.  (2) sched2
+    // runs BEFORE jump2's cross-jump, and the target's dual-issue order at
+    // the two WRAP sites only comes out with `n * 2` computed at the end of
+    // EACH copy arm and the store, `i` and `line` in the join (`k = n * 2;`
+    // per arm + a byte-offset store: 6/467).  Not at the else-top or
+    // post-loop sites, so it is not a shared helper.  The natural fit arm
+    // `i = fit; line = &s[i];` is 28/467, but builds `line` from `i` where
+    // the target keeps fit*2 (s4).
     const unsigned short *line = s;
     int lastw = 0;
     int i = 0;

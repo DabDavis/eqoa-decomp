@@ -656,6 +656,177 @@ def test_engine_fingerprint_profile():
     ck(len(F.verdicts(fp)) >= 4, "verdict generation went quiet")
 
 
+def _perm():
+    try:
+        import eqperm
+    except ImportError as e:          # tree-sitter is the permuter's only extra
+        raise Skipped(f"eqperm does not import ({e}); pip install tree-sitter tree-sitter-cpp")
+    return eqperm
+
+
+def test_permuter_elf_reader_agrees_with_readelf():
+    """eqperm reads objects itself, to skip four subprocesses per candidate.
+    Its words must be eqdiff's bytes, and its masks must sit exactly on the
+    relocation sites -- a mask on a plain word would hide a real difference."""
+    import tempfile, os
+    from pathlib import Path as P
+    perm = _perm()
+    src = ("\t.set noreorder\n\t.data\nd:\t.word 0\n\t.word d\n"
+           "\t.text\n\t.globl filler\n\t.type filler, @function\nfiller:\n"
+           "\tjr $31\n\tnop\n\t.size filler, .-filler\n"
+           "\t.globl probe\n\t.type probe, @function\nprobe:\n"
+           "\tlui $2,%hi(d)\n\tnop\n\taddiu $3,$2,%lo(d)\n\tjr $31\n\tnop\n"
+           "\t.size probe, .-probe\n")
+    obj = tempfile.mktemp(suffix=".o")
+    try:
+        _assemble(src, obj)
+        words, masks = perm.elf_function(P(obj), "probe")
+        data, _, _ = D.elf_function_at(P(obj), "probe")
+        ck(struct.pack(f"<{len(words)}I", *words) == data,
+           "eqperm's reader disagrees with readelf/objcopy")
+        ck(masks[0] == 0xFFFF and masks[2] == 0xFFFF, f"HI16/LO16 sites unmasked: {masks}")
+        ck(masks[1] == masks[3] == masks[4] == 0, f"a plain word was masked: {masks}")
+        try:
+            perm.elf_function(P(obj), "absent")
+            ck(False, "a missing symbol was found")
+        except KeyError:
+            ck(True, "")
+    finally:
+        if os.path.exists(obj):
+            os.unlink(obj)
+
+
+def test_permuter_grade_is_zero_only_for_a_match():
+    """The graded score: 0 for identical words, the register penalty for a
+    register-only change, and a relocation field is free ONLY where the
+    candidate's own relocation says so."""
+    perm = _perm()
+    _, st, img = E.load()
+    t = list(struct.unpack(f"<{len(img.func(st.get(SCALAR), trim=True)) // 4}I",
+                           img.func(st.get(SCALAR), trim=True)))
+    none = [0] * len(t)
+    ck(perm.grade(t, t, none) == (0, 0), "identical words did not score 0")
+    # a register-only change: rewrite the rt field of the first load or store
+    k = next(i for i, w in enumerate(t) if (w >> 26) in (0x23, 0x2B, 0x31, 0x39))
+    c = list(t)
+    c[k] ^= 1 << 16
+    ck(perm.grade(t, c, none) == (perm.PEN_REG, 1), f"register change scored {perm.grade(t, c, none)}")
+    c = list(t)
+    c[k] ^= 0x4                                   # its offset
+    ck(perm.grade(t, c, none)[0] == perm.PEN_IMM, "immediate change misgraded")
+    masked = [0] * len(t)
+    masked[k] = 0xFFFF
+    ck(perm.grade(t, c, masked) == (0, 0), "a relocated immediate was not forgiven")
+    ck(perm.grade(t, t[:k] + [0x24020001] + t[k:], none + [0])[0] >= perm.PEN_INDEL,
+       "an inserted instruction cost less than an insertion")
+
+
+def test_permuter_mutations_parse_and_vary():
+    """Every mutant parses, differs from its input, and many kinds fire --
+    an engine whose mutations all fail would search nothing, silently."""
+    perm = _perm()
+    import random
+    import eqperm_mut as M
+    text = ("int A::F(const short *s, int n)\n{\n    int i = 0;\n    int t;\n"
+            "    t = 0;\n    while (s[i])\n    {\n        if (s[i] == 10)\n"
+            "            t += n * 2;\n        else\n            t = t + 1;\n"
+            "        i++;\n    }\n    int m = &s[i] - s;\n"
+            "    return t != 0 ? m : t;\n}\n")
+    ck(not M.Fn(text).root.has_error, "the probe function does not parse")
+    ck(M.Fn("int f( { return; ").root.has_error, "a broken text parsed clean")
+    rng = random.Random(3)
+    kinds = set()
+    for _ in range(300):
+        new, kind = M.mutate(text, rng)
+        if new is None:
+            continue
+        ck(new != text, f"{kind} returned its input")
+        ck(not M.Fn(new).root.has_error, f"{kind} produced a parse error:\n{new}")
+        kinds.add(kind)
+    ck(len(kinds) >= 12, f"only {len(kinds)} mutation kinds fired: {sorted(kinds)}")
+
+
+def test_permuter_alloc_order_term():
+    """The allocation-order term on TextBox's own numbers: the -1 constant
+    (19 refs / 285 insns) allocated before `i` (30 / 498) takes the s5 `i`
+    wants, and the gap is their relative priority difference.  Control: the
+    same dumps with every pseudo already in its target register owe nothing."""
+    import tempfile
+    from pathlib import Path as P
+    perm = _perm()
+    d = P(tempfile.mkdtemp())
+    (d / "t.cc.greg").write_text(
+        ";; Function int f()\n;; 3 regs to allocate: 182 117 159\n"
+        ";; 182 conflicts: 182 117 159\n;; 117 conflicts: 182 117 159\n"
+        ";; 159 conflicts: 182 117 159\n;; Register dispositions:\n"
+        "159 in 23  182 in 21  117 in 22  \n\n")
+    (d / "t.cc.lreg").write_text(
+        ";; Function int f()\nRegister 159 used 30 times across 498 insns; user var.\n"
+        "Register 182 used 19 times across 285 insns.\n"
+        "Register 117 used 21 times across 346 insns; user var.\n")
+
+    def addu(r):                      # addu r,r,zero: two votes for r
+        return (r << 21) | (r << 11) | 0x21
+    # candidate i/-1/s in s7/s5/s6, the target's in s5/s6/s7
+    pairs = [(addu(21), addu(23)), (addu(22), addu(21)), (addu(23), addu(22))]
+    gap, bad = perm.alloc_report(d, "t", pairs)
+    want = (4 * 19 / 285 - 4 * 30 / 498) / (4 * 19 / 285)
+    ck(abs(gap - want) < 1e-9, f"gap {gap}, expected {want}")
+    ck([(a, b) for a, b, *_ in bad] == [(182, 159)], f"inverted pairs {bad}")
+    gap, bad = perm.alloc_report(d, "t", [(addu(r), addu(r)) for r in (21, 22, 23)])
+    ck(gap == 0 and not bad, f"pseudos in their target registers owed {gap}: {bad}")
+
+
+def test_permuter_names_and_macros():
+    """The mangled-name reader finds the right definition, and the TU's macros
+    expand at word boundaries only."""
+    perm = _perm()
+    ck(perm.split_mangled("TextBox__10VIUIWindowPCUsiiiiRC10VIColor32FUi")[:2]
+       == ("TextBox", "VIUIWindow"), "member function name/class")
+    ck(perm.mangled_params("PCUsiiiiRC10VIColor32FUi") == 7, "seven parameters")
+    ck(perm.mangled_params("") == 0 and perm.mangled_params("v") == 0, "no parameters")
+    ck(perm.split_mangled("__ml__FRC7VIVect3RC10VIMatrix44")[0] == "operator*",
+       "an operator's name")
+    ck(perm.mangled_names("PCUsiiiiRC10VIColor32FUi") == {"VIColor32F"}, "class names")
+    m = {"CP": (["a", "b"], "f(a, b);\n    g(b);"), "K": (None, "42")}
+    ck(perm.expand_macros("    CP(x + 1, K)\n", m) == "    f(x + 1, 42);\n    g(42);\n",
+       "two-argument expansion, re-indented")
+    ck(perm.expand_macros("CPX(1) + KK", m) == "CPX(1) + KK",
+       "a macro name inside a longer identifier was expanded")
+
+
+def test_permuter_reduce_reverts_brace_groups():
+    """`reduce` strips a find to the hunks its score needs, including a brace
+    pair around an edited line, which is three hunks and builds only whole.
+    The stub scorer: unbalanced braces do not build, and only the KEY line
+    lowers the score."""
+    perm = _perm()
+
+    class Stub:
+        def evaluate(self, text, wd):
+            if text.count("{") != text.count("}"):
+                return None
+            # the edited line and its braces stand or fall together, as an
+            # `if (...)` rewritten on the same line as the `{` it opens does
+            if ("x2();" in text) != ("{\nx();" in text):
+                return None
+            return (0 if "    key();\n" in text else 10), 0, True
+
+    base = "a();\nif (p)\n    b();\nc();\nd();\nw();\nx();\ny();\n"
+    cand = ("a();\nif (p)\n{\n    b();\n    key();\n}\nc();\n"   # needed: a pair + key
+            "{\nd();\n}\n"                                     # drift: a PAIR of hunks
+            "{\nx();\nx2();\ny();\n}\n")                         # drift: THREE hunks
+    ck(cand.count("{") == 3, "fixture")
+    out, s = perm.reduce_text(Stub(), base, cand, Path("."), say=lambda *a: None)
+    ck(s == 0 and "key();" in out, "the needed line was reverted")
+    ck("x2();" not in out and out.count("{") == 1, f"neutral drift survived: {out!r}")
+    # negative control: singles only, and neither brace group can go
+    out1, _ = perm.reduce_text(Stub(), base, cand, Path("."), say=lambda *a: None,
+                               pair_cap=0)
+    ck("x2();" in out1 and out1.count("{") == 3,
+       f"the control removed a brace group without group reverts: {out1!r}")
+
+
 def main():
     tests = [(n, f) for n, f in sorted(globals().items())
              if n.startswith("test_") and callable(f)]
