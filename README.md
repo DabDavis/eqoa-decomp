@@ -6549,7 +6549,7 @@ closes and the next one opens CLIENT.
 
 ## Phase 62: CLIENT (opened 2026-10-15)
 
-**512 of 5,973 CLIENT functions byte-exact (66,556 bytes) plus 1,703 verified duplicates, 651 named, and the network opcode
+**598 of 5,973 CLIENT functions byte-exact (70,816 bytes) plus 1,703 verified duplicates, 723 named, and the network opcode
 dispatcher written in full** (`VIClient::ProcessMessage`, 2,093 instructions; its compare
 tree matches the target's 102 tests exactly; **17 words open**, all one register tie in
 `0x00B1`). Source is `modules/client/src/`; every tool takes `EQMODULE=CLIENT`.

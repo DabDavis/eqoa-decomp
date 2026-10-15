@@ -10,7 +10,8 @@ diagnosed below). **Later the same day: 17 of 5,973 exact, and the dispatcher at
 words**, all in one case (`0x00B1`, a register-allocation tie measured to the pseudo
 below); findings 4-8. **Then 95 of 5,973**, by CLIENT's own copies of SUPPORT's
 containers: see "CLIENT carries its own template copies" below. **At the end of the day:
-512 of 5,973 exact (66,556 bytes), plus 1,703 verified duplicates counted apart.**
+512 of 5,973 exact (66,556 bytes), plus 1,703 verified duplicates counted apart. Then 557:
+the accessor batch below; then 598 with 41 handlers.**
 
 The dispatcher's map, case by case, is `decomp-phase62-dispatcher-survey-20261015.md`.
 
@@ -347,6 +348,79 @@ this is a lead for reconstructing CLIENT's file list, not yet a result.
   which share the shape.
 - How to account for the dead duplicates. They are byte-identical to a matched copy;
   counting them is a scoring decision, not a codegen one.
+
+## VIClient's accessors and layout (557 exact)
+
+FrontiersForge's field meanings plus the constructor's roll-call fill most of `game.h`'s
+remaining gaps that code touches. With them, two runs of one-line accessors are written:
+- **20 at `0x00BD7708..0x00BD7A50`**, at the end of `viclient.cpp`: setters of
+  `+0x6DC0/+0x6DC4`, class/race/level, HP/max HP/power/max power/exp, a byte at
+  `+0xC30C`, five group-member accessors, `IsGroupLeader`, and two that read entity
+  `+0x19` for self and target through `FindEntity`.
+- **25 at `0x00BE3900..0x00BE3A70`**, in a new `viclientaccess.cpp` (the next TU after
+  VIClient.cpp's template copies): `GetUI`/`GetRaster`/`GetScene`/`GetWalkCamera`/
+  `GetDictionary`, the two unknown roll-call objects, the world id, the reply name, the
+  active window, a 64-bit field, the self and target ids, `GetPlayer`, `IsUnderLiquid`
+  (through `VIWalkControl`), and the effects and target-info getters.
+
+All 45 matched on the first build; the names are provisional. The layout they needed is
+in `game.h` with `CHK`s at the end of `viclient.cpp`:
+- `VIRaster m_raster` (+0x380), `VIDictionary m_dict` (+0x6618), `int m_worldId`
+  (+0x6630), `VIWalkCamera m_walkCam` (+0x6DD0) and `long m_p07568/m_p07570`;
+- **`VIPlayer m_player` (+0xC2DC, 0x14C bytes) deriving from `VIPlayerRecord`**. The
+  dispatcher's `m_level`/`m_pC304`... became `m_player` fields, line for line, with the
+  dispatcher's code unchanged at 17 wrong words;
+- target info at `+0x2BB64..+0x2BB74`;
+- `VIPartyMember m_group[4]` (+0x2BD7C, filling its gap to the byte; not vi.h's
+  `VIGroupMember`, which is a sprite group's element);
+- the effect and quest-title arrays, which end exactly at `m_speed`.
+
+## The dispatcher's handlers (598 exact)
+
+The named-but-unwritten VIClient methods, smallest first: 40 written and 36 exact, most
+on the first build. What they established:
+- **`PlaySound` returns `SoundPlay`'s `int`.** With it `void`, a caller's temporary after
+  the call took `v0` where the target's takes `v1`.
+- **`ShowWord` takes an `unsigned short`** (`CharSelectMsg` masks with `andi 0xffff`), and
+  **`QuestStage`'s first argument is an `unsigned char`** (masked on entry); **`Msg007B`'s
+  argument is `unsigned`** (it compares with `lui`+`ori` -1). Their map names change with
+  them.
+- **The format string handed to `snprintf16` is cast WIDE**:
+  `(const unsigned short *)ui.m_words.GetString(n, ui.m_language)`. Uncast, the narrow
+  overload is called, and the bytes cannot tell (jal fields are masked): only the callee
+  check can.
+- **Two named references again:** `VIUI &ui = m_ui;` and `VIWalkCamera &cam = m_walkCam;`.
+  `SetSpeed` also needs its walk speed in a local (`float w = v == 0.0f ? 0.0f : 3.0f;`):
+  a ternary straight into the member stores in each arm.
+- **Semantics recovered:**
+  - other players' damage is shown only outside first-person view
+    (`m_walkCam.m_cameraMode`), never while the game window is modal (`IsModal`), and never
+    when an option byte (`VIGameOptions` +0x92, split out of `m_x90` in vi.h, unused by
+    SUPPORT) is set;
+  - `Msg00B8` erases an ability by display index;
+  - `Reset` drains a `VIPool` of 32-byte records at +0x2BD58, sending message 1572 with each
+    record's first word;
+  - `Msg0777` prints "Disconnect-12" before disconnecting;
+  - the window at +0x2BB98 and the login windows are `VIWnd`s (`m_visible`, `SetAppPtr`).
+- **`return` vs `break` decides a search loop's block order.** `Msg00CD` (body first,
+  test at the bottom) matched with `return` inside its `for`; `Msg00B8` (test at the top)
+  with `break`. Each was 10 to 13 words wrong with the other keyword, and no
+  `while`/`continue`/reference spelling moved either.
+- **The vptr sits after a class's OWN data.** Fields past VIEntity's +0x54 moved its vptr
+  and broke the matched `Disconnect`. +0x2B8 belongs to `VICreatureEntity` (RTTI
+  "16VICreatureEntity"), reached by a cast. Slot 9 returns `int`: its caller's registers
+  say so, as `PlaySound`'s did.
+- **More semantics:**
+  - `Msg1003Done` makes two virtual calls on each of the 24 entities and flags all but
+    the player;
+  - `Msg00CD(index, ms)` sets an ability's lockout (FrontiersForge's "ability lockout");
+  - `Msg0019` moves an item from the corpse into the inventory through a 0x2FC-byte
+    `VINetItem` (it was 0x2E4 in `game.h`; a field at +0x2F0 settled it, and it matches
+    FrontiersForge's inventory record size);
+  - `Msg0776(caster, target, effect)` plays a spell effect between the two entities'
+    scene actors, looked up in the dictionary as resource type 21.
+- **Open:** `AddInvItem` (7 words), `Msg0770` (5) and `QuestStage` (2). The last two load
+  `snprintf16`'s arguments last-to-first where ours load `a0` before `a2`.
 
 ## What the notes had wrong (from the survey)
 

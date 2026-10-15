@@ -31,7 +31,7 @@ CHK(c_size,     sizeof(VIClient) > 0x50320 && sizeof(VIClient) <= 0x50330)
 CHK(c_entityId, ((int)&((VIEntity *)0)->m_id) == 0x0C)
 CHK(c_entityActor, ((int)&((VIEntity *)0)->m_actor) == 0x24)
 CHK(c_selfId,   OFF(m_selfId)   == 0x71F8)
-CHK(c_level,    OFF(m_level)    == 0xC300)
+CHK(c_level,    OFF(m_player.m_level) == 0xC300)
 CHK(c_corpse,   OFF(HaveCorpse) == 0x13B94)
 CHK(c_merchant, OFF(m_merchantName) == 0x22A78)
 CHK(c_buddies,  OFF(m_buddies)  == 0x2EC70)
@@ -39,7 +39,7 @@ CHK(c_guild,    OFF(m_guild)    == 0x2EC84)
 CHK(c_bank,     OFF(m_bank)     == 0x47388)
 CHK(c_50304,    OFF(m_p50304)   == 0x50304)
 CHK(c_buddy,    sizeof(VIBuddy) == 172)
-CHK(c_netitem,  sizeof(VINetItem) == 0x2E4)
+CHK(c_netitem,  sizeof(VINetItem) == 0x2FC)
 
 // 0x00BC16D0
 void VIClient::Shutdown()
@@ -64,7 +64,7 @@ void VIClient::Disconnect(int reason, int quiet)
     m_p00058 = -1;
     m_p00080 = 0;
     m_p4F0E8 = reason;
-    if (!quiet && m_p4F130 && m_p2BD40 != m_p2BB98 && reason != 21)
+    if (!quiet && m_p4F130 && m_p2BD40 != &m_p2BB98 && reason != 21)
         Notify();
 
     for (int i = 0; i < 24; i++)
@@ -10135,16 +10135,16 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
 
     case 0x0020:
     {
-        int old = m_level;
-        s.ReadSigned(m_level);
-        s.ReadSigned(m_pC304);
-        if (old < m_level)
+        int old = m_player.m_level;
+        s.ReadSigned(m_player.m_level);
+        s.ReadSigned(m_player.m_exp);
+        if (old < m_player.m_level)
             PlaySound(16);
         break;
     }
 
     case 0x001C:
-        s.Read(&m_pC320, 4, 1);
+        s.Read(&m_player.m_p44, 4, 1);
         break;
 
     case 0x0034:
@@ -10568,7 +10568,7 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
         break;
 
     case 0x0052:
-        s.ReadSigned(m_pC310);
+        s.ReadSigned(m_player.m_p34);
         break;
 
     case 0x124D:
@@ -10592,11 +10592,11 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     case 0x0036:
     {
         unsigned char a;
-        int old = m_pC31C;
+        int old = m_player.m_p40;
         s.Read(&a, 1, 1);
-        s.ReadSigned(m_pC31C);
-        if (m_pC31C != old)
-            QuestStage(a, m_pC31C - old);
+        s.ReadSigned(m_player.m_p40);
+        if (m_player.m_p40 != old)
+            QuestStage(a, m_player.m_p40 - old);
         break;
     }
 
@@ -10639,7 +10639,7 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
 
     case 0x077A:
         m_wndGame->AddWord(1196, VIColor32F(1.0f, 0.25f, 0.25f, 1.0f));
-        ClearP071E4();
+        StopAutoAttack();
         Msg077A(1915);
         break;
 
@@ -10843,7 +10843,7 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     }
 
     case 0x00D9:
-        s.Read(&m_pC308, 4, 1);
+        s.Read(&m_player.m_p2C, 4, 1);
         break;
 
     case 0x00DB:
@@ -10950,3 +10950,418 @@ template int VIMap<int, VIAbility>::Erase(int);  // 0x00BE1848
 template int VIMap<int, VIAbility>::Find(const int &) const;  // 0x00BE1A20
 template int VIMap<int, VIAbility>::Clear();  // 0x00BE3258
 template int VIMap<int, VIAbility>::Init(int);  // 0x00BE32C8
+CHK(c_player,     OFF(m_player)     == 0xC2DC)
+CHK(c_playerSize, sizeof(VIPlayer)  == 0x14C)
+CHK(c_raster,     OFF(m_raster)     == 0x380)
+CHK(c_dict,       OFF(m_dict)       == 0x6618)
+CHK(c_walkCam,    OFF(m_walkCam)    == 0x6DD0)
+CHK(c_p07568,     OFF(m_p07568)     == 0x7568)
+CHK(c_group,      OFF(m_group)      == 0x2BD7C)
+CHK(c_effects,    OFF(m_effectCount) == 0x2C170)
+CHK(c_quests,     OFF(m_questCount) == 0x2CEE0)
+CHK(c_entity19,   ((int)&((VIEntity *)0)->m_p19) == 0x19)
+
+// ---------------------------------------------------------------------- accessors --
+// A run of one-line accessors, 0x00BD7708..0x00BD7A50.  Names provisional; the meanings
+// are FrontiersForge's (claude-notes/frontiersforge-viclient-xref-20261015.md).
+void VIClient::SetP06DC0(int a, int b)
+{
+    m_p06DC0 = a;
+    m_p06DC4 = b;
+}
+
+void VIClient::SetP06DC0(int a)
+{
+    m_p06DC0 = a;
+}
+
+void VIClient::SetP06DC4(int b)
+{
+    m_p06DC4 = b;
+}
+
+int VIClient::GetClass() { return m_player.m_class; }
+int VIClient::GetRace() { return m_player.m_race; }
+int VIClient::GetLevel() { return m_player.m_level; }
+
+int VIClient::GetSelfP19()
+{
+    VIEntity *e = FindEntity(m_selfId);
+    if (e)
+        return e->m_p19;
+    return 0;
+}
+
+int VIClient::GetHP() { return m_player.m_hp; }
+int VIClient::GetMaxHP() { return m_player.m_maxHp; }
+int VIClient::GetPlayerP30() { return m_player.m_p30; }
+int VIClient::GetPower() { return m_player.m_power; }
+int VIClient::GetMaxPower() { return m_player.m_maxPower; }
+int VIClient::GetExp() { return m_player.m_exp; }
+
+unsigned int VIClient::GetGroupMemberId(int i) { return m_group[i].m_id; }
+int VIClient::GetGroupMemberHP(int i) { return m_group[i].m_hp; }
+int VIClient::GetGroupMemberHPKnown(int i) { return m_group[i].m_hpKnown; }
+int VIClient::GetGroupMemberActive(int i) { return m_group[i].m_active; }
+char *VIClient::GetGroupMemberName(int i) { return m_group[i].m_name; }
+
+int VIClient::GetTargetP19()
+{
+    VIEntity *e = FindEntity(m_target);
+    if (e)
+        return e->m_p19;
+    return 0;
+}
+
+int VIClient::IsGroupLeader() { return m_p2BD78; }
+
+// ------------------------------------------------------------- small handlers --
+// The smallest of the dispatcher's handlers and helpers (names provisional).
+void VIClient::StopAutoAttack()
+{
+    m_autoAttack = 0;
+}
+
+void VIClient::Msg006E()
+{
+}
+
+int VIClient::InGroup()
+{
+    return m_inGroup;
+}
+
+void VIClient::LootNoWindow()
+{
+    Msg077A(22);
+}
+
+void VIClient::Msg003D(int a, int b)
+{
+    m_inventory.Op003D(a, b);
+}
+
+void VIClient::Msg07A2(VIMemStream &s)
+{
+    Disconnect(14, 0);
+}
+
+int VIClient::PlaySound(int id)
+{
+    return m_ui.SoundPlay((VIUISoundId)id);
+}
+
+void VIClient::StopMusic()
+{
+    m_pC188 = 0;
+    m_pC18C = -1;
+    m_pC190 = 0;
+}
+
+void VIClient::Trade01()
+{
+    Trade16();
+}
+
+void VIClient::Trade07()
+{
+    m_wndGame->Trade07();
+}
+
+void VIClient::Trade06()
+{
+    m_wndGame->Trade06();
+}
+
+void VIClient::Trade16()
+{
+    m_wndGame->Trade16();
+    TradeReset();
+}
+
+void VIClient::Trade02(int partner)
+{
+    m_tradePartner = partner;
+    TradeSetup();
+    m_wndGame->Trade02();
+}
+
+void VIClient::Msg0063()
+{
+    m_p22B78 = -1;
+    m_wndGame->Msg0063();
+}
+
+void VIClient::Msg001D(int z)
+{
+    m_player.m_p40 -= z;
+    m_wndGame->Msg001D();
+}
+
+void VIClient::Msg07A1(VIMemStream &s)
+{
+    char buf[8];
+    s.Read(buf, 8, 1);
+    Disconnect(13, 0);
+}
+
+void VIClient::FreeBuffer()
+{
+    if (m_p4F0B0)
+        delete [] (char *)m_p4F0B0;
+    m_p4F0B0 = 0;
+    m_p4F0B4 = 0;
+}
+
+void VIClient::Msg0060(VIInvItem *item, int z)
+{
+    m_inventory.Op0060(item, z);
+    PlaySound(1);
+    m_wndGame->Msg0060();
+}
+
+void VIClient::Msg00D7()
+{
+    m_p1B304 = 0;
+    m_bank.Close();
+    m_p13B90 = 0;
+}
+
+void VIClient::SetTime(long a, long b)
+{
+    m_clockA.Set(a, m_p07568);
+    m_clockB.Set(b, m_p07568);
+}
+
+void VIClient::AddInvItem(VINetItem &item)
+{
+    m_inventory.AddItem(item, item.m_p38, 40);
+    if (HasInvSpace())
+        PlaySound(3);
+    m_p1B304 = 0;
+}
+
+void VIClient::MerchantOpen()
+{
+    if (m_wndGame->IsLootable())
+    {
+        m_wndGame->MerchantOpen();
+        m_p1B304 = 0;
+    }
+}
+
+void VIClient::Trade17()
+{
+    m_wndGame->AddWord(733, VIColor32F(1.0f, 0.25f, 0.25f, 1.0f));
+    m_wndGame->Trade07();
+}
+
+void VIClient::Trade21()
+{
+    m_wndGame->AddWord(734, VIColor32F(1.0f, 0.25f, 0.25f, 1.0f));
+    m_wndGame->Trade07();
+}
+
+void VIClient::Trade22()
+{
+    m_wndGame->AddWord(735, VIColor32F(1.0f, 0.25f, 0.25f, 1.0f));
+    m_wndGame->Trade07();
+}
+
+void VIClient::Msg0061(int a)
+{
+    if (m_wndGame->IsLootable())
+    {
+        m_p22B78 = a;
+        m_wndGame->Msg0061();
+    }
+}
+
+void VIClient::Notify()
+{
+    m_pC1B0 = 0;
+    m_p2BB98.SetAppPtr(this);
+    m_p2BD44 = &m_p2BB98;
+    SetActiveWindow(&m_p2BB98);
+}
+
+void VIClient::Msg0A7A(VIMemStream &s)
+{
+    unsigned short text[1024];
+    s.ReadString(text, sizeof(text));
+    m_wndGame->AddText(text, VIColor32F(1.0f, 1.0f, 1.0f, 1.0f));
+}
+
+void VIClient::Msg0770(const char *name)
+{
+    unsigned short text[256];
+    VIUI &ui = m_ui;
+    VIString::snprintf16(text, sizeof(text), (const unsigned short *)ui.m_words.GetString(557, ui.m_language), name);
+    m_wndGame->AddText(text);
+}
+
+void VIClient::Msg007B(unsigned int id)
+{
+    if (id == 0xFFFFFFFF)
+        m_wndGame->LootOption(838);
+    else
+    {
+        m_target = id;
+        TargetInfo(16, m_p2BB68, id);
+    }
+}
+
+void VIClient::Msg007C(const unsigned short *text)
+{
+    if (m_questCount < 8)
+    {
+        VIString::strcpy16(m_questTitle[m_questCount], 256, text);
+        m_questCount++;
+    }
+}
+
+void VIClient::DamageFromSelf(int defender, int amount)
+{
+    if (!VIGetGameOptions()->m_x92)
+        m_p4FD28.AddDamage(defender, amount, 0);
+}
+
+void VIClient::CharSelectMsg(int id)
+{
+    m_p00058 = 3;
+    m_wnd2BB88->m_visible = 0;
+    m_wndLogin->m_visible = 1;
+    m_p2BD44 = m_wndLogin;
+    SetActiveWindow(m_wndLogin);
+    m_wndLogin->ShowWord(id);
+}
+
+void VIClient::Msg0777()
+{
+    m_wndLogin->m_visible = 0;
+    printf("Disconnect-12\n");
+    m_p4F0EC = -1;
+    Disconnect(0, 1);
+    Msg0777Done(2);
+}
+
+void VIClient::SetSpeed(float v)
+{
+    VIWalkCamera &cam = m_walkCam;
+    m_speed = v;
+    cam.m_runSpeed = v;
+    cam.InitIntermediate();
+    float w = v == 0.0f ? 0.0f : 3.0f;
+    cam.m_walkSpeed = w;
+    cam.InitIntermediate();
+}
+
+void VIClient::DamageFromOther(int attacker, int amount)
+{
+    if (m_walkCam.m_cameraMode && !m_wndGame->IsModal() && !VIGetGameOptions()->m_x92)
+        m_p4FD28.AddDamage(m_selfId, amount, 1);
+}
+
+void VIClient::Msg00B8(int index)
+{
+    for (int i = m_abilities.Begin(); i != m_abilities.End(); i = m_abilities.Next(i))
+        if (m_abilities.Value(i).m_displayIndex == index)
+        {
+            m_abilities.Erase(i);
+            break;
+        }
+}
+
+void VIClient::Reset()
+{
+    for (int i = m_p2BD58.Begin(); i != m_p2BD58.End(); i = m_p2BD58.Erase(i))
+        SendMsg(1572, m_p2BD58.Value(i).m_data[0], 2);
+}
+
+void VIClient::Trade20()
+{
+    if (m_p2BB04 && m_p2BB00 != 0xFFFFFFFF)
+    {
+        char name[32];
+        unsigned short text[128];
+        TradeName(name);
+        VIUI &ui = m_ui;
+        VIString::snprintf16(text, sizeof(text), (const unsigned short *)ui.m_words.GetString(651, ui.m_language), name);
+        ShowText(text);
+    }
+    TradeReset();
+}
+
+void VIClient::QuestStage(unsigned char flag, int z)
+{
+    unsigned short text[64];
+    if (flag)
+        PlaySound(7);
+    if (m_wndGame->IsModal())
+        QuestHook();
+    VIUI &ui = m_ui;
+    VIString::snprintf16(text, sizeof(text), (const unsigned short *)ui.m_words.GetString(625, ui.m_language));
+    ShowDialog(0, text, 0, 0);
+    m_wndGame->Msg001D();
+}
+
+void VIClient::Msg0790(VIMemStream &s)
+{
+    s.Read(&m_p4F0F0, 8, 1);
+    s.Read(&m_p4F0F8, 4, 1);
+    s.Read(&m_p4F100, 8, 1);
+    m_p4F108 = -1;
+    Msg0790Done();
+}
+
+void VIClient::Msg1003Done()
+{
+    for (int i = 0; i < 24; i++)
+    {
+        VIEntity *e = m_entities[i];
+        if (e)
+        {
+            e->Virtual9();
+            if (e->Virtual3(130) && e->m_id != m_selfId)
+                ((VICreatureEntity *)e)->m_p2B8 = 1;
+        }
+    }
+}
+
+void VIClient::Msg00CD(int index, int lockout)
+{
+    for (int i = m_abilities.Begin(); i != m_abilities.End(); i = m_abilities.Next(i))
+    {
+        VIAbility &a = m_abilities.Value(i);
+        if (a.m_displayIndex == index)
+        {
+            a.m_lockout = lockout;
+            return;
+        }
+    }
+}
+
+void VIClient::Msg0019(int slot, int b)
+{
+    VIItemList &corpse = m_corpse;
+    VIInvList &inv = m_inventory;
+    VINetItem item;
+    corpse.Get(slot, item);
+    item.m_p2F0 = -1;
+    corpse.Took(slot, inv.AddItem(item, item.m_p38, 40));
+}
+
+void VIClient::Msg0776(int caster, int target, int effect)
+{
+    if (caster == m_selfId)
+        return;
+    VIEntity *c = FindEntity(caster);
+    VIEntity *t = FindEntity(target);
+    if (!c || !t)
+        return;
+    int ca = c->m_actor;
+    int ta = t->m_actor;
+    int i;
+    if (m_dict.FindTyped(effect, (VIResourceType)21, i))
+        m_scene.m_spellEffects.Play(i, 0, ca, ta, 0);
+}

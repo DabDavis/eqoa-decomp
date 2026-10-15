@@ -6229,7 +6229,9 @@ public:
     float          m_effectVolume;      // 0x00C
     char           m_username[64];      // 0x010
     char           m_password[64];      // 0x050
-    char           m_x90[6];            // 0x090
+    char           m_x90[2];            // 0x090
+    unsigned char  m_x92;               // 0x092: CLIENT's DamageFromSelf shows no damage of one's own while it is set
+    char           m_x93[3];            // 0x093
     unsigned char  m_region;            // 0x096
     char           m_x97;               // 0x097
     unsigned short m_homeShard[64];     // 0x098

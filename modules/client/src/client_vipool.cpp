@@ -30,7 +30,6 @@ template int VIPool<VIRec24_BBCE10>::Add(VIRec24_BBCE10 const &);  // 0x00bbd7f0
 template int VIPool<VIRec24_BBCE10>::Erase(int);  // 0x00bbd918
 
 // 0x00bdf100..0x00be3110: 9 members; size measured.
-struct VIRec32_BE2DE8 { int m_data[8]; };
 template int VIPool<VIRec32_BE2DE8>::End() const;  // 0x00bdf100
 template int VIPool<VIRec32_BE2DE8>::Begin() const;  // 0x00bdf110
 template int VIPool<VIRec32_BE2DE8>::Next(int) const;  // 0x00bdf140

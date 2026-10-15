@@ -211,9 +211,9 @@
 0x00BBCEA8  [CODE]  Allocate__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBCFD0  [CODE]  Add__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBD0A8  [CODE]  func_00BBD0A8
-0x00BBD130  [CODE]  func_00BBD130
-0x00BBD398  [CODE]  func_00BBD398
-0x00BBD430  [CODE]  func_00BBD430  # VIItemList.h:326
+0x00BBD130  [CODE]  AddItem__9VIInvListR9VINetItemii  # name provisional: AddInvItem's call (phase 62)
+0x00BBD398  [CODE]  Get__10VIItemListiR9VINetItem  # name provisional: Msg0019 copies an item out of the corpse list (phase 62)
+0x00BBD430  [CODE]  Took__10VIItemListii  # name provisional: Msg0019's report back to the corpse list (phase 62)
 0x00BBD560  [CODE]  func_00BBD560
 0x00BBD6E0  [CODE]  func_00BBD6E0
 0x00BBD7F0  [CODE]  Add__t6VIPool1Z14VIRec24_BBCE10RC14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
@@ -277,7 +277,7 @@
 0x00BC2248  [CODE]  func_00BC2248  # VIClient.cpp~
 0x00BC2268  [CODE]  func_00BC2268  # VIClient.cpp~
 0x00BC24C8  [CODE]  func_00BC24C8  # VIClient.cpp~
-0x00BC2528  [CODE]  func_00BC2528  # VIClient.cpp~
+0x00BC2528  [CODE]  Msg0777Done__8VIClienti  # name provisional: Msg0777's last call (phase 62)
 0x00BC2638  [CODE]  _$_8VIClient  # VIClient.cpp~; dtor, named from client_main's call
 0x00BC2D18  [CODE]  IsRunning__8VIClient  # VIClient.cpp~; named from client_main's loop test
 0x00BC2D28  [CODE]  func_00BC2D28  # VIClient.cpp:2207
@@ -414,7 +414,7 @@
 0x00BCC010  [CODE]  func_00BCC010  # VIClient.cpp~
 0x00BCC118  [CODE]  func_00BCC118  # VIClient.cpp~
 0x00BCC1F0  [CODE]  func_00BCC1F0  # VIClient.cpp~
-0x00BCC368  [CODE]  func_00BCC368  # VIClient.cpp~
+0x00BCC368  [CODE]  HasInvSpace__8VIClient  # name provisional: AddInvItem plays sound 3 when it returns nonzero (phase 62)
 0x00BCC388  [CODE]  func_00BCC388  # VIClient.cpp~
 0x00BCC3D8  [CODE]  func_00BCC3D8  # VIClient.cpp~
 0x00BCC3F0  [CODE]  func_00BCC3F0  # VIClient.cpp~
@@ -455,8 +455,8 @@
 0x00BCCBB8  [CODE]  func_00BCCBB8  # VIClient.cpp~
 0x00BCCC00  [CODE]  func_00BCCC00  # VIClient.cpp~
 0x00BCCC70  [CODE]  func_00BCCC70  # VIClient.cpp~
-0x00BCCCB8  [CODE]  func_00BCCCB8  # VIClient.cpp~
-0x00BCCD58  [CODE]  func_00BCCD58  # VIClient.cpp~
+0x00BCCCB8  [CODE]  TradeName__8VIClientPc  # name provisional: fills Trade20's name buffer (phase 62)
+0x00BCCD58  [CODE]  TradeSetup__8VIClient  # name provisional: Trade02 calls it before the window (phase 62)
 0x00BCCDC8  [CODE]  Trade16__8VIClient  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCCE08  [CODE]  func_00BCCE08  # VIClient.cpp~
 0x00BCCE20  [CODE]  func_00BCCE20  # VIClient.cpp~
@@ -546,7 +546,7 @@
 0x00BCE200  [CODE]  func_00BCE200  # VIClient.cpp~
 0x00BCE210  [CODE]  func_00BCE210  # VIClient.cpp~
 0x00BCE270  [CODE]  func_00BCE270  # VIClient.cpp~
-0x00BCE5D8  [CODE]  func_00BCE5D8  # VIClient.cpp~
+0x00BCE5D8  [CODE]  QuestHook__8VIClient  # name provisional: QuestStage calls it while the game window is modal (phase 62)
 0x00BCE7A0  [CODE]  func_00BCE7A0  # VIClient.cpp~
 0x00BCE7B0  [CODE]  func_00BCE7B0  # VIClient.cpp~
 0x00BCE7D8  [CODE]  func_00BCE7D8  # VIClient.cpp~
@@ -636,7 +636,7 @@
 0x00BD5978  [CODE]  func_00BD5978
 0x00BD59E8  [CODE]  func_00BD59E8
 0x00BD5B30  [CODE]  func_00BD5B30
-0x00BD5B60  [CODE]  ClearP071E4__8VIClient  # name provisional (phase 62 dispatcher)
+0x00BD5B60  [CODE]  StopAutoAttack__8VIClient  # name provisional (FrontiersForge player.lua: auto-attack off)
 0x00BD5B68  [CODE]  func_00BD5B68
 0x00BD5C70  [CODE]  func_00BD5C70
 0x00BD5D70  [CODE]  func_00BD5D70
@@ -655,30 +655,30 @@
 0x00BD6228  [CODE]  func_00BD6228
 0x00BD6250  [CODE]  func_00BD6250
 0x00BD7430  [CODE]  func_00BD7430
-0x00BD7618  [CODE]  func_00BD7618
-0x00BD7708  [CODE]  func_00BD7708
-0x00BD7718  [CODE]  func_00BD7718
-0x00BD7720  [CODE]  func_00BD7720
+0x00BD7618  [CODE]  SetActiveWindow__8VIClientP5VIWnd  # name provisional (FrontiersForge window.lua:484-487)
+0x00BD7708  [CODE]  SetP06DC0__8VIClientii  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7718  [CODE]  SetP06DC0__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7720  [CODE]  SetP06DC4__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD7728  [CODE]  func_00BD7728
-0x00BD7798  [CODE]  func_00BD7798
-0x00BD77A8  [CODE]  func_00BD77A8
-0x00BD77B8  [CODE]  func_00BD77B8
-0x00BD77C8  [CODE]  func_00BD77C8
-0x00BD77F0  [CODE]  func_00BD77F0
-0x00BD7800  [CODE]  func_00BD7800
-0x00BD7810  [CODE]  func_00BD7810
-0x00BD7820  [CODE]  func_00BD7820
-0x00BD7830  [CODE]  func_00BD7830
-0x00BD7840  [CODE]  func_00BD7840
-0x00BD7850  [CODE]  func_00BD7850
-0x00BD7870  [CODE]  func_00BD7870
-0x00BD7890  [CODE]  func_00BD7890
-0x00BD78B0  [CODE]  func_00BD78B0
-0x00BD78D0  [CODE]  func_00BD78D0
-0x00BD78F0  [CODE]  func_00BD78F0
+0x00BD7798  [CODE]  GetClass__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD77A8  [CODE]  GetRace__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD77B8  [CODE]  GetLevel__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD77C8  [CODE]  GetSelfP19__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD77F0  [CODE]  GetHP__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7800  [CODE]  GetMaxHP__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7810  [CODE]  GetPlayerP30__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7820  [CODE]  GetPower__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7830  [CODE]  GetMaxPower__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7840  [CODE]  GetExp__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7850  [CODE]  GetGroupMemberId__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7870  [CODE]  GetGroupMemberHP__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD7890  [CODE]  GetGroupMemberHPKnown__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD78B0  [CODE]  GetGroupMemberActive__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD78D0  [CODE]  GetGroupMemberName__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BD78F0  [CODE]  GetTargetP19__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD7920  [CODE]  func_00BD7920
 0x00BD79B0  [CODE]  func_00BD79B0
-0x00BD7A50  [CODE]  func_00BD7A50
+0x00BD7A50  [CODE]  IsGroupLeader__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD7A68  [CODE]  InGroup__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BD7A80  [CODE]  func_00BD7A80
 0x00BD7AD0  [CODE]  func_00BD7AD0
@@ -735,7 +735,7 @@
 0x00BD98B0  [CODE]  Msg001A__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BD99A0  [CODE]  Msg0019__8VIClientii  # name provisional (phase 62 dispatcher)
 0x00BD9A48  [CODE]  MerchantOpen__8VIClient  # name provisional (phase 62 dispatcher)
-0x00BD9AA8  [CODE]  QuestStage__8VIClientii  # name provisional (phase 62 dispatcher)
+0x00BD9AA8  [CODE]  QuestStage__8VIClientUci  # name provisional (phase 62 dispatcher): masks its first argument to a byte
 0x00BD9B48  [CODE]  GroupChanged__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BD9C18  [CODE]  Msg000A__8VIClientii  # name provisional (phase 62 dispatcher)
 0x00BD9D60  [CODE]  Msg0010__8VIClientR11VIMemStream  # name provisional (phase 62 dispatcher)
@@ -743,7 +743,7 @@
 0x00BD9F00  [CODE]  SetWeather__8VIClientii  # name provisional (phase 62 dispatcher)
 0x00BD9FD8  [CODE]  Msg00D7__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BDA028  [CODE]  func_00BDA028
-0x00BDA168  [CODE]  func_00BDA168
+0x00BDA168  [CODE]  TradeReset__8VIClient  # name provisional: Trade16 calls it after the window (phase 62)
 0x00BDA1A8  [CODE]  Msg0057__8VIClientii  # name provisional (phase 62 dispatcher)
 0x00BDA2C0  [CODE]  Trade02__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BDA300  [CODE]  Trade01__8VIClient  # name provisional (phase 62 dispatcher)
@@ -773,7 +773,7 @@
 0x00BDB820  [CODE]  Msg0045__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BDB8F0  [CODE]  Msg006E__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BDB8F8  [CODE]  func_00BDB8F8
-0x00BDBAC8  [CODE]  Msg007B__8VIClienti  # name provisional (phase 62 dispatcher)
+0x00BDBAC8  [CODE]  Msg007B__8VIClientUi  # name provisional (phase 62 dispatcher)
 0x00BDBB30  [CODE]  Msg007C__8VIClientPCUs  # name provisional (phase 62 dispatcher)
 0x00BDBB98  [CODE]  Msg007D__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BDBC70  [CODE]  ShowDialog__8VIClientiPCUsii  # name provisional (phase 62 dispatcher)
@@ -807,7 +807,7 @@
 0x00BDD5B0  [CODE]  func_00BDD5B0
 0x00BDDCF0  [CODE]  func_00BDDCF0
 0x00BDDFF0  [CODE]  func_00BDDFF0
-0x00BDE050  [CODE]  func_00BDE050
+0x00BDE050  [CODE]  Msg0790Done__8VIClient  # name provisional: Msg0790's last call (phase 62)
 0x00BDE1A0  [CODE]  func_00BDE1A0
 0x00BDE210  [CODE]  func_00BDE210
 0x00BDE268  [CODE]  func_00BDE268
@@ -876,14 +876,14 @@
 0x00BE0048  [CODE]  func_00BE0048  # VIItemList.h:326
 0x00BE0178  [CODE]  func_00BE0178
 0x00BE01A8  [CODE]  func_00BE01A8
-0x00BE02F0  [CODE]  func_00BE02F0
+0x00BE02F0  [CODE]  Op003D__9VIInvListii  # name provisional: opcode 0x003D's work on m_inventory (phase 62)
 0x00BE0478  [CODE]  func_00BE0478
 0x00BE04C0  [CODE]  func_00BE04C0
 0x00BE04E0  [CODE]  func_00BE04E0
 0x00BE0530  [CODE]  func_00BE0530
 0x00BE0568  [CODE]  func_00BE0568
 0x00BE05B8  [CODE]  func_00BE05B8
-0x00BE05D0  [CODE]  func_00BE05D0
+0x00BE05D0  [CODE]  Op0060__9VIInvListP9VIInvItemi  # name provisional: opcode 0x0060's work on m_inventory (phase 62)
 0x00BE05F8  [CODE]  func_00BE05F8
 0x00BE0610  [CODE]  func_00BE0610
 0x00BE0660  [CODE]  func_00BE0660
@@ -959,31 +959,31 @@
 0x00BE38C8  [CODE]  func_00BE38C8
 0x00BE38D8  [CODE]  func_00BE38D8
 0x00BE38F0  [CODE]  func_00BE38F0
-0x00BE3900  [CODE]  func_00BE3900
-0x00BE3918  [CODE]  func_00BE3918
-0x00BE3928  [CODE]  func_00BE3928
-0x00BE3930  [CODE]  func_00BE3930
-0x00BE3940  [CODE]  func_00BE3940
-0x00BE3948  [CODE]  func_00BE3948
-0x00BE3950  [CODE]  func_00BE3950
-0x00BE3958  [CODE]  func_00BE3958
-0x00BE3960  [CODE]  func_00BE3960
-0x00BE3968  [CODE]  func_00BE3968
-0x00BE3970  [CODE]  func_00BE3970
-0x00BE3978  [CODE]  func_00BE3978
-0x00BE3990  [CODE]  func_00BE3990
-0x00BE3998  [CODE]  func_00BE3998
-0x00BE39A0  [CODE]  func_00BE39A0
-0x00BE39A8  [CODE]  func_00BE39A8
-0x00BE39B0  [CODE]  func_00BE39B0
-0x00BE39C0  [CODE]  func_00BE39C0
-0x00BE39E0  [CODE]  func_00BE39E0
-0x00BE39F0  [CODE]  func_00BE39F0
-0x00BE3A08  [CODE]  func_00BE3A08
-0x00BE3A28  [CODE]  func_00BE3A28
-0x00BE3A40  [CODE]  func_00BE3A40
-0x00BE3A58  [CODE]  func_00BE3A58
-0x00BE3A70  [CODE]  func_00BE3A70
+0x00BE3900  [CODE]  GetP2BAEC__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3918  [CODE]  GetP4F098__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3928  [CODE]  GetWorldId__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3930  [CODE]  GetReplyName__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3940  [CODE]  GetUI__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3948  [CODE]  GetRaster__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3950  [CODE]  GetScene__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3958  [CODE]  GetP00190__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3960  [CODE]  GetWalkCamera__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3968  [CODE]  GetDictionary__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3970  [CODE]  GetP06D50__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3978  [CODE]  GetActiveWindow__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3990  [CODE]  GetP07568__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3998  [CODE]  GetP06DC0__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE39A0  [CODE]  GetP06DC4__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE39A8  [CODE]  GetSelfId__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE39B0  [CODE]  GetPlayer__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE39C0  [CODE]  IsUnderLiquid__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE39E0  [CODE]  GetTargetId__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE39F0  [CODE]  GetEffectCount__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3A08  [CODE]  GetEffectIcon__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3A28  [CODE]  GetEffectName__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3A40  [CODE]  GetTargetInfoValid__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3A58  [CODE]  GetTargetDisposition__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
+0x00BE3A70  [CODE]  GetP2BB70__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BE3A88  [CODE]  func_00BE3A88
 0x00BE3AA0  [CODE]  func_00BE3AA0
 0x00BE3AB0  [CODE]  func_00BE3AB0
@@ -1023,10 +1023,10 @@
 0x00BE4B60  [CODE]  func_00BE4B60
 0x00BE4B78  [CODE]  Msg077A__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BE4C28  [CODE]  func_00BE4C28
-0x00BE4CF0  [CODE]  func_00BE4CF0
+0x00BE4CF0  [CODE]  SendMsg__8VIClientiii  # name provisional: Reset sends (1572, record word 0, 2) (phase 62)
 0x00BE4DE0  [CODE]  func_00BE4DE0
 0x00BE4ED0  [CODE]  func_00BE4ED0
-0x00BE4FC0  [CODE]  func_00BE4FC0
+0x00BE4FC0  [CODE]  TargetInfo__8VIClientiiUi  # name provisional: Msg007B's call (phase 62)
 0x00BE50B0  [CODE]  func_00BE50B0
 0x00BE51C0  [CODE]  func_00BE51C0
 0x00BE52C8  [CODE]  func_00BE52C8
@@ -1129,7 +1129,7 @@
 0x00BE8E88  [CODE]  func_00BE8E88
 0x00BE8EE0  [CODE]  func_00BE8EE0
 0x00BE9068  [CODE]  func_00BE9068
-0x00BE90B8  [CODE]  func_00BE90B8
+0x00BE90B8  [CODE]  AddDamage__17VIClientPart4FD28iii  # name provisional: DamageFromSelf's call (phase 62)
 0x00BE9198  [CODE]  func_00BE9198
 0x00BE96A8  [CODE]  func_00BE96A8
 0x00BE9BD8  [CODE]  func_00BE9BD8
@@ -2345,7 +2345,7 @@
 0x00C21320  [CODE]  func_00C21320
 0x00C21588  [CODE]  func_00C21588
 0x00C215F8  [CODE]  ShowText__10VIWndLoginPCUs  # name provisional (phase 62 dispatcher)
-0x00C21668  [CODE]  ShowWord__10VIWndLogini  # name provisional (phase 62 dispatcher)
+0x00C21668  [CODE]  ShowWord__10VIWndLoginUs  # name provisional (phase 62 dispatcher): takes an unsigned short
 0x00C216A8  [CODE]  func_00C216A8
 0x00C21B08  [CODE]  func_00C21B08
 0x00C21C28  [CODE]  func_00C21C28
@@ -3253,7 +3253,7 @@
 0x00C543F8  [CODE]  func_00C543F8  # VIWndGame.cpp:4007
 0x00C556D8  [CODE]  LootOpen__9VIWndGame  # name provisional (phase 62 dispatcher)
 0x00C55710  [CODE]  LootClose__9VIWndGame  # name provisional (phase 62 dispatcher)
-0x00C55740  [CODE]  func_00C55740
+0x00C55740  [CODE]  MerchantOpen__9VIWndGame  # name provisional: called through m_wndGame by VIClient::MerchantOpen (phase 62)
 0x00C557A0  [CODE]  func_00C557A0
 0x00C557C8  [CODE]  func_00C557C8
 0x00C55820  [CODE]  func_00C55820
@@ -3261,7 +3261,7 @@
 0x00C558F0  [CODE]  func_00C558F0
 0x00C55918  [CODE]  func_00C55918
 0x00C55950  [CODE]  func_00C55950
-0x00C55990  [CODE]  func_00C55990
+0x00C55990  [CODE]  Msg001D__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
 0x00C559B0  [CODE]  func_00C559B0
 0x00C559F8  [CODE]  func_00C559F8
 0x00C55A20  [CODE]  func_00C55A20
@@ -3269,15 +3269,15 @@
 0x00C55C30  [CODE]  func_00C55C30
 0x00C55CE8  [CODE]  func_00C55CE8
 0x00C55D88  [CODE]  func_00C55D88
-0x00C55E28  [CODE]  func_00C55E28
-0x00C55E60  [CODE]  func_00C55E60
+0x00C55E28  [CODE]  Trade02__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
+0x00C55E60  [CODE]  Trade16__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
 0x00C55EC0  [CODE]  func_00C55EC0
 0x00C55EF8  [CODE]  func_00C55EF8
-0x00C55F38  [CODE]  func_00C55F38
-0x00C55F58  [CODE]  func_00C55F58
-0x00C55F78  [CODE]  func_00C55F78
-0x00C55FB8  [CODE]  func_00C55FB8
-0x00C55FF8  [CODE]  func_00C55FF8
+0x00C55F38  [CODE]  Trade07__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
+0x00C55F58  [CODE]  Trade06__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
+0x00C55F78  [CODE]  Msg0061__9VIWndGame  # name provisional: called through m_wndGame by VIClient::Msg0061 (phase 62)
+0x00C55FB8  [CODE]  Msg0063__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
+0x00C55FF8  [CODE]  Msg0060__9VIWndGame  # name provisional: called through m_wndGame by VIClient::Msg0060 (phase 62)
 0x00C56018  [CODE]  func_00C56018
 0x00C56050  [CODE]  func_00C56050
 0x00C56078  [CODE]  func_00C56078
@@ -3321,7 +3321,7 @@
 0x00C56970  [CODE]  func_00C56970
 0x00C569E0  [CODE]  func_00C569E0
 0x00C56A18  [CODE]  func_00C56A18
-0x00C56A38  [CODE]  func_00C56A38
+0x00C56A38  [CODE]  IsModal__9VIWndGame  # name provisional: DamageFromOther shows nothing and QuestStage calls a hook while it is set (phase 62)
 0x00C56A48  [CODE]  func_00C56A48
 0x00C56A68  [CODE]  func_00C56A68
 0x00C56A88  [CODE]  func_00C56A88
@@ -5740,7 +5740,7 @@
 0x00CBC890  [CODE]  func_00CBC890
 0x00CBCB58  [CODE]  func_00CBCB58
 0x00CBCBC0  [CODE]  func_00CBCBC0
-0x00CBCBD8  [CODE]  func_00CBCBD8  # VISyncTime.cpp:77
+0x00CBCBD8  [CODE]  Set__13VIClientClockll  # name provisional: SetTime's two calls (phase 62)
 0x00CBCC80  [CODE]  func_00CBCC80  # VISyncTime.cpp:95
 0x00CBCD08  [CODE]  func_00CBCD08
 0x00CBCD10  [CODE]  func_00CBCD10

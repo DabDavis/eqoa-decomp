@@ -123,6 +123,15 @@ inline VIMemStream &VIMemStream::operator>>(VIMemStreamInt v)
 class VIWndGame
 {
 public:
+    void Trade02();                                             // 0x00C55E28, name provisional
+    void Trade16();                                             // 0x00C55E60, name provisional
+    void Trade07();                                             // 0x00C55F38, name provisional
+    void Trade06();                                             // 0x00C55F58, name provisional
+    void Msg0063();                                             // 0x00C55FB8, name provisional
+    void Msg001D();                                             // 0x00C55990, name provisional
+    void Msg0060();                                             // 0x00C55FF8, name provisional
+    void Msg0061();                                             // 0x00C55F78, name provisional
+    void MerchantOpen();                                        // 0x00C55740, name provisional
     void AddText(const unsigned short *s);                      // 0x00C56BC0, name provisional
     void AddText(const unsigned short *s, const VIColor32F &c); // 0x00C56BE0, name provisional
     void AddText(const char *s);                                // 0x00C56BA0, name provisional
@@ -132,28 +141,33 @@ public:
     void LootClose();                                           // 0x00C55710, name provisional
     void BankClose();                                           // 0x00C55888, name provisional
     int  IsLootable();                                          // 0x00C56CA8, name provisional
+    int  IsModal();                                             // 0x00C56A38, name provisional (DamageFromOther, QuestStage)
 };
 
 // The character-select message window behind VIClient+0x2BB84.
-class VIWndLogin
+class VIWndLogin : public VIWnd
 {
 public:
-    void ShowWord(int id);                                      // 0x00C21668, name provisional
+    void ShowWord(unsigned short id);                           // 0x00C21668, name provisional (CharSelectMsg masks to 16 bits)
     void ShowText(const unsigned short *s);                     // 0x00C215F8, name provisional
 };
 
 // The window behind VIClient+0x2BB88.
-class VIWnd2BB88
+class VIWnd2BB88 : public VIWnd
 {
 public:
     void SetName(const char *name);                             // 0x00C23460, name provisional
 };
 
 // An item list read off a stream (corpse loot +0x13B98, merchant +0x1B310).
+class VINetItem;
+
 class VIItemList
 {
 public:
     void Read(VIMemStream &s);                                  // 0x00BBC8D0, name provisional
+    void Get(int slot, VINetItem &item);                        // 0x00BBD398, name provisional (Msg0019)
+    void Took(int slot, int where);                             // 0x00BBD430, name provisional (Msg0019)
     void Clear() { m_00 = 0; m_04 = 0; }                       // inline: 0x0016 stores through &m_corpse
     int  m_00;                                         // +0x00: 0x0016 zeroes it
     int  m_04;                                         // +0x04: 0x0016 zeroes it first
@@ -162,9 +176,14 @@ public:
 class VIInvItem;
 
 // The inventory at VIClient+0xC428 (slots of 764 bytes).
+class VINetItem;
+
 class VIInvList
 {
 public:
+    void Op003D(int a, int b);                                  // 0x00BE02F0, name provisional (0x003D)
+    void Op0060(VIInvItem *item, int z);                        // 0x00BE05D0, name provisional (0x0060)
+    int  AddItem(VINetItem &item, int a, int b);                // 0x00BBD130, name provisional: returns where it went
     VIInvItem *Find(int id);                                    // 0x00BDFFA8, name provisional
 };
 
@@ -182,8 +201,13 @@ public:
 class VINetItem
 {
 public:
-    char        m_p000[0x2DC];
+    char        m_p000[0x38];
+    int         m_p38;                                // +0x38: AddInvItem passes it on
+    char        m_p03C[0x2DC - 0x3C];
     VIItemArray m_array;                              // +0x2DC
+    int         m_p2E4[3];
+    int         m_p2F0;                               // +0x2F0: Msg0019 stores -1
+    int         m_p2F4[2];                            // to 0x2FC, FrontiersForge's inventory record size
 };
 
 // A 40-byte player record, shared by two larger records: VIBuddy below and a
@@ -246,6 +270,79 @@ struct VIAbility
     unsigned short m_desc[132];                    // +0xBC
 };
 
+// The player's own record, VIClient+0xC2DC (FrontiersForge player.lua; offsets here are
+// the record's).  Its head is a VIPlayerRecord, as the buddy and guild records' are; it
+// runs to the inventory list at +0xC428, so it is 0x14C bytes.
+class VIPlayer : public VIPlayerRecord
+{
+public:
+    int           m_exp;                           // +0x28 (+0xC304): 0x0020
+    int           m_p2C;                           // +0x2C (+0xC308): 0x00D9
+    unsigned char m_p30;                           // +0x30 (+0xC30C): a byte getter
+    char          m_p31[3];
+    int           m_p34;                           // +0x34 (+0xC310): 0x0052
+    int           m_p38[2];
+    int           m_p40;                           // +0x40 (+0xC31C): 0x0036
+    int           m_p44;                           // +0x44 (+0xC320): 0x001C
+    char          m_p48[0x80 - 0x48];              // stat totals at +0x64..+0x7C (FrontiersForge)
+    int           m_hp;                            // +0x80 (+0xC35C)
+    int           m_maxHp;                         // +0x84
+    int           m_power;                         // +0x88
+    int           m_maxPower;                      // +0x8C
+    char          m_p90[0x14C - 0x90];
+};
+
+// A group (party) member, VIClient+0x2BD7C x4, 52 bytes (FrontiersForge group.lua).  Not
+// vi.h's VIGroupMember, which is a sprite group's element.
+struct VIPartyMember
+{
+    unsigned int  m_id;                            // +0x00
+    int           m_p04;
+    unsigned char m_hp;                            // +0x08
+    unsigned char m_hpKnown;                       // +0x09
+    unsigned char m_active;                        // +0x0A
+    unsigned char m_p0B;
+    int           m_p0C;
+    float         m_pos[3];                        // +0x10
+    char          m_name[24];                      // +0x1C
+};
+
+// One of two 32-byte objects at VIClient+0x2EC30/+0x2EC50 that SetTime feeds a time
+// and the 64-bit +0x7568 (a clock base).  Name provisional.
+class VIClientClock
+{
+public:
+    void Set(long t, long base);                                // 0x00CBCBD8, name provisional
+    long m_p00[4];
+};
+
+// The window embedded at VIClient+0x2BB98, 0x1A8 bytes: Notify sets its app pointer and
+// makes it the active window, and Disconnect compares the active window against it.
+class VIWnd2BB98 : public VIWnd
+{
+public:
+    char m_p24[0x1A8 - sizeof(VIWnd)];
+};
+
+// The object at VIClient+0x4FD28 that DamageFromSelf reports through.  Name provisional.
+class VIClientPart4FD28
+{
+public:
+    void AddDamage(int defender, int amount, int z);            // 0x00BE90B8, name provisional
+    char m_p000[1];
+};
+
+// SUPPORT's VIGameOptions (vi.h); CLIENT reads it through this accessor too.
+VIGameOptions *VIGetGameOptions();
+
+// The 32-byte element of the VIPool at VIClient+0x2BD58 (a placeholder: eqtmpl.py measured
+// its size; Reset sends message 1572 with its first word before erasing each one).
+struct VIRec32_BE2DE8 { int m_data[8]; };
+
+// Two CLIENT objects the constructor builds as members (its roll-call), not yet known.
+class VIClientPart00190 { public: char m_p000[1]; };
+class VIClientPart06D50 { public: char m_p000[1]; };
+
 // A guild member: 48 bytes, the value of VIClientGuild::m_members.  The same
 // record plus an int and a bool (4 bytes on this ABI).  Names provisional.
 class VIGuildMember : public VIPlayerRecord
@@ -267,10 +364,29 @@ class VIEntity
 public:
     char m_p00[0x0C];
     int  m_id;                                        // +0x0C: FindEntity's key
-    char m_p10[0x24 - 0x10];
+    char m_p10[0x19 - 0x10];
+    unsigned char m_p19;                              // +0x19: a byte the client reads for itself and its target
+    char m_p1A[0x24 - 0x1A];
     int  m_actor;                                     // +0x24: the scene actor index
     char m_p28[0x54 - 0x28];
-    virtual ~VIEntity();
+    virtual ~VIEntity();                              // slot 1: Disconnect's delete
+    virtual void Virtual2();                          // slots 2..9: names unknown
+    virtual int  Virtual3(int what);                  // slot 3: Msg1003Done asks it about 130
+    virtual void Virtual4();
+    virtual void Virtual5();
+    virtual void Virtual6();
+    virtual void Virtual7();
+    virtual void Virtual8();
+    virtual int  Virtual9();                          // slot 9: Msg1003Done calls it on every entity (returns int: its caller's registers say so)
+};
+
+// VICreatureEntity.cpp's class (RTTI "16VICreatureEntity").  The vptr stays at +0x54, the
+// end of VIEntity's OWN data, so anything past +0x58 is the derived class's.
+class VICreatureEntity : public VIEntity
+{
+public:
+    char m_p58[0x2B8 - 0x58];
+    int  m_p2B8;                                      // +0x2B8: Msg1003Done sets 1 on every entity but the player
 };
 
 class VIClientGuild
@@ -388,6 +504,53 @@ public:
     void ShowMsg(unsigned short id);                  // 0x00BD90F8: word `id`, shown
     void ShowText(const unsigned short *s);           // 0x00BD9138: to the game window
 
+    // Accessors (names provisional; FrontiersForge supplies most of the meanings).
+    void SetP06DC0(int a, int b);                     // 0x00BD7708
+    void SetP06DC0(int a);                            // 0x00BD7718
+    void SetP06DC4(int b);                            // 0x00BD7720
+    int  GetClass();                                  // 0x00BD7798
+    int  GetRace();                                   // 0x00BD77A8
+    int  GetLevel();                                  // 0x00BD77B8
+    int  GetSelfP19();                                // 0x00BD77C8
+    int  GetHP();                                     // 0x00BD77F0
+    int  GetMaxHP();                                  // 0x00BD7800
+    int  GetPlayerP30();                              // 0x00BD7810
+    int  GetPower();                                  // 0x00BD7820
+    int  GetMaxPower();                               // 0x00BD7830
+    int  GetExp();                                    // 0x00BD7840
+    unsigned int GetGroupMemberId(int i);             // 0x00BD7850
+    int  GetGroupMemberHP(int i);                     // 0x00BD7870
+    int  GetGroupMemberHPKnown(int i);                // 0x00BD7890
+    int  GetGroupMemberActive(int i);                 // 0x00BD78B0
+    char *GetGroupMemberName(int i);                  // 0x00BD78D0
+    int  GetTargetP19();                              // 0x00BD78F0
+    int  IsGroupLeader();                             // 0x00BD7A50
+    int  GetP2BAEC();                                 // 0x00BE3900
+    char *GetP4F098();                                // 0x00BE3918
+    int  GetWorldId();                                // 0x00BE3928
+    unsigned short *GetReplyName();                   // 0x00BE3930
+    VIUI *GetUI();                                    // 0x00BE3940
+    VIRaster *GetRaster();                            // 0x00BE3948
+    VIScene *GetScene();                              // 0x00BE3950
+    VIClientPart00190 *GetP00190();                   // 0x00BE3958
+    VIWalkCamera *GetWalkCamera();                    // 0x00BE3960
+    VIDictionary *GetDictionary();                    // 0x00BE3968
+    VIClientPart06D50 *GetP06D50();                   // 0x00BE3970
+    void *GetActiveWindow();                          // 0x00BE3978
+    long GetP07568();                                 // 0x00BE3990
+    int  GetP06DC0();                                 // 0x00BE3998
+    int  GetP06DC4();                                 // 0x00BE39A0
+    unsigned int GetSelfId();                         // 0x00BE39A8
+    VIPlayer *GetPlayer();                            // 0x00BE39B0
+    int  IsUnderLiquid();                             // 0x00BE39C0
+    unsigned int GetTargetId();                       // 0x00BE39E0
+    int  GetEffectCount();                            // 0x00BE39F0
+    unsigned int GetEffectIcon(int i);                // 0x00BE3A08
+    unsigned short *GetEffectName(int i);             // 0x00BE3A28
+    int  GetTargetInfoValid();                        // 0x00BE3A40
+    int  GetTargetDisposition();                      // 0x00BE3A58
+    int  GetP2BB70();                                 // 0x00BE3A70
+
     // The network opcode dispatcher (DRDP message type 0xFB), name provisional.
     void ProcessMessage(long src, const void *data, int size);  // 0x00BD0DC8
 
@@ -400,7 +563,7 @@ public:
     void Msg0774(VIMemStream &s);                                       // 0x00BD3548
     int  InGroup();                                                     // 0x00BD7A68: returns +0x2BD74
     void GroupChanged(int);                                             // 0x00BD9B48: the group-reset tail's call when +0x382E4 == 2
-    void PlaySound(int id);                                             // 0x00BD8E78: m_ui sound
+    int  PlaySound(int id);                                             // 0x00BD8E78: m_ui sound (returns SoundPlay's result)
     void Msg0034(VIMemStream &s);                                       // 0x00BDBD58
     void ShowDialog(int id, const unsigned short *text, int, int);      // 0x00BDBC70: 0x0046
     void CharacterList(VIMemStream &s);                                 // 0x00BD2E80: 0x002C
@@ -432,12 +595,22 @@ public:
     void CharSelectMsg(int id);                                         // 0x00BD30E8: 0x07F0-0x07F4
     void Msg07A1(VIMemStream &s);                                       // 0x00BD3158: reads 8 bytes, Disconnect(13, 0)
     void Msg07A2(VIMemStream &s);                                       // 0x00BD31A0: Disconnect(14, 0)
-    void QuestStage(int a, int delta);                                  // 0x00BD9AA8: 0x0036
+    void QuestStage(unsigned char flag, int delta);                                  // 0x00BD9AA8: 0x0036
     void Msg001D(int z);                                                // 0x00BDCAF0
     void Msg000A(int a, int b);                                         // 0x00BD9C18
     void Msg0010(VIMemStream &s);                                       // 0x00BD9D60
     void Msg0776(int a, int b, int c);                                  // 0x00BD9E50
-    void ClearP071E4();                                                 // 0x00BD5B60: +0x71E4 = 0
+    int  HasInvSpace();                                                 // 0x00BCC368, name provisional (AddInvItem)
+    void SetActiveWindow(VIWnd *w);                                     // 0x00BD7618, name provisional (FrontiersForge window.lua)
+    void TargetInfo(int type, int disp, unsigned int id);               // 0x00BE4FC0, name provisional (Msg007B)
+    void Msg0777Done(int z);                                            // 0x00BC2528, name provisional (Msg0777)
+    void TradeName(char *buf);                                          // 0x00BCCCB8, name provisional (Trade20)
+    void QuestHook();                                                   // 0x00BCE5D8, name provisional (QuestStage)
+    void SendMsg(int op, int a, int b);                                 // 0x00BE4CF0, name provisional (Reset: op 1572)
+    void Msg0790Done();                                                 // 0x00BDE050, name provisional (Msg0790)
+    void TradeSetup();                                                  // 0x00BCCD58, name provisional (Trade02)
+    void TradeReset();                                                  // 0x00BDA168, name provisional (Trade16)
+    void StopAutoAttack();                                              // 0x00BD5B60: +0x71E4 = 0 (FrontiersForge)
     void Msg077A(int id);                                               // 0x00BE4B78
     void Msg0057(int a, int b);                                         // 0x00BDA1A8
     void Trade02(int id);                                               // 0x00BDA2C0: 0x0056 sub 2
@@ -458,7 +631,7 @@ public:
     void SetTime(long a, long b);                                       // 0x00BD0508: 0x0013
     void Msg0045(int z);                                                // 0x00BDB820
     void Msg006E();                                                     // 0x00BDB8F0: an empty function
-    void Msg007B(int a);                                                // 0x00BDBAC8
+    void Msg007B(unsigned int id);                                      // 0x00BDBAC8: -1 is lui+ori, so unsigned
     void Msg007C(const unsigned short *text);                           // 0x00BDBB30
     void Msg007D(int z);                                                // 0x00BDBB98
     void SetSpeed(float v);                                             // 0x00BDD540: 0x00F8
@@ -476,15 +649,29 @@ public:
     bool          m_quit;                               // +0x0005C: IsRunning's xori
     char          m_g_m_p00080[0x00080 - (0x0005C + sizeof(bool))];
     int           m_p00080;                             // +0x00080: Disconnect zeroes it
-    char          m_g00084[0x04FE0 - (0x00084)];
+    char          m_g00084[0x00190 - (0x00084)];
+    VIClientPart00190 m_p00190;                         // +0x00190: a CLIENT object (the roll-call)
+    char          m_g_m_raster[0x00380 - (0x00190 + sizeof(VIClientPart00190))];
+    VIRaster      m_raster;                             // +0x00380: m_ui.m_raster points here
+    char          m_g_m_sound[0x04FE0 - (0x00380 + sizeof(VIRaster))];
     VISoundDevice m_sound;                              // +0x04FE0
     char          m_g_m_console[0x06390 - (0x04FE0 + sizeof(VISoundDevice))];
     VIConsole     m_console;                            // +0x06390: Shutdown closes it
-    char          m_g_m_loader[0x06638 - (0x06390 + sizeof(VIConsole))];
+    char          m_g_m_dict[0x06618 - (0x06390 + sizeof(VIConsole))];
+    VIDictionary  m_dict;                               // +0x06618: m_ui.m_dict points here
+    char          m_g_m_worldId[0x06630 - (0x06618 + sizeof(VIDictionary))];
+    int           m_worldId;                            // +0x06630: the world; -1 = none (FrontiersForge util.lua)
+    char          m_g_m_loader[0x06638 - (0x06634)];
     VILoader      m_loader;                             // +0x06638
-    char          m_g_m_p06DC8[0x06DC8 - (0x06638 + sizeof(VILoader))];
+    char          m_g_m_p06D50[0x06D50 - (0x06638 + sizeof(VILoader))];
+    VIClientPart06D50 m_p06D50;                         // +0x06D50: a CLIENT object (the roll-call)
+    char          m_g_m_p06DC0[0x06DC0 - (0x06D50 + sizeof(VIClientPart06D50))];
+    int           m_p06DC0;                             // +0x06DC0
+    int           m_p06DC4;                             // +0x06DC4
     int           m_p06DC8;                             // +0x06DC8: 0x00FC stores a byte here
-    char          m_g06DCC[0x071E4 - (0x06DCC)];
+    char          m_g06DCC[0x06DD0 - (0x06DCC)];
+    VIWalkCamera  m_walkCam;                            // +0x06DD0: a whole VIWalkCamera (FrontiersForge camera.lua)
+    char          m_g_m_autoAttack[0x071E4 - (0x06DD0 + sizeof(VIWalkCamera))];
     unsigned char m_autoAttack;                         // +0x071E4: auto-attack on; ClearP071E4 is `sb zero` (FrontiersForge player.lua)
     char          m_g071E5[0x071F8 - (0x071E5)];
     unsigned int  m_selfId;                             // +0x071F8: own entity id (0x0775, 0x00DB); FrontiersForge 0x1FB6928; -1 is lui+ori
@@ -492,35 +679,39 @@ public:
     VIEntity *    m_entities[24];                       // +0x07500: Disconnect deletes them; FindEntity
     drdp_t *      m_drdp;                               // +0x07560
     connection_t * m_conn;                              // +0x07564
-    char          m_g07568[0x07578 - (0x07568)];
+    long          m_p07568;                             // +0x07568: 64-bit (ld)
+    long          m_p07570;                             // +0x07570: 64-bit (sd of li -1)
     int           m_p07578;                             // +0x07578: 0x07B2; the ctor sets 100
     char          m_g0757C[0x07590 - (0x0757C)];
     VIScene       m_scene;                              // +0x07590
     unsigned int  m_target;                             // +0x0C140: the target's entity id, -1 = none (lui+ori; FrontiersForge)
-    char          m_g_m_level[0x0C300 - (0x0C144)];
-    int           m_level;                              // +0x0C300: player+0x24, the level (FrontiersForge); 0x0020
-    int           m_pC304;                              // +0x0C304: 0x0020
-    int           m_pC308;                              // +0x0C308: 0x00D9
-    char          m_g0C30C[0x0C310 - (0x0C30C)];
-    int           m_pC310;                              // +0x0C310: 0x0052
-    char          m_g0C314[0x0C31C - (0x0C314)];
-    int           m_pC31C;                              // +0x0C31C: 0x0036
-    int           m_pC320;                              // +0x0C320: 0x001C
-    char          m_g0C324[0x0C428 - (0x0C324)];
+    char          m_g0C144[0x0C188 - (0x0C144)];
+    int           m_pC188;                              // +0x0C188: StopMusic zeroes it
+    int           m_pC18C;                              // +0x0C18C: StopMusic stores -1 (li: a signed int)
+    unsigned char m_pC190;                              // +0x0C190: StopMusic zeroes it
+    char          m_g0C191[0x0C1B0 - (0x0C191)];
+    int           m_pC1B0;                              // +0x0C1B0: Notify zeroes it (FrontiersForge: "dead")
+    char          m_g_m_player[0x0C2DC - (0x0C1B4)];
+    VIPlayer      m_player;                             // +0x0C2DC: the player's own record (FrontiersForge)
     VIInvList     m_inventory;                          // +0x0C428: 0x0060
-    char          m_g_HaveCorpse[0x13B94 - (0x0C428 + sizeof(VIInvList))];
+    char          m_g_m_p13B90[0x13B90 - (0x0C428 + sizeof(VIInvList))];
+    int           m_p13B90;                             // +0x13B90: 0x00D7 zeroes it; window code reads and writes it
     unsigned char HaveCorpse;                           // +0x13B94: named by the assert (0x0018)
     char          m_g13B95[0x13B98 - (0x13B95)];
     VIItemList    m_corpse;                             // +0x13B98: 0x0018 / 0x0016
     char          m_g_m_p1B300[0x1B300 - (0x13B98 + sizeof(VIItemList))];
     unsigned int  m_p1B300;                             // +0x1B300: 0x00B7; the merchant's entity id, -1 = none (lui+ori; FrontiersForge)
-    char          m_g1B304[0x1B308 - (0x1B304)];
+    int           m_p1B304;                             // +0x1B304: zeroed by 0x00D7, AddInvItem, MerchantOpen
     int           m_p1B308;                             // +0x1B308: 0x00B7
     int           m_p1B30C;                             // +0x1B30C: 0x00B7
     VIItemList    m_merchant;                           // +0x1B310: 0x00B7
     char          m_g_m_merchantName[0x22A78 - (0x1B310 + sizeof(VIItemList))];
     unsigned short m_merchantName[128];                 // +0x22A78: 0x00B7
-    char          m_g22B78[0x2BB04 - (0x22B78)];
+    unsigned int  m_p22B78;                             // +0x22B78: 0x0063 stores -1 (lui+ori: unsigned)
+    char          m_g22B7C[0x2BAEC - (0x22B7C)];
+    int           m_p2BAEC;                             // +0x2BAEC
+    char          m_g2BAF0[0x2BB00 - (0x2BAF0)];
+    unsigned int  m_p2BB00;                             // +0x2BB00: Trade20 compares it with -1 (lui+ori)
     int           m_p2BB04;                             // +0x2BB04: 0x0056's default arm
     int           m_tradePartner;                       // +0x2BB08: 0x0056
     unsigned int  m_p2BB0C;                             // +0x2BB0C: 0x007C / 0x007D; -1 is lui+ori (0x00BC0680)
@@ -529,32 +720,46 @@ public:
     VIMap<int, VIAbility> m_abilities;                  // +0x2BB2C: 0x00B3..0x00FF's ability map (FrontiersForge)
     char          m_g_m_p2BB60[0x2BB60 - (0x2BB2C + sizeof(VIMap<int, VIAbility>))];
     int           m_p2BB60;                             // +0x2BB60: 0x00B4/B5/B6/B8/CD
-    char          m_g2BB64[0x2BB78 - (0x2BB64)];
+    int           m_targetInfoValid;                    // +0x2BB64: 0x0010 sets 1 (FrontiersForge entity.lua)
+    int           m_p2BB68;                             // +0x2BB68
+    int           m_targetDisposition;                  // +0x2BB6C: 0..6 (0x0010)
+    int           m_p2BB70;                             // +0x2BB70: a reset sets 2
+    int           m_p2BB74;                             // +0x2BB74: a reset sets 1
     VIWndGame *   m_wndGame;                            // +0x2BB78: ShowText's window
     char          m_g2BB7C[0x2BB84 - (0x2BB7C)];
     VIWndLogin *  m_wndLogin;                           // +0x2BB84: the character-select message window
     VIWnd2BB88 *  m_wnd2BB88;                           // +0x2BB88: 0x0012
     char          m_g2BB8C[0x2BB98 - (0x2BB8C)];
-    char          m_p2BB98[0x2BD40 - 0x2BB98];          // +0x2BB98: an object whose address Disconnect compares +0x2BD40 to
+    VIWnd2BB98    m_p2BB98;                             // +0x2BB98: a window; Disconnect compares +0x2BD40 to it
     void *        m_p2BD40;                             // +0x2BD40
-    char          m_g2BD44[0x2BD70 - (0x2BD44)];
+    VIWnd *       m_p2BD44;                             // +0x2BD44: Notify / CharSelectMsg store the window they activate
+    char          m_g2BD48[0x2BD58 - (0x2BD48)];
+    VIPool<VIRec32_BE2DE8> m_p2BD58;                    // +0x2BD58: Reset drains it; fills the gap to +0x2BD70
     unsigned int  m_p2BD70;                             // +0x2BD70: group reset: -1; unsigned (lui+ori, phase 39 lever)
     int           m_inGroup;                            // +0x2BD74: InGroup returns it
     int           m_p2BD78;                             // +0x2BD78: group reset: 0
-    char          m_g2BD7C[0x2BE4C - (0x2BD7C)];
+    VIPartyMember m_group[4];                           // +0x2BD7C: exactly to +0x2BE4C (FrontiersForge group.lua)
     int           m_p2BE4C;                             // +0x2BE4C: group reset: 0
     unsigned int  m_p2BE50;                             // +0x2BE50: 0x007E / 0x007F (unsigned: its -1 is lui+ori)
     unsigned char m_p2BE54;                             // +0x2BE54: 0x007F
     char          m_g2BE55[0x2BE6C - (0x2BE55)];
     int           m_charCount;                          // +0x2BE6C: 0x002E / 0x0065 / 0x002F decrement it
-    char          m_g2BE70[0x2CEE4 - (0x2BE70)];
+    char          m_g2BE70[0x2C170 - (0x2BE70)];
+    int           m_effectCount;                        // +0x2C170: active effects (state channel 0x43; FrontiersForge)
+    unsigned int  m_effectIcon[8];                      // +0x2C174
+    unsigned short m_effectName[8][64];                 // +0x2C194
+    char          m_g2C594[0x2C6E0 - (0x2C594)];
+    unsigned short m_questTitle[8][128];                // +0x2C6E0 (FrontiersForge quest_log.lua)
+    int           m_questCount;                         // +0x2CEE0: 0x007C / 0x007D
     float         m_speed;                              // +0x2CEE4: 0x00F8
     char          m_g2CEE8[0x2E7F0 - (0x2CEE8)];
     char          m_p2E7F0;                             // +0x2E7F0: Disconnect zeroes it
     char          m_p2E7F1;                             // +0x2E7F1: Disconnect zeroes it
     char          m_g2E7F2[0x2EBFC - (0x2E7F2)];
     int           m_p2EBFC;                             // +0x2EBFC: Disconnect zeroes it
-    char          m_g2EC00[0x2EC70 - (0x2EC00)];
+    char          m_g2EC00[0x2EC30 - (0x2EC00)];
+    VIClientClock m_clockA;                             // +0x2EC30: SetTime
+    VIClientClock m_clockB;                             // +0x2EC50: SetTime
     VIMap<int, VIBuddy> m_buddies;                      // +0x2EC70: 0x03D5 / 0x03D6
     char          m_g_m_guild[0x2EC84 - (0x2EC70 + sizeof(VIMap<int, VIBuddy>))];
     VIClientGuild m_guild;                              // +0x2EC84: vtable slot 4
@@ -582,16 +787,23 @@ public:
     VIClientPart4EC58 m_p4EC58;                         // +0x4EC58: slot 14
     char          m_g_m_p4F078[0x4F078 - (0x4EC58 + sizeof(VIClientPart4EC58))];
     VIClientPart4F078 m_p4F078;                         // +0x4F078: slot 15
-    char          m_g_m_p4F0B0[0x4F0B0 - (0x4F078 + sizeof(VIClientPart4F078))];
+    char          m_g_m_p4F098[0x4F098 - (0x4F078 + sizeof(VIClientPart4F078))];
+    char          m_p4F098[0x4F0B0 - 0x4F098];          // +0x4F098: GetP4F098 returns its address
     void *        m_p4F0B0;                             // +0x4F0B0: FreeBuffer frees it
     int           m_p4F0B4;                             // +0x4F0B4: FreeBuffer zeroes it
     unsigned short m_p4F0B8[24];                        // +0x4F0B8: 0x07A3 (str8to16)
     int           m_p4F0E8;                             // +0x4F0E8: Disconnect's reason; 0x002C sets 21
     int           m_p4F0EC;                             // +0x4F0EC: Shutdown stores -1
-    char          m_g4F0F0[0x4F12C - (0x4F0F0)];
+    long          m_p4F0F0;                             // +0x4F0F0: 0x0790 reads 8 bytes
+    int           m_p4F0F8;                             // +0x4F0F8: 0x0790 reads 4
+    long          m_p4F100;                             // +0x4F100: 0x0790 reads 8
+    long          m_p4F108;                             // +0x4F108: 0x0790 stores -1 (sd)
+    char          m_g4F110[0x4F12C - (0x4F110)];
     int           m_exitCode;                           // +0x4F12C: client_main returns it
     int           m_p4F130;                             // +0x4F130: Disconnect tests it
-    char          m_g4F134[0x50304 - (0x4F134)];
+    char          m_g4F134[0x4FD28 - (0x4F134)];
+    VIClientPart4FD28 m_p4FD28;                         // +0x4FD28: DamageFromSelf
+    char          m_g_m_p50304[0x50304 - (0x4FD28 + sizeof(VIClientPart4FD28))];
     int           m_p50304;                             // +0x50304: 0x07D1
     char          m_g50308[0x50330 - 0x50308];
 };
