@@ -62,19 +62,19 @@
 0x00BB7C70  [CODE]  func_00BB7C70
 0x00BB7D40  [CODE]  func_00BB7D40
 0x00BB7D70  [CODE]  func_00BB7D70
-0x00BB7DB0  [CODE]  func_00BB7DB0
-0x00BB7E08  [CODE]  func_00BB7E08
-0x00BB7E10  [CODE]  func_00BB7E10
-0x00BB7EC8  [CODE]  func_00BB7EC8
-0x00BB7F20  [CODE]  func_00BB7F20
-0x00BB7F90  [CODE]  func_00BB7F90
-0x00BB8038  [CODE]  func_00BB8038
-0x00BB8190  [CODE]  func_00BB8190
-0x00BB81E8  [CODE]  func_00BB81E8
-0x00BB82E0  [CODE]  func_00BB82E0
-0x00BB8398  [CODE]  func_00BB8398
-0x00BB8450  [CODE]  func_00BB8450
-0x00BB8718  [CODE]  func_00BB8718
+0x00BB7DB0  [CODE]  Begin__Ct5VIMap2ZiZ13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB7E08  [CODE]  End__Ct5VIMap2ZiZ13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB7E10  [CODE]  Next__Ct5VIMap2ZiZ13VIRec4_BB7DB0i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB7EC8  [CODE]  DestroyPool__t5VIMap2ZiZ13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB7F20  [CODE]  Clear__t5VIMap2ZiZ13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB7F90  [CODE]  LinkFreeChain__t5VIMap2ZiZ13VIRec4_BB7DB0i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB8038  [CODE]  Allocate__t5VIMap2ZiZ13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB8190  [CODE]  Init__t5VIMap2ZiZ13VIRec4_BB7DB0i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB81E8  [CODE]  AddNode__t5VIMap2ZiZ13VIRec4_BB7DB0ii  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB82E0  [CODE]  LeftRotate__t5VIMap2ZiZ13VIRec4_BB7DB0i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB8398  [CODE]  RightRotate__t5VIMap2ZiZ13VIRec4_BB7DB0i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB8450  [CODE]  Insert__t5VIMap2ZiZ13VIRec4_BB7DB0RCiRC13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
+0x00BB8718  [CODE]  Find__Ct5VIMap2ZiZ13VIRec4_BB7DB0RCi  # name provisional: placeholder value type (phase 62, template copy)
 0x00BB8780  [CODE]  func_00BB8780
 0x00BB8790  [CODE]  func_00BB8790
 0x00BB87E0  [CODE]  func_00BB87E0
@@ -224,11 +224,11 @@
 0x00BBDC80  [CODE]  func_00BBDC80
 0x00BBDCA8  [CODE]  func_00BBDCA8
 0x00BBDCF0  [CODE]  func_00BBDCF0
-0x00BBDD10  [CODE]  func_00BBDD10
-0x00BBDD68  [CODE]  func_00BBDD68
-0x00BBDD70  [CODE]  func_00BBDD70
-0x00BBDE28  [CODE]  func_00BBDE28
-0x00BBDE80  [CODE]  func_00BBDE80
+0x00BBDD10  [CODE]  Begin__Ct5VIMap2ZiZ14VIRec40_BBDD10  # name provisional: placeholder value type (phase 62, template copy)
+0x00BBDD68  [CODE]  End__Ct5VIMap2ZiZ14VIRec40_BBDD10  # name provisional: placeholder value type (phase 62, template copy)
+0x00BBDD70  [CODE]  Next__Ct5VIMap2ZiZ14VIRec40_BBDD10i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BBDE28  [CODE]  DestroyPool__t5VIMap2ZiZ14VIRec40_BBDD10  # name provisional: placeholder value type (phase 62, template copy)
+0x00BBDE80  [CODE]  _$_t5VIMap2ZiZ14VIRec40_BBDD10  # name provisional: placeholder value type (phase 62, template copy)
 0x00BBDEE8  [CODE]  func_00BBDEE8
 0x00BBDEF8  [CODE]  func_00BBDEF8
 0x00BBDF20  [CODE]  func_00BBDF20
@@ -848,11 +848,11 @@
 0x00BDF258  [CODE]  func_00BDF258
 0x00BDF2A8  [CODE]  func_00BDF2A8
 0x00BDF310  [CODE]  func_00BDF310
-0x00BDF330  [CODE]  func_00BDF330
+0x00BDF330  [CODE]  Begin__Ct5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BDF388  [CODE]  End__Ct5VIMap2ZiZ7VIBuddy  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
-0x00BDF390  [CODE]  func_00BDF390
-0x00BDF448  [CODE]  func_00BDF448
-0x00BDF4A0  [CODE]  func_00BDF4A0
+0x00BDF390  [CODE]  Next__Ct5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
+0x00BDF448  [CODE]  DestroyPool__t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
+0x00BDF4A0  [CODE]  _$_t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BDF508  [CODE]  func_00BDF508
 0x00BDF558  [CODE]  func_00BDF558
 0x00BDF5C0  [CODE]  func_00BDF5C0
@@ -908,7 +908,7 @@
 0x00BE17C0  [CODE]  func_00BE17C0
 0x00BE1848  [CODE]  func_00BE1848
 0x00BE1A20  [CODE]  func_00BE1A20
-0x00BE1A88  [CODE]  func_00BE1A88
+0x00BE1A88  [CODE]  Clear__t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BE1AF8  [CODE]  func_00BE1AF8
 0x00BE1BA0  [CODE]  func_00BE1BA0
 0x00BE1C08  [CODE]  func_00BE1C08
@@ -921,14 +921,14 @@
 0x00BE1E88  [CODE]  func_00BE1E88
 0x00BE1ED8  [CODE]  func_00BE1ED8
 0x00BE1F68  [CODE]  Find__Ct5VIMap2ZiZ7VIBuddyRCi  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
-0x00BE1FD0  [CODE]  func_00BE1FD0
-0x00BE2078  [CODE]  func_00BE2078
-0x00BE2240  [CODE]  func_00BE2240
-0x00BE2338  [CODE]  func_00BE2338
-0x00BE23F0  [CODE]  func_00BE23F0
+0x00BE1FD0  [CODE]  LinkFreeChain__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
+0x00BE2078  [CODE]  Allocate__t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
+0x00BE2240  [CODE]  AddNode__t5VIMap2ZiZ7VIBuddyii  # VIMap<int, VIBuddy> (phase 62, template copy)
+0x00BE2338  [CODE]  LeftRotate__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
+0x00BE23F0  [CODE]  RightRotate__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BE24A8  [CODE]  Insert__t5VIMap2ZiZ7VIBuddyRCiRC7VIBuddy  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
-0x00BE2818  [CODE]  func_00BE2818
-0x00BE2BD0  [CODE]  func_00BE2BD0
+0x00BE2818  [CODE]  EraseFixup__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
+0x00BE2BD0  [CODE]  FreeNode__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BE2C10  [CODE]  Erase__t5VIMap2ZiZ7VIBuddyi  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
 0x00BE2DE8  [CODE]  func_00BE2DE8
 0x00BE2E90  [CODE]  func_00BE2E90
@@ -1368,23 +1368,23 @@
 0x00BF1DC0  [CODE]  func_00BF1DC0
 0x00BF1E10  [CODE]  func_00BF1E10
 0x00BF1E28  [CODE]  func_00BF1E28
-0x00BF1E48  [CODE]  func_00BF1E48
+0x00BF1E48  [CODE]  Begin__Ct5VIMap2ZiZ13VIGuildMember  # VIMap<int, VIGuildMember> (phase 62, template copy)
 0x00BF1EA0  [CODE]  func_00BF1EA0
-0x00BF1EA8  [CODE]  func_00BF1EA8
-0x00BF1F60  [CODE]  func_00BF1F60
-0x00BF1FB8  [CODE]  func_00BF1FB8
+0x00BF1EA8  [CODE]  Next__Ct5VIMap2ZiZ13VIGuildMemberi  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF1F60  [CODE]  DestroyPool__t5VIMap2ZiZ13VIGuildMember  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF1FB8  [CODE]  _$_t5VIMap2ZiZ13VIGuildMember  # VIMap<int, VIGuildMember> (phase 62, template copy)
 0x00BF2020  [CODE]  func_00BF2020
-0x00BF2038  [CODE]  func_00BF2038
-0x00BF20A8  [CODE]  func_00BF20A8
-0x00BF2110  [CODE]  func_00BF2110
-0x00BF21B8  [CODE]  func_00BF21B8
-0x00BF2380  [CODE]  func_00BF2380
-0x00BF2478  [CODE]  func_00BF2478
-0x00BF2530  [CODE]  func_00BF2530
+0x00BF2038  [CODE]  Clear__t5VIMap2ZiZ13VIGuildMember  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF20A8  [CODE]  func_00BF20A8  # dead TU copy of Find__Ct5VIMap2ZiZ13VIGuildMemberRCi (byte-identical, unreferenced; phase 62)
+0x00BF2110  [CODE]  LinkFreeChain__t5VIMap2ZiZ13VIGuildMemberi  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF21B8  [CODE]  Allocate__t5VIMap2ZiZ13VIGuildMember  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF2380  [CODE]  AddNode__t5VIMap2ZiZ13VIGuildMemberii  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF2478  [CODE]  LeftRotate__t5VIMap2ZiZ13VIGuildMemberi  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF2530  [CODE]  RightRotate__t5VIMap2ZiZ13VIGuildMemberi  # VIMap<int, VIGuildMember> (phase 62, template copy)
 0x00BF25E8  [CODE]  Insert__t5VIMap2ZiZ13VIGuildMemberRCiRC13VIGuildMember  # name provisional: VIMap<int, VIGuildMember> copy (phase 62)
-0x00BF2908  [CODE]  func_00BF2908
-0x00BF2CC0  [CODE]  func_00BF2CC0
-0x00BF2D00  [CODE]  func_00BF2D00
+0x00BF2908  [CODE]  EraseFixup__t5VIMap2ZiZ13VIGuildMemberi  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF2CC0  [CODE]  FreeNode__t5VIMap2ZiZ13VIGuildMemberi  # VIMap<int, VIGuildMember> (phase 62, template copy)
+0x00BF2D00  [CODE]  Erase__t5VIMap2ZiZ13VIGuildMemberi  # VIMap<int, VIGuildMember> (phase 62, template copy)
 0x00BF2ED8  [CODE]  func_00BF2ED8
 0x00BF2EF0  [CODE]  func_00BF2EF0
 0x00BF2F38  [CODE]  func_00BF2F38
@@ -1417,30 +1417,30 @@
 0x00BF40C8  [CODE]  func_00BF40C8
 0x00BF4120  [CODE]  func_00BF4120
 0x00BF4188  [CODE]  func_00BF4188
-0x00BF41A8  [CODE]  func_00BF41A8
-0x00BF4200  [CODE]  func_00BF4200
-0x00BF4208  [CODE]  func_00BF4208
-0x00BF42C0  [CODE]  func_00BF42C0
-0x00BF4318  [CODE]  func_00BF4318
+0x00BF41A8  [CODE]  Begin__Ct5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4200  [CODE]  End__Ct5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4208  [CODE]  Next__Ct5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF42C0  [CODE]  DestroyPool__t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4318  [CODE]  _$_t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF4380  [CODE]  func_00BF4380
 0x00BF43E8  [CODE]  func_00BF43E8
 0x00BF4490  [CODE]  func_00BF4490
 0x00BF45A8  [CODE]  func_00BF45A8
-0x00BF45F8  [CODE]  func_00BF45F8
-0x00BF4668  [CODE]  func_00BF4668
-0x00BF4710  [CODE]  func_00BF4710
-0x00BF4868  [CODE]  func_00BF4868
-0x00BF48C0  [CODE]  func_00BF48C0
+0x00BF45F8  [CODE]  Clear__t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4668  [CODE]  LinkFreeChain__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4710  [CODE]  Allocate__t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4868  [CODE]  Init__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF48C0  [CODE]  Find__Ct5VIMap2ZUiZ13VIRec4_BF41A8RCUi  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF4928  [CODE]  func_00BF4928
-0x00BF4930  [CODE]  func_00BF4930
-0x00BF49E8  [CODE]  func_00BF49E8
-0x00BF4AA0  [CODE]  func_00BF4AA0
-0x00BF4E58  [CODE]  func_00BF4E58
-0x00BF4E98  [CODE]  func_00BF4E98
+0x00BF4930  [CODE]  LeftRotate__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF49E8  [CODE]  RightRotate__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4AA0  [CODE]  EraseFixup__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4E58  [CODE]  FreeNode__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF4E98  [CODE]  Erase__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF5070  [CODE]  func_00BF5070
 0x00BF5150  [CODE]  func_00BF5150
-0x00BF5268  [CODE]  func_00BF5268
-0x00BF5360  [CODE]  func_00BF5360
+0x00BF5268  [CODE]  AddNode__t5VIMap2ZUiZ13VIRec4_BF41A8ii  # name provisional: placeholder value type (phase 62, template copy)
+0x00BF5360  [CODE]  Insert__t5VIMap2ZUiZ13VIRec4_BF41A8RCUiRC13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF5628  [CODE]  func_00BF5628
 0x00BF5648  [CODE]  func_00BF5648
 0x00BF5670  [CODE]  Recv0D41__17VIClientPart2EFD0R11VIMemStream  # name provisional (phase 62 dispatcher)
@@ -5813,21 +5813,21 @@
 0x00CC0BA8  [CODE]  func_00CC0BA8
 0x00CC0C00  [CODE]  func_00CC0C00
 0x00CC0C68  [CODE]  func_00CC0C68
-0x00CC0C88  [CODE]  func_00CC0C88
-0x00CC0CE0  [CODE]  func_00CC0CE0
-0x00CC0CE8  [CODE]  func_00CC0CE8
-0x00CC0DA0  [CODE]  func_00CC0DA0
-0x00CC0DF8  [CODE]  func_00CC0DF8
+0x00CC0C88  [CODE]  Begin__Ct5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC0CE0  [CODE]  End__Ct5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC0CE8  [CODE]  Next__Ct5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC0DA0  [CODE]  DestroyPool__t5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC0DF8  [CODE]  _$_t5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC0E60  [CODE]  func_00CC0E60
-0x00CC0EC8  [CODE]  func_00CC0EC8
+0x00CC0EC8  [CODE]  Clear__t5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC0F38  [CODE]  func_00CC0F38
 0x00CC0FE0  [CODE]  func_00CC0FE0
 0x00CC1190  [CODE]  func_00CC1190
-0x00CC1298  [CODE]  func_00CC1298
-0x00CC1350  [CODE]  func_00CC1350
-0x00CC1408  [CODE]  func_00CC1408
-0x00CC17C0  [CODE]  func_00CC17C0
-0x00CC1800  [CODE]  func_00CC1800
+0x00CC1298  [CODE]  LeftRotate__t5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC1350  [CODE]  RightRotate__t5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC1408  [CODE]  EraseFixup__t5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC17C0  [CODE]  FreeNode__t5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
+0x00CC1800  [CODE]  Erase__t5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC19D8  [CODE]  func_00CC19D8
 0x00CC1A80  [CODE]  func_00CC1A80
 0x00CC1BE0  [CODE]  func_00CC1BE0
@@ -6020,9 +6020,9 @@
 0x00CCA5C8  [LIB]  __negsf2
 0x00CCA600  [LIB]  __make_fp
 0x00CCA630  [LIB]  fptodp
-0x00CCA670  [LIB]  func_00CCA670
+0x00CCA670  [LIB]  __builtin_delete  # CLIENT links its own copy
 0x00CCA6E8  [LIB]  __builtin_new
-0x00CCA810  [LIB]  func_00CCA810
+0x00CCA810  [LIB]  __builtin_vec_delete  # CLIENT links its own copy; same bytes as SUPPORT 0x004C4760
 0x00CCA888  [LIB]  __builtin_vec_new
 0x00CCA900  [LIB]  _$_9type_info
 0x00CCA930  [LIB]  __eq__C9type_infoRC9type_info

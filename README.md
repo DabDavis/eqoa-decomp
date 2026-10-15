@@ -6549,7 +6549,7 @@ closes and the next one opens CLIENT.
 
 ## Phase 62: CLIENT (opened 2026-10-15)
 
-**17 of 5,973 CLIENT functions byte-exact (2,308 bytes), 144 named, and the network opcode
+**95 of 5,973 CLIENT functions byte-exact (20,216 bytes), 215 named, and the network opcode
 dispatcher written in full** (`VIClient::ProcessMessage`, 2,093 instructions; its compare
 tree matches the target's 102 tests exactly; **17 words open**, all one register tie in
 `0x00B1`). Source is `modules/client/src/`; every tool takes `EQMODULE=CLIENT`.
@@ -6576,6 +6576,15 @@ tree matches the target's 102 tests exactly; **17 words open**, all one register
   out of line (55 → 28).
 - A third `unsigned int` (390 → 55), and a load that belongs before a call because it
   fills that call's delay slot (28 → 17).
+- **CLIENT carries its OWN copies of SUPPORT's containers**: gcc 2.95 emitted a template
+  instantiation in every TU that used it (no COMDAT), and the linker kept them all. The
+  seven template sources keep their definitions in `src/<name>_t.h` (moved verbatim;
+  `.text` identical), so a CLIENT TU instantiates the same source. **`eqtmpl.py`** names
+  an instantiation exactly: it compiles the class, walks the call graph from a live seed
+  naming each callee off the candidate's own relocations, and accepts a function only
+  byte-exact with every call landing on its named callee. `scan` solves placeholder
+  value types from the node stride (`VIRec<size>_<seed>`, `client_containers.cpp`).
+  78 functions so far; most of the 2,244 shape-matched copies are dead duplicates.
 - **A value held in TWO callee-saved registers, one for an `if` test and one for an arm, is
   a `const` local initialised from a call.** g++ expands the call into a temporary and
   copies it into the `const`; cse folds the test onto the temporary, and the branch-target

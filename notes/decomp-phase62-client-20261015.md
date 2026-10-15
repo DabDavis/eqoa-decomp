@@ -8,7 +8,8 @@ the phase starts here. **State at the end of day one: 13 of 5,973 functions byte
 its compare tree matches the target exactly; 611 words wrong, the rest of the residue
 diagnosed below). **Later the same day: 17 of 5,973 exact, and the dispatcher at 17 wrong
 words**, all in one case (`0x00B1`, a register-allocation tie measured to the pseudo
-below); findings 4-8.
+below); findings 4-8. **Then 95 of 5,973**, by CLIENT's own copies of SUPPORT's
+containers: see "CLIENT carries its own template copies" below.
 
 The dispatcher's map, case by case, is `decomp-phase62-dispatcher-survey-20261015.md`.
 
@@ -199,6 +200,61 @@ differ. The PRE order cannot be the lever: expression 63 (`sp+48`) is first set 
 first case's wide-string buffer, which dozens of cases share. Tried and unchanged at 17:
 declaration order, `for`/`while`/pointer loops, `targets + i`, `(int)n`, a nested block, a
 pointer copy for the call; a pointer used in the loop makes it worse.
+
+## CLIENT carries its own template copies (95 exact)
+
+**gcc 2.95 emitted a template instantiation in EVERY TU that used it.** There is no COMDAT
+on this toolchain: the linker kept every copy and resolved each call to one of them. So
+CLIENT holds its own `VIMap`/`VIArray`/`VIPool`/`VIList`/`VIVector` members, compiled from
+SUPPORT's template source.
+- **The scale.** 2,576 CLIENT functions have exactly the shape of a SUPPORT template
+  member once immediates are masked; 2,244 are 24 bytes or more.
+- **Most of those are DEAD DUPLICATES.** One `VIMap<int, 4-byte>` has 97 identical copies
+  of `Find`, `Insert`, `Init`, `Clear`, `Allocate`, `AddNode` and `DestroyPool`, every one
+  calling the same single `Begin`/`End`/`Next`. A copy nothing references is another TU's,
+  kept but never called; the guild map's second `Find` (`0x00BF20A8`) is one.
+- **Live copies per family** (referenced, still including look-alikes): VIMap 192, VIArray
+  165, VIPool 106, VIList 47, VIVector 22, VIMultiMap 4, VISet 1.
+- **The duplicates are a map of the original TUs.** Each TU emitted its copies after its
+  own functions, so a run of copies marks where a file ended. Not used yet.
+
+**The definitions are shared, not copied.** The seven SUPPORT template sources
+(`vimap`, `vimultimap`, `viset`, `viarray`, `vipool`, `vilist`, `vivector`) moved their
+definitions VERBATIM into `src/<name>_t.h`, which the `.cpp` includes where the block
+stood. The placement `new` sits behind a shared guard, because one CLIENT TU includes
+several of these. Proof that SUPPORT is unchanged:
+- all seven TUs assemble to byte-identical `.text` (the only change in the `.s` is a
+  `.file` line naming the header);
+- the whole-tree check is 3,665/3,751, as before.
+
+**`eqtmpl.py` names an instantiation exactly.**
+- `solve 'int, VIBuddy' Find=0x...` compiles `template class VIMap<K, V>;` whole.
+- It walks from the seeds. A member's callees are named off the candidate's OWN
+  relocations: a call to X at offset o means the target's jal at o lands on X.
+- A function is accepted only byte-exact with every call landing where its callee was
+  assigned. One level of callers (destructor, `Init`, `Clear`) is accepted on the same
+  test, which is what rejects another instantiation's identical-looking destructor; a
+  first version without that test claimed 171 "members" for one map.
+- `scan` seeds itself from every referenced VIMap-shaped function that carries the node
+  stride (`li t0,S` feeding `mult`). It tries placeholder value types of the right size
+  and alignment, and both key signednesses: a wrong one fails the byte match.
+- Results:
+  - `VIMap<int, VIBuddy>` and `VIMap<int, VIGuildMember>`, 16 members each, in their own
+    TUs.
+  - Four placeholder-typed maps (`VIRec<size>_<seed>`, 46 functions) in
+    `client_containers.cpp`.
+  - CLIENT's own `__builtin_vec_delete`/`__builtin_delete` (libgcc tail) named.
+  - 430 call sites, all landing on the member each names.
+
+**Still open in this line of work.**
+- The other families' solvers (VIArray, VIPool, VIList, VIVector).
+- The 472-byte ability map (FrontiersForge's `+0x2BB2C`). Its `Allocate` calls an
+  out-of-line `Node` copy constructor (`func_00BE0AB8`), so its value type has a
+  non-trivial copy and needs its real class.
+- Seven `LinkFreeChain`-shaped seeds that no VIMap reproduces: probably VIMultiMap or VISet,
+  which share the shape.
+- How to account for the dead duplicates. They are byte-identical to a matched copy;
+  counting them is a scoring decision, not a codegen one.
 
 ## What the notes had wrong (from the survey)
 

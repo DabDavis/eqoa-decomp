@@ -10903,3 +10903,32 @@ void VIClient::ShowText(const unsigned short *s)
 {
     m_wndGame->AddText(s);
 }
+
+// Layout checks added after the dispatcher was written: the CHKs at the top
+// cannot grow without moving the padded assert at line 10307.
+CHK(c_autoAttack, OFF(m_autoAttack) == 0x71E4)
+CHK(c_target,     OFF(m_target)     == 0xC140)
+CHK(c_1B300,      OFF(m_p1B300)     == 0x1B300)
+CHK(c_2BB10,      OFF(m_p2BB10)     == 0x2BB10)
+
+// VIClient.cpp's own copy of VIMap<int, VIBuddy>.  gcc 2.95 emitted a template
+// instantiation in EVERY TU that used it (there is no COMDAT here), so CLIENT holds
+// its own copies of SUPPORT's containers; these are the members this one has.  The
+// definitions are SUPPORT's own (src/vimap_t.h), unchanged.
+#include "vimap_t.h"
+template int VIMap<int, VIBuddy>::Begin() const;  // 0x00BDF330
+template int VIMap<int, VIBuddy>::End() const;  // 0x00BDF388
+template int VIMap<int, VIBuddy>::Next(int) const;  // 0x00BDF390
+template int VIMap<int, VIBuddy>::DestroyPool();  // 0x00BDF448
+template VIMap<int, VIBuddy>::~VIMap();  // 0x00BDF4A0
+template int VIMap<int, VIBuddy>::Clear();  // 0x00BE1A88
+template int VIMap<int, VIBuddy>::Find(const int &) const;  // 0x00BE1F68
+template int VIMap<int, VIBuddy>::LinkFreeChain(int);  // 0x00BE1FD0
+template int VIMap<int, VIBuddy>::Allocate();  // 0x00BE2078
+template int VIMap<int, VIBuddy>::AddNode(int, int);  // 0x00BE2240
+template int VIMap<int, VIBuddy>::LeftRotate(int);  // 0x00BE2338
+template int VIMap<int, VIBuddy>::RightRotate(int);  // 0x00BE23F0
+template int VIMap<int, VIBuddy>::Insert(const int &, const VIBuddy &);  // 0x00BE24A8
+template int VIMap<int, VIBuddy>::EraseFixup(int);  // 0x00BE2818
+template int VIMap<int, VIBuddy>::FreeNode(int);  // 0x00BE2BD0
+template int VIMap<int, VIBuddy>::Erase(int);  // 0x00BE2C10

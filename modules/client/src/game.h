@@ -192,16 +192,18 @@ public:
 // 40 bytes only, so a record that embeds it gets a SYNTHESIZED inline
 // constructor: that is why 0x03D5 hands the call a fresh `sp+48` (an inlined
 // `this` is substituted as a constant) while every later use of the record
-// shares one pseudo.  The class name is provisional.
+// shares one pseudo.  The class name is provisional; the fields are named from
+// FrontiersForge's read of VIClient's own record at +0xC2DC, which has this head
+// (claude-notes/frontiersforge-viclient-xref-20261015.md).
 class VIPlayerRecord
 {
 public:
     VIPlayerRecord();                              // 0x00CB7788, name provisional
     int  m_id;                                     // +0x00: -1; the buddy map's key
     char m_name[24];                               // +0x04: zeroed
-    int  m_p1C;                                    // +0x1C: -1
-    int  m_p20;                                    // +0x20: -1
-    int  m_p24;                                    // +0x24: -1
+    int  m_class;                                  // +0x1C: -1 (FrontiersForge player.lua: class)
+    int  m_race;                                   // +0x20: -1 (race)
+    int  m_level;                                  // +0x24: -1 (level; VIClient's own record has it at +0xC300)
 };
 
 // Its reader returns the stream, as every reader here does (VIMemStreamArray.h's
@@ -454,8 +456,10 @@ public:
     VILoader      m_loader;                             // +0x06638
     char          m_g_m_p06DC8[0x06DC8 - (0x06638 + sizeof(VILoader))];
     int           m_p06DC8;                             // +0x06DC8: 0x00FC stores a byte here
-    char          m_g06DCC[0x071F8 - (0x06DCC)];
-    int           m_selfId;                             // +0x071F8: own entity id (0x0775, 0x00DB); FrontiersForge 0x1FB6928
+    char          m_g06DCC[0x071E4 - (0x06DCC)];
+    unsigned char m_autoAttack;                         // +0x071E4: auto-attack on; ClearP071E4 is `sb zero` (FrontiersForge player.lua)
+    char          m_g071E5[0x071F8 - (0x071E5)];
+    unsigned int  m_selfId;                             // +0x071F8: own entity id (0x0775, 0x00DB); FrontiersForge 0x1FB6928; -1 is lui+ori
     char          m_g071FC[0x07500 - (0x071FC)];
     VIEntity *    m_entities[24];                       // +0x07500: Disconnect deletes them; FindEntity
     drdp_t *      m_drdp;                               // +0x07560
@@ -464,7 +468,8 @@ public:
     int           m_p07578;                             // +0x07578: 0x07B2; the ctor sets 100
     char          m_g0757C[0x07590 - (0x0757C)];
     VIScene       m_scene;                              // +0x07590
-    char          m_g_m_level[0x0C300 - (0x07590 + sizeof(VIScene))];
+    unsigned int  m_target;                             // +0x0C140: the target's entity id, -1 = none (lui+ori; FrontiersForge)
+    char          m_g_m_level[0x0C300 - (0x0C144)];
     int           m_level;                              // +0x0C300: player+0x24, the level (FrontiersForge); 0x0020
     int           m_pC304;                              // +0x0C304: 0x0020
     int           m_pC308;                              // +0x0C308: 0x00D9
@@ -480,7 +485,7 @@ public:
     char          m_g13B95[0x13B98 - (0x13B95)];
     VIItemList    m_corpse;                             // +0x13B98: 0x0018 / 0x0016
     char          m_g_m_p1B300[0x1B300 - (0x13B98 + sizeof(VIItemList))];
-    int           m_p1B300;                             // +0x1B300: 0x00B7
+    unsigned int  m_p1B300;                             // +0x1B300: 0x00B7; the merchant's entity id, -1 = none (lui+ori; FrontiersForge)
     char          m_g1B304[0x1B308 - (0x1B304)];
     int           m_p1B308;                             // +0x1B308: 0x00B7
     int           m_p1B30C;                             // +0x1B30C: 0x00B7
@@ -490,8 +495,9 @@ public:
     char          m_g22B78[0x2BB04 - (0x22B78)];
     int           m_p2BB04;                             // +0x2BB04: 0x0056's default arm
     int           m_tradePartner;                       // +0x2BB08: 0x0056
-    int           m_p2BB0C;                             // +0x2BB0C: 0x007C / 0x007D
-    char          m_g2BB10[0x2BB60 - (0x2BB10)];
+    unsigned int  m_p2BB0C;                             // +0x2BB0C: 0x007C / 0x007D; -1 is lui+ori (0x00BC0680)
+    unsigned int  m_p2BB10;                             // +0x2BB10: -1 (lui+ori) beside it at 0x00BC0680
+    char          m_g2BB14[0x2BB60 - (0x2BB14)];
     int           m_p2BB60;                             // +0x2BB60: 0x00B4/B5/B6/B8/CD
     char          m_g2BB64[0x2BB78 - (0x2BB64)];
     VIWndGame *   m_wndGame;                            // +0x2BB78: ShowText's window
