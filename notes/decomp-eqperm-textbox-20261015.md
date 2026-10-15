@@ -1,6 +1,6 @@
 # eqperm: a C++ permuter, and what it pinned down about TextBox (2026-10-14/15)
 
-**Status:** tool built and tested, 35/35 tests. `VIUIWindow::TextBox` (the `VIColor32F`
+**Status:** tool built and tested, 36/36 tests; the first overnight batch over the other 20 opens is running. `VIUIWindow::TextBox` (the `VIColor32F`
 overload) is still OPEN at 32/467 in `src/`. The search narrowed it to two facts about the
 target's RTL. Neither is a natural spelling yet, and nothing reached `src/` except a comment.
 
@@ -131,6 +131,32 @@ shared helper or macro.
 **The reading technique is general.** Any open function with a pure ORDER residue can be
 read this way. Take the target's order, try the cycle groupings the unit table allows, and
 an instruction that would have paired but didn't was in a different sched2 block.
+
+## Two bugs the first batch found, and the batch itself
+
+Setting up all twenty other open functions turned up two faults that TextBox could not
+show:
+
+- **SN's cpp writes NOTHING for `-dM`**, to a file or to stdout. Every run's `macros.h`
+  was empty, so a function using a header macro (`VIMAX`, `VIMIN`) could not build, and
+  setup refused five of the twenty. Now the host's cpp reads the same headers with the
+  EE driver's own predefines, read off `-v` (so `mips` is still 1). The names the host
+  keeps under `-undef` (`__STDC__` and kin) are dropped. Test:
+  `test_permuter_macro_dump_sees_header_macros`.
+- **A clean parse was required of every mutant.** tree-sitter cannot read
+  `float in[4] __attribute__((aligned(16)));`, so for `operator*(VIVect3, VIMatrix44)`
+  every mutation was rejected: 0 built, 0 failed, 0 repeats. A mutant may now not parse
+  WORSE than its input.
+- **`eqperm.py batch LIST`** runs a list of searches back to back. A list line is
+  `SYMBOL [--tu STEM] [--line N] [--name RUN] [--minutes M]`. Afterwards it reduces every
+  run's best find, several at once, and skips finds that only TIE the start. It writes
+  `../decomp-perm/batch-<stamp>.md`. SIGTERM to its python process stops the current
+  search cleanly and ends the batch.
+
+The first batch, `../decomp-perm/overnight-20261015.txt`, started at 01:36 on
+2026-10-15. It covers the 20 opens other than TextBox, smallest residue first: 25 minutes
+each for the 13 under 40 words and 15 for the 7 larger ones, at `--alloc 500 --length 300
+--anchor 3`.
 
 ## Open, and next
 

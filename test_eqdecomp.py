@@ -744,6 +744,18 @@ def test_permuter_mutations_parse_and_vary():
         ck(not M.Fn(new).root.has_error, f"{kind} produced a parse error:\n{new}")
         kinds.add(kind)
     ck(len(kinds) >= 12, f"only {len(kinds)} mutation kinds fired: {sorted(kinds)}")
+    # a function tree-sitter cannot fully read (an attribute on an array) is
+    # still searched everywhere else, and no mutant parses WORSE than it did
+    odd = ("VIVect4 operator*(const VIVect3 &v, const VIMatrix44 &m)\n{\n"
+           "    float in[4] __attribute__((aligned(16)));\n"
+           "    VIVect4 r(v.x, v.y, v.z, 1.0f);\n    *(VIVect4 *)in = r;\n"
+           "    sceVu0ApplyMatrix(r, m, *(VIVect4 *)in);\n    return r;\n}\n")
+    base = M._nerr(M.Fn(odd).root)
+    ck(base > 0, "control: the attribute line now parses clean, so this case tests nothing")
+    hits = [M.mutate(odd, rng) for _ in range(40)]
+    ck(sum(n is not None for n, _ in hits) >= 30, "a function with one unreadable line "
+       "gets no mutations (every candidate was rejected for the base's own parse error)")
+    ck(all(M._nerr(M.Fn(n).root) <= base for n, _ in hits if n), "a mutant parses worse")
 
 
 def test_permuter_alloc_order_term():
@@ -793,6 +805,34 @@ def test_permuter_names_and_macros():
        "two-argument expansion, re-indented")
     ck(perm.expand_macros("CPX(1) + KK", m) == "CPX(1) + KK",
        "a macro name inside a longer identifier was expanded")
+
+
+def test_permuter_macro_dump_sees_header_macros():
+    """setup's macro set: SN's cpp writes NOTHING for `-dM`, so the host's cpp
+    reads the same headers with the EE driver's predefines.  A header macro and
+    an EE predefine must be in it; the host's own `__STDC__` family must not,
+    and the dump must not be empty (the bug: every run's macros.h was)."""
+    import re
+    import tempfile
+    from eqcheck import driver, TOOLCHAIN, SRC
+    perm = _perm()
+    try:
+        drv = driver(TOOLCHAIN)
+    except Exception as e:                       # noqa: BLE001 -- no toolchain here
+        raise Skipped(f"no EE driver ({e})")
+    if not (SRC / "vi.h").exists():
+        raise Skipped("no src/vi.h")
+    with tempfile.TemporaryDirectory() as d:
+        t = Path(d) / "t.cpp"
+        t.write_text('#include "vi.h"\n#define LOCAL_ONE 1\n')
+        text = perm.dump_macros(drv, t)
+    names = set(re.findall(r"^#define\s+(\w+)", text, re.M))
+    ck(len(names) > 10, f"the macro dump is (nearly) empty: {len(names)} names")
+    ck({"VIMAX", "VIMIN", "LOCAL_ONE"} <= names, "a header or TU macro is missing")
+    ck(re.search(r"^#define mips 1$", text, re.M) is not None, "the EE predefine `mips` is not 1")
+    ck("__STDC_VERSION__" not in names and "__STDC_HOSTED__" not in names,
+       "the host cpp's own predefines leaked into the EE macro set")
+    ck("NOT_A_MACRO_ANYWHERE" not in names, "control: an undefined name was reported")
 
 
 def test_permuter_reduce_reverts_brace_groups():

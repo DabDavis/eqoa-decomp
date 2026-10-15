@@ -7,7 +7,7 @@ it is offline tooling, and it is useful for ordinary RE work whether or not the
 decomp goes ahead.
 
 ```bash
-./test_eqdecomp.py                                  # 35 tests, ~1,290 assertions
+./test_eqdecomp.py                                  # 36 tests, ~1,300 assertions
 ./eqd.py census '__C?10VIMatrix44' -v               # scalar / VU0-asm split
 ./eqd.py show   Transpose__10VIMatrix44RC10VIMatrix44
 ./eqd.py list   'VIMatrix44'                        # size + VU0 mix per symbol
@@ -31,7 +31,7 @@ decomp goes ahead.
 | `_tu.py` | one TU, EVERY function in it, plus regressions against `MATCHED.txt` |
 | `_perm.py` | permute a run of source lines, rebuild one TU, score one symbol |
 | `_lane.py` | isolated copies of `src/` + `build/`, so several functions are ground at once |
-| `eqperm.py` | **the permuter**: random source rewrites of one open function, built and scored ~25/s on 7 cores, unattended; `reduce` strips a find back to the hunks it needs (singly, then in pairs and adjacent runs, since an added `{`/`}` pair is two or three hunks that build only together); `--alloc W` adds the ALLOCATION-ORDER term: priority gaps, read from the candidate's own `-dl`/`-dg` dumps, of the call-crossing pseudos the target allocated in the other order -- a gradient through ties the byte score cannot see; `--length W` penalises a different instruction count, because the alignment grade can prefer a SHORTER function that aligns well; `--anchor N` workers never drift from the start text (needs `pip install tree-sitter tree-sitter-cpp`; `claude-notes/decomp-eqperm-textbox-20261015.md`) |
+| `eqperm.py` | **the permuter**: random source rewrites of one open function, built and scored ~25/s on 7 cores, unattended; `reduce` strips a find back to the hunks it needs (singly, then in pairs and adjacent runs, since an added `{`/`}` pair is two or three hunks that build only together); `--alloc W` adds the ALLOCATION-ORDER term: priority gaps, read from the candidate's own `-dl`/`-dg` dumps, of the call-crossing pseudos the target allocated in the other order -- a gradient through ties the byte score cannot see; `--length W` penalises a different instruction count, because the alignment grade can prefer a SHORTER function that aligns well; `--anchor N` workers never drift from the start text; `batch LIST` runs a list of searches back to back, then reduces every run's best find several at once and writes one summary table, for an unattended night (needs `pip install tree-sitter tree-sitter-cpp`; `claude-notes/decomp-eqperm-textbox-20261015.md`) |
 | `eqperm_mut.py` | its mutations, on tree-sitter's C++ syntax tree: statement order, temporaries and named references, declaration position and scope, if/else polarity, operand order, `+=` forms, `&a[i]` vs `a + i` |
 
 ## Running it outside this project tree

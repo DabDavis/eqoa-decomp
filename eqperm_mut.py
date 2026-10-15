@@ -960,16 +960,27 @@ def pick(rng: random.Random):
     return MUTATIONS[-1][0]
 
 
+def _nerr(node) -> int:
+    """ERROR and MISSING nodes under `node`; 0 without a walk when the tree is clean."""
+    if not node.has_error:
+        return 0
+    return (node.type == "ERROR" or node.is_missing) + sum(_nerr(c) for c in node.children)
+
+
 def mutate(text: str, rng: random.Random, tries: int = 25):
-    """(new text, mutation name), or (None, None) when nothing applied."""
+    """(new text, mutation name), or (None, None) when nothing applied.  A
+    result may not parse WORSE than the text did: tree-sitter cannot read
+    `float in[4] __attribute__((aligned(16)));`, and requiring a clean tree
+    rejected every mutation of a function that holds one."""
     fn = Fn(text)
+    base = _nerr(fn.root)
     for _ in range(tries):
         m = pick(rng)
         try:
             new = m(fn, rng)
         except (ValueError, IndexError, AttributeError, TypeError):
             new = None
-        if new and new != text and not Fn(new).root.has_error:
+        if new and new != text and _nerr(Fn(new).root) <= base:
             return new, m.__name__[2:]
     return None, None
 

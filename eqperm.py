@@ -61,6 +61,7 @@ import shutil
 import signal
 import struct
 import subprocess
+import tempfile
 import sys
 import textwrap
 import time
@@ -612,7 +613,10 @@ class Ctx:
         for f in (s, o):
             if f.exists():
                 f.unlink()
-        ii.write_text(self.source(func))
+        try:
+            ii.write_text(self.source(func))
+        except RuntimeError:          # the host cpp refused a mangled macro call
+            return None
         try:
             r = subprocess.run(["wine", self.meta["cc1"], str(ii), "-quiet", "-dumpbase",
                                 self.meta["stem"] + ".cc"] + self.meta["flags"] +
@@ -659,9 +663,40 @@ class Ctx:
         return score, wrong, False
 
 
+def ee_predefines(drv: list[str]) -> list[str]:
+    """The -D/-U arguments the EE driver hands its cpp, in order, read off `-v`."""
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "t.cpp").write_text("\n")
+        r = subprocess.run(drv + ["-E", "-v"] + C.FLAGS + ["t.cpp", "-o", "t.i"],
+                           capture_output=True, text=True, cwd=d)
+    for line in r.stderr.splitlines():
+        if "cpp" in line.lower() and " -D" in line:
+            return [t for t in line.split() if t.startswith(("-D", "-U"))]
+    raise SystemExit(f"cannot read the EE cpp's predefines off `-v`:\n{r.stderr}")
+
+
+def dump_macros(drv: list[str], src: Path) -> str:
+    """Every macro defined at the end of `src`, as `#define` lines.  SN's cpp
+    writes NOTHING for `-dM`, to a file or to stdout (measured), so the host's
+    cpp reads the same headers with the EE driver's own predefines; the names
+    the host still predefines under `-undef` (`__STDC__` and kin) are dropped."""
+    pre = ee_predefines(drv)
+    cpp = ["cpp", "-x", "c", "-undef", "-nostdinc", "-dM", "-w"]
+    own = set(re.findall(r"^#define\s+(\w+)", subprocess.run(
+        cpp + ["/dev/null"], capture_output=True, text=True).stdout, re.M))
+    ee = {re.match(r"-[DU](\w+)", p).group(1) for p in pre}
+    r = subprocess.run(cpp + pre + ["-I", str(C.SRC), str(src)],
+                       capture_output=True, text=True)
+    if r.returncode:
+        raise SystemExit(f"dumping the macros failed:\n{r.stderr}")
+    keep = [l for l in r.stdout.splitlines()
+            if (m := re.match(r"#define\s+(\w+)", l)) and (m.group(1) in ee or m.group(1) not in own)]
+    return "\n".join(keep) + "\n"
+
+
 def native_cpp(body: str, macros: Path, line: int, file: str) -> str:
     """Expand the header macros left in a function, with the host's cpp and
-    the macro set the EE cpp dumped (so `mips` is still 1)."""
+    the macro set `dump_macros` wrote (so `mips` is still 1)."""
     r = subprocess.run(["cpp", "-x", "c", "-P", "-undef", "-nostdinc", "-w",
                         "-imacros", str(macros), "-"],
                        input=f'#line {line} "{file}"\n{body}', capture_output=True,
@@ -711,10 +746,7 @@ def cmd_setup(a) -> int:
                        capture_output=True, text=True, cwd=rd)
     if r.returncode or not (rd / "prefix.ii").exists():
         raise SystemExit(f"preprocessing the prefix failed:\n{r.stderr}")
-    r = subprocess.run(drv + ["-E", "-dM"] + C.FLAGS + inc + [f"{stem}.cpp", "-o", "macros.h"],
-                       capture_output=True, text=True, cwd=rd)
-    if r.returncode:
-        raise SystemExit(f"dumping the macros failed:\n{r.stderr}")
+    (rd / "macros.h").write_text(dump_macros(drv, rd / f"{stem}.cpp"))
     (rd / f"{stem}.cpp").unlink()
 
     # the logical line and file name the function starts at
@@ -1098,6 +1130,135 @@ def cmd_best(a) -> int:
     return 0
 
 
+def _best_find(rd: Path) -> Path | None:
+    """The run's best saved candidate: a verified MATCH first, then the lowest score."""
+    files = [f for f in (rd / "found").glob("*.cpp") if ".reduced" not in f.name] \
+        if (rd / "found").is_dir() else []
+    files.sort(key=lambda p: (not p.name.startswith("MATCH"), p.name.removeprefix("MATCH_")))
+    return files[0] if files else None
+
+
+def _eqcheck_of(out: str) -> str:
+    m = re.search(r"eqcheck: (\w+) (\d+)/(\d+)", out)
+    return f"{m.group(1)} {m.group(2)}/{m.group(3)}" if m else "?"
+
+
+def cmd_batch(a) -> int:
+    """Searches back to back, unattended: each symbol in the list is set up
+    (unless its run directory exists) and searched for its minutes; then every
+    run's best find is reduced, several at once, and one summary is written.
+    A list line is `SYMBOL [--tu STEM] [--line N] [--name RUN] [--minutes M]`;
+    `#` starts a comment.
+    SIGTERM stops the current search cleanly and ends the batch."""
+    me = [sys.executable, str(Path(__file__).resolve())]
+    lp = argparse.ArgumentParser(prog="list line")
+    lp.add_argument("symbol")
+    lp.add_argument("--tu")
+    lp.add_argument("--line", type=int)
+    lp.add_argument("--name")
+    lp.add_argument("--minutes", type=float)
+    items = [lp.parse_args(l.split()) for l in Path(a.listfile).read_text().splitlines()
+             if l.strip() and not l.lstrip().startswith("#")]
+    stamp = time.strftime("%Y%m%d-%H%M")
+    logf = open(RUNS / f"batch-{stamp}.log", "a")
+
+    def say(msg):
+        line = time.strftime("%H:%M:%S ") + msg
+        print(line, flush=True)
+        logf.write(line + "\n")
+        logf.flush()
+
+    state = {"child": None, "stop": False}
+
+    def on_term(signum, frame):
+        state["stop"] = True
+        if state["child"] and state["child"].poll() is None:
+            state["child"].send_signal(signal.SIGTERM)
+    signal.signal(signal.SIGTERM, on_term)
+
+    total = sum(it.minutes or a.minutes for it in items)
+    say(f"batch of {len(items)}, {total:.0f} search minutes, -j {a.jobs}, alloc {a.alloc}, "
+        f"length {a.length}, anchor {a.anchor}")
+    rows = []
+    for k, it in enumerate(items):
+        if state["stop"]:
+            break
+        name = it.name or it.symbol
+        rd = rundir_of(name)
+        row = {"symbol": it.symbol, "name": name, "rd": rd}
+        rows.append(row)
+        if not (rd / "meta.json").exists():
+            cmd = me + ["setup", it.symbol, "--name", name] + \
+                (["--tu", it.tu] if it.tu else []) + (["--line", str(it.line)] if it.line else [])
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode:
+                row["note"] = "setup failed: " + (r.stderr or r.stdout).strip().splitlines()[-1]
+                say(f"{it.symbol}: {row['note']}")
+                continue
+        r = subprocess.run(me + ["score", name, str(rd / "base.cpp")],
+                           capture_output=True, text=True)
+        row["base"] = _eqcheck_of(r.stdout)
+        minutes = it.minutes or a.minutes
+        say(f"[{k + 1}/{len(items)}] {name}: base {row['base']}, {minutes:g} min")
+        cmd = me + ["run", name, "-j", str(a.jobs), "--anchor", str(a.anchor),
+                    "--alloc", str(a.alloc), "--length", str(a.length), "--keep", "5",
+                    "--minutes", str(minutes), "--seed", str(a.seed * 1000 + k),
+                    "--stop-on-match"]
+        with open(rd / f"batch-{stamp}.out", "w") as out:
+            state["child"] = subprocess.Popen(cmd, stdout=out, stderr=subprocess.STDOUT)
+            state["child"].wait()
+            state["child"] = None
+        log = (rd / "log.txt").read_text().splitlines()
+        tail = [l for l in log if "stopped:" in l]
+        row["run"] = tail[-1].split("stopped: ", 1)[1] if tail else "?"
+        starts = [int(m.group(1)) for l in log if (m := re.search(r" start .*: score (\d+)", l))]
+        best = _best_find(rd)
+        # a run also keeps candidates that only TIE the start; those are not finds
+        if best and starts and not best.name.startswith("MATCH") and \
+                int(best.name.split("_", 1)[0]) >= starts[-1]:
+            best = None
+        row["best"] = best
+        say(f"    {row['run']}; best file {best.name if best else '(no improvement)'}")
+
+    if not a.no_reduce and not state["stop"]:
+        todo = [row for row in rows if row.get("best")]
+        say(f"reducing {len(todo)} finds, {a.jobs} at a time")
+        running = []
+        while todo or running:
+            while todo and len(running) < a.jobs:
+                row = todo.pop(0)
+                f = open(row["rd"] / f"batch-{stamp}.reduce", "w")
+                p = subprocess.Popen(me + ["reduce", row["name"], str(row["best"])],
+                                     stdout=f, stderr=subprocess.STDOUT)
+                running.append((p, row, f))
+            time.sleep(2)
+            for p, row, f in list(running):
+                if p.poll() is None:
+                    continue
+                running.remove((p, row, f))
+                f.close()
+                red = row["best"].with_name(row["best"].stem + ".reduced.cpp")
+                if red.exists():
+                    r = subprocess.run(me + ["score", row["name"], str(red), "--alloc",
+                                             str(a.alloc)], capture_output=True, text=True)
+                    row["reduced"], row["red"] = _eqcheck_of(r.stdout), red
+                else:
+                    row["reduced"] = "reduce failed"
+                say(f"    reduced {row['name']}: {row['reduced']}")
+
+    out = RUNS / f"batch-{stamp}.md"
+    with open(out, "w") as f:
+        f.write(f"# eqperm batch {stamp}\n\n| symbol | base | search | reduced find | file |\n"
+                "|---|---|---|---|---|\n")
+        for row in rows:
+            red = row.get("red")
+            f.write(f"| `{row['name']}` | {row.get('base', '-')} | "
+                    f"{row.get('note') or row.get('run', '-')} | {row.get('reduced', '-')} | "
+                    f"{red.relative_to(RUNS) if red else '-'} |\n")
+    say(f"summary: {out}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1140,9 +1301,19 @@ def main(argv=None) -> int:
     b = sub.add_parser("best")
     b.add_argument("symbol")
     b.add_argument("-n", type=int, default=3)
+    t = sub.add_parser("batch", help="several searches back to back, then reduce and summarise")
+    t.add_argument("listfile", help="one `SYMBOL [--tu STEM] [--line N] [--name RUN] "
+                   "[--minutes M]` a line")
+    t.add_argument("-j", "--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    t.add_argument("--minutes", type=float, default=25.0, help="per search, unless the line says")
+    t.add_argument("--alloc", type=float, default=500.0)
+    t.add_argument("--length", type=float, default=300.0)
+    t.add_argument("--anchor", type=int, default=3)
+    t.add_argument("--seed", type=int, default=1, help="pinned, so a batch can be replayed")
+    t.add_argument("--no-reduce", action="store_true")
     a = p.parse_args(argv)
     return {"setup": cmd_setup, "run": cmd_run, "score": cmd_score,
-            "reduce": cmd_reduce, "best": cmd_best}[a.cmd](a)
+            "reduce": cmd_reduce, "best": cmd_best, "batch": cmd_batch}[a.cmd](a)
 
 
 if __name__ == "__main__":
