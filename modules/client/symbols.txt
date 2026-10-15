@@ -76,11 +76,11 @@
 0x00BB8450  [CODE]  Insert__t5VIMap2ZiZ13VIRec4_BB7DB0RCiRC13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
 0x00BB8718  [CODE]  Find__Ct5VIMap2ZiZ13VIRec4_BB7DB0RCi  # name provisional: placeholder value type (phase 62, template copy)
 0x00BB8780  [CODE]  func_00BB8780
-0x00BB8790  [CODE]  func_00BB8790
-0x00BB87E0  [CODE]  func_00BB87E0
-0x00BB8848  [CODE]  func_00BB8848
-0x00BB88A8  [CODE]  func_00BB88A8
-0x00BB8920  [CODE]  func_00BB8920
+0x00BB8790  [CODE]  DestroyPool__t7VIArray1Z13VIRec8_BB88A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BB87E0  [CODE]  _$_t7VIArray1Z13VIRec8_BB88A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BB8848  [CODE]  Clear__t7VIArray1Z13VIRec8_BB88A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BB88A8  [CODE]  Allocate__t7VIArray1Z13VIRec8_BB88A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BB8920  [CODE]  Init__t7VIArray1Z13VIRec8_BB88A8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BB8970  [CODE]  func_00BB8970
 0x00BB8988  [CODE]  func_00BB8988
 0x00BB8AD0  [CODE]  func_00BB8AD0
@@ -155,69 +155,69 @@
 0x00BBB6D8  [CODE]  func_00BBB6D8
 0x00BBB740  [CODE]  func_00BBB740
 0x00BBB758  [CODE]  __11VIItemArray  # name provisional (phase 62 dispatcher)
-0x00BBB768  [CODE]  func_00BBB768
+0x00BBB768  [CODE]  DestroyPool__t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBB7B8  [CODE]  _$_11VIItemArray  # name provisional (phase 62 dispatcher)
 0x00BBB820  [CODE]  func_00BBB820
-0x00BBB848  [CODE]  func_00BBB848
-0x00BBB858  [CODE]  func_00BBB858
+0x00BBB848  [CODE]  End__Ct6VIPool1ZP12VIPtr_BBB848  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBB858  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_BBB848  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBB888  [CODE]  func_00BBB888
 0x00BBB8D0  [CODE]  func_00BBB8D0
 0x00BBB958  [CODE]  func_00BBB958
 0x00BBB9C0  [CODE]  func_00BBB9C0
-0x00BBB9E8  [CODE]  func_00BBB9E8
-0x00BBB9F8  [CODE]  func_00BBB9F8
-0x00BBBA28  [CODE]  func_00BBBA28
-0x00BBBA60  [CODE]  func_00BBBA60
-0x00BBBAB8  [CODE]  func_00BBBAB8
+0x00BBB9E8  [CODE]  End__Ct6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBB9F8  [CODE]  Begin__Ct6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBA28  [CODE]  Next__Ct6VIPool1Z14VIRec24_BBCE10i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBA60  [CODE]  DestroyPool__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBAB8  [CODE]  _$_t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBB20  [CODE]  func_00BBBB20
-0x00BBBB30  [CODE]  func_00BBBB30
+0x00BBBB30  [CODE]  DestroyPool__t7VIArray1Z13VIElem_BBC168  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
 0x00BBBBD8  [CODE]  func_00BBBBD8
 0x00BBBC40  [CODE]  func_00BBBC40
-0x00BBBC50  [CODE]  func_00BBBC50
-0x00BBBCA0  [CODE]  func_00BBBCA0
+0x00BBBC50  [CODE]  DestroyPool__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBCA0  [CODE]  _$_t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBD08  [CODE]  func_00BBBD08
-0x00BBBD18  [CODE]  func_00BBBD18
-0x00BBBD68  [CODE]  func_00BBBD68
+0x00BBBD18  [CODE]  DestroyPool__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBD68  [CODE]  _$_t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBDD0  [CODE]  func_00BBBDD0  # VIItemList.h:315
-0x00BBBE38  [CODE]  func_00BBBE38
-0x00BBBE88  [CODE]  func_00BBBE88
+0x00BBBE38  [CODE]  DestroyPool__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBE88  [CODE]  _$_t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBEF0  [CODE]  func_00BBBEF0
-0x00BBBF08  [CODE]  func_00BBBF08
-0x00BBBFE0  [CODE]  func_00BBBFE0
-0x00BBC070  [CODE]  func_00BBC070
-0x00BBC0D0  [CODE]  func_00BBC0D0
-0x00BBC168  [CODE]  func_00BBC168
-0x00BBC1B8  [CODE]  func_00BBC1B8
-0x00BBC218  [CODE]  func_00BBC218
-0x00BBC290  [CODE]  func_00BBC290
-0x00BBC2E0  [CODE]  func_00BBC2E0
-0x00BBC340  [CODE]  func_00BBC340
-0x00BBC3B8  [CODE]  func_00BBC3B8
+0x00BBBF08  [CODE]  Allocate__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBFE0  [CODE]  Add__t8VIVector1Z13VIRec4_BBBF08RC13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC070  [CODE]  Clear__t7VIArray1Z13VIElem_BBC168  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC0D0  [CODE]  Allocate__t7VIArray1Z13VIElem_BBC168  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00BBC168  [CODE]  Init__t7VIArray1Z13VIElem_BBC168i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC1B8  [CODE]  Clear__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC218  [CODE]  Allocate__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC290  [CODE]  Init__t7VIArray1Z13VIRec4_BBC218i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC2E0  [CODE]  Clear__t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC340  [CODE]  Allocate__t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC3B8  [CODE]  Init__t7VIArray1Z13VIRec8_BBC340RCt7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC460  [CODE]  func_00BBC460
 0x00BBC490  [CODE]  func_00BBC490
 0x00BBC5D8  [CODE]  func_00BBC5D8
-0x00BBC708  [CODE]  func_00BBC708
-0x00BBC7A8  [CODE]  func_00BBC7A8
-0x00BBC808  [CODE]  func_00BBC808
-0x00BBC880  [CODE]  func_00BBC880
+0x00BBC708  [CODE]  Init__t7VIArray1Z13VIRec4_BBC218RCt7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC7A8  [CODE]  Clear__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC808  [CODE]  Allocate__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC880  [CODE]  Init__t7VIArray1Z14VIRec44_BBC808i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC8D0  [CODE]  Read__10VIItemListR11VIMemStream  # name provisional (phase 62 dispatcher)
 0x00BBC960  [CODE]  func_00BBC960
 0x00BBC9C8  [CODE]  func_00BBC9C8
 0x00BBCA70  [CODE]  func_00BBCA70
 0x00BBCC08  [CODE]  func_00BBCC08
 0x00BBCD10  [CODE]  func_00BBCD10
-0x00BBCDA8  [CODE]  func_00BBCDA8
-0x00BBCE10  [CODE]  func_00BBCE10
-0x00BBCEA8  [CODE]  func_00BBCEA8
-0x00BBCFD0  [CODE]  func_00BBCFD0
+0x00BBCDA8  [CODE]  Clear__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBCE10  [CODE]  LinkFreeChain__t6VIPool1Z14VIRec24_BBCE10i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBCEA8  [CODE]  Allocate__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBCFD0  [CODE]  Add__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBD0A8  [CODE]  func_00BBD0A8
 0x00BBD130  [CODE]  func_00BBD130
 0x00BBD398  [CODE]  func_00BBD398
 0x00BBD430  [CODE]  func_00BBD430  # VIItemList.h:326
 0x00BBD560  [CODE]  func_00BBD560
 0x00BBD6E0  [CODE]  func_00BBD6E0
-0x00BBD7F0  [CODE]  func_00BBD7F0
-0x00BBD918  [CODE]  func_00BBD918
+0x00BBD7F0  [CODE]  Add__t6VIPool1Z14VIRec24_BBCE10RC14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBD918  [CODE]  Erase__t6VIPool1Z14VIRec24_BBCE10i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBD9E8  [CODE]  func_00BBD9E8  # VIMemStreamArray.h:71
 0x00BBDA90  [CODE]  func_00BBDA90  # VIMemStreamArray.h:71
 0x00BBDB38  [CODE]  func_00BBDB38
@@ -831,37 +831,37 @@
 0x00BDEDD0  [CODE]  func_00BDEDD0
 0x00BDEDE8  [CODE]  func_00BDEDE8
 0x00BDEDF8  [CODE]  func_00BDEDF8
-0x00BDEE48  [CODE]  func_00BDEE48
+0x00BDEE48  [CODE]  _$_t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDEEB0  [CODE]  func_00BDEEB0
-0x00BDEED0  [CODE]  func_00BDEED0
-0x00BDEF28  [CODE]  func_00BDEF28
-0x00BDEF30  [CODE]  func_00BDEF30
-0x00BDEFE8  [CODE]  func_00BDEFE8
+0x00BDEED0  [CODE]  Begin__Ct5VIMap2ZiZ9VIAbility  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BDEF28  [CODE]  End__Ct5VIMap2ZiZ9VIAbility  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BDEF30  [CODE]  Next__Ct5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BDEFE8  [CODE]  DestroyPool__t5VIMap2ZiZ9VIAbility  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
 0x00BDF070  [CODE]  func_00BDF070
 0x00BDF0D8  [CODE]  func_00BDF0D8
-0x00BDF100  [CODE]  func_00BDF100
-0x00BDF110  [CODE]  func_00BDF110
-0x00BDF140  [CODE]  func_00BDF140
-0x00BDF188  [CODE]  func_00BDF188
-0x00BDF1E0  [CODE]  func_00BDF1E0
+0x00BDF100  [CODE]  End__Ct6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF110  [CODE]  Begin__Ct6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF140  [CODE]  Next__Ct6VIPool1Z14VIRec32_BE2DE8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF188  [CODE]  DestroyPool__t6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF1E0  [CODE]  _$_t6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDF248  [CODE]  func_00BDF248
-0x00BDF258  [CODE]  func_00BDF258
-0x00BDF2A8  [CODE]  func_00BDF2A8
+0x00BDF258  [CODE]  DestroyPool__t7VIArray1Z15VIRec436_BDF6D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF2A8  [CODE]  _$_t7VIArray1Z15VIRec436_BDF6D8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDF310  [CODE]  func_00BDF310
 0x00BDF330  [CODE]  Begin__Ct5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BDF388  [CODE]  End__Ct5VIMap2ZiZ7VIBuddy  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
 0x00BDF390  [CODE]  Next__Ct5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BDF448  [CODE]  DestroyPool__t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BDF4A0  [CODE]  _$_t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
-0x00BDF508  [CODE]  func_00BDF508
-0x00BDF558  [CODE]  func_00BDF558
-0x00BDF5C0  [CODE]  func_00BDF5C0
-0x00BDF610  [CODE]  func_00BDF610
-0x00BDF678  [CODE]  func_00BDF678
-0x00BDF6D8  [CODE]  func_00BDF6D8
-0x00BDF750  [CODE]  func_00BDF750
-0x00BDF7A0  [CODE]  func_00BDF7A0
-0x00BDF7F0  [CODE]  func_00BDF7F0
+0x00BDF508  [CODE]  DestroyPool__t7VIArray1Z13VIElem_BFC798  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF558  [CODE]  _$_t7VIArray1Z13VIElem_BFC798  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF5C0  [CODE]  DestroyPool__t7VIArray1Z15VIRec132_BEB670  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF610  [CODE]  _$_t7VIArray1Z15VIRec132_BEB670  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF678  [CODE]  Clear__t7VIArray1Z15VIRec436_BDF6D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF6D8  [CODE]  Allocate__t7VIArray1Z15VIRec436_BDF6D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF750  [CODE]  Init__t7VIArray1Z15VIRec436_BDF6D8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF7A0  [CODE]  DestroyPool__t7VIArray1Z13VIElem_BDF7A0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDF7F0  [CODE]  _$_t7VIArray1Z13VIElem_BDF7A0  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDF858  [CODE]  func_00BDF858
 0x00BDF868  [CODE]  func_00BDF868
 0x00BDF870  [CODE]  func_00BDF870
@@ -890,35 +890,35 @@
 0x00BE06C0  [CODE]  func_00BE06C0
 0x00BE0738  [CODE]  func_00BE0738
 0x00BE0788  [CODE]  func_00BE0788
-0x00BE07A0  [CODE]  func_00BE07A0
-0x00BE07F0  [CODE]  func_00BE07F0
+0x00BE07A0  [CODE]  DestroyPool__t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE07F0  [CODE]  _$_t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE0858  [CODE]  func_00BE0858
-0x00BE0868  [CODE]  func_00BE0868
-0x00BE08C8  [CODE]  func_00BE08C8
-0x00BE0940  [CODE]  func_00BE0940
+0x00BE0868  [CODE]  Clear__t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE08C8  [CODE]  Allocate__t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE0940  [CODE]  Init__t7VIArray1Z15VIRec144_BE08C8RCt7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE0A88  [CODE]  func_00BE0A88
 0x00BE0AB8  [CODE]  func_00BE0AB8
-0x00BE0C00  [CODE]  func_00BE0C00
-0x00BE0CA8  [CODE]  func_00BE0CA8
+0x00BE0C00  [CODE]  LinkFreeChain__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BE0CA8  [CODE]  Allocate__t5VIMap2ZiZ9VIAbility  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
 0x00BE0DF0  [CODE]  func_00BE0DF0
-0x00BE0EE8  [CODE]  func_00BE0EE8
-0x00BE0FA0  [CODE]  func_00BE0FA0
+0x00BE0EE8  [CODE]  LeftRotate__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BE0FA0  [CODE]  RightRotate__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE1058  [CODE]  func_00BE1058
-0x00BE1408  [CODE]  func_00BE1408
-0x00BE17C0  [CODE]  func_00BE17C0
-0x00BE1848  [CODE]  func_00BE1848
-0x00BE1A20  [CODE]  func_00BE1A20
+0x00BE1408  [CODE]  EraseFixup__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BE17C0  [CODE]  FreeNode__t5VIMap2ZiZ9VIAbilityi  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00BE1848  [CODE]  Erase__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BE1A20  [CODE]  Find__Ct5VIMap2ZiZ9VIAbilityRCi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE1A88  [CODE]  Clear__t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
-0x00BE1AF8  [CODE]  func_00BE1AF8
+0x00BE1AF8  [CODE]  DestroyPool__t7VIArray1Z13VIElem_BE1D10  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
 0x00BE1BA0  [CODE]  func_00BE1BA0
 0x00BE1C08  [CODE]  func_00BE1C08
-0x00BE1C18  [CODE]  func_00BE1C18
-0x00BE1C78  [CODE]  func_00BE1C78
-0x00BE1D10  [CODE]  func_00BE1D10
-0x00BE1D60  [CODE]  func_00BE1D60
-0x00BE1DB0  [CODE]  func_00BE1DB0
-0x00BE1E10  [CODE]  func_00BE1E10
-0x00BE1E88  [CODE]  func_00BE1E88
+0x00BE1C18  [CODE]  Clear__t7VIArray1Z13VIElem_BE1D10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1C78  [CODE]  Allocate__t7VIArray1Z13VIElem_BE1D10  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00BE1D10  [CODE]  Init__t7VIArray1Z13VIElem_BE1D10i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1D60  [CODE]  DestroyPool__t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1DB0  [CODE]  Clear__t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1E10  [CODE]  Allocate__t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1E88  [CODE]  Init__t7VIArray1Z15VIRec388_BE1E10i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE1ED8  [CODE]  func_00BE1ED8
 0x00BE1F68  [CODE]  Find__Ct5VIMap2ZiZ7VIBuddyRCi  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
 0x00BE1FD0  [CODE]  LinkFreeChain__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
@@ -930,15 +930,15 @@
 0x00BE2818  [CODE]  EraseFixup__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BE2BD0  [CODE]  FreeNode__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
 0x00BE2C10  [CODE]  Erase__t5VIMap2ZiZ7VIBuddyi  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
-0x00BE2DE8  [CODE]  func_00BE2DE8
-0x00BE2E90  [CODE]  func_00BE2E90
-0x00BE2FD0  [CODE]  func_00BE2FD0
-0x00BE3110  [CODE]  func_00BE3110
+0x00BE2DE8  [CODE]  LinkFreeChain__t6VIPool1Z14VIRec32_BE2DE8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE2E90  [CODE]  Allocate__t6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE2FD0  [CODE]  Add__t6VIPool1Z14VIRec32_BE2DE8RC14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE3110  [CODE]  Erase__t6VIPool1Z14VIRec32_BE2DE8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE31F0  [CODE]  func_00BE31F0
-0x00BE3208  [CODE]  func_00BE3208
-0x00BE3258  [CODE]  func_00BE3258
-0x00BE32C8  [CODE]  func_00BE32C8
-0x00BE3320  [CODE]  func_00BE3320
+0x00BE3208  [CODE]  Init__t7VIArray1Z15VIRec144_BE08C8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE3258  [CODE]  Clear__t5VIMap2ZiZ9VIAbility  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BE32C8  [CODE]  Init__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
+0x00BE3320  [CODE]  _$_t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE3388  [CODE]  func_00BE3388
 0x00BE3398  [CODE]  func_00BE3398
 0x00BE3528  [CODE]  func_00BE3528
@@ -1103,25 +1103,25 @@
 0x00BE80E8  [CODE]  func_00BE80E8
 0x00BE8160  [CODE]  func_00BE8160
 0x00BE81B0  [CODE]  func_00BE81B0
-0x00BE81C8  [CODE]  func_00BE81C8
-0x00BE8218  [CODE]  func_00BE8218
-0x00BE8280  [CODE]  func_00BE8280
+0x00BE81C8  [CODE]  DestroyPool__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE8218  [CODE]  _$_t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE8280  [CODE]  DestroyPool__t8VIVector1Z13VIElem_BE8C48  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
 0x00BE8328  [CODE]  func_00BE8328
-0x00BE8390  [CODE]  func_00BE8390
-0x00BE83E0  [CODE]  func_00BE83E0
+0x00BE8390  [CODE]  DestroyPool__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE83E0  [CODE]  _$_t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE8448  [CODE]  func_00BE8448
-0x00BE8460  [CODE]  func_00BE8460
-0x00BE84C8  [CODE]  func_00BE84C8
-0x00BE85D0  [CODE]  func_00BE85D0
-0x00BE8620  [CODE]  func_00BE8620
+0x00BE8460  [CODE]  Clear__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE84C8  [CODE]  Allocate__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE85D0  [CODE]  Init__t8VIVector1Z14VIRec24_BE84C8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE8620  [CODE]  Add__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE8680  [CODE]  func_00BE8680  # VIMemStreamVector.h:71
-0x00BE8738  [CODE]  func_00BE8738
-0x00BE87A0  [CODE]  func_00BE87A0
-0x00BE8808  [CODE]  func_00BE8808
-0x00BE8988  [CODE]  func_00BE8988
+0x00BE8738  [CODE]  Clear__t8VIVector1Z13VIElem_BE8C48  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE87A0  [CODE]  Clear__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE8808  [CODE]  Allocate__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE8988  [CODE]  Init__t8VIVector1Z15VIRec136_BE8808RCt8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE8AD0  [CODE]  func_00BE8AD0
-0x00BE8B08  [CODE]  func_00BE8B08
-0x00BE8C48  [CODE]  func_00BE8C48
+0x00BE8B08  [CODE]  Allocate__t8VIVector1Z13VIElem_BE8C48  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00BE8C48  [CODE]  Init__t8VIVector1Z13VIElem_BE8C48i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE8C98  [CODE]  func_00BE8C98
 0x00BE8CB0  [CODE]  func_00BE8CB0
 0x00BE8D38  [CODE]  func_00BE8D38  # VIMemStreamVector.h:71
@@ -1182,9 +1182,9 @@
 0x00BEB548  [CODE]  func_00BEB548
 0x00BEB558  [CODE]  func_00BEB558
 0x00BEB5A8  [CODE]  func_00BEB5A8
-0x00BEB610  [CODE]  func_00BEB610
-0x00BEB670  [CODE]  func_00BEB670
-0x00BEB6E8  [CODE]  func_00BEB6E8
+0x00BEB610  [CODE]  Clear__t7VIArray1Z15VIRec132_BEB670  # name provisional: placeholder element type (phase 62, template copy)
+0x00BEB670  [CODE]  Allocate__t7VIArray1Z15VIRec132_BEB670  # name provisional: placeholder element type (phase 62, template copy)
+0x00BEB6E8  [CODE]  Init__t7VIArray1Z15VIRec132_BEB670i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BEB738  [CODE]  func_00BEB738  # VIMemStreamArray.h:71
 0x00BEB7E0  [CODE]  func_00BEB7E0
 0x00BEB878  [CODE]  func_00BEB878
@@ -1411,21 +1411,21 @@
 0x00BF3CE8  [CODE]  func_00BF3CE8
 0x00BF3FB0  [CODE]  func_00BF3FB0
 0x00BF4018  [CODE]  func_00BF4018
-0x00BF4040  [CODE]  func_00BF4040
-0x00BF4050  [CODE]  func_00BF4050
-0x00BF4080  [CODE]  func_00BF4080
-0x00BF40C8  [CODE]  func_00BF40C8
-0x00BF4120  [CODE]  func_00BF4120
+0x00BF4040  [CODE]  End__Ct6VIPool1ZP12VIPtr_BF45A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF4050  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_BF45A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF4080  [CODE]  Next__Ct6VIPool1ZP12VIPtr_BF45A8i  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00BF40C8  [CODE]  DestroyPool__t6VIPool1ZP12VIPtr_BF45A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF4120  [CODE]  _$_t6VIPool1ZP12VIPtr_BF45A8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF4188  [CODE]  func_00BF4188
 0x00BF41A8  [CODE]  Begin__Ct5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF4200  [CODE]  End__Ct5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF4208  [CODE]  Next__Ct5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF42C0  [CODE]  DestroyPool__t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF4318  [CODE]  _$_t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
-0x00BF4380  [CODE]  func_00BF4380
+0x00BF4380  [CODE]  Clear__t6VIPool1ZP12VIPtr_BF45A8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF43E8  [CODE]  func_00BF43E8
-0x00BF4490  [CODE]  func_00BF4490
-0x00BF45A8  [CODE]  func_00BF45A8
+0x00BF4490  [CODE]  Allocate__t6VIPool1ZP12VIPtr_BF45A8  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00BF45A8  [CODE]  Init__t6VIPool1ZP12VIPtr_BF45A8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF45F8  [CODE]  Clear__t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF4668  [CODE]  LinkFreeChain__t5VIMap2ZUiZ13VIRec4_BF41A8i  # name provisional: placeholder value type (phase 62, template copy)
 0x00BF4710  [CODE]  Allocate__t5VIMap2ZUiZ13VIRec4_BF41A8  # name provisional: placeholder value type (phase 62, template copy)
@@ -1532,49 +1532,49 @@
 0x00BF9050  [CODE]  func_00BF9050
 0x00BF90A0  [CODE]  func_00BF90A0
 0x00BF90B8  [CODE]  func_00BF90B8
-0x00BF90C8  [CODE]  func_00BF90C8
-0x00BF9118  [CODE]  func_00BF9118
+0x00BF90C8  [CODE]  DestroyPool__t7VIArray1Z13VIRec8_BF9990  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9118  [CODE]  _$_t7VIArray1Z13VIRec8_BF9990  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF9180  [CODE]  func_00BF9180
-0x00BF9190  [CODE]  func_00BF9190
-0x00BF91E0  [CODE]  func_00BF91E0
+0x00BF9190  [CODE]  DestroyPool__t7VIArray1Z18VIRec130_BF9AB8_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF91E0  [CODE]  _$_t7VIArray1Z18VIRec130_BF9AB8_A2  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF9248  [CODE]  func_00BF9248
-0x00BF9258  [CODE]  func_00BF9258
-0x00BF92A8  [CODE]  func_00BF92A8
+0x00BF9258  [CODE]  DestroyPool__t7VIArray1Z15VIRec128_BF9BE0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF92A8  [CODE]  _$_t7VIArray1Z15VIRec128_BF9BE0  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF9310  [CODE]  func_00BF9310
-0x00BF9338  [CODE]  func_00BF9338
-0x00BF9348  [CODE]  func_00BF9348
-0x00BF9378  [CODE]  func_00BF9378
-0x00BF93C0  [CODE]  func_00BF93C0
-0x00BF9418  [CODE]  func_00BF9418
-0x00BF9480  [CODE]  func_00BF9480
+0x00BF9338  [CODE]  End__Ct6VIPool1ZP12VIPtr_BF9718  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9348  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_BF9718  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9378  [CODE]  Next__Ct6VIPool1ZP12VIPtr_BF9718i  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00BF93C0  [CODE]  DestroyPool__t6VIPool1ZP12VIPtr_BF9718  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9418  [CODE]  _$_t6VIPool1ZP12VIPtr_BF9718  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9480  [CODE]  Clear__t6VIPool1ZP12VIPtr_BF9718  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF94E8  [CODE]  func_00BF94E8
-0x00BF9590  [CODE]  func_00BF9590
-0x00BF9718  [CODE]  func_00BF9718
+0x00BF9590  [CODE]  Allocate__t6VIPool1ZP12VIPtr_BF9718  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00BF9718  [CODE]  Init__t6VIPool1ZP12VIPtr_BF9718i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF9768  [CODE]  func_00BF9768
-0x00BF9930  [CODE]  func_00BF9930
-0x00BF9990  [CODE]  func_00BF9990
-0x00BF9A08  [CODE]  func_00BF9A08
-0x00BF9A58  [CODE]  func_00BF9A58
-0x00BF9AB8  [CODE]  func_00BF9AB8
-0x00BF9B30  [CODE]  func_00BF9B30
-0x00BF9B80  [CODE]  func_00BF9B80
-0x00BF9BE0  [CODE]  func_00BF9BE0
-0x00BF9C58  [CODE]  func_00BF9C58
+0x00BF9930  [CODE]  Clear__t7VIArray1Z13VIRec8_BF9990  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9990  [CODE]  Allocate__t7VIArray1Z13VIRec8_BF9990  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9A08  [CODE]  Init__t7VIArray1Z13VIRec8_BF9990i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9A58  [CODE]  Clear__t7VIArray1Z18VIRec130_BF9AB8_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9AB8  [CODE]  Allocate__t7VIArray1Z18VIRec130_BF9AB8_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9B30  [CODE]  Init__t7VIArray1Z18VIRec130_BF9AB8_A2i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9B80  [CODE]  Clear__t7VIArray1Z15VIRec128_BF9BE0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9BE0  [CODE]  Allocate__t7VIArray1Z15VIRec128_BF9BE0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9C58  [CODE]  Init__t7VIArray1Z15VIRec128_BF9BE0i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BF9CA8  [CODE]  func_00BF9CA8
 0x00BF9D48  [CODE]  func_00BF9D48
 0x00BF9DD0  [CODE]  func_00BF9DD0
 0x00BF9F30  [CODE]  func_00BF9F30
 0x00BF9F70  [CODE]  func_00BF9F70
-0x00BF9F98  [CODE]  func_00BF9F98
-0x00BF9FA8  [CODE]  func_00BF9FA8
-0x00BF9FD8  [CODE]  func_00BF9FD8
-0x00BFA020  [CODE]  func_00BFA020
-0x00BFA078  [CODE]  func_00BFA078
-0x00BFA0E0  [CODE]  func_00BFA0E0
-0x00BFA148  [CODE]  func_00BFA148
-0x00BFA1F0  [CODE]  func_00BFA1F0
-0x00BFA2F8  [CODE]  func_00BFA2F8
-0x00BFA348  [CODE]  func_00BFA348
+0x00BF9F98  [CODE]  End__Ct6VIPool1ZP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9FA8  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BF9FD8  [CODE]  Next__Ct6VIPool1ZP12VIPtr_BFA1F0i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFA020  [CODE]  DestroyPool__t6VIPool1ZP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFA078  [CODE]  _$_t6VIPool1ZP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFA0E0  [CODE]  Clear__t6VIPool1ZP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFA148  [CODE]  LinkFreeChain__t6VIPool1ZP12VIPtr_BFA1F0i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFA1F0  [CODE]  Allocate__t6VIPool1ZP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFA2F8  [CODE]  Init__t6VIPool1ZP12VIPtr_BFA1F0i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFA348  [CODE]  Add__t6VIPool1ZP12VIPtr_BFA1F0RCP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
 0x00BFA450  [CODE]  func_00BFA450
 0x00BFA4A8  [CODE]  func_00BFA4A8
 0x00BFA4F8  [CODE]  func_00BFA4F8
@@ -1613,17 +1613,17 @@
 0x00BFB888  [CODE]  func_00BFB888
 0x00BFB8D8  [CODE]  func_00BFB8D8
 0x00BFB8F0  [CODE]  func_00BFB8F0
-0x00BFB918  [CODE]  func_00BFB918
-0x00BFB928  [CODE]  func_00BFB928
-0x00BFB958  [CODE]  func_00BFB958
-0x00BFB9A0  [CODE]  func_00BFB9A0
-0x00BFB9F8  [CODE]  func_00BFB9F8
-0x00BFBA60  [CODE]  func_00BFBA60
-0x00BFBAC8  [CODE]  func_00BFBAC8
-0x00BFBB70  [CODE]  func_00BFBB70
-0x00BFBCB8  [CODE]  func_00BFBCB8
-0x00BFBD08  [CODE]  func_00BFBD08
-0x00BFBDE8  [CODE]  func_00BFBDE8
+0x00BFB918  [CODE]  End__Ct6VIPool1Z14VIRec36_BFBCB8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFB928  [CODE]  Begin__Ct6VIPool1Z14VIRec36_BFBCB8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFB958  [CODE]  Next__Ct6VIPool1Z14VIRec36_BFBCB8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFB9A0  [CODE]  DestroyPool__t6VIPool1Z14VIRec36_BFBCB8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFB9F8  [CODE]  _$_t6VIPool1Z14VIRec36_BFBCB8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFBA60  [CODE]  Clear__t6VIPool1Z14VIRec36_BFBCB8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFBAC8  [CODE]  LinkFreeChain__t6VIPool1Z14VIRec36_BFBCB8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFBB70  [CODE]  Allocate__t6VIPool1Z14VIRec36_BFBCB8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFBCB8  [CODE]  Init__t6VIPool1Z14VIRec36_BFBCB8i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFBD08  [CODE]  Add__t6VIPool1Z14VIRec36_BFBCB8  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFBDE8  [CODE]  Erase__t6VIPool1Z14VIRec36_BFBCB8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BFBEC8  [CODE]  func_00BFBEC8
 0x00BFBED0  [CODE]  func_00BFBED0
 0x00BFBF20  [CODE]  func_00BFBF20
@@ -1650,9 +1650,9 @@
 0x00BFC5D8  [CODE]  func_00BFC5D8
 0x00BFC5E8  [CODE]  func_00BFC5E8
 0x00BFC638  [CODE]  func_00BFC638
-0x00BFC6A0  [CODE]  func_00BFC6A0
-0x00BFC700  [CODE]  func_00BFC700
-0x00BFC798  [CODE]  func_00BFC798
+0x00BFC6A0  [CODE]  Clear__t7VIArray1Z13VIElem_BFC798  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFC700  [CODE]  Allocate__t7VIArray1Z13VIElem_BFC798  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00BFC798  [CODE]  Init__t7VIArray1Z13VIElem_BFC798i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BFC7E8  [CODE]  func_00BFC7E8  # VIMemStreamArray.h:71
 0x00BFC890  [CODE]  func_00BFC890
 0x00BFC948  [CODE]  func_00BFC948
@@ -1664,8 +1664,8 @@
 0x00BFCC10  [CODE]  func_00BFCC10
 0x00BFCC60  [CODE]  func_00BFCC60
 0x00BFCCC8  [CODE]  func_00BFCCC8
-0x00BFCE48  [CODE]  func_00BFCE48
-0x00BFCE98  [CODE]  func_00BFCE98
+0x00BFCE48  [CODE]  Init__t8VIVector1Z15VIRec136_BE8808i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BFCE98  [CODE]  Add__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BFCEF8  [CODE]  func_00BFCEF8  # VIMemStreamVector.h:71
 0x00BFCFB0  [CODE]  func_00BFCFB0
 0x00BFD060  [CODE]  func_00BFD060
@@ -1740,26 +1740,26 @@
 0x00C00E78  [CODE]  func_00C00E78
 0x00C00EC8  [CODE]  func_00C00EC8
 0x00C00F30  [CODE]  func_00C00F30
-0x00C00F58  [CODE]  func_00C00F58
-0x00C00F68  [CODE]  func_00C00F68
+0x00C00F58  [CODE]  End__Ct6VIPool1ZP12VIPtr_C00F58  # name provisional: placeholder element type (phase 62, template copy)
+0x00C00F68  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_C00F58  # name provisional: placeholder element type (phase 62, template copy)
 0x00C00F98  [CODE]  func_00C00F98
 0x00C00FE0  [CODE]  func_00C00FE0
 0x00C01068  [CODE]  func_00C01068
 0x00C010D0  [CODE]  func_00C010D0
-0x00C010F8  [CODE]  func_00C010F8
-0x00C01108  [CODE]  func_00C01108
-0x00C01138  [CODE]  func_00C01138
-0x00C01180  [CODE]  func_00C01180
-0x00C011D8  [CODE]  func_00C011D8
-0x00C01240  [CODE]  func_00C01240
+0x00C010F8  [CODE]  End__Ct6VIPool1ZP12VIPtr_C01508  # name provisional: placeholder element type (phase 62, template copy)
+0x00C01108  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_C01508  # name provisional: placeholder element type (phase 62, template copy)
+0x00C01138  [CODE]  Next__Ct6VIPool1ZP12VIPtr_C01508i  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00C01180  [CODE]  DestroyPool__t6VIPool1ZP12VIPtr_C01508  # name provisional: placeholder element type (phase 62, template copy)
+0x00C011D8  [CODE]  _$_t6VIPool1ZP12VIPtr_C01508  # name provisional: placeholder element type (phase 62, template copy)
+0x00C01240  [CODE]  Clear__t6VIPool1ZP12VIPtr_C01508  # name provisional: placeholder element type (phase 62, template copy)
 0x00C012A8  [CODE]  func_00C012A8
-0x00C01350  [CODE]  func_00C01350
-0x00C01508  [CODE]  func_00C01508
+0x00C01350  [CODE]  Allocate__t6VIPool1ZP12VIPtr_C01508  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
+0x00C01508  [CODE]  Init__t6VIPool1ZP12VIPtr_C01508i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C01558  [CODE]  func_00C01558
-0x00C01710  [CODE]  func_00C01710
-0x00C01760  [CODE]  func_00C01760
-0x00C017C0  [CODE]  func_00C017C0
-0x00C01838  [CODE]  func_00C01838
+0x00C01710  [CODE]  DestroyPool__t7VIArray1Z15VIRec144_C017C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C01760  [CODE]  Clear__t7VIArray1Z15VIRec144_C017C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C017C0  [CODE]  Allocate__t7VIArray1Z15VIRec144_C017C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C01838  [CODE]  Init__t7VIArray1Z15VIRec144_C017C0i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C01888  [CODE]  func_00C01888
 0x00C01950  [CODE]  func_00C01950
 0x00C01958  [CODE]  func_00C01958
@@ -1784,20 +1784,20 @@
 0x00C02660  [CODE]  func_00C02660
 0x00C02770  [CODE]  func_00C02770
 0x00C027D8  [CODE]  func_00C027D8
-0x00C027E8  [CODE]  func_00C027E8
-0x00C02838  [CODE]  func_00C02838
+0x00C027E8  [CODE]  DestroyPool__t7VIArray1Z18VIRec130_C029C8_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02838  [CODE]  _$_t7VIArray1Z18VIRec130_C029C8_A2  # name provisional: placeholder element type (phase 62, template copy)
 0x00C028A0  [CODE]  func_00C028A0
-0x00C028B0  [CODE]  func_00C028B0
-0x00C02900  [CODE]  func_00C02900
-0x00C02968  [CODE]  func_00C02968
-0x00C029C8  [CODE]  func_00C029C8
-0x00C02A40  [CODE]  func_00C02A40
-0x00C02B70  [CODE]  func_00C02B70
-0x00C02BD0  [CODE]  func_00C02BD0
-0x00C02C48  [CODE]  func_00C02C48
-0x00C02D78  [CODE]  func_00C02D78
-0x00C02DC8  [CODE]  func_00C02DC8
-0x00C02E18  [CODE]  func_00C02E18
+0x00C028B0  [CODE]  DestroyPool__t7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02900  [CODE]  _$_t7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02968  [CODE]  Clear__t7VIArray1Z18VIRec130_C029C8_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C029C8  [CODE]  Allocate__t7VIArray1Z18VIRec130_C029C8_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02A40  [CODE]  Init__t7VIArray1Z18VIRec130_C029C8_A2RCt7VIArray1Z18VIRec130_C029C8_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02B70  [CODE]  Clear__t7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02BD0  [CODE]  Allocate__t7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02C48  [CODE]  Init__t7VIArray1Z18VIRec130_C02BD0_A2RCt7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02D78  [CODE]  Init__t7VIArray1Z13VIRec8_BBC340i  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02DC8  [CODE]  Init__t7VIArray1Z18VIRec130_C029C8_A2i  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02E18  [CODE]  Init__t7VIArray1Z18VIRec130_C02BD0_A2i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C02E68  [CODE]  func_00C02E68
 0x00C02FB0  [CODE]  func_00C02FB0
 0x00C02FE8  [CODE]  func_00C02FE8
@@ -1813,14 +1813,14 @@
 0x00C033B0  [CODE]  func_00C033B0
 0x00C03428  [CODE]  func_00C03428
 0x00C03478  [CODE]  func_00C03478
-0x00C03490  [CODE]  func_00C03490
-0x00C034E0  [CODE]  func_00C034E0
-0x00C03548  [CODE]  func_00C03548
-0x00C035B0  [CODE]  func_00C035B0
-0x00C036C0  [CODE]  func_00C036C0
-0x00C03710  [CODE]  func_00C03710
+0x00C03490  [CODE]  DestroyPool__t8VIVector1Z14VIRec32_C035B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C034E0  [CODE]  _$_t8VIVector1Z14VIRec32_C035B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C03548  [CODE]  Clear__t8VIVector1Z14VIRec32_C035B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C035B0  [CODE]  Allocate__t8VIVector1Z14VIRec32_C035B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C036C0  [CODE]  Init__t8VIVector1Z14VIRec32_C035B0i  # name provisional: placeholder element type (phase 62, template copy)
+0x00C03710  [CODE]  Add__t8VIVector1Z14VIRec32_C035B0  # name provisional: placeholder element type (phase 62, template copy)
 0x00C03770  [CODE]  func_00C03770  # VIMemStreamVector.h:71
-0x00C03818  [CODE]  func_00C03818
+0x00C03818  [CODE]  Add__t8VIVector1Z14VIRec32_C035B0RC14VIRec32_C035B0  # name provisional: placeholder element type (phase 62, template copy)
 0x00C038E0  [CODE]  func_00C038E0
 0x00C03988  [CODE]  func_00C03988
 0x00C03A10  [CODE]  func_00C03A10
@@ -1982,12 +1982,12 @@
 0x00C0BD88  [CODE]  func_00C0BD88  # VIStringTable.cpp:245
 0x00C0BED8  [CODE]  func_00C0BED8
 0x00C0C110  [CODE]  func_00C0C110
-0x00C0C1A8  [CODE]  func_00C0C1A8
-0x00C0C1F8  [CODE]  func_00C0C1F8
+0x00C0C1A8  [CODE]  DestroyPool__t7VIArray1Z16VIRec1_C0C2D0_A1  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0C1F8  [CODE]  _$_t7VIArray1Z16VIRec1_C0C2D0_A1  # name provisional: placeholder element type (phase 62, template copy)
 0x00C0C260  [CODE]  func_00C0C260
-0x00C0C270  [CODE]  func_00C0C270
-0x00C0C2D0  [CODE]  func_00C0C2D0
-0x00C0C348  [CODE]  func_00C0C348
+0x00C0C270  [CODE]  Clear__t7VIArray1Z16VIRec1_C0C2D0_A1  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0C2D0  [CODE]  Allocate__t7VIArray1Z16VIRec1_C0C2D0_A1  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0C348  [CODE]  Init__t7VIArray1Z16VIRec1_C0C2D0_A1i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C0C398  [CODE]  func_00C0C398
 0x00C0C3E0  [CODE]  func_00C0C3E0
 0x00C0C430  [CODE]  func_00C0C430
@@ -2007,12 +2007,12 @@
 0x00C0C940  [CODE]  func_00C0C940
 0x00C0C9B0  [CODE]  func_00C0C9B0
 0x00C0CC88  [CODE]  func_00C0CC88
-0x00C0CCA0  [CODE]  func_00C0CCA0
-0x00C0CCF0  [CODE]  func_00C0CCF0
-0x00C0CD58  [CODE]  func_00C0CD58
-0x00C0CDC0  [CODE]  func_00C0CDC0
-0x00C0CEE0  [CODE]  func_00C0CEE0
-0x00C0CF30  [CODE]  func_00C0CF30
+0x00C0CCA0  [CODE]  DestroyPool__t8VIVector1Z14VIRec36_C0CDC0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0CCF0  [CODE]  _$_t8VIVector1Z14VIRec36_C0CDC0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0CD58  [CODE]  Clear__t8VIVector1Z14VIRec36_C0CDC0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0CDC0  [CODE]  Allocate__t8VIVector1Z14VIRec36_C0CDC0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0CEE0  [CODE]  Init__t8VIVector1Z14VIRec36_C0CDC0i  # name provisional: placeholder element type (phase 62, template copy)
+0x00C0CF30  [CODE]  Add__t8VIVector1Z14VIRec36_C0CDC0RC14VIRec36_C0CDC0  # name provisional: placeholder element type (phase 62, template copy)
 0x00C0D000  [CODE]  func_00C0D000
 0x00C0D038  [CODE]  func_00C0D038
 0x00C0D098  [CODE]  func_00C0D098
@@ -2456,11 +2456,11 @@
 0x00C26BA8  [CODE]  func_00C26BA8
 0x00C26BF8  [CODE]  func_00C26BF8
 0x00C26C10  [CODE]  func_00C26C10
-0x00C26C20  [CODE]  func_00C26C20
-0x00C26C70  [CODE]  func_00C26C70
-0x00C26CD8  [CODE]  func_00C26CD8
-0x00C26D38  [CODE]  func_00C26D38
-0x00C26DB0  [CODE]  func_00C26DB0
+0x00C26C20  [CODE]  DestroyPool__t7VIArray1Z13VIRec8_C26D38  # name provisional: placeholder element type (phase 62, template copy)
+0x00C26C70  [CODE]  _$_t7VIArray1Z13VIRec8_C26D38  # name provisional: placeholder element type (phase 62, template copy)
+0x00C26CD8  [CODE]  Clear__t7VIArray1Z13VIRec8_C26D38  # name provisional: placeholder element type (phase 62, template copy)
+0x00C26D38  [CODE]  Allocate__t7VIArray1Z13VIRec8_C26D38  # name provisional: placeholder element type (phase 62, template copy)
+0x00C26DB0  [CODE]  Init__t7VIArray1Z13VIRec8_C26D38i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C26E00  [CODE]  func_00C26E00
 0x00C26E50  [CODE]  func_00C26E50
 0x00C26ED0  [CODE]  func_00C26ED0
@@ -2571,11 +2571,11 @@
 0x00C2D630  [CODE]  func_00C2D630
 0x00C2D680  [CODE]  func_00C2D680
 0x00C2D698  [CODE]  func_00C2D698
-0x00C2D6A8  [CODE]  func_00C2D6A8
-0x00C2D6F8  [CODE]  func_00C2D6F8
-0x00C2D760  [CODE]  func_00C2D760
-0x00C2D7C0  [CODE]  func_00C2D7C0
-0x00C2D838  [CODE]  func_00C2D838
+0x00C2D6A8  [CODE]  DestroyPool__t7VIArray1Z14VIRec16_C2D7C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C2D6F8  [CODE]  _$_t7VIArray1Z14VIRec16_C2D7C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C2D760  [CODE]  Clear__t7VIArray1Z14VIRec16_C2D7C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C2D7C0  [CODE]  Allocate__t7VIArray1Z14VIRec16_C2D7C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C2D838  [CODE]  Init__t7VIArray1Z14VIRec16_C2D7C0i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C2D888  [CODE]  func_00C2D888
 0x00C2D8D8  [CODE]  func_00C2D8D8
 0x00C2D930  [CODE]  func_00C2D930
@@ -2727,19 +2727,19 @@
 0x00C35B58  [CODE]  func_00C35B58
 0x00C35BD0  [CODE]  func_00C35BD0
 0x00C35C20  [CODE]  func_00C35C20
-0x00C35C38  [CODE]  func_00C35C38
-0x00C35C98  [CODE]  func_00C35C98
+0x00C35C38  [CODE]  Clear__t6VIList1ZP12VIPtr_C35C38  # name provisional: placeholder element type (phase 62, template copy)
+0x00C35C98  [CODE]  _$_t6VIList1ZP12VIPtr_C35C38  # name provisional: placeholder element type (phase 62, template copy)
 0x00C35CE0  [CODE]  func_00C35CE0
 0x00C35CF8  [CODE]  func_00C35CF8
 0x00C35D08  [CODE]  func_00C35D08
 0x00C35D38  [CODE]  func_00C35D38
 0x00C35D80  [CODE]  func_00C35D80
-0x00C35E00  [CODE]  func_00C35E00
+0x00C35E00  [CODE]  End__Ct6VIList1ZP12VIPtr_C35E00  # name provisional: placeholder element type (phase 62, template copy)
 0x00C35E10  [CODE]  func_00C35E10
-0x00C35E58  [CODE]  func_00C35E58
+0x00C35E58  [CODE]  Begin__Ct6VIList1ZP12VIPtr_C35E00  # name provisional: placeholder element type (phase 62, template copy)
 0x00C35E80  [CODE]  func_00C35E80
-0x00C35E88  [CODE]  func_00C35E88
-0x00C35EB0  [CODE]  func_00C35EB0
+0x00C35E88  [CODE]  Next__Ct6VIList1ZP12VIPtr_C35E00i  # name provisional: placeholder element type (phase 62, template copy)
+0x00C35EB0  [CODE]  Erase__t6VIList1ZP12VIPtr_C35E00i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C35F38  [CODE]  func_00C35F38
 0x00C35F88  [CODE]  func_00C35F88
 0x00C35FE0  [CODE]  func_00C35FE0
@@ -3775,11 +3775,11 @@
 0x00C6A728  [CODE]  func_00C6A728
 0x00C6A778  [CODE]  func_00C6A778
 0x00C6A790  [CODE]  func_00C6A790
-0x00C6A7A0  [CODE]  func_00C6A7A0
-0x00C6A7F0  [CODE]  func_00C6A7F0
-0x00C6A858  [CODE]  func_00C6A858
-0x00C6A8B8  [CODE]  func_00C6A8B8
-0x00C6A930  [CODE]  func_00C6A930
+0x00C6A7A0  [CODE]  DestroyPool__t7VIArray1Z14VIRec24_C6A8B8  # name provisional: placeholder element type (phase 62, template copy)
+0x00C6A7F0  [CODE]  _$_t7VIArray1Z14VIRec24_C6A8B8  # name provisional: placeholder element type (phase 62, template copy)
+0x00C6A858  [CODE]  Clear__t7VIArray1Z14VIRec24_C6A8B8  # name provisional: placeholder element type (phase 62, template copy)
+0x00C6A8B8  [CODE]  Allocate__t7VIArray1Z14VIRec24_C6A8B8  # name provisional: placeholder element type (phase 62, template copy)
+0x00C6A930  [CODE]  Init__t7VIArray1Z14VIRec24_C6A8B8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C6A980  [CODE]  func_00C6A980
 0x00C6A9D0  [CODE]  func_00C6A9D0
 0x00C6A9E0  [CODE]  func_00C6A9E0
@@ -4520,7 +4520,7 @@
 0x00C8E198  [CODE]  func_00C8E198
 0x00C8E1E8  [CODE]  func_00C8E1E8
 0x00C8E1F8  [CODE]  func_00C8E1F8
-0x00C8E248  [CODE]  func_00C8E248
+0x00C8E248  [CODE]  _$_t7VIArray1Z15VIRec144_C017C0  # name provisional: placeholder element type (phase 62, template copy)
 0x00C8E2B0  [CODE]  func_00C8E2B0
 0x00C8E310  [CODE]  func_00C8E310
 0x00C8E360  [CODE]  func_00C8E360
@@ -4691,26 +4691,26 @@
 0x00C97630  [CODE]  func_00C97630
 0x00C97680  [CODE]  func_00C97680
 0x00C97698  [CODE]  func_00C97698
-0x00C976A8  [CODE]  func_00C976A8
-0x00C976F8  [CODE]  func_00C976F8
+0x00C976A8  [CODE]  DestroyPool__t7VIArray1Z14VIRec32_C97888  # name provisional: placeholder element type (phase 62, template copy)
+0x00C976F8  [CODE]  _$_t7VIArray1Z14VIRec32_C97888  # name provisional: placeholder element type (phase 62, template copy)
 0x00C97760  [CODE]  func_00C97760
-0x00C97770  [CODE]  func_00C97770
-0x00C977C0  [CODE]  func_00C977C0
-0x00C97828  [CODE]  func_00C97828
-0x00C97888  [CODE]  func_00C97888
-0x00C97900  [CODE]  func_00C97900
-0x00C97950  [CODE]  func_00C97950
-0x00C979B0  [CODE]  func_00C979B0
-0x00C97A28  [CODE]  func_00C97A28
+0x00C97770  [CODE]  DestroyPool__t7VIArray1Z14VIRec12_C979B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C977C0  [CODE]  _$_t7VIArray1Z14VIRec12_C979B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97828  [CODE]  Clear__t7VIArray1Z14VIRec32_C97888  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97888  [CODE]  Allocate__t7VIArray1Z14VIRec32_C97888  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97900  [CODE]  Init__t7VIArray1Z14VIRec32_C97888i  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97950  [CODE]  Clear__t7VIArray1Z14VIRec12_C979B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C979B0  [CODE]  Allocate__t7VIArray1Z14VIRec12_C979B0  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97A28  [CODE]  Init__t7VIArray1Z14VIRec12_C979B0i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C97A78  [CODE]  func_00C97A78
 0x00C97AC8  [CODE]  func_00C97AC8
 0x00C97B30  [CODE]  func_00C97B30
-0x00C97B40  [CODE]  func_00C97B40
-0x00C97B90  [CODE]  func_00C97B90
+0x00C97B40  [CODE]  DestroyPool__t7VIArray1Z16VIRec2_C97C68_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97B90  [CODE]  _$_t7VIArray1Z16VIRec2_C97C68_A2  # name provisional: placeholder element type (phase 62, template copy)
 0x00C97BF8  [CODE]  func_00C97BF8
-0x00C97C08  [CODE]  func_00C97C08
-0x00C97C68  [CODE]  func_00C97C68
-0x00C97CE0  [CODE]  func_00C97CE0
+0x00C97C08  [CODE]  Clear__t7VIArray1Z16VIRec2_C97C68_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97C68  [CODE]  Allocate__t7VIArray1Z16VIRec2_C97C68_A2  # name provisional: placeholder element type (phase 62, template copy)
+0x00C97CE0  [CODE]  Init__t7VIArray1Z16VIRec2_C97C68_A2i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C97D30  [CODE]  func_00C97D30
 0x00C97D80  [CODE]  func_00C97D80
 0x00C97D98  [CODE]  func_00C97D98
@@ -5149,23 +5149,23 @@
 0x00CA99D0  [CODE]  func_00CA99D0
 0x00CA9A78  [CODE]  func_00CA9A78
 0x00CA9B10  [CODE]  func_00CA9B10
-0x00CA9B90  [CODE]  func_00CA9B90
-0x00CA9BE0  [CODE]  func_00CA9BE0
-0x00CA9C40  [CODE]  func_00CA9C40
-0x00CA9CC8  [CODE]  func_00CA9CC8
+0x00CA9B90  [CODE]  DestroyPool__t7VIArray1Z13VIElem_CA9CC8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CA9BE0  [CODE]  Clear__t7VIArray1Z13VIElem_CA9CC8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CA9C40  [CODE]  Allocate__t7VIArray1Z13VIElem_CA9CC8  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00CA9CC8  [CODE]  Init__t7VIArray1Z13VIElem_CA9CC8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CA9D18  [CODE]  func_00CA9D18  # VIMemStreamArray.h:71
-0x00CA9DC0  [CODE]  func_00CA9DC0
-0x00CA9E10  [CODE]  func_00CA9E10
-0x00CA9E70  [CODE]  func_00CA9E70
-0x00CA9EE8  [CODE]  func_00CA9EE8
-0x00CA9F38  [CODE]  func_00CA9F38
+0x00CA9DC0  [CODE]  DestroyPool__t7VIArray1Z13VIRec8_CA9E70  # name provisional: placeholder element type (phase 62, template copy)
+0x00CA9E10  [CODE]  Clear__t7VIArray1Z13VIRec8_CA9E70  # name provisional: placeholder element type (phase 62, template copy)
+0x00CA9E70  [CODE]  Allocate__t7VIArray1Z13VIRec8_CA9E70  # name provisional: placeholder element type (phase 62, template copy)
+0x00CA9EE8  [CODE]  Init__t7VIArray1Z13VIRec8_CA9E70i  # name provisional: placeholder element type (phase 62, template copy)
+0x00CA9F38  [CODE]  _$_t7VIArray1Z13VIRec8_CA9E70  # name provisional: placeholder element type (phase 62, template copy)
 0x00CA9FA0  [CODE]  func_00CA9FA0
-0x00CA9FB0  [CODE]  func_00CA9FB0
+0x00CA9FB0  [CODE]  _$_t7VIArray1Z13VIElem_CA9CC8  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAA018  [CODE]  func_00CAA018
-0x00CAA028  [CODE]  func_00CAA028
-0x00CAA078  [CODE]  func_00CAA078
-0x00CAA0E0  [CODE]  func_00CAA0E0
-0x00CAA130  [CODE]  func_00CAA130
+0x00CAA028  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAA028  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAA078  [CODE]  _$_t8VIVector1Z13VIElem_CAA028  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAA0E0  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAA0E0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAA130  [CODE]  _$_t8VIVector1Z13VIElem_CAA0E0  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAA198  [CODE]  func_00CAA198
 0x00CAA1B0  [CODE]  func_00CAA1B0
 0x00CAA1C8  [CODE]  func_00CAA1C8
@@ -5178,10 +5178,10 @@
 0x00CAA828  [CODE]  func_00CAA828
 0x00CAA8A0  [CODE]  func_00CAA8A0
 0x00CAA8E0  [CODE]  func_00CAA8E0
-0x00CAA968  [CODE]  func_00CAA968
-0x00CAA9B8  [CODE]  func_00CAA9B8
-0x00CAAA20  [CODE]  func_00CAAA20
-0x00CAAA70  [CODE]  func_00CAAA70
+0x00CAA968  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAA968  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAA9B8  [CODE]  _$_t8VIVector1Z13VIElem_CAA968  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAAA20  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAAA20  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAAA70  [CODE]  _$_t8VIVector1Z13VIElem_CAAA20  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAAAD8  [CODE]  func_00CAAAD8
 0x00CAAAF0  [CODE]  func_00CAAAF0
 0x00CAAB08  [CODE]  func_00CAAB08
@@ -5194,58 +5194,58 @@
 0x00CAB128  [CODE]  func_00CAB128
 0x00CAB1A0  [CODE]  func_00CAB1A0
 0x00CAB1E0  [CODE]  func_00CAB1E0
-0x00CAB268  [CODE]  func_00CAB268
-0x00CAB2B8  [CODE]  func_00CAB2B8
-0x00CAB320  [CODE]  func_00CAB320
-0x00CAB370  [CODE]  func_00CAB370
+0x00CAB268  [CODE]  DestroyPool__t8VIVector1Z14VIRec12_CAB580  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAB2B8  [CODE]  _$_t8VIVector1Z14VIRec12_CAB580  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAB320  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAB320  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAB370  [CODE]  _$_t8VIVector1Z13VIElem_CAB320  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAB3D8  [CODE]  func_00CAB3D8
 0x00CAB3F0  [CODE]  func_00CAB3F0
 0x00CAB408  [CODE]  func_00CAB408
 0x00CAB4E8  [CODE]  func_00CAB4E8
-0x00CAB580  [CODE]  func_00CAB580
-0x00CAB670  [CODE]  func_00CAB670
+0x00CAB580  [CODE]  Allocate__t8VIVector1Z14VIRec12_CAB580  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAB670  [CODE]  Add__t8VIVector1Z14VIRec12_CAB580RC14VIRec12_CAB580  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAB710  [CODE]  func_00CAB710
 0x00CAB730  [CODE]  func_00CAB730  # VIKeyDiff.h:118
 0x00CAB978  [CODE]  func_00CAB978
 0x00CAB9F8  [CODE]  func_00CAB9F8
 0x00CABA70  [CODE]  func_00CABA70
 0x00CABAB0  [CODE]  func_00CABAB0
-0x00CABB38  [CODE]  func_00CABB38
-0x00CABB88  [CODE]  func_00CABB88
-0x00CABBF0  [CODE]  func_00CABBF0
-0x00CABC40  [CODE]  func_00CABC40
+0x00CABB38  [CODE]  DestroyPool__t8VIVector1Z14VIRec12_CABE50  # name provisional: placeholder element type (phase 62, template copy)
+0x00CABB88  [CODE]  _$_t8VIVector1Z14VIRec12_CABE50  # name provisional: placeholder element type (phase 62, template copy)
+0x00CABBF0  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CABBF0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CABC40  [CODE]  _$_t8VIVector1Z13VIElem_CABBF0  # name provisional: placeholder element type (phase 62, template copy)
 0x00CABCA8  [CODE]  func_00CABCA8
 0x00CABCC0  [CODE]  func_00CABCC0
 0x00CABCD8  [CODE]  func_00CABCD8
 0x00CABDB8  [CODE]  func_00CABDB8
-0x00CABE50  [CODE]  func_00CABE50
-0x00CABF40  [CODE]  func_00CABF40
+0x00CABE50  [CODE]  Allocate__t8VIVector1Z14VIRec12_CABE50  # name provisional: placeholder element type (phase 62, template copy)
+0x00CABF40  [CODE]  Add__t8VIVector1Z14VIRec12_CABE50RC14VIRec12_CABE50  # name provisional: placeholder element type (phase 62, template copy)
 0x00CABFE0  [CODE]  func_00CABFE0
 0x00CAC000  [CODE]  func_00CAC000  # VIKeyDiff.h:118
 0x00CAC248  [CODE]  func_00CAC248
 0x00CAC2C8  [CODE]  func_00CAC2C8
 0x00CAC340  [CODE]  func_00CAC340
 0x00CAC380  [CODE]  func_00CAC380
-0x00CAC408  [CODE]  func_00CAC408
-0x00CAC458  [CODE]  func_00CAC458
-0x00CAC4C0  [CODE]  func_00CAC4C0
-0x00CAC510  [CODE]  func_00CAC510
+0x00CAC408  [CODE]  DestroyPool__t8VIVector1Z14VIRec12_CAC720  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAC458  [CODE]  _$_t8VIVector1Z14VIRec12_CAC720  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAC4C0  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAC4C0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAC510  [CODE]  _$_t8VIVector1Z13VIElem_CAC4C0  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAC578  [CODE]  func_00CAC578
 0x00CAC590  [CODE]  func_00CAC590
 0x00CAC5A8  [CODE]  func_00CAC5A8
 0x00CAC688  [CODE]  func_00CAC688
-0x00CAC720  [CODE]  func_00CAC720
-0x00CAC810  [CODE]  func_00CAC810
+0x00CAC720  [CODE]  Allocate__t8VIVector1Z14VIRec12_CAC720  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAC810  [CODE]  Add__t8VIVector1Z14VIRec12_CAC720RC14VIRec12_CAC720  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAC8B0  [CODE]  func_00CAC8B0
 0x00CAC8D0  [CODE]  func_00CAC8D0  # VIKeyDiff.h:118
 0x00CACB18  [CODE]  func_00CACB18
 0x00CACB98  [CODE]  func_00CACB98
 0x00CACC10  [CODE]  func_00CACC10
 0x00CACC50  [CODE]  func_00CACC50
-0x00CACCD8  [CODE]  func_00CACCD8
-0x00CACD28  [CODE]  func_00CACD28
-0x00CACD90  [CODE]  func_00CACD90
-0x00CACDE0  [CODE]  func_00CACDE0
+0x00CACCD8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CACCD8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CACD28  [CODE]  _$_t8VIVector1Z13VIElem_CACCD8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CACD90  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CACD90  # name provisional: placeholder element type (phase 62, template copy)
+0x00CACDE0  [CODE]  _$_t8VIVector1Z13VIElem_CACD90  # name provisional: placeholder element type (phase 62, template copy)
 0x00CACE48  [CODE]  func_00CACE48
 0x00CACE60  [CODE]  func_00CACE60
 0x00CACE78  [CODE]  func_00CACE78
@@ -5258,26 +5258,26 @@
 0x00CAD498  [CODE]  func_00CAD498
 0x00CAD510  [CODE]  func_00CAD510
 0x00CAD550  [CODE]  func_00CAD550
-0x00CAD5D8  [CODE]  func_00CAD5D8
-0x00CAD628  [CODE]  func_00CAD628
-0x00CAD690  [CODE]  func_00CAD690
-0x00CAD6E0  [CODE]  func_00CAD6E0
+0x00CAD5D8  [CODE]  DestroyPool__t8VIVector1Z14VIRec12_CAD8F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAD628  [CODE]  _$_t8VIVector1Z14VIRec12_CAD8F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAD690  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAD690  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAD6E0  [CODE]  _$_t8VIVector1Z13VIElem_CAD690  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAD748  [CODE]  func_00CAD748
 0x00CAD760  [CODE]  func_00CAD760
 0x00CAD778  [CODE]  func_00CAD778
 0x00CAD858  [CODE]  func_00CAD858
-0x00CAD8F0  [CODE]  func_00CAD8F0
-0x00CAD9E0  [CODE]  func_00CAD9E0
+0x00CAD8F0  [CODE]  Allocate__t8VIVector1Z14VIRec12_CAD8F0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAD9E0  [CODE]  Add__t8VIVector1Z14VIRec12_CAD8F0RC14VIRec12_CAD8F0  # name provisional: placeholder element type (phase 62, template copy)
 0x00CADA80  [CODE]  func_00CADA80
 0x00CADAA0  [CODE]  func_00CADAA0  # VIKeyDiff.h:118
 0x00CADCE8  [CODE]  func_00CADCE8
 0x00CADD68  [CODE]  func_00CADD68
 0x00CADDE0  [CODE]  func_00CADDE0
 0x00CADE20  [CODE]  func_00CADE20
-0x00CADEA8  [CODE]  func_00CADEA8
-0x00CADEF8  [CODE]  func_00CADEF8
-0x00CADF60  [CODE]  func_00CADF60
-0x00CADFB0  [CODE]  func_00CADFB0
+0x00CADEA8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CADEA8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CADEF8  [CODE]  _$_t8VIVector1Z13VIElem_CADEA8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CADF60  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CADF60  # name provisional: placeholder element type (phase 62, template copy)
+0x00CADFB0  [CODE]  _$_t8VIVector1Z13VIElem_CADF60  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAE018  [CODE]  func_00CAE018
 0x00CAE030  [CODE]  func_00CAE030
 0x00CAE048  [CODE]  func_00CAE048
@@ -5290,8 +5290,8 @@
 0x00CAE698  [CODE]  func_00CAE698
 0x00CAE710  [CODE]  func_00CAE710
 0x00CAE750  [CODE]  func_00CAE750
-0x00CAE7D8  [CODE]  func_00CAE7D8
-0x00CAE828  [CODE]  func_00CAE828
+0x00CAE7D8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAE7D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAE828  [CODE]  _$_t8VIVector1Z13VIElem_CAE7D8  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAE890  [CODE]  func_00CAE890
 0x00CAE8A8  [CODE]  func_00CAE8A8
 0x00CAE988  [CODE]  func_00CAE988
@@ -5300,14 +5300,14 @@
 0x00CAEC68  [CODE]  func_00CAEC68
 0x00CAECE0  [CODE]  func_00CAECE0
 0x00CAED20  [CODE]  func_00CAED20
-0x00CAEDA8  [CODE]  func_00CAEDA8
-0x00CAEDF8  [CODE]  func_00CAEDF8
-0x00CAEE60  [CODE]  func_00CAEE60
-0x00CAEEB0  [CODE]  func_00CAEEB0
+0x00CAEDA8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAEDA8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAEDF8  [CODE]  _$_t8VIVector1Z13VIElem_CAEDA8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAEE60  [CODE]  DestroyPool__t8VIVector1Z14VIRec12_CAEF48  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAEEB0  [CODE]  _$_t8VIVector1Z14VIRec12_CAEF48  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAEF18  [CODE]  func_00CAEF18
 0x00CAEF30  [CODE]  func_00CAEF30
-0x00CAEF48  [CODE]  func_00CAEF48
-0x00CAF038  [CODE]  func_00CAF038
+0x00CAEF48  [CODE]  Allocate__t8VIVector1Z14VIRec12_CAEF48  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAF038  [CODE]  Add__t8VIVector1Z14VIRec12_CAEF48RC14VIRec12_CAEF48  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAF0D8  [CODE]  func_00CAF0D8
 0x00CAF268  [CODE]  func_00CAF268
 0x00CAF3A8  [CODE]  func_00CAF3A8
@@ -5316,10 +5316,10 @@
 0x00CAF690  [CODE]  func_00CAF690
 0x00CAF710  [CODE]  func_00CAF710
 0x00CAF750  [CODE]  func_00CAF750
-0x00CAF7D8  [CODE]  func_00CAF7D8
-0x00CAF828  [CODE]  func_00CAF828
-0x00CAF890  [CODE]  func_00CAF890
-0x00CAF8E0  [CODE]  func_00CAF8E0
+0x00CAF7D8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAF7D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAF828  [CODE]  _$_t8VIVector1Z13VIElem_CAF7D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAF890  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CAF890  # name provisional: placeholder element type (phase 62, template copy)
+0x00CAF8E0  [CODE]  _$_t8VIVector1Z13VIElem_CAF890  # name provisional: placeholder element type (phase 62, template copy)
 0x00CAF948  [CODE]  func_00CAF948
 0x00CAF960  [CODE]  func_00CAF960
 0x00CAF978  [CODE]  func_00CAF978
@@ -5332,26 +5332,26 @@
 0x00CAFF88  [CODE]  func_00CAFF88
 0x00CB0000  [CODE]  func_00CB0000
 0x00CB0040  [CODE]  func_00CB0040
-0x00CB00C8  [CODE]  func_00CB00C8
-0x00CB0118  [CODE]  func_00CB0118
-0x00CB0180  [CODE]  func_00CB0180
-0x00CB01D0  [CODE]  func_00CB01D0
+0x00CB00C8  [CODE]  DestroyPool__t8VIVector1Z14VIRec12_CB03E0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB0118  [CODE]  _$_t8VIVector1Z14VIRec12_CB03E0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB0180  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB0180  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB01D0  [CODE]  _$_t8VIVector1Z13VIElem_CB0180  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB0238  [CODE]  func_00CB0238
 0x00CB0250  [CODE]  func_00CB0250
 0x00CB0268  [CODE]  func_00CB0268
 0x00CB0348  [CODE]  func_00CB0348
-0x00CB03E0  [CODE]  func_00CB03E0
-0x00CB04D0  [CODE]  func_00CB04D0
+0x00CB03E0  [CODE]  Allocate__t8VIVector1Z14VIRec12_CB03E0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB04D0  [CODE]  Add__t8VIVector1Z14VIRec12_CB03E0RC14VIRec12_CB03E0  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB0570  [CODE]  func_00CB0570
 0x00CB0590  [CODE]  func_00CB0590  # VIKeyDiff.h:118
 0x00CB07D8  [CODE]  func_00CB07D8
 0x00CB0858  [CODE]  func_00CB0858
 0x00CB08D0  [CODE]  func_00CB08D0
 0x00CB0910  [CODE]  func_00CB0910
-0x00CB0998  [CODE]  func_00CB0998
-0x00CB09E8  [CODE]  func_00CB09E8
-0x00CB0A50  [CODE]  func_00CB0A50
-0x00CB0AA0  [CODE]  func_00CB0AA0
+0x00CB0998  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB0998  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB09E8  [CODE]  _$_t8VIVector1Z13VIElem_CB0998  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB0A50  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB0A50  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB0AA0  [CODE]  _$_t8VIVector1Z13VIElem_CB0A50  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB0B08  [CODE]  func_00CB0B08
 0x00CB0B20  [CODE]  func_00CB0B20
 0x00CB0B38  [CODE]  func_00CB0B38
@@ -5364,10 +5364,10 @@
 0x00CB1198  [CODE]  func_00CB1198
 0x00CB1210  [CODE]  func_00CB1210
 0x00CB1250  [CODE]  func_00CB1250
-0x00CB12D8  [CODE]  func_00CB12D8
-0x00CB1328  [CODE]  func_00CB1328
-0x00CB1390  [CODE]  func_00CB1390
-0x00CB13E0  [CODE]  func_00CB13E0
+0x00CB12D8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB12D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB1328  [CODE]  _$_t8VIVector1Z13VIElem_CB12D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB1390  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB1390  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB13E0  [CODE]  _$_t8VIVector1Z13VIElem_CB1390  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB1448  [CODE]  func_00CB1448
 0x00CB1460  [CODE]  func_00CB1460
 0x00CB1478  [CODE]  func_00CB1478
@@ -5380,10 +5380,10 @@
 0x00CB1A98  [CODE]  func_00CB1A98
 0x00CB1B10  [CODE]  func_00CB1B10
 0x00CB1B50  [CODE]  func_00CB1B50
-0x00CB1BD8  [CODE]  func_00CB1BD8
-0x00CB1C28  [CODE]  func_00CB1C28
-0x00CB1C90  [CODE]  func_00CB1C90
-0x00CB1CE0  [CODE]  func_00CB1CE0
+0x00CB1BD8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB1BD8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB1C28  [CODE]  _$_t8VIVector1Z13VIElem_CB1BD8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB1C90  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB1C90  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB1CE0  [CODE]  _$_t8VIVector1Z13VIElem_CB1C90  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB1D48  [CODE]  func_00CB1D48
 0x00CB1D60  [CODE]  func_00CB1D60
 0x00CB1D78  [CODE]  func_00CB1D78
@@ -5396,10 +5396,10 @@
 0x00CB2388  [CODE]  func_00CB2388
 0x00CB2400  [CODE]  func_00CB2400
 0x00CB2440  [CODE]  func_00CB2440
-0x00CB24C8  [CODE]  func_00CB24C8
-0x00CB2518  [CODE]  func_00CB2518
-0x00CB2580  [CODE]  func_00CB2580
-0x00CB25D0  [CODE]  func_00CB25D0
+0x00CB24C8  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB24C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB2518  [CODE]  _$_t8VIVector1Z13VIElem_CB24C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB2580  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB2580  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB25D0  [CODE]  _$_t8VIVector1Z13VIElem_CB2580  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB2638  [CODE]  func_00CB2638
 0x00CB2650  [CODE]  func_00CB2650
 0x00CB2668  [CODE]  func_00CB2668
@@ -5412,16 +5412,16 @@
 0x00CB2C78  [CODE]  func_00CB2C78
 0x00CB2CF0  [CODE]  func_00CB2CF0
 0x00CB2D30  [CODE]  func_00CB2D30
-0x00CB2DB8  [CODE]  func_00CB2DB8
-0x00CB2E08  [CODE]  func_00CB2E08
-0x00CB2E70  [CODE]  func_00CB2E70
-0x00CB2EC0  [CODE]  func_00CB2EC0
+0x00CB2DB8  [CODE]  DestroyPool__t8VIVector1Z14VIRec12_CB30D0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB2E08  [CODE]  _$_t8VIVector1Z14VIRec12_CB30D0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB2E70  [CODE]  DestroyPool__t8VIVector1Z13VIElem_CB2E70  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB2EC0  [CODE]  _$_t8VIVector1Z13VIElem_CB2E70  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB2F28  [CODE]  func_00CB2F28
 0x00CB2F40  [CODE]  func_00CB2F40
 0x00CB2F58  [CODE]  func_00CB2F58
 0x00CB3038  [CODE]  func_00CB3038
-0x00CB30D0  [CODE]  func_00CB30D0
-0x00CB31C0  [CODE]  func_00CB31C0
+0x00CB30D0  [CODE]  Allocate__t8VIVector1Z14VIRec12_CB30D0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB31C0  [CODE]  Add__t8VIVector1Z14VIRec12_CB30D0RC14VIRec12_CB30D0  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB3260  [CODE]  func_00CB3260
 0x00CB3280  [CODE]  func_00CB3280  # VIKeyDiff.h:118
 0x00CB34C8  [CODE]  func_00CB34C8
@@ -5444,85 +5444,85 @@
 0x00CB3CF8  [CODE]  func_00CB3CF8
 0x00CB3D78  [CODE]  func_00CB3D78
 0x00CB3DF8  [CODE]  func_00CB3DF8
-0x00CB3E78  [CODE]  func_00CB3E78
-0x00CB3EC8  [CODE]  func_00CB3EC8
-0x00CB3F28  [CODE]  func_00CB3F28
-0x00CB3FA0  [CODE]  func_00CB3FA0
+0x00CB3E78  [CODE]  DestroyPool__t7VIArray1Z14VIRec40_CB3F28  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB3EC8  [CODE]  Clear__t7VIArray1Z14VIRec40_CB3F28  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB3F28  [CODE]  Allocate__t7VIArray1Z14VIRec40_CB3F28  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB3FA0  [CODE]  Init__t7VIArray1Z14VIRec40_CB3F28i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB3FF0  [CODE]  func_00CB3FF0  # VIMemStreamArray.h:71
-0x00CB4098  [CODE]  func_00CB4098
-0x00CB40E8  [CODE]  func_00CB40E8
-0x00CB4148  [CODE]  func_00CB4148
-0x00CB41C0  [CODE]  func_00CB41C0
+0x00CB4098  [CODE]  DestroyPool__t7VIArray1Z14VIRec24_CB4148  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB40E8  [CODE]  Clear__t7VIArray1Z14VIRec24_CB4148  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4148  [CODE]  Allocate__t7VIArray1Z14VIRec24_CB4148  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB41C0  [CODE]  Init__t7VIArray1Z14VIRec24_CB4148i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB4210  [CODE]  func_00CB4210  # VIMemStreamArray.h:71
-0x00CB42B8  [CODE]  func_00CB42B8
-0x00CB4308  [CODE]  func_00CB4308
-0x00CB4368  [CODE]  func_00CB4368
-0x00CB43E0  [CODE]  func_00CB43E0
+0x00CB42B8  [CODE]  DestroyPool__t7VIArray1Z14VIRec12_CB4368  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4308  [CODE]  Clear__t7VIArray1Z14VIRec12_CB4368  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4368  [CODE]  Allocate__t7VIArray1Z14VIRec12_CB4368  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB43E0  [CODE]  Init__t7VIArray1Z14VIRec12_CB4368i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB4430  [CODE]  func_00CB4430  # VIMemStreamArray.h:71
-0x00CB44D8  [CODE]  func_00CB44D8
-0x00CB4528  [CODE]  func_00CB4528
-0x00CB4588  [CODE]  func_00CB4588
-0x00CB4600  [CODE]  func_00CB4600
+0x00CB44D8  [CODE]  DestroyPool__t7VIArray1Z14VIRec36_CB4588  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4528  [CODE]  Clear__t7VIArray1Z14VIRec36_CB4588  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4588  [CODE]  Allocate__t7VIArray1Z14VIRec36_CB4588  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4600  [CODE]  Init__t7VIArray1Z14VIRec36_CB4588i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB4650  [CODE]  func_00CB4650  # VIMemStreamArray.h:71
-0x00CB46F8  [CODE]  func_00CB46F8
-0x00CB4748  [CODE]  func_00CB4748
-0x00CB47A8  [CODE]  func_00CB47A8
-0x00CB4820  [CODE]  func_00CB4820
+0x00CB46F8  [CODE]  DestroyPool__t7VIArray1Z14VIRec12_CB47A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4748  [CODE]  Clear__t7VIArray1Z14VIRec12_CB47A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB47A8  [CODE]  Allocate__t7VIArray1Z14VIRec12_CB47A8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4820  [CODE]  Init__t7VIArray1Z14VIRec12_CB47A8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB4870  [CODE]  func_00CB4870  # VIMemStreamArray.h:71
-0x00CB4918  [CODE]  func_00CB4918
-0x00CB4968  [CODE]  func_00CB4968
-0x00CB49C8  [CODE]  func_00CB49C8
-0x00CB4A40  [CODE]  func_00CB4A40
+0x00CB4918  [CODE]  DestroyPool__t7VIArray1Z14VIRec12_CB49C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4968  [CODE]  Clear__t7VIArray1Z14VIRec12_CB49C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB49C8  [CODE]  Allocate__t7VIArray1Z14VIRec12_CB49C8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4A40  [CODE]  Init__t7VIArray1Z14VIRec12_CB49C8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB4A90  [CODE]  func_00CB4A90  # VIMemStreamArray.h:71
-0x00CB4B38  [CODE]  func_00CB4B38
-0x00CB4B88  [CODE]  func_00CB4B88
-0x00CB4BE8  [CODE]  func_00CB4BE8
-0x00CB4C60  [CODE]  func_00CB4C60
+0x00CB4B38  [CODE]  DestroyPool__t7VIArray1Z14VIRec12_CB4BE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4B88  [CODE]  Clear__t7VIArray1Z14VIRec12_CB4BE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4BE8  [CODE]  Allocate__t7VIArray1Z14VIRec12_CB4BE8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4C60  [CODE]  Init__t7VIArray1Z14VIRec12_CB4BE8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB4CB0  [CODE]  func_00CB4CB0  # VIMemStreamArray.h:71
-0x00CB4D58  [CODE]  func_00CB4D58
-0x00CB4DA8  [CODE]  func_00CB4DA8
-0x00CB4E08  [CODE]  func_00CB4E08
-0x00CB4E80  [CODE]  func_00CB4E80
+0x00CB4D58  [CODE]  DestroyPool__t7VIArray1Z14VIRec24_CB4E08  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4DA8  [CODE]  Clear__t7VIArray1Z14VIRec24_CB4E08  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4E08  [CODE]  Allocate__t7VIArray1Z14VIRec24_CB4E08  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB4E80  [CODE]  Init__t7VIArray1Z14VIRec24_CB4E08i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB4ED0  [CODE]  func_00CB4ED0  # VIMemStreamArray.h:71
-0x00CB4F78  [CODE]  func_00CB4F78
-0x00CB5010  [CODE]  func_00CB5010
-0x00CB5070  [CODE]  func_00CB5070
-0x00CB5100  [CODE]  func_00CB5100
+0x00CB4F78  [CODE]  DestroyPool__t7VIArray1Z13VIElem_CB5100  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00CB5010  [CODE]  Clear__t7VIArray1Z13VIElem_CB5100  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5070  [CODE]  Allocate__t7VIArray1Z13VIElem_CB5100  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00CB5100  [CODE]  Init__t7VIArray1Z13VIElem_CB5100i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB5150  [CODE]  func_00CB5150  # VIMemStreamArray.h:71
-0x00CB51F0  [CODE]  func_00CB51F0
-0x00CB5240  [CODE]  func_00CB5240
-0x00CB52A0  [CODE]  func_00CB52A0
-0x00CB5318  [CODE]  func_00CB5318
+0x00CB51F0  [CODE]  DestroyPool__t7VIArray1Z14VIRec32_CB52A0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5240  [CODE]  Clear__t7VIArray1Z14VIRec32_CB52A0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB52A0  [CODE]  Allocate__t7VIArray1Z14VIRec32_CB52A0  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5318  [CODE]  Init__t7VIArray1Z14VIRec32_CB52A0i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB5368  [CODE]  func_00CB5368  # VIMemStreamArray.h:71
-0x00CB5408  [CODE]  func_00CB5408
-0x00CB5458  [CODE]  func_00CB5458
-0x00CB54B8  [CODE]  func_00CB54B8
-0x00CB5530  [CODE]  func_00CB5530
+0x00CB5408  [CODE]  DestroyPool__t7VIArray1Z14VIRec12_CB54B8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5458  [CODE]  Clear__t7VIArray1Z14VIRec12_CB54B8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB54B8  [CODE]  Allocate__t7VIArray1Z14VIRec12_CB54B8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5530  [CODE]  Init__t7VIArray1Z14VIRec12_CB54B8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB5580  [CODE]  func_00CB5580  # VIMemStreamArray.h:71
-0x00CB5628  [CODE]  func_00CB5628
-0x00CB5678  [CODE]  func_00CB5678
-0x00CB56D8  [CODE]  func_00CB56D8
-0x00CB5750  [CODE]  func_00CB5750
+0x00CB5628  [CODE]  DestroyPool__t7VIArray1Z14VIRec40_CB56D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5678  [CODE]  Clear__t7VIArray1Z14VIRec40_CB56D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB56D8  [CODE]  Allocate__t7VIArray1Z14VIRec40_CB56D8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5750  [CODE]  Init__t7VIArray1Z14VIRec40_CB56D8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB57A0  [CODE]  func_00CB57A0  # VIMemStreamArray.h:71
-0x00CB5848  [CODE]  func_00CB5848
-0x00CB5898  [CODE]  func_00CB5898
-0x00CB58F8  [CODE]  func_00CB58F8
-0x00CB5970  [CODE]  func_00CB5970
+0x00CB5848  [CODE]  DestroyPool__t7VIArray1Z14VIRec24_CB58F8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5898  [CODE]  Clear__t7VIArray1Z14VIRec24_CB58F8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB58F8  [CODE]  Allocate__t7VIArray1Z14VIRec24_CB58F8  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5970  [CODE]  Init__t7VIArray1Z14VIRec24_CB58F8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB59C0  [CODE]  func_00CB59C0  # VIMemStreamArray.h:71
-0x00CB5A68  [CODE]  func_00CB5A68
-0x00CB5AB8  [CODE]  func_00CB5AB8
-0x00CB5B18  [CODE]  func_00CB5B18
-0x00CB5B90  [CODE]  func_00CB5B90
+0x00CB5A68  [CODE]  DestroyPool__t7VIArray1Z14VIRec20_CB5B18  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5AB8  [CODE]  Clear__t7VIArray1Z14VIRec20_CB5B18  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5B18  [CODE]  Allocate__t7VIArray1Z14VIRec20_CB5B18  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5B90  [CODE]  Init__t7VIArray1Z14VIRec20_CB5B18i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB5BE0  [CODE]  func_00CB5BE0  # VIMemStreamArray.h:71
-0x00CB5C88  [CODE]  func_00CB5C88
-0x00CB5CD8  [CODE]  func_00CB5CD8
-0x00CB5D38  [CODE]  func_00CB5D38
-0x00CB5DB0  [CODE]  func_00CB5DB0
+0x00CB5C88  [CODE]  DestroyPool__t7VIArray1Z14VIRec20_CB5D38  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5CD8  [CODE]  Clear__t7VIArray1Z14VIRec20_CB5D38  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5D38  [CODE]  Allocate__t7VIArray1Z14VIRec20_CB5D38  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5DB0  [CODE]  Init__t7VIArray1Z14VIRec20_CB5D38i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB5E00  [CODE]  func_00CB5E00  # VIMemStreamArray.h:71
-0x00CB5EA8  [CODE]  func_00CB5EA8
-0x00CB5EF8  [CODE]  func_00CB5EF8
-0x00CB5F58  [CODE]  func_00CB5F58
-0x00CB5FD0  [CODE]  func_00CB5FD0
+0x00CB5EA8  [CODE]  DestroyPool__t7VIArray1Z14VIRec12_CB5F58  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5EF8  [CODE]  Clear__t7VIArray1Z14VIRec12_CB5F58  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5F58  [CODE]  Allocate__t7VIArray1Z14VIRec12_CB5F58  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB5FD0  [CODE]  Init__t7VIArray1Z14VIRec12_CB5F58i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB6020  [CODE]  func_00CB6020  # VIMemStreamArray.h:71
 0x00CB60C8  [CODE]  func_00CB60C8
 0x00CB6358  [CODE]  func_00CB6358
@@ -5632,34 +5632,34 @@
 0x00CB8FC8  [CODE]  func_00CB8FC8
 0x00CB9070  [CODE]  func_00CB9070
 0x00CB9110  [CODE]  func_00CB9110
-0x00CB9118  [CODE]  func_00CB9118
-0x00CB9128  [CODE]  func_00CB9128
-0x00CB9158  [CODE]  func_00CB9158
-0x00CB91A0  [CODE]  func_00CB91A0
-0x00CB91F8  [CODE]  func_00CB91F8
-0x00CB9260  [CODE]  func_00CB9260
-0x00CB9308  [CODE]  func_00CB9308
-0x00CB9410  [CODE]  func_00CB9410
+0x00CB9118  [CODE]  End__Ct6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9128  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9158  [CODE]  Next__Ct6VIPool1ZP12VIPtr_CB9308i  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB91A0  [CODE]  DestroyPool__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB91F8  [CODE]  Clear__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9260  [CODE]  LinkFreeChain__t6VIPool1ZP12VIPtr_CB9308i  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9308  [CODE]  Allocate__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9410  [CODE]  Add__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB94F0  [CODE]  func_00CB94F0
 0x00CB9598  [CODE]  func_00CB9598  # VIMemStreamSet.cpp:69
 0x00CB9668  [CODE]  func_00CB9668
-0x00CB9680  [CODE]  func_00CB9680
-0x00CB96D8  [CODE]  func_00CB96D8
-0x00CB96E0  [CODE]  func_00CB96E0
-0x00CB9798  [CODE]  func_00CB9798
-0x00CB97F0  [CODE]  func_00CB97F0
-0x00CB9898  [CODE]  func_00CB9898
-0x00CB99E8  [CODE]  func_00CB99E8
-0x00CB9AE0  [CODE]  func_00CB9AE0
-0x00CB9B98  [CODE]  func_00CB9B98
-0x00CB9C50  [CODE]  func_00CB9C50
+0x00CB9680  [CODE]  Begin__Ct5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB96D8  [CODE]  End__Ct5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB96E0  [CODE]  Next__Ct5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9798  [CODE]  DestroyPool__t5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB97F0  [CODE]  LinkFreeChain__t5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9898  [CODE]  Allocate__t5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB99E8  [CODE]  AddNode__t5VISet1Ziii  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9AE0  [CODE]  LeftRotate__t5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9B98  [CODE]  RightRotate__t5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
+0x00CB9C50  [CODE]  Insert__t5VISet1ZiRCi  # name provisional: placeholder element type (phase 62, template copy)
 0x00CB9EF8  [CODE]  func_00CB9EF8
 0x00CB9F80  [CODE]  func_00CB9F80  # VIMemStreamVector.cpp:66
 0x00CBA038  [CODE]  func_00CBA038
-0x00CBA088  [CODE]  func_00CBA088
+0x00CBA088  [CODE]  Clear__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
 0x00CBA0F0  [CODE]  func_00CBA0F0
-0x00CBA1C8  [CODE]  func_00CBA1C8
-0x00CBA218  [CODE]  func_00CBA218
+0x00CBA1C8  [CODE]  Init__t8VIVector1Z13VIRec4_BBBF08i  # name provisional: placeholder element type (phase 62, template copy)
+0x00CBA218  [CODE]  Add__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
 0x00CBA278  [CODE]  func_00CBA278
 0x00CBA2D0  [CODE]  func_00CBA2D0
 0x00CBA330  [CODE]  func_00CBA330
@@ -5686,10 +5686,10 @@
 0x00CBB0C8  [CODE]  func_00CBB0C8
 0x00CBB150  [CODE]  func_00CBB150
 0x00CBB1F0  [CODE]  func_00CBB1F0
-0x00CBB288  [CODE]  func_00CBB288
-0x00CBB2D8  [CODE]  func_00CBB2D8
-0x00CBB340  [CODE]  func_00CBB340
-0x00CBB390  [CODE]  func_00CBB390
+0x00CBB288  [CODE]  DestroyPool__t7VIArray1Z13VIElem_CBB288  # name provisional: placeholder element type (phase 62, template copy)
+0x00CBB2D8  [CODE]  _$_t7VIArray1Z13VIElem_CBB288  # name provisional: placeholder element type (phase 62, template copy)
+0x00CBB340  [CODE]  DestroyPool__t7VIArray1Z13VIElem_CBB340  # name provisional: placeholder element type (phase 62, template copy)
+0x00CBB390  [CODE]  _$_t7VIArray1Z13VIElem_CBB340  # name provisional: placeholder element type (phase 62, template copy)
 0x00CBB3F8  [CODE]  func_00CBB3F8
 0x00CBB408  [CODE]  func_00CBB408
 0x00CBB418  [CODE]  func_00CBB418
@@ -5807,21 +5807,21 @@
 0x00CC07C8  [CODE]  func_00CC07C8
 0x00CC0A90  [CODE]  func_00CC0A90
 0x00CC0AF8  [CODE]  func_00CC0AF8
-0x00CC0B20  [CODE]  func_00CC0B20
-0x00CC0B30  [CODE]  func_00CC0B30
-0x00CC0B60  [CODE]  func_00CC0B60
-0x00CC0BA8  [CODE]  func_00CC0BA8
-0x00CC0C00  [CODE]  func_00CC0C00
+0x00CC0B20  [CODE]  End__Ct6VIPool1Z15VIRec524_CC0F38  # name provisional: placeholder element type (phase 62, template copy)
+0x00CC0B30  [CODE]  Begin__Ct6VIPool1Z15VIRec524_CC0F38  # name provisional: placeholder element type (phase 62, template copy)
+0x00CC0B60  [CODE]  Next__Ct6VIPool1Z15VIRec524_CC0F38i  # name provisional: placeholder element type (phase 62, template copy)
+0x00CC0BA8  [CODE]  DestroyPool__t6VIPool1Z15VIRec524_CC0F38  # name provisional: placeholder element type (phase 62, template copy)
+0x00CC0C00  [CODE]  _$_t6VIPool1Z15VIRec524_CC0F38  # name provisional: placeholder element type (phase 62, template copy)
 0x00CC0C68  [CODE]  func_00CC0C68
 0x00CC0C88  [CODE]  Begin__Ct5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC0CE0  [CODE]  End__Ct5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC0CE8  [CODE]  Next__Ct5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC0DA0  [CODE]  DestroyPool__t5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC0DF8  [CODE]  _$_t5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
-0x00CC0E60  [CODE]  func_00CC0E60
+0x00CC0E60  [CODE]  Clear__t6VIPool1Z15VIRec524_CC0F38  # name provisional: placeholder element type (phase 62, template copy)
 0x00CC0EC8  [CODE]  Clear__t5VIMap2ZiZ13VIRec8_CC0C88  # name provisional: placeholder value type (phase 62, template copy)
-0x00CC0F38  [CODE]  func_00CC0F38
-0x00CC0FE0  [CODE]  func_00CC0FE0
+0x00CC0F38  [CODE]  LinkFreeChain__t6VIPool1Z15VIRec524_CC0F38i  # name provisional: placeholder element type (phase 62, template copy)
+0x00CC0FE0  [CODE]  Allocate__t6VIPool1Z15VIRec524_CC0F38  # name provisional: placeholder element type (phase 62, template copy)
 0x00CC1190  [CODE]  func_00CC1190
 0x00CC1298  [CODE]  LeftRotate__t5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
 0x00CC1350  [CODE]  RightRotate__t5VIMap2ZiZ13VIRec8_CC0C88i  # name provisional: placeholder value type (phase 62, template copy)
@@ -5832,7 +5832,7 @@
 0x00CC1A80  [CODE]  func_00CC1A80
 0x00CC1BE0  [CODE]  func_00CC1BE0
 0x00CC1CD8  [CODE]  func_00CC1CD8
-0x00CC2018  [CODE]  func_00CC2018
+0x00CC2018  [CODE]  Erase__t6VIPool1Z15VIRec524_CC0F38i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CC20F8  [CODE]  func_00CC20F8
 0x00CC22A8  [CODE]  func_00CC22A8
 0x00CC22F8  [CODE]  func_00CC22F8

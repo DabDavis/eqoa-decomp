@@ -9,7 +9,8 @@ its compare tree matches the target exactly; 611 words wrong, the rest of the re
 diagnosed below). **Later the same day: 17 of 5,973 exact, and the dispatcher at 17 wrong
 words**, all in one case (`0x00B1`, a register-allocation tie measured to the pseudo
 below); findings 4-8. **Then 95 of 5,973**, by CLIENT's own copies of SUPPORT's
-containers: see "CLIENT carries its own template copies" below.
+containers: see "CLIENT carries its own template copies" below. **At the end of the day:
+512 of 5,973 exact (66,556 bytes), plus 1,703 verified duplicates counted apart.**
 
 The dispatcher's map, case by case, is `decomp-phase62-dispatcher-survey-20261015.md`.
 
@@ -245,6 +246,97 @@ several of these. Proof that SUPPORT is unchanged:
     `client_containers.cpp`.
   - CLIENT's own `__builtin_vec_delete`/`__builtin_delete` (libgcc tail) named.
   - 430 call sites, all landing on the member each names.
+
+**Duplicates are counted APART (the user's call, 2026-10-15).** `eqcheck` prints a
+second total after the byte-exact one: map entries the tree does not compile whose
+RELOCATED bytes, every call and data target included, equal a function it matches. They
+are credited to the source of the function they duplicate, listed with `--dups`, and never
+baselined. A copy under four instructions with no relocation is reported as "too small to
+attribute": `jr ra; move v0,zero` is every function that returns 0. SUPPORT reports 0
+(its map has no unnamed copies); CLIENT reported 1,153 at 95 exact, then 1,736 at 290.
+
+**`eqtmpl.py` now covers every family**:
+- **Candidate sizes come from the seed's own code.** Its immediates, with shift amounts
+  read as powers of two, give the element sizes, minus each family's node overhead (0
+  for VIArray/VIVector, 8 for VIPool/VIList, 16 for VISet, 20 for VIMap).
+- **Batch compiles.** Every (size, alignment) is compiled in one TU, halved on a
+  compile error.
+- **Size-revealing seeds go first.** `Allocate`/`Insert`/`Find`/`Add`/`Init` claim
+  their instantiation whole; otherwise a size-blind `DestroyPool`/`Clear` pair claims it
+  first, the same class splits across two placeholder types, and the halves' calls cross.
+- **Cross calls are rejected.** A member whose call lands on an address already named
+  differently is refused.
+- **Unmeasured sizes are named as such.** If a DIFFERENT size reproduces the same
+  members, the size was never measured, and the type is `VIElem_<seed>` ("any type
+  reproduces these"), never a `VIRec<n>` that claims a size.
+- **`emit` writes the TU and the map**, member by member. The declarations are read off
+  SUPPORT's own instantiation lines; each is mapped to its mangled name by a one-line
+  compile, keeping the one emitted symbol that IS the member it names (a member's callees
+  come out too, and on this toolchain explicit and implicit instantiations are both WEAK).
+- **The first VIArray scan named 23 elements "1 byte".** The immediate parser missed
+  shift amounts written in hex (`sll a0,a0,0x3`); fixed, the same scan measured them
+  (16 size-unknown became 8).
+- **VIArray:** 45 instantiations, 195 functions, in `client_viarray.cpp`. Three
+  size-unknown instantiations have element types with a constructor or destructor: their
+  `Allocate`/`DestroyPool` (8) are named in the map and score as `wrong`, never `NO-TGT`.
+
+**All seven families, as of the end of 2026-10-15** (`client_<family>.cpp`):
+
+| Family | Instantiations | Functions |
+|---|---|---|
+| VIMap | 6 named or placeholder, plus the ability map | 78 + 11 |
+| VIArray | 45 | 195 |
+| VIVector | 39 | 115 |
+| VIPool | 11 | 80 |
+| VISet | 1 | 10 |
+| VIList | 2 | 6 |
+| VIMultiMap | 0 | 0 |
+
+`VIMultiMap` gets nothing: everything its scan claimed was a `VIMap` or `VISet` member,
+which has the same bytes. Three corrections made that table honest:
+- **The scans run separately, so two families can claim one address.** A POD
+  `DestroyPool` or a destructor has the same bytes in VIPool, VISet and VIMultiMap.
+  `eqtmpl.py resolve` takes instantiations largest first and drops a smaller one WHOLE if
+  it shares any address. Striking just the address is not enough: a kept member could
+  call the struck one, which would then carry the other family's name.
+- **A size-blind seed splits an instantiation.** Three VIPool instantiations came out as
+  three fragments each:
+  - the measured members (`LinkFreeChain`, `Allocate`, `Add`) under a `VIRec<n>`;
+  - `Begin`/`End` under a pointer placeholder;
+  - `DestroyPool` and the destructor claimed by VISet.
+
+  `eqcallcheck` exposed it: the measured `Allocate` calls a `DestroyPool` named for VISet.
+  Re-solved with all three fragments' addresses as seeds and the measured type, each is
+  ONE class of 9 to 11 members (more than the fragments together: the walk also reaches
+  `Next`, `Clear` and `Erase`).
+- **Members pulled in implicitly are named off their callers** (`eqtmpl.py
+  name-implicit`). An explicit instantiation of `Clear` also emits `DestroyPool`; the
+  address is the one the matched callers' jals reach, so the function scores as what it
+  is, never as NO-TGT.
+
+Smaller fixes on the way:
+- an `EXTRA_DECLS` list for members SUPPORT keeps inline but the image holds out of line
+  (`VIList::End`);
+- tables built with the real type when an argument is a builtin, because `int` mangles to
+  `i`, which is in every name;
+- `{T} const`, because `VIWnd *const &` loses its space when `int` replaces the type.
+
+**The ability map is a VIMap, and its value class is declared** (`VIAbility` in
+`game.h`, laid out from FrontiersForge's `ability.lua`, 452 bytes, `m_abilities` at
+`+0x2BB2C`). `VIMultiMap`'s scan had claimed its rotates, `EraseFixup`, `Clear` and
+`Init`. A `Find` settles the family: VIMultiMap has none. 11 members match; `Allocate`,
+`DestroyPool` and `FreeNode` are named and open, because the real class copies and
+destroys through member functions.
+
+**The ability map's value is a real class.** Its Node copy constructor
+(`func_00BE0AB8`) copies member-wise (ints, a float at value+8, a 16-bit field at
+value+60) and calls `func_00BE0A88` for a member with its own copy constructor.
+FrontiersForge's `ability.lua` documents the layout.
+
+**The duplicates DO line up with file boundaries.** 96 of the 97 dead copies of the
+4-byte map's `Find` sit between assert hints naming two different files
+(`VIBankControl.cpp`, `VIItemList.h`, `VIClient.cpp`...). The hints are sparse, so
+this is a lead for reconstructing CLIENT's file list, not yet a result.
 
 **Still open in this line of work.**
 - The other families' solvers (VIArray, VIPool, VIList, VIVector).

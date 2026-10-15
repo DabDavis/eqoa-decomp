@@ -218,6 +218,34 @@ public:
     unsigned short m_wname[64];                    // +0x2C: 128 bytes, read wide
 };
 
+// An ability record: the value of VIClient's ability map (+0x2BB2C, 472-byte nodes), which
+// the 0x00B3/B4/B5/B6/B8/CD/FD/FF handlers all work on.  Field names are FrontiersForge's
+// (ability.lua: node offsets there, value offsets here; claude-notes/frontiersforge-
+// viclient-xref-20261015.md).  The REAL class copies member-wise through an out-of-line
+// Node copy constructor (func_00BE0AB8, which calls func_00BE0A88 for one member), so it
+// has a member with a copy constructor of its own: the map's Allocate/Insert/AddNode are
+// not reproduced by this plain declaration yet.
+struct VIAbility
+{
+    int            m_p00;                          // +0x00 (node +0x14)
+    int            m_displayIndex;                 // +0x04: the server's key for it; 0xFC.. are items
+    int            m_valid;                        // +0x08
+    int            m_slot;                         // +0x0C: spellbook position
+    int            m_lockout;                      // +0x10: cooldown lockout in ms (0x00CD)
+    int            m_p14;                          // +0x14
+    int            m_level;                        // +0x18
+    float          m_range;                        // +0x1C: the copy moves it through $f0
+    int            m_castTime;                     // +0x20
+    int            m_powerCost;                    // +0x24
+    unsigned int   m_iconBack;                     // +0x28: UI texture dictionary hashes
+    unsigned int   m_iconFront;                    // +0x2C
+    int            m_scope;                        // +0x30
+    int            m_cooldown;                     // +0x34
+    unsigned int   m_equipReq;                     // +0x38: a bitmask
+    unsigned short m_name[64];                     // +0x3C
+    unsigned short m_desc[132];                    // +0xBC
+};
+
 // A guild member: 48 bytes, the value of VIClientGuild::m_members.  The same
 // record plus an int and a bool (4 bytes on this ABI).  Names provisional.
 class VIGuildMember : public VIPlayerRecord
@@ -497,7 +525,9 @@ public:
     int           m_tradePartner;                       // +0x2BB08: 0x0056
     unsigned int  m_p2BB0C;                             // +0x2BB0C: 0x007C / 0x007D; -1 is lui+ori (0x00BC0680)
     unsigned int  m_p2BB10;                             // +0x2BB10: -1 (lui+ori) beside it at 0x00BC0680
-    char          m_g2BB14[0x2BB60 - (0x2BB14)];
+    char          m_g2BB14[0x2BB2C - (0x2BB14)];
+    VIMap<int, VIAbility> m_abilities;                  // +0x2BB2C: 0x00B3..0x00FF's ability map (FrontiersForge)
+    char          m_g_m_p2BB60[0x2BB60 - (0x2BB2C + sizeof(VIMap<int, VIAbility>))];
     int           m_p2BB60;                             // +0x2BB60: 0x00B4/B5/B6/B8/CD
     char          m_g2BB64[0x2BB78 - (0x2BB64)];
     VIWndGame *   m_wndGame;                            // +0x2BB78: ShowText's window

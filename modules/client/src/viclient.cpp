@@ -10932,3 +10932,21 @@ template int VIMap<int, VIBuddy>::Insert(const int &, const VIBuddy &);  // 0x00
 template int VIMap<int, VIBuddy>::EraseFixup(int);  // 0x00BE2818
 template int VIMap<int, VIBuddy>::FreeNode(int);  // 0x00BE2BD0
 template int VIMap<int, VIBuddy>::Erase(int);  // 0x00BE2C10
+CHK(c_abilities,  OFF(m_abilities)  == 0x2BB2C)
+CHK(c_ability,    sizeof(VIAbility) == 452)
+
+// VIMap<int, VIAbility>, VIClient's ability map (+0x2BB2C): the members a plain
+// VIAbility reproduces.  Allocate/Insert/AddNode copy through the real class's
+// member-wise copy constructor and DestroyPool destroys through its destructor; those
+// are named in the map and still open.
+template int VIMap<int, VIAbility>::Begin() const;  // 0x00BDEED0
+template int VIMap<int, VIAbility>::End() const;  // 0x00BDEF28
+template int VIMap<int, VIAbility>::Next(int) const;  // 0x00BDEF30
+template int VIMap<int, VIAbility>::LinkFreeChain(int);  // 0x00BE0C00
+template int VIMap<int, VIAbility>::LeftRotate(int);  // 0x00BE0EE8
+template int VIMap<int, VIAbility>::RightRotate(int);  // 0x00BE0FA0
+template int VIMap<int, VIAbility>::EraseFixup(int);  // 0x00BE1408
+template int VIMap<int, VIAbility>::Erase(int);  // 0x00BE1848
+template int VIMap<int, VIAbility>::Find(const int &) const;  // 0x00BE1A20
+template int VIMap<int, VIAbility>::Clear();  // 0x00BE3258
+template int VIMap<int, VIAbility>::Init(int);  // 0x00BE32C8

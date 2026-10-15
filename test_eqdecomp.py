@@ -1125,6 +1125,57 @@ def test_symbol_map_row_takes_a_trailing_hint():
     ck(not rx.match("0x00BBD430  [CODE]  func_00BBD430  stray"), "a two-word row was accepted")
 
 
+def _client_ready():
+    mod = E.MODULES.get("CLIENT")
+    if mod is None or not mod.image.is_file():
+        raise Skipped("no CLIENT image")
+    return mod
+
+
+def test_eqtmpl_names_a_known_map_and_rejects_the_wrong_type():
+    """
+    eqtmpl's walk names every member of CLIENT's VIMap<int, VIBuddy> from its Find alone:
+    16 members, each byte-exact with every call landing on the member it names.
+
+    Negative control: the same seed solved as VIMap<int, VIGuildMember> (a 68-byte node
+    against the buddy map's 192) must name nothing -- not even the seed.
+    """
+    import json, os, subprocess, tempfile
+    _client_ready()
+    env = dict(os.environ, EQMODULE="CLIENT")
+    here = Path(__file__).resolve().parent
+    with tempfile.TemporaryDirectory() as tmp:
+        def solve(targs):
+            out = Path(tmp) / (targs.replace(", ", "_") + ".json")
+            subprocess.run([sys.executable, str(here / "eqtmpl.py"), "solve", targs, "Find=0x00BE1F68",
+                            "--work", str(Path(tmp) / targs.replace(", ", "_")), "--json", str(out)],
+                           env=env, capture_output=True, text=True, timeout=600)
+            return json.loads(out.read_text()) if out.is_file() else {}
+        got = solve("int, VIBuddy")
+        ck(len(got) == 16, f"VIMap<int, VIBuddy> named {len(got)} members, not 16")
+        ck(got.get("0xbe1f68") == "Find__Ct5VIMap2ZiZ7VIBuddyRCi", "the seed itself was not named")
+        ck(got.get("0xbe2c10") == "Erase__t5VIMap2ZiZ7VIBuddyi", "Erase was not reached")
+        ck(len(solve("int, VIGuildMember")) == 0, "a wrong value type still named members")
+
+
+def test_duplicates_are_exact_copies_only():
+    """
+    eqcheck credits a dead TU copy to the function it duplicates: the guild map's matched
+    Find (0x00BF0AB0) has a byte-identical, never-called copy at 0x00BF20A8.
+
+    Negative control: the buddy map's Find has the same code with another node stride
+    (192, not 68) and must claim nothing at 0x00BF20A8.
+    """
+    import eqcheck
+    _client_ready()
+    _, st, img = E.load("CLIENT")
+    dups, _ = eqcheck.verified_duplicates(st, img, ["Find__Ct5VIMap2ZiZ13VIGuildMemberRCi"], set())
+    copy = st.at(0x00BF20A8).name
+    ck(dups.get(copy) == "Find__Ct5VIMap2ZiZ13VIGuildMemberRCi", f"{copy} not credited to the guild Find")
+    other, _ = eqcheck.verified_duplicates(st, img, ["Find__Ct5VIMap2ZiZ7VIBuddyRCi"], set())
+    ck(copy not in other, "a Find with another stride claimed the guild copy")
+
+
 def main():
     tests = [(n, f) for n, f in sorted(globals().items())
              if n.startswith("test_") and callable(f)]

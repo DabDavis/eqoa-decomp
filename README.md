@@ -6549,7 +6549,7 @@ closes and the next one opens CLIENT.
 
 ## Phase 62: CLIENT (opened 2026-10-15)
 
-**95 of 5,973 CLIENT functions byte-exact (20,216 bytes), 215 named, and the network opcode
+**512 of 5,973 CLIENT functions byte-exact (66,556 bytes) plus 1,703 verified duplicates, 651 named, and the network opcode
 dispatcher written in full** (`VIClient::ProcessMessage`, 2,093 instructions; its compare
 tree matches the target's 102 tests exactly; **17 words open**, all one register tie in
 `0x00B1`). Source is `modules/client/src/`; every tool takes `EQMODULE=CLIENT`.
@@ -6582,9 +6582,19 @@ tree matches the target's 102 tests exactly; **17 words open**, all one register
   `.text` identical), so a CLIENT TU instantiates the same source. **`eqtmpl.py`** names
   an instantiation exactly: it compiles the class, walks the call graph from a live seed
   naming each callee off the candidate's own relocations, and accepts a function only
-  byte-exact with every call landing on its named callee. `scan` solves placeholder
-  value types from the node stride (`VIRec<size>_<seed>`, `client_containers.cpp`).
-  78 functions so far; most of the 2,244 shape-matched copies are dead duplicates.
+  byte-exact with every call landing on its named callee. `scan --family F` solves
+  placeholder element types from the seed's own immediates (`VIRec<size>_<seed>`, or
+  `VIElem_<seed>` when no member measures the size), and `emit` writes the TU and the map
+  member by member (`client_containers.cpp`, `client_viarray.cpp`, ...); `resolve` settles
+  addresses two families' scans both claim (POD members have the same bytes across
+  families), and `name-implicit` names the members an instantiation pulls in, off their
+  callers. All seven families: VIMap 89, VIArray 195, VIVector 115, VIPool 80, VISet 10,
+  VIList 6; the ability map is `VIMap<int, VIAbility>`, laid out from FrontiersForge.
+- **`eqcheck` counts DEAD COPIES apart**: a second total, "verified duplicates", is every
+  map entry the tree does not compile whose RELOCATED bytes (calls and data targets
+  included) equal a function it matches. Credited to that function's source, listed with
+  `--dups`, never baselined; under four instructions with no relocation it is "too small
+  to attribute".
 - **A value held in TWO callee-saved registers, one for an `if` test and one for an arm, is
   a `const` local initialised from a call.** g++ expands the call into a temporary and
   copies it into the `const`; cse folds the test onto the temporary, and the branch-target

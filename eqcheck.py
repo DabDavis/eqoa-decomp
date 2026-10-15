@@ -22,6 +22,15 @@ A `wrong` row counts differing instructions POSITIONALLY while the candidate is
 the target's length, and by DIFF ALIGNMENT (marked `~`) once it is not -- one
 extra instruction shifts every later word, and a positional count then reads as
 "everything wrong" for every variant alike.
+
+A second total follows the byte-exact one: VERIFIED DUPLICATES, map entries this
+tree does not compile whose relocated bytes (every call and data target included)
+equal a function it matches.  gcc 2.95 had no COMDAT, so each TU kept its own copy
+of every template member it used; CLIENT holds hundreds of such dead copies.  They
+are credited to the source of the function they duplicate, counted apart, listed
+with `--dups`, and never baselined.  A copy under four instructions with no
+relocation is "too small to attribute": `jr ra; move v0,zero` is every function
+that returns 0.
 """
 
 from __future__ import annotations
@@ -240,6 +249,48 @@ def score(st, img, obj: Path, symbol: str):
     return ("wrong", wrong, max(len(a), len(b)), res)
 
 
+def verified_duplicates(st, img, matched: list[str], scored: set[str]):
+    """Map entries this tree does not compile whose bytes ARE a matched function's.
+
+    gcc 2.95 has no COMDAT: every TU that used a template (or an out-of-line inline)
+    emitted its own copy, and the linker kept them all and resolved each call to one.
+    A copy is byte-identical to the one this tree matches, call and data targets
+    included -- the image is compared RELOCATED, so two copies only agree if every
+    jal and every address they carry agree too.  Counted separately from the
+    byte-exact total and never baselined: a duplicate is credited to the source of the
+    function it duplicates, and only while that function matches.
+
+    A copy too small to attribute (under four instructions, with no relocation in it)
+    is reported apart: `jr ra; move v0,zero` is every function that returns 0.
+    Returns ({duplicate name: matched name}, {ambiguous name: matched name}).
+    """
+    import eqcalls
+    rel = eqcalls.relocated(img)
+    sites = {img.module.base + site for site, _, _, _ in E.module_relocations(img.data)}
+
+    def body(sym):
+        n = len(img.func(sym, trim=True))
+        return bytes(rel[sym.addr:sym.addr + n])
+
+    canon = {}
+    for name in matched:
+        try:
+            sym = st.get(name)
+        except KeyError:
+            continue
+        canon.setdefault(body(sym), name)
+    dups, ambiguous = {}, {}
+    for sym in st.sized:
+        if sym.name in scored or not img.covers(sym.addr, sym.span):
+            continue
+        b = body(sym)
+        if b not in canon:
+            continue
+        attributable = len(b) >= 16 or any(sym.addr <= x < sym.addr + len(b) for x in sites)
+        (dups if attributable else ambiguous)[sym.name] = canon[b]
+    return dups, ambiguous
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -248,6 +299,8 @@ def main(argv=None):
     p.add_argument("-t", "--toolchain", default=TOOLCHAIN)
     p.add_argument("--flags", default=" ".join(FLAGS))
     p.add_argument("--baseline", action="store_true", help="rewrite MATCHED.txt")
+    p.add_argument("--dups", action="store_true",
+                   help="list the verified duplicates (map entries byte-identical to a matched function)")
     p.add_argument("--gnu-as", action="store_true",
                    help="assemble with the toolchain's GNU as instead of Ps2EeAs")
     a = p.parse_args(argv)
@@ -322,6 +375,16 @@ def main(argv=None):
             drift = "~" if res is not None and res.cand_len != res.target_len else " "
             print(f"  wrong{drift}{wrong:>3}/{tot:<3}   {name}")
     print(f"\n{ok}/{len(rows)} byte-exact")
+    if not rx:
+        dups, ambiguous = verified_duplicates(st, img, matched, {r[3] for r in rows})
+        print(f"+ {len(dups)} verified duplicates (byte-identical to a matched function, call and data"
+              f" targets included; counted apart){f', {len(ambiguous)} too small to attribute' if ambiguous else ''}")
+        if a.dups:
+            by = {}
+            for d, m in dups.items():
+                by.setdefault(m, []).append(d)
+            for m in sorted(by):
+                print(f"  {len(by[m]):4d} x {m}")
 
     if a.wrong:
         for kind, wrong, tot, name, res in rows:
