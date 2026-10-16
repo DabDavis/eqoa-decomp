@@ -105,6 +105,11 @@ Source: `decomp/modules/setup/src/`, 20 TUs plus `patcher.h`. Scorer:
 
 ## Open: 8 functions, all register or scheduling ties
 
+**Update, same evening:** FindRoots, GetEstimate, RescanRoutine and `Http_get::Get` are
+now byte-exact, and none of them was a tie. Each was a source shape. See
+[decomp-setup-ties-20261016.md](decomp-setup-ties-20261016.md), which also re-diagnoses
+the four still open.
+
 | Function | Words | What differs |
 |---|---|---|
 | `PatcherAPI_Impl::DownloadFile` | 172 (66 aligned) | the `url` reaching register needs `s0` (it loses on priority to the loop constants); `file`/`savedDone` swap `s6`/`s7` |

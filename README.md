@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **1,654 of 1,805**: its whole libxml2 2.3.6 block, 454 of the 462 patcher functions and 247 of the 251 screens)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **1,661 of 1,805**: its whole libxml2 2.3.6 block, 458 of the 462 patcher functions and 250 of the 251 screens)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -85,7 +85,7 @@ SUPPORT is one of five EE modules, and the only one that names its own functions
 | SUPPORT | 887 KB | 4,376 | 4,102 | the engine (the count includes the unnamed statics and per-TU template copies) |
 | CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat |
 | STATION | 587 KB | 2,339 | 1 (`station_main`) | login, server select, character creation |
-| SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA: **1,654 byte-exact**: all of libxml2 2.3.6, the Verant patcher 454 of 462, and the screens 247 of 251 (2026-10-16) |
+| SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA: **1,661 byte-exact**: all of libxml2 2.3.6, the Verant patcher 458 of 462, and the screens 250 of 251 (2026-10-16) |
 | MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key: **44 of 44 byte-exact** (2026-10-16) |
 
 All five share SUPPORT's build: no `$gp`, `sq ra` saves. Each ends in the same runtime
@@ -6735,4 +6735,43 @@ it copies `modules/<m>/src` and `symbols.txt`, and merges `symbols.txt` per addr
 - `*(long long *)&a = *(long long *)&b` is a quadword `lq`/`sq` copy.
 - One shared loop counter, and calls written in each arm rather than through a
   pointer variable, decided two large functions' allocation.
+
+## SETUP (2026-10-16, evening): the ties, 7 of 12 closed
+
+**SETUP is 1,661 of 1,805**: the patcher 458 of 462, the screens 250 of 251. Each of the
+seven was a source shape, not a compiler tie. Long form:
+`claude-notes/decomp-setup-ties-20261016.md`.
+
+- **`VIString::snprintf16` returns `void`** (`src/vi.h`, `src/vistring.cpp`, both
+  overloads). A `call_value` sets `v0` and clears its last-use list, so an argument copy
+  `move aN,v0` lost every later call as a dependent and ranked below the `s`-register
+  moves. Making the call a plain `call` fixed three screens:
+  - `VIWndController::OnDrawSelf`;
+  - `VIWndOptions::OnDrawSelf`;
+  - `VIWndEula::OnKeyDown`.
+
+  It also fixed **eight CLIENT functions**, taking CLIENT's eqcheck count from 1,128 to
+  1,136: `PetCommand`, `InviteEntity`, `Msg0057`, `Msg0770`, `Msg0771`, `QuestStage`,
+  `RequestTrade` and `ConnectStatusString`. No caller reads the result. SUPPORT stays at
+  3,665 and MCERR at 44/44.
+- **The shipped scheduler's tie order** comes off its own `rank_for_schedule` (at
+  `0x4e9df0`) and the `-fsched-verbose-9` dumps:
+  1. priority;
+  2. register weight (sched1 only), counted on the notes as they stand before sched1;
+  3. class against the last insn scheduled (never 2);
+  4. number of dependents;
+  5. sched1's output order.
+- **Source levers:**
+  - `FindRoots`: an if/else with one shared `return 1`.
+  - `GetEstimate`: the division written in each arm, so sched2 sees the result copy
+    end its block.
+  - `RescanRoutine`: an early return with its tail written out.
+  - `Http_get::Get`: the member stores in declaration order. That order reaches sched1's
+    live lengths, and so global-alloc.
+- **Five remain, each diagnosed:**
+  - `Get_thread`, 7 words;
+  - `ComputeTextRows`, 16;
+  - `OpenSocket`, 24;
+  - `DownloadToMemory`, 25;
+  - `DownloadFile`, 172.
 

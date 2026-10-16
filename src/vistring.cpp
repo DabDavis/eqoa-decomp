@@ -832,18 +832,23 @@ void VIString::snprintf(char *d, int n, const char *f, ...)
     vsnprintf(d, n, f, ap);
 }
 
-int VIString::snprintf16(unsigned short *d, int n, const char *f, ...)
+// VOID, as snprintf above: the type shows only at the callers, which need the
+// call not to set v0 -- three SETUP screens (VIWndController::OnDrawSelf,
+// VIWndEula::OnKeyDown, VIWndOptions::OnDrawSelf) and eight CLIENT functions
+// (PetCommand, InviteEntity, Msg0057, Msg0770, Msg0771, QuestStage,
+// RequestTrade, ConnectStatusString).
+void VIString::snprintf16(unsigned short *d, int n, const char *f, ...)
 {
     va_list ap;
     va_start(ap, f);
-    return vsnprintf16(d, n, f, ap);
+    vsnprintf16(d, n, f, ap);
 }
 
-int VIString::snprintf16(unsigned short *d, int n, const unsigned short *f, ...)
+void VIString::snprintf16(unsigned short *d, int n, const unsigned short *f, ...)
 {
     va_list ap;
     va_start(ap, f);
-    return vsnprintf16(d, n, f, ap);
+    vsnprintf16(d, n, f, ap);
 }
 
 char *VIString::strlwr(char *p)

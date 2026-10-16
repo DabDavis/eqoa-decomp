@@ -163,6 +163,11 @@ ours are commented in the source. The three classes Frontiers adds (`VIWndContro
 
 ## Open: 4 screen functions, all register or scheduling ties
 
+**Update, same evening:** the three `snprintf16` rows were not ties. `VIString::snprintf16`
+returns `void`, and the `call_value` was what pushed the result copy down. See
+[decomp-setup-ties-20261016.md](decomp-setup-ties-20261016.md). `ComputeTextRows` is
+still open.
+
 | Function | Words | What differs |
 |---|---|---|
 | `VIWndEula::ComputeTextRows` | 16 | the two word-wrap arms end identically in mine and jump2 merges them; the target's space arm puts `i*2` in a0, mine in a1 (local-alloc's lifetime extension) |

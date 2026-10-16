@@ -82,14 +82,16 @@ int Http_get::Get(char *url, char *file, char *c, char *d, int compressed)
             break;
         }
     }
+    // The members in declaration order: that order reaches sched1, and with it
+    // the live lengths that give `url` s3 and `c` s4.
     char *mem = (char *)malloc(0x200000);
+    m_mem = mem;
     m_url = url;
+    m_x1374 = 0;
+    m_dest = mem;
     m_x137C = c;
     m_x1380 = d;
     m_compressed = compressed;
-    m_x1374 = 0;
-    m_mem = mem;
-    m_dest = mem;
     MemoryGet(mem, 0x200000, url, c, d, compressed);
     WriteFile(file);
     FreeMem();

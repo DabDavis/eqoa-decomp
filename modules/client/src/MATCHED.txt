@@ -212,6 +212,7 @@ ClosePanel70C__8VIClient
 ClosePanel718__8VIClient
 CompareY__FPCvT0
 ConnectRandomShard__8VIClient
+ConnectStatusString__8VIClient
 CopyFrom__10VIItemListR10VIItemList
 DamageFromOther__8VIClientii
 DamageFromSelf__8VIClientii
@@ -705,6 +706,7 @@ Insert__t5VIMap2ZiZ7VIBuddyRCiRC7VIBuddy
 Insert__t5VIMap2ZiZ9VIAbilityRCiRC9VIAbility
 Insert__t5VISet1ZiRCi
 InteractWithTarget__8VIClient
+InviteEntity__8VIClienti
 InviteToGroup__8VIClientP11VIInviteRec
 IsAbilityLocked__8VIClienti
 IsConnected__8VIClient
@@ -766,6 +768,7 @@ Msg003D__8VIClientii
 Msg003E__8VIClientii
 Msg003F__8VIClientii
 Msg0045__8VIClienti
+Msg0057__8VIClientiUi
 Msg005E__8VIClient
 Msg0060__8VIClientii
 Msg0061__8VIClienti
@@ -783,6 +786,8 @@ Msg00CD__8VIClientii
 Msg00D7__8VIClient
 Msg00FD__8VIClientR11VIMemStream
 Msg00FF__8VIClientR11VIMemStream
+Msg0770__8VIClientPCc
+Msg0771__8VIClientUcPCc
 Msg0772__8VIClientR11VIMemStream
 Msg0773__8VIClientR11VIMemStream
 Msg0774__8VIClientR11VIMemStream
@@ -830,6 +835,7 @@ OpenPanel35__8VIClient
 OpenPanel40__8VIClient
 OpenResources__8VIClient
 PadKeys__8VIClientPC17VIClientPart07190
+PetCommand__8VIClienti
 PetFlag4__8VIClient
 PetFlag8__8VIClient
 PetIsCreature__8VIClient
@@ -838,6 +844,7 @@ PlayAction__8VIClienti
 PlayCue__8VIClientPCcf
 PlayEmote__8VIClienti
 PlaySound__8VIClienti
+Pointer__8VIClientii
 PrintPosition__8VIClient
 ProcessMessageF8__8VIClientlR11VIMemStream
 ProcessMessageF9__8VIClientPCvi
@@ -847,6 +854,7 @@ ProcessStateChannel__8VIClientiPCvi
 PromptText__8VIClientPCUsi
 PromptWithName__8VIClientPCUs
 PumpMessages__8VIClient
+QuestStage__8VIClientUci
 Quit__8VIClient
 ReadAbilities__8VIClientR11VIMemStreamRt5VIMap2ZiZ9VIAbility
 ReadSigned__11VIMemStreamRi
@@ -864,6 +872,7 @@ ReplaceEquipped__10VIItemListii
 RequestBuddy__8VIClienti
 RequestLootAll__8VIClient
 RequestQuickSlot__8VIClientii
+RequestTrade__8VIClient
 ResetBattleMusic__8VIClient
 ResetCamera__8VIClient
 ResetView__8VIClient
@@ -971,7 +980,6 @@ SwapItems__8VIClientii
 TargetCentre__8VIClient
 TargetInRange__8VIClienti
 TargetNearest__8VIClienti
-Pointer__8VIClientii
 TickHookB__8VIClient
 TickLocal__8VIClient
 TickNet__8VIClient

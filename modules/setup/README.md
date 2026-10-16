@@ -6,8 +6,8 @@ link order:
 
 | Block | Functions | Bytes | State |
 |---|---|---|---|
-| The game's screens: `VISetup`, `VIFader`, `VIWindowManager`, `VIWndSplash`/`Eula`/`Dnas`/`Connect`/`Patcher`/... | 251 written + dead template copies | 90,632 | **247 byte-exact (2026-10-16)**, 4 ties |
-| Verant's patcher (`PatcherAPI`, `Http_get`, `VUrl`, the downloaders, delta files) and POSIX shims | 462 written | 52,584 | **454 byte-exact (2026-10-16)**, 8 register/scheduling ties |
+| The game's screens: `VISetup`, `VIFader`, `VIWindowManager`, `VIWndSplash`/`Eula`/`Dnas`/`Connect`/`Patcher`/... | 251 written + dead template copies | 90,632 | **250 byte-exact (2026-10-16)**, 1 open |
+| Verant's patcher (`PatcherAPI`, `Http_get`, `VUrl`, the downloaders, delta files) and POSIX shims | 462 written | 52,584 | **458 byte-exact (2026-10-16)**, 4 open |
 | **libxml2 2.3.6** | **953** | **335,492** | **953 byte-exact (2026-10-16)** |
 
 (The libxml block is 982 functions by address. 29 of them are the patcher's
@@ -71,7 +71,7 @@ Every setting was read off the image. None was guessed into place.
 
 Long form: `claude-notes/decomp-setup-libxml-20261016.md`.
 
-## The patcher: 454 of 462
+## The patcher: 458 of 462
 
 All 462 functions are written, in 20 TUs, with every class in `src/patcher.h`.
 The TU names are all ours; only libxml's files are named by asserts in the image.
@@ -79,10 +79,10 @@ The TU names are all ours; only libxml's files are named by asserts in the image
 | TU | Exact | What |
 |---|---|---|
 | `patcherapi` | 53/53 | the `PatcherAPI` handle, all forwarding wrappers |
-| `patcherapi_impl` | 59/64 | the patcher proper, `Patcher_thread`, the estimates |
+| `patcherapi_impl` | 62/64 | the patcher proper, `Patcher_thread`, the estimates |
 | `patcherchanges(_impl)`, `patcherdistributioninfo(_impl)` | 11, 12, 43, 57 | the manifest tree; the `_Impl`'s inline `Call*` members are emitted after its `__tf` |
 | `patcherdownloader`, `directorydownloader`, `distributiondownloader`, `filedownloader`, `filedeltadownloader` | 41, 16, 24, 28, 10 | the downloaders |
-| `http_get` | 25/27 | one HTTP download into memory, optionally gzip |
+| `http_get` | 26/27 | one HTTP download into memory, optionally gzip |
 | `vurl` | 23/24 | the HTTP/1.x client over libinet (shared with STATION) |
 | `delta` | 6/6 | the delta coder, its index sort and binary search |
 | `patcherutil` | 11/11 | time formatters, `FormatString`, `GetTempName`, `uthread_*` |
@@ -90,11 +90,11 @@ The TU names are all ours; only libxml's files are named by asserts in the image
 | `pullxml` | 6/6 | `PullXMLAttribute*` |
 | `log`, `minigzip.c`, `ps2port` | 5, 5, 10 | the log that formats and drops; gzip; the POSIX stubs |
 
-The eight open functions are register-allocation and scheduling ties.
+Four remain open: `DownloadFile`, `DownloadToMemory`, `Http_get::Get_thread` and `VUrl::OpenSocket`. FindRoots, GetEstimate, RescanRoutine and `Http_get::Get` closed later the same day (`claude-notes/decomp-setup-ties-20261016.md`).
 `claude-notes/decomp-setup-patcher-20261016.md` has the table of what differs,
 the delta format, `VUrl`'s layout, the Frontiers-only `GetPoll`, and the levers.
 
-## The screens: 247 of 251
+## The screens: 250 of 251
 
 All 251 functions are written, in 18 TUs, with every class in `src/setup.h`. The
 other 139 functions in the block are dead template copies. gcc 2.95 has no COMDAT, so
@@ -108,15 +108,17 @@ as verified duplicates.
 | `main` | 14/14 | `setup_main` and the live `VIMap<int, int>` |
 | `visetup` | 39/39 | `VISetup`, 0x21AE0 bytes: the boot state machine, `RunPatcher`, the card I/O, the patcher callbacks |
 | `vifader`, `visplashfx`, `viwindowmanager` | 7, 7, 8 | the fade, the title's animated layers, the window driver |
-| `viwndbeta`, `viwndconnect`, `viwndcontroller`, `viwnddnas` | 16, 18, 8/9, 13 | the windows, one TU each, in alphabetical link order |
-| `viwndeula`, `viwndlanguage`, `viwndlegal`, `viwndmessage` | 10/12, 9, 9, 13 | |
-| `viwndoptions`, `viwndpatcher`, `viwndpresents`, `viwndreadmessage`, `viwndsplash` | 19/20, 17, 9, 13, 18 | |
+| `viwndbeta`, `viwndconnect`, `viwndcontroller`, `viwnddnas` | 16, 18, 9, 13 | the windows, one TU each, in alphabetical link order |
+| `viwndeula`, `viwndlanguage`, `viwndlegal`, `viwndmessage` | 11/12, 9, 9, 13 | |
+| `viwndoptions`, `viwndpatcher`, `viwndpresents`, `viwndreadmessage`, `viwndsplash` | 20, 17, 9, 13, 18 | |
 
 Each TU ends with its template copies, then `__tf`, then its inline members, in
 declaration order. Those positions are what told the TU boundaries apart. The names
 are the 2002 betas', slot by slot. `claude-notes/decomp-setup-screens-20261016.md`
 covers the layouts, the boot and patch flow, the three shipped bugs, the four ties and
-the levers.
+the levers. Three of those four ties closed later the same day: `VIString::snprintf16`
+returns `void` (`claude-notes/decomp-setup-ties-20261016.md`).
+`VIWndEula::ComputeTextRows` is the one screen still open.
 
 ## The rest of the map
 

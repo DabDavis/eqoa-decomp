@@ -445,11 +445,9 @@ int PatcherAPI_Impl::FindRoots(const char *root)
         return 1;
     }
     if (root[1] != ':' && root[0] == '\\')
-    {
         sprintf(m_root, "%c:%s", m_cwd[0], root);
-        return 1;
-    }
-    sprintf(m_root, root);
+    else
+        sprintf(m_root, root);
     return 1;
 }
 
@@ -548,7 +546,9 @@ int PatcherAPI_Impl::RescanFiles(const char *names, int flags)
     return 1;
 }
 
-// 0x005842D0.
+// 0x005842D0.  Each path restores the directory itself (jump2 merges the two
+// tails): written once after an if/else, `copy` outranks the PRE copy of
+// m_root for s4.
 bool PatcherAPI_Impl::RescanRoutine(const char *names, int flags)
 {
     char cwd[128];
@@ -565,24 +565,25 @@ bool PatcherAPI_Impl::RescanRoutine(const char *names, int flags)
             d->RescanFiles(flags);
             d->CalculateHierarchicalProperties();
         }
+        if (!m_root)
+            return 1;
+        chdir(cwd);
+        return 1;
     }
-    else
+    char *copy = strdup(names);
+    char sep[] = ",";
+    for (char *t = strtok(copy, sep); t; t = strtok(0, sep))
     {
-        char *copy = strdup(names);
-        char sep[] = ",";
-        for (char *t = strtok(copy, sep); t; t = strtok(0, sep))
+        PatcherDistributionInfo *d = PatcherDistributionInfo::GetDistributionByName(GetDistributionList(), t);
+        if (d)
         {
-            PatcherDistributionInfo *d = PatcherDistributionInfo::GetDistributionByName(GetDistributionList(), t);
-            if (d)
-            {
-                bool was = d->Select(1);
-                d->RescanFiles(flags);
-                d->CalculateHierarchicalProperties();
-                d->Select(was);
-            }
+            bool was = d->Select(1);
+            d->RescanFiles(flags);
+            d->CalculateHierarchicalProperties();
+            d->Select(was);
         }
-        free(copy);
     }
+    free(copy);
     if (!m_root)
         return 1;
     chdir(cwd);
@@ -984,21 +985,22 @@ long PatcherAPI_Impl::GetEstimate()
     now = time(&now);
     long finish = now + left / 1000 - m_startTime;
     long sum = finish;
-    long count;
+    long average;
     int i;
+    // Each arm divides for itself: the target's `li a0,50` waits a cycle
+    // behind the shared call, which one division after the if/else does not.
     if (m_estimatesFull)
     {
         for (i = 0; i < 50; i++)
             sum += m_estimates[i];
-        count = 51;
+        average = sum / 51;
     }
     else
     {
         for (i = 0; i < m_estimateIndex; i++)
             sum += m_estimates[i];
-        count = m_estimateIndex + 1;
+        average = sum / (m_estimateIndex + 1);
     }
-    long average = sum / count;
     m_estimates[m_estimateIndex] = finish;
     if (++m_estimateIndex == 50)
     {

@@ -760,8 +760,10 @@ public:
     static int vsnprintf16(unsigned short *d, int n, const char *f, char *ap);
     static int vsnprintf16(unsigned short *d, int n, const unsigned short *f, char *ap);
     static void snprintf(char *d, int n, const char *f, ...);
-    static int snprintf16(unsigned short *d, int n, const char *f, ...);
-    static int snprintf16(unsigned short *d, int n, const unsigned short *f, ...);
+    // VOID, like snprintf: no caller reads a result, and SETUP's callers need
+    // the call not to set v0 (the result copy then outranks the s-reg moves).
+    static void snprintf16(unsigned short *d, int n, const char *f, ...);
+    static void snprintf16(unsigned short *d, int n, const unsigned short *f, ...);
 
     static char *strlwr(char *p);
     static char *strupr(char *p);
