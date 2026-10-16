@@ -99,28 +99,6 @@ void VIWnd::SetFocus(VIWnd *w, bool notify)
     mFocus = w;
 }
 
-// Phase 61.  The five accessors that follow __tf5VIWnd in the image.
-VIWnd *VIWnd::GetParent()
-{
-    return m_parent;
-}
-
-void VIWnd::SetVisible(bool v)
-{
-    m_visible = v;
-}
-
-int VIWnd::GetVisible()
-{
-    return m_visible;
-}
-
-VIUI *VIWnd::UI()
-{
-    return mUI;
-}
-
-VIWnd *VIWnd::GetFocus()
-{
-    return mFocus;
-}
+// Phase 61.  The five accessors that follow __tf5VIWnd in the image are vi.h's
+// INLINE members.  gcc 2.95 emits a class's inline members out of line in the
+// TU that emits its vtable, at the end; nothing in SUPPORT calls these copies.

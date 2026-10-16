@@ -55,9 +55,11 @@ void VIUI::SetLanguage(int l)
     m_language = l;
 }
 
-int VIUI::Begin2D()
+// VOID: MCERR's screens load a member straight after `ui->Begin2D()` into v0,
+// which an int callee would still have set.  The bodies are identical either way.
+void VIUI::Begin2D()
 {
-    return m_raster->Begin2D();
+    m_raster->Begin2D();
 }
 
 int VIUI::End2D()

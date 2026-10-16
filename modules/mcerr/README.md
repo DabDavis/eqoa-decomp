@@ -2,8 +2,17 @@
 
 The smallest EE module: 13,144 bytes of its own code in 44 functions. It is one
 window class built on SUPPORT's `VIWnd` and `VIUIWindow`, plus the session-key
-file it keeps on the memory card. Everything here was measured from the image;
-nothing is source yet.
+file it keeps on the memory card.
+
+**All 44 are written and byte-exact (2026-10-16)**, in one TU,
+`src/viwndmcerr.cpp`, with the class in `src/mcerr.h`. The checks:
+- `eqcallcheck -a`: 390 call sites, all named, 0 mismatched.
+- `eqrefcheck -a`: 129 data references, 0 findings.
+
+The names are the 2002 betas' own, which export 41 MCERR symbols; retail
+exports 6. The screen numbers are read off Frontiers' dispatcher. What closed
+each family of screens, and the five `vi.h` facts it fixed along the way, are in
+`claude-notes/decomp-mcerr-20261016.md`.
 
 ## Working on it
 
@@ -28,7 +37,7 @@ EQMODULE=MCERR ./eqcalls.py calls <sym>  # callees, strings and data by name
   (`0x002AB638`): 134 functions of crt0, libgcc, soft float and the C++ runtime, all
   tagged `LIB`. 41 are named after SUPPORT's identical copies.
 
-## What the image already says
+## What the image says (the survey that preceded the source)
 
 | Export | VA | Size |
 |---|---|---|
@@ -55,7 +64,6 @@ EQMODULE=MCERR ./eqcalls.py calls <sym>  # callees, strings and data by name
 - **The memory-card functions** (`VIMemCardStatus`, `VIMemCardReadFile`,
   `VIMemCardWriteFile`, `VIMemCardIsPrepared`, `VIMemCardFormat`, `VIMemCardPrepare`,
   `VIMemCardPadAsync`, `VIMemCardAsyncIdle`, `VIMemCardProductId`) are defined in
-  SUPPORT's `src/vimemcard.cpp` but declared only there. Add their declarations to
-  `vi.h`, additively, rather than in an MCERR TU.
+  SUPPORT's `src/vimemcard.cpp`; `vi.h` now declares the ones MCERR calls.
 - **No asserts**, so the image gives no source file names. In a TU, functions sit in
   source order.

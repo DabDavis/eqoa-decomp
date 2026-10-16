@@ -6294,7 +6294,8 @@ int IsValidRaceClassCityComboExpansion(int race, int c, int city,
 // 0x218 bytes.  The local VIConsolePad in Init() is the frame below the saves:
 // 96 bytes.
 // ---------------------------------------------------------------------------
-// VIConsolePad -- 96 bytes, and every field of it is written by VIPad::Read,
+// VIConsolePad -- 84 bytes (VIConsole::Init's 96-byte frame slot is that, rounded
+// to 16), and every field of it is written by VIPad::Read,
 // which is what names them: the four sticks come through ScaleStick and the
 // sixteen buttons are each one INVERTED bit of the two libpad button bytes,
 // converted to a float.  The write order is the source order and it is not
@@ -6324,8 +6325,7 @@ public:
     float m_select;     // +0x48
     float m_l3;         // +0x4C
     float m_r3;         // +0x50
-    int   m_pad[3];     // +0x54
-};
+};                      // 84 bytes: MCERR copies and clears exactly that much
 
 // TWO bytes, not sixteen: VIKeyboard's queue is indexed by `sll a1,a1,1` and
 // each entry is copied with two `lb`/`sb` pairs.  Phase 27 guessed 16 off the
@@ -6714,6 +6714,17 @@ public:
 };
 
 int          VIGetExpansionFlags();
+
+// The memory-card API, defined in vimemcard.cpp.  Declared here for MCERR.
+int          VIMemCardStatus(int *freeOut);
+int          VIMemCardFormat();
+int          VIMemCardPrepare(int padKB);
+int          VIMemCardIsPrepared();
+int          VIMemCardPadAsync(int kb);
+int          VIMemCardAsyncIdle();
+int          VIMemCardReadFile(const char *name, void *buf, int size);
+int          VIMemCardWriteFile(const char *name, const void *buf, int size);
+const char  *VIMemCardProductId();
 void         VISetExpansionFlags(unsigned int f);
 int          VIGetFeatureFlags();
 void         VISetFeatureFlags(unsigned int f);
@@ -6811,14 +6822,16 @@ public:
     void *GetAppPtr();
     void  SetFocus(VIWnd *w, bool notify);
 
-    // Phase 61.  Five accessors emitted out of line at the very END of the
-    // original TU, after the VISet<VIWnd *> instantiations and __tf5VIWnd --
-    // the place gcc 2.95 puts an inline it could not inline everywhere.
-    VIWnd *GetParent();
-    void   SetVisible(bool v);
-    int    GetVisible();
-    static VIUI  *UI();
-    static VIWnd *GetFocus();
+    // Phase 61.  Five accessors emitted out of line at the very END of
+    // viwnd.cpp, after the VISet<VIWnd *> instantiations and __tf5VIWnd.
+    // They are INLINE: gcc 2.95 emits a class's inline members in the TU that
+    // emits its vtable, which is why viwnd.cpp has copies that nothing in
+    // SUPPORT calls.  MCERR inlines UI() (its screens' `Init(UI(), ...)`).
+    VIWnd *GetParent() { return m_parent; }
+    void   SetVisible(bool v) { m_visible = v; }
+    int    GetVisible() { return m_visible; }
+    static VIUI  *UI() { return mUI; }
+    static VIWnd *GetFocus() { return mFocus; }
 
     VISet<VIWnd *> m_children;   // 0x00
     VIWnd         *m_parent;     // 0x14
@@ -7694,7 +7707,7 @@ public:
     int ReloadWords();
     void SetLanguage(int l);
 
-    int Begin2D();
+    void Begin2D();
     int End2D();
 
     void FillRectangle(const VIVect2I *r, const VIColor32F *c);
@@ -7824,6 +7837,8 @@ public:
     // leave: every caller builds the result in a fresh stack temp (reused slot
     // by slot across statements) and reads one component back out of it.
     VIVect2I Center() const { return m_center; }
+    // MCERR.  Its screens read the width off the window's own address.
+    int      Width() const { return m_size.x; }
     VIVect2I TopLeft() const
     {
         return VIVect2I(m_center.x - (m_size.x >> 1), m_center.y - (m_size.y >> 1));

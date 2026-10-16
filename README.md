@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -86,7 +86,7 @@ SUPPORT is one of five EE modules, and the only one that names its own functions
 | CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat |
 | STATION | 587 KB | 2,339 | 1 (`station_main`) | login, server select, character creation |
 | SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA |
-| MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key |
+| MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key: **44 of 44 byte-exact** (2026-10-16) |
 
 All five share SUPPORT's build: no `$gp`, `sq ra` saves. Each ends in the same runtime
 tail: crt0, libgcc, soft float and the C++ runtime, saving `ra` with `sd`. That tail is
@@ -6618,4 +6618,23 @@ tree matches the target's 102 tests exactly; **17 words open**, all one register
 - The long form, with every lever and the open items, is
   `claude-notes/decomp-phase62-client-20261015.md`; the dispatcher's case-by-case map is
   `claude-notes/decomp-phase62-dispatcher-survey-20261015.md`.
+
+## MCERR (2026-10-16): 44 of 44
+
+The whole module, in one TU (`modules/mcerr/src/viwndmcerr.cpp`), in one session.
+`eqcallcheck -a` reports 390 sites, 0 unnamed and 0 mismatched. `eqrefcheck -a`
+reports 129 references and 0 findings. The names are the 2002 betas' exports.
+The long form is `claude-notes/decomp-mcerr-20261016.md`.
+
+Five of the facts it fixed are SUPPORT's, in `vi.h`:
+- `VIConsolePad` is 84 bytes.
+- `VIWnd`'s five accessors are INLINE. `viwnd.cpp` no longer defines them, and
+  gcc emits them itself after `__tf5VIWnd`, as the image has them.
+- `VIUI::Begin2D()` is void.
+- `VIUIWindow::Width()` is new.
+- The memory-card API is declared.
+
+**Check:** every SUPPORT and CLIENT TU was compiled against the old and the new
+headers. Only `viwnd.s` differs, and it is still 18/18. SUPPORT's callee and
+data-reference reports are byte-identical to the kit's `ref_*.txt`.
 
