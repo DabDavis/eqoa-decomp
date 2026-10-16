@@ -173,30 +173,30 @@
 0x00BBBB30  [CODE]  DestroyPool__t7VIArray1Z15VIRec792_BBC168  # name provisional: element measured, 792 bytes = VINetItem + 28 (phase 62, template copy)
 0x00BBBBD8  [CODE]  func_00BBBBD8
 0x00BBBC40  [CODE]  func_00BBBC40
-0x00BBBC50  [CODE]  DestroyPool__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBBCA0  [CODE]  _$_t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBC50  [CODE]  DestroyPool__t7VIArray1Zi  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBCA0  [CODE]  _$_t7VIArray1Zi  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBD08  [CODE]  func_00BBBD08
 0x00BBBD18  [CODE]  DestroyPool__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBD68  [CODE]  _$_t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBDD0  [CODE]  GetSlotId__10VIItemListi  # VIItemList.h:315; name provisional (phase 62)
-0x00BBBE38  [CODE]  DestroyPool__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBBE88  [CODE]  _$_t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBE38  [CODE]  DestroyPool__t8VIVector1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00BBBE88  [CODE]  _$_t8VIVector1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
 0x00BBBEF0  [CODE]  func_00BBBEF0
-0x00BBBF08  [CODE]  Allocate__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBBFE0  [CODE]  Add__t8VIVector1Z13VIRec4_BBBF08RC13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBBF08  [CODE]  Allocate__t8VIVector1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00BBBFE0  [CODE]  Add__t8VIVector1ZiRCi  # shared with STATION (vidatetime/vimemstream*/vinet)
 0x00BBC070  [CODE]  Clear__t7VIArray1Z15VIRec792_BBC168  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC0D0  [CODE]  Allocate__t7VIArray1Z15VIRec792_BBC168  # name provisional: element measured, 792 bytes = VINetItem + 28 (phase 62, template copy)
 0x00BBC168  [CODE]  Init__t7VIArray1Z15VIRec792_BBC168i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC1B8  [CODE]  Clear__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC218  [CODE]  Allocate__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC290  [CODE]  Init__t7VIArray1Z13VIRec4_BBC218i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC1B8  [CODE]  Clear__t7VIArray1Zi  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC218  [CODE]  Allocate__t7VIArray1Zi  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC290  [CODE]  Init__t7VIArray1Zii  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC2E0  [CODE]  Clear__t7VIArray1Z10VIItemStat  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
 0x00BBC340  [CODE]  Allocate__t7VIArray1Z10VIItemStat  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
 0x00BBC3B8  [CODE]  Init__t7VIArray1Z10VIItemStatRCt7VIArray1Z10VIItemStat  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
 0x00BBC460  [CODE]  func_00BBC460
 0x00BBC490  [CODE]  __6VIItemRC6VIItem  # name provisional: VIItem's synthesized copy constructor, out of line (phase 62)
 0x00BBC5D8  [CODE]  func_00BBC5D8
-0x00BBC708  [CODE]  Init__t7VIArray1Z13VIRec4_BBC218RCt7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC708  [CODE]  Init__t7VIArray1ZiRCt7VIArray1Zi  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC7A8  [CODE]  Clear__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC808  [CODE]  Allocate__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC880  [CODE]  Init__t7VIArray1Z14VIRec44_BBC808i  # name provisional: placeholder element type (phase 62, template copy)
@@ -390,7 +390,7 @@
 0x00BCB610  [CODE]  EquipItem__8VIClientP10VIItemListii  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCB8A0  [CODE]  Msg0040__8VIClienti  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCB988  [CODE]  Msg0060__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCB9D8  [CODE]  GetAbilityList__8VIClientRt7VIArray1Z13VIRec4_BBC218  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCB9D8  [CODE]  GetAbilityList__8VIClientRt7VIArray1Zi  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCBA80  [CODE]  GetAbilityIconBack__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
 0x00BCBAA8  [CODE]  GetAbilityIconFront__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
 0x00BCBAD0  [CODE]  GetAbilitySlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
@@ -403,7 +403,7 @@
 0x00BCBBE8  [CODE]  GetAbilityScope__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
 0x00BCBC10  [CODE]  GetAbilityEquipReq__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
 0x00BCBC38  [CODE]  GetAbilityRange__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
-0x00BCBC60  [CODE]  GetAbilityRecords__8VIClientiRt7VIArray1Z13VIRec4_BBC218  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBC60  [CODE]  GetAbilityRecords__8VIClientiRt7VIArray1Zi  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCBD20  [CODE]  GetAbilityRecordName__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCBD70  [CODE]  GetAbilityName__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCBDB0  [CODE]  GetAbilityDesc__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
@@ -1069,62 +1069,62 @@
 0x00BE7040  [CODE]  func_00BE7040
 0x00BE70B8  [CODE]  func_00BE70B8
 0x00BE7108  [CODE]  func_00BE7108
-0x00BE7120  [CODE]  func_00BE7120
-0x00BE7160  [CODE]  func_00BE7160
-0x00BE71B0  [CODE]  Recv07B0__17VIClientPart33950R11VIMemStream  # name provisional (phase 62 dispatcher)
-0x00BE7298  [CODE]  OnConnect__17VIClientPart33950  # name provisional (phase 62)
-0x00BE7318  [CODE]  func_00BE7318
-0x00BE7328  [CODE]  func_00BE7328
-0x00BE7400  [CODE]  func_00BE7400
-0x00BE74D8  [CODE]  func_00BE74D8
-0x00BE75E8  [CODE]  func_00BE75E8
-0x00BE76F8  [CODE]  func_00BE76F8
-0x00BE7818  [CODE]  func_00BE7818
-0x00BE7940  [CODE]  func_00BE7940
-0x00BE7948  [CODE]  func_00BE7948
-0x00BE7950  [CODE]  func_00BE7950
-0x00BE7968  [CODE]  func_00BE7968
-0x00BE7970  [CODE]  func_00BE7970
-0x00BE7978  [CODE]  func_00BE7978
-0x00BE7980  [CODE]  func_00BE7980
-0x00BE79C0  [CODE]  func_00BE79C0
-0x00BE7B98  [CODE]  func_00BE7B98
-0x00BE7CB8  [CODE]  func_00BE7CB8
-0x00BE7D28  [CODE]  func_00BE7D28
-0x00BE7DB8  [CODE]  func_00BE7DB8
-0x00BE7E08  [CODE]  func_00BE7E08
-0x00BE7E68  [CODE]  func_00BE7E68
-0x00BE7EE0  [CODE]  func_00BE7EE0
-0x00BE7F78  [CODE]  func_00BE7F78
+0x00BE7120  [CODE]  __10VICSClientP9VIClientI  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7160  [CODE]  _$_10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE71B0  [CODE]  Recv07B0__10VICSClientR11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7298  [CODE]  OnConnect__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7318  [CODE]  Reset__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7328  [CODE]  RequestInbox__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7400  [CODE]  RequestCategories__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE74D8  [CODE]  RequestMessage__10VICSClienti  # shared with STATION (vicsclient/vicsrecords)
+0x00BE75E8  [CODE]  DeleteMessage__10VICSClienti  # shared with STATION (vicsclient/vicsrecords)
+0x00BE76F8  [CODE]  SubmitRequest__10VICSClientiiPCUs  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7818  [CODE]  SubmitReply__10VICSClientiPCUs  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7940  [CODE]  GetX08__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7948  [CODE]  GetCount__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7950  [CODE]  GetHeader__10VICSClienti  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7968  [CODE]  GetState__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7970  [CODE]  GetMessage__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7978  [CODE]  GetCategories__10VICSClient  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7980  [CODE]  __as__11VICSMessageRC17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BE79C0  [CODE]  StatusToError__10VICSClientUc  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7B98  [CODE]  RecvInbox__10VICSClientR11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7CB8  [CODE]  RecvCategories__10VICSClientR11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7D28  [CODE]  RecvMessage__10VICSClientR11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7DB8  [CODE]  RecvSubmitRequest__10VICSClientR11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7E08  [CODE]  RecvSubmitReply__10VICSClientR11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7E68  [CODE]  RecvDelete__10VICSClientR11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7EE0  [CODE]  RemoveEntry__10VICSClienti  # shared with STATION (vicsclient/vicsrecords)
+0x00BE7F78  [CODE]  Find__10VICSClienti  # shared with STATION (vicsclient/vicsrecords)
 0x00BE7FC0  [CODE]  func_00BE7FC0
 0x00BE7FD0  [CODE]  func_00BE7FD0
 0x00BE8020  [CODE]  func_00BE8020
 0x00BE8088  [CODE]  func_00BE8088
 0x00BE80E8  [CODE]  func_00BE80E8
 0x00BE8160  [CODE]  func_00BE8160
-0x00BE81B0  [CODE]  func_00BE81B0
-0x00BE81C8  [CODE]  DestroyPool__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8218  [CODE]  _$_t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8280  [CODE]  DestroyPool__t8VIVector1Z13VIElem_BE8C48  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
-0x00BE8328  [CODE]  func_00BE8328
-0x00BE8390  [CODE]  DestroyPool__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE83E0  [CODE]  _$_t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8448  [CODE]  func_00BE8448
-0x00BE8460  [CODE]  Clear__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE84C8  [CODE]  Allocate__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE85D0  [CODE]  Init__t8VIVector1Z14VIRec24_BE84C8i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8620  [CODE]  Add__t8VIVector1Z14VIRec24_BE84C8  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8680  [CODE]  func_00BE8680  # VIMemStreamVector.h:71
-0x00BE8738  [CODE]  Clear__t8VIVector1Z13VIElem_BE8C48  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE87A0  [CODE]  Clear__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8808  [CODE]  Allocate__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8988  [CODE]  Init__t8VIVector1Z15VIRec136_BE8808RCt8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8AD0  [CODE]  func_00BE8AD0
-0x00BE8B08  [CODE]  Allocate__t8VIVector1Z13VIElem_BE8C48  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
-0x00BE8C48  [CODE]  Init__t8VIVector1Z13VIElem_BE8C48i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE8C98  [CODE]  func_00BE8C98
-0x00BE8CB0  [CODE]  func_00BE8CB0
-0x00BE8D38  [CODE]  func_00BE8D38  # VIMemStreamVector.h:71
+0x00BE81B0  [CODE]  __t8VIVector1Z12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE81C8  [CODE]  DestroyPool__t8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8218  [CODE]  _$_t8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8280  [CODE]  DestroyPool__t8VIVector1Z12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8328  [CODE]  _$_t8VIVector1Z12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8390  [CODE]  DestroyPool__t8VIVector1Z17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BE83E0  [CODE]  _$_t8VIVector1Z17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8448  [CODE]  __t8VIVector1Z17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8460  [CODE]  Clear__t8VIVector1Z17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BE84C8  [CODE]  Allocate__t8VIVector1Z17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BE85D0  [CODE]  Init__t8VIVector1Z17VICSMessageHeaderi  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8620  [CODE]  Add__t8VIVector1Z17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8680  [CODE]  __rs__H1Z17VICSMessageHeader_R11VIMemStreamRt8VIVector1ZX01_R11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8738  [CODE]  Clear__t8VIVector1Z12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE87A0  [CODE]  Clear__t8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8808  [CODE]  Allocate__t8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8988  [CODE]  Init__t8VIVector1Z15VICSSubcategoryRCt8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8AD0  [CODE]  __t8VIVector1Z15VICSSubcategoryRCt8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8B08  [CODE]  Allocate__t8VIVector1Z12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8C48  [CODE]  Init__t8VIVector1Z12VICSCategoryi  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8C98  [CODE]  __t8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8CB0  [CODE]  Add__t8VIVector1Z12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BE8D38  [CODE]  __rs__H1Z12VICSCategory_R11VIMemStreamRt8VIVector1ZX01_R11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
 0x00BE8DF0  [CODE]  func_00BE8DF0
 0x00BE8E88  [CODE]  func_00BE8E88
 0x00BE8EE0  [CODE]  Init__17VIClientPart4FD28R7VIScenePP8VIEntityi  # name provisional (phase 62)
@@ -1654,19 +1654,19 @@
 0x00BFC700  [CODE]  Allocate__t7VIArray1Z13VIElem_BFC798  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
 0x00BFC798  [CODE]  Init__t7VIArray1Z13VIElem_BFC798i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BFC7E8  [CODE]  func_00BFC7E8  # VIMemStreamArray.h:71
-0x00BFC890  [CODE]  func_00BFC890
-0x00BFC948  [CODE]  func_00BFC948
-0x00BFC9E8  [CODE]  func_00BFC9E8
-0x00BFCA58  [CODE]  func_00BFCA58
-0x00BFCAC8  [CODE]  func_00BFCAC8
-0x00BFCB28  [CODE]  func_00BFCB28
-0x00BFCB90  [CODE]  func_00BFCB90
+0x00BFC890  [CODE]  __ls__FR11VIMemStreamRC17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BFC948  [CODE]  __rs__FR11VIMemStreamR17VICSMessageHeader  # shared with STATION (vicsclient/vicsrecords)
+0x00BFC9E8  [CODE]  __ls__FR11VIMemStreamRC12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BFCA58  [CODE]  __rs__FR11VIMemStreamR12VICSCategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BFCAC8  [CODE]  __ls__FR11VIMemStreamRC15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BFCB28  [CODE]  __rs__FR11VIMemStreamR15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BFCB90  [CODE]  __ls__H1Z15VICSSubcategory_R11VIMemStreamRCt8VIVector1ZX01_R11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
 0x00BFCC10  [CODE]  func_00BFCC10
 0x00BFCC60  [CODE]  func_00BFCC60
 0x00BFCCC8  [CODE]  func_00BFCCC8
-0x00BFCE48  [CODE]  Init__t8VIVector1Z15VIRec136_BE8808i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BFCE98  [CODE]  Add__t8VIVector1Z15VIRec136_BE8808  # name provisional: placeholder element type (phase 62, template copy)
-0x00BFCEF8  [CODE]  func_00BFCEF8  # VIMemStreamVector.h:71
+0x00BFCE48  [CODE]  Init__t8VIVector1Z15VICSSubcategoryi  # shared with STATION (vicsclient/vicsrecords)
+0x00BFCE98  [CODE]  Add__t8VIVector1Z15VICSSubcategory  # shared with STATION (vicsclient/vicsrecords)
+0x00BFCEF8  [CODE]  __rs__H1Z15VICSSubcategory_R11VIMemStreamRt8VIVector1ZX01_R11VIMemStream  # shared with STATION (vicsclient/vicsrecords)
 0x00BFCFB0  [CODE]  func_00BFCFB0
 0x00BFD060  [CODE]  func_00BFD060
 0x00BFD110  [CODE]  func_00BFD110
@@ -5528,12 +5528,12 @@
 0x00CB6358  [CODE]  func_00CB6358
 0x00CB6B08  [CODE]  func_00CB6B08
 0x00CB6B50  [CODE]  func_00CB6B50
-0x00CB6DA8  [CODE]  func_00CB6DA8
-0x00CB6DE0  [CODE]  func_00CB6DE0
-0x00CB6E48  [CODE]  func_00CB6E48
-0x00CB6EC8  [CODE]  func_00CB6EC8
-0x00CB6F08  [CODE]  func_00CB6F08
-0x00CB6F78  [CODE]  func_00CB6F78
+0x00CB6DA8  [CODE]  Format__C6VITimePUsi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB6DE0  [CODE]  __rs__FR11VIMemStreamR6VITime  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB6E48  [CODE]  __ls__FR11VIMemStreamRC6VITime  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB6EC8  [CODE]  Format__C6VIDatePUsi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB6F08  [CODE]  __rs__FR11VIMemStreamR6VIDate  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB6F78  [CODE]  __ls__FR11VIMemStreamRC6VIDate  # shared with STATION (vidatetime/vimemstream*/vinet)
 0x00CB7008  [CODE]  func_00CB7008  # VIFileStream.cpp:57
 0x00CB70C0  [CODE]  func_00CB70C0  # VIFileStream.cpp~
 0x00CB70E0  [CODE]  func_00CB70E0  # VIFileStream.cpp~
@@ -5615,59 +5615,59 @@
 0x00CB8A98  [CODE]  func_00CB8A98  # dead TU copy of GetPos__11VIMemStream (VIMemStream.cpp's; 0 refs)
 0x00CB8AA0  [CODE]  func_00CB8AA0  # dead TU copy of Remaining__11VIMemStream (VIMemStream.cpp's; 0 refs)
 0x00CB8AB0  [CODE]  func_00CB8AB0  # dead TU copy of GetBuffer__11VIMemStream (VIMemStream.cpp's; 0 refs)
-0x00CB8AB8  [CODE]  func_00CB8AB8
-0x00CB8B40  [CODE]  func_00CB8B40  # VIMemStreamArray.cpp:66
-0x00CB8BF0  [CODE]  func_00CB8BF0
-0x00CB8C40  [CODE]  func_00CB8C40
-0x00CB8CA0  [CODE]  func_00CB8CA0
-0x00CB8D18  [CODE]  func_00CB8D18
-0x00CB8D68  [CODE]  func_00CB8D68
-0x00CB8D98  [CODE]  __rs__FR11VIMemStreamR7VIVect3  # name provisional (phase 62)
-0x00CB8DC8  [CODE]  func_00CB8DC8
-0x00CB8E08  [CODE]  func_00CB8E08
-0x00CB8E48  [CODE]  func_00CB8E48
-0x00CB8E98  [CODE]  func_00CB8E98
-0x00CB8EE0  [CODE]  func_00CB8EE0
-0x00CB8F60  [CODE]  __rs__FR11VIMemStreamR5VIRGB  # name provisional (phase 62)
-0x00CB8FC8  [CODE]  func_00CB8FC8
-0x00CB9070  [CODE]  func_00CB9070
-0x00CB9110  [CODE]  func_00CB9110
-0x00CB9118  [CODE]  End__Ct6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9128  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9158  [CODE]  Next__Ct6VIPool1ZP12VIPtr_CB9308i  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB91A0  [CODE]  DestroyPool__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB91F8  [CODE]  Clear__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9260  [CODE]  LinkFreeChain__t6VIPool1ZP12VIPtr_CB9308i  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9308  [CODE]  Allocate__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9410  [CODE]  Add__t6VIPool1ZP12VIPtr_CB9308  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB94F0  [CODE]  func_00CB94F0
-0x00CB9598  [CODE]  func_00CB9598  # VIMemStreamSet.cpp:69
-0x00CB9668  [CODE]  func_00CB9668
-0x00CB9680  [CODE]  Begin__Ct5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB96D8  [CODE]  End__Ct5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB96E0  [CODE]  Next__Ct5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9798  [CODE]  DestroyPool__t5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB97F0  [CODE]  LinkFreeChain__t5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9898  [CODE]  Allocate__t5VISet1Zi  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB99E8  [CODE]  AddNode__t5VISet1Ziii  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9AE0  [CODE]  LeftRotate__t5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9B98  [CODE]  RightRotate__t5VISet1Zii  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9C50  [CODE]  Insert__t5VISet1ZiRCi  # name provisional: placeholder element type (phase 62, template copy)
-0x00CB9EF8  [CODE]  func_00CB9EF8
-0x00CB9F80  [CODE]  func_00CB9F80  # VIMemStreamVector.cpp:66
+0x00CB8AB8  [CODE]  __ls__FR11VIMemStreamRCt7VIArray1Zi
+0x00CB8B40  [CODE]  __rs__FR11VIMemStreamRt7VIArray1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8BF0  [CODE]  func_00CB8BF0  # VIMemStreamArray.cpp's own VIArray<int> copy (a verified duplicate of 0x00BBBC50..)
+0x00CB8C40  [CODE]  func_00CB8C40  # VIMemStreamArray.cpp's own VIArray<int> copy (a verified duplicate of 0x00BBBC50..)
+0x00CB8CA0  [CODE]  func_00CB8CA0  # VIMemStreamArray.cpp's own VIArray<int> copy (a verified duplicate of 0x00BBBC50..)
+0x00CB8D18  [CODE]  func_00CB8D18  # VIMemStreamArray.cpp's own VIArray<int> copy (a verified duplicate of 0x00BBBC50..)
+0x00CB8D68  [CODE]  __ls__FR11VIMemStreamRC7VIVect3  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8D98  [CODE]  __rs__FR11VIMemStreamR7VIVect3  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8DC8  [CODE]  __ls__FR11VIMemStreamRC6VIBBox  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8E08  [CODE]  __rs__FR11VIMemStreamR6VIBBox  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8E48  [CODE]  __ls__FR11VIMemStreamRC8VISphere  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8E98  [CODE]  __rs__FR11VIMemStreamR8VISphere  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8EE0  [CODE]  __ls__FR11VIMemStreamRC5VIRGB  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8F60  [CODE]  __rs__FR11VIMemStreamR5VIRGB  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB8FC8  [CODE]  __ls__FR11VIMemStreamRCt6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9070  [CODE]  __rs__FR11VIMemStreamRt6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9110  [CODE]  Size__Ct6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9118  [CODE]  End__Ct6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9128  [CODE]  Begin__Ct6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9158  [CODE]  Next__Ct6VIPool1Zii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB91A0  [CODE]  DestroyPool__t6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB91F8  [CODE]  Clear__t6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9260  [CODE]  LinkFreeChain__t6VIPool1Zii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9308  [CODE]  Allocate__t6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9410  [CODE]  Add__t6VIPool1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB94F0  [CODE]  __ls__FR11VIMemStreamRCt5VISet1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9598  [CODE]  __rs__FR11VIMemStreamRt5VISet1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9668  [CODE]  Size__Ct5VISet1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9680  [CODE]  Begin__Ct5VISet1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB96D8  [CODE]  End__Ct5VISet1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB96E0  [CODE]  Next__Ct5VISet1Zii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9798  [CODE]  DestroyPool__t5VISet1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB97F0  [CODE]  LinkFreeChain__t5VISet1Zii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9898  [CODE]  Allocate__t5VISet1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB99E8  [CODE]  AddNode__t5VISet1Ziii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9AE0  [CODE]  LeftRotate__t5VISet1Zii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9B98  [CODE]  RightRotate__t5VISet1Zii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9C50  [CODE]  Insert__t5VISet1ZiRCi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9EF8  [CODE]  __ls__FR11VIMemStreamRCt8VIVector1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CB9F80  [CODE]  __rs__FR11VIMemStreamRt8VIVector1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
 0x00CBA038  [CODE]  func_00CBA038
-0x00CBA088  [CODE]  Clear__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
+0x00CBA088  [CODE]  Clear__t8VIVector1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
 0x00CBA0F0  [CODE]  func_00CBA0F0
-0x00CBA1C8  [CODE]  Init__t8VIVector1Z13VIRec4_BBBF08i  # name provisional: placeholder element type (phase 62, template copy)
-0x00CBA218  [CODE]  Add__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
-0x00CBA278  [CODE]  func_00CBA278
-0x00CBA2D0  [CODE]  VINetSend__FR11VIMemStreamRC12VIClientConn  # name provisional (phase 62)
-0x00CBA330  [CODE]  func_00CBA330
-0x00CBA3D8  [CODE]  VINetSendTo__FR11VIMemStreamRC15VIClientDrdpRef  # name provisional (phase 62)
-0x00CBA450  [CODE]  func_00CBA450
-0x00CBA4E0  [CODE]  func_00CBA4E0
-0x00CBA550  [CODE]  func_00CBA550
-0x00CBA5A8  [CODE]  VINetStats__FPUsiP12connection_t  # name provisional (phase 62)
+0x00CBA1C8  [CODE]  Init__t8VIVector1Zii  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA218  [CODE]  Add__t8VIVector1Zi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA278  [CODE]  VINetSend__FR11VIMemStreamRC19VIClientEndpointRef  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA2D0  [CODE]  VINetSend__FR11VIMemStreamRC12VIClientConn  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA330  [CODE]  VINetSend__FR11VIMemStreamRC20VIClientEndpointList  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA3D8  [CODE]  VINetSendTo__FR11VIMemStreamRC15VIClientDrdpRef  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA450  [CODE]  VINetSplitHostPort__FPCcPciPi  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA4E0  [CODE]  VINetHostLabel__FPciPCc  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA550  [CODE]  VINetResolve__FPCcPc  # shared with STATION (vidatetime/vimemstream*/vinet)
+0x00CBA5A8  [CODE]  VINetStats__FPUsiP12connection_t  # shared with STATION (vidatetime/vimemstream*/vinet)
 0x00CBA660  [CODE]  func_00CBA660
 0x00CBA670  [CODE]  func_00CBA670
 0x00CBA6C0  [CODE]  func_00CBA6C0

@@ -1,0 +1,476 @@
+diff -u a/aes.c b/aes.c
+--- a/aes.c
++++ b/aes.c
+@@ -83,7 +83,7 @@
+ int rijndael_setup(const unsigned char *key, int keylen, int numrounds, symmetric_key *skey)
+ #endif
+ {
+-    unsigned long  t, u, v, w, in_key[8];
++    unsigned int  t, u, v, w, in_key[8];
+     int i, k_len;
+ 
+     /* check arguments */
+@@ -94,11 +94,13 @@
+        numrounds = 10 + (2 * ((keylen/8)-2));
+ 
+     if (keylen != 16 && keylen != 24 && keylen != 32) {
+-       return CRYPT_INVALID_KEYSIZE;
++       crypt_error = "Invalid key size for rijndael.";
++       return CRYPT_ERROR;
+     }
+ 
+     if (numrounds != (10 + (2 * ((keylen/8)-2)))) {
+-       return CRYPT_INVALID_ROUNDS;
++       crypt_error = "Invalid number of rounds for rijndael.";
++       return CRYPT_ERROR;
+     }
+ 
+     k_len = keylen / 4;
+@@ -188,12 +190,12 @@
+     
+ #ifdef RIJNDAEL_SMALL
+ 
+-static void _fnround(unsigned long *bo, unsigned long *bi, unsigned long *k)
++static void _fnround(unsigned int *bo, unsigned int *bi, unsigned int *k)
+ {
+    f_nround(bo, bi, k);
+ }
+ 
+-static void _flround(unsigned long *bo, unsigned long *bi, unsigned long *k)
++static void _flround(unsigned int *bo, unsigned int *bi, unsigned int *k)
+ {
+    f_lround(bo, bi, k);
+ } 
+@@ -208,7 +210,7 @@
+ 
+ void rijndael_ecb_encrypt(const unsigned char *pt, unsigned char *ct, symmetric_key *skey)
+ {   
+-    unsigned long  b0[4], b1[4], *kp;
++    unsigned int  b0[4], b1[4], *kp;
+ 
+     _ARGCHK(pt != NULL);
+     _ARGCHK(ct != NULL);
+@@ -258,12 +260,12 @@
+     
+ #ifdef RIJNDAEL_SMALL
+ 
+-static void _inround(unsigned long *bo, unsigned long *bi, unsigned long *k)
++static void _inround(unsigned int *bo, unsigned int *bi, unsigned int *k)
+ {
+    i_nround(bo, bi, k);
+ }
+ 
+-static void _ilround(unsigned long *bo, unsigned long *bi, unsigned long *k)
++static void _ilround(unsigned int *bo, unsigned int *bi, unsigned int *k)
+ {
+    i_lround(bo, bi, k);
+ } 
+@@ -278,7 +280,7 @@
+ 
+ void rijndael_ecb_decrypt(const unsigned char *ct, unsigned char *pt, symmetric_key *skey)
+ {   
+-    unsigned long b0[4], b1[4], *kp;
++    unsigned int b0[4], b1[4], *kp;
+ 
+     _ARGCHK(pt != NULL);
+     _ARGCHK(ct != NULL);
+@@ -316,7 +318,6 @@
+ 
+ int rijndael_test(void)
+ {
+- int errno;
+ 
+  static const unsigned char pt128[16] = {
+      0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+@@ -347,43 +348,51 @@
+  symmetric_key key;
+  unsigned char tmp[2][16];
+ 
+- if ((errno = rijndael_setup(key128, 16, 0, &key)) != CRYPT_OK) { 
+-    return errno;
++ if (rijndael_setup(key128, 16, 0, &key) == CRYPT_ERROR) {
++    return CRYPT_ERROR;
+  }
+ 
+  rijndael_ecb_encrypt(pt128, tmp[0], &key);
+  rijndael_ecb_decrypt(tmp[0], tmp[1], &key);
+- if (memcmp(tmp[0], ct128, 16)) { 
+-    return CRYPT_FAIL_TESTVECTOR;
++ if (memcmp(tmp[0], ct128, 16)) {
++    crypt_error = "AES-128 did not encrypt to test vector.";
++    return CRYPT_ERROR;
+  }
+- if (memcmp(tmp[1], pt128, 16)) { 
+-    return CRYPT_FAIL_TESTVECTOR;
++ if (memcmp(tmp[1], pt128, 16)) {
++    crypt_error = "AES-128 did not decrypt to test vector.";
++    return CRYPT_ERROR;
+  }
+ 
+- if ((errno = rijndael_setup(key192, 24, 0, &key)) != CRYPT_OK) { 
+-    return errno; 
++ if (rijndael_setup(key192, 24, 0, &key) == CRYPT_ERROR) {
++    return CRYPT_ERROR;
+  }
+ 
+  rijndael_ecb_encrypt(pt128, tmp[0], &key);
+  rijndael_ecb_decrypt(tmp[0], tmp[1], &key);
+- if (memcmp(tmp[0], ct192, 16)) { 
+-    return CRYPT_FAIL_TESTVECTOR;
++ if (memcmp(tmp[0], ct192, 16)) {
++    crypt_error = "AES-192 did not encrypt to test vector.";
++    return CRYPT_ERROR;
+  }
+- if (memcmp(tmp[1], pt128, 16)) { 
+-    return CRYPT_FAIL_TESTVECTOR;
++ if (memcmp(tmp[1], pt128, 16)) {
++    crypt_error = "AES-192 did not decrypt to test vector.";
++    return CRYPT_ERROR;
+  }
+ 
+- if ((errno = rijndael_setup(key256, 32, 0, &key)) != CRYPT_OK) {
+-    return errno; 
++ if (rijndael_setup(key256, 32, 0, &key) == CRYPT_ERROR) {
++    return CRYPT_ERROR;
+  }
++
+  rijndael_ecb_encrypt(pt128, tmp[0], &key);
+  rijndael_ecb_decrypt(tmp[0], tmp[1], &key);
+- if (memcmp(tmp[0], ct256, 16)) { 
+-    return CRYPT_FAIL_TESTVECTOR;
++ if (memcmp(tmp[0], ct256, 16)) {
++    crypt_error = "AES-256 did not encrypt to test vector.";
++    return CRYPT_ERROR;
+  }
+- if (memcmp(tmp[1], pt128, 16)) { 
+-    return CRYPT_FAIL_TESTVECTOR;
++ if (memcmp(tmp[1], pt128, 16)) {
++    crypt_error = "AES-256 did not decrypt to test vector.";
++    return CRYPT_ERROR;
+  }
++
+  return CRYPT_OK;
+ }
+ 
+@@ -392,7 +401,7 @@
+    _ARGCHK(desired_keysize != NULL);
+ 
+    if (*desired_keysize < 16)
+-      return CRYPT_INVALID_KEYSIZE;
++      return CRYPT_ERROR;
+    if (*desired_keysize < 24) {
+       *desired_keysize = 16;
+       return CRYPT_OK;
+diff -u a/aes_tab.c b/aes_tab.c
+--- a/aes_tab.c
++++ b/aes_tab.c
+@@ -1,6 +1,6 @@
+ /* The precompute tables for AES */
+ 
+-static const unsigned long ft_tab[4][256] = {
++static const unsigned int ft_tab[4][256] = {
+ {0xa56363c6UL, 0x847c7cf8UL, 0x997777eeUL, 0x8d7b7bf6UL, 0x0df2f2ffUL, 
+  0xbd6b6bd6UL, 0xb16f6fdeUL, 0x54c5c591UL, 0x50303060UL, 0x03010102UL, 
+  0xa96767ceUL, 0x7d2b2b56UL, 0x19fefee7UL, 0x62d7d7b5UL, 0xe6abab4dUL, 
+@@ -211,7 +211,7 @@
+  0x2c3a1616UL}
+  };
+ 
+-static const unsigned long it_tab[4][256] = {
++static const unsigned int it_tab[4][256] = {
+ {0x50a7f451UL, 0x5365417eUL, 0xc3a4171aUL, 0x965e273aUL, 0xcb6bab3bUL, 
+  0xf1459d1fUL, 0xab58faacUL, 0x9303e34bUL, 0x55fa3020UL, 0xf66d76adUL, 
+  0x9176cc88UL, 0x254c02f5UL, 0xfcd7e54fUL, 0xd7cb2ac5UL, 0x80443526UL, 
+@@ -422,7 +422,7 @@
+  0xd04257b8UL}
+  };
+ 
+-static const unsigned long fl_tab[4][256] = {
++static const unsigned int fl_tab[4][256] = {
+ {0x00000063UL, 0x0000007cUL, 0x00000077UL, 0x0000007bUL, 0x000000f2UL, 
+  0x0000006bUL, 0x0000006fUL, 0x000000c5UL, 0x00000030UL, 0x00000001UL, 
+  0x00000067UL, 0x0000002bUL, 0x000000feUL, 0x000000d7UL, 0x000000abUL, 
+@@ -633,7 +633,7 @@
+  0x16000000UL}
+  };
+ 
+-static const unsigned long il_tab[4][256] = {
++static const unsigned int il_tab[4][256] = {
+ {0x00000052UL, 0x00000009UL, 0x0000006aUL, 0x000000d5UL, 0x00000030UL, 
+  0x00000036UL, 0x000000a5UL, 0x00000038UL, 0x000000bfUL, 0x00000040UL, 
+  0x000000a3UL, 0x0000009eUL, 0x00000081UL, 0x000000f3UL, 0x000000d7UL, 
+@@ -844,7 +844,7 @@
+  0x7d000000UL}
+  };
+ 
+-static const unsigned long rco_tab[10] = {
++static const unsigned int rco_tab[10] = {
+  0x00000001UL, 0x00000002UL, 0x00000004UL, 0x00000008UL, 0x00000010UL, 
+  0x00000020UL, 0x00000040UL, 0x00000080UL, 0x0000001bUL, 0x00000036UL
+  };
+diff -u a/mpi.c b/mpi.c
+--- a/mpi.c
++++ b/mpi.c
+@@ -74,6 +74,7 @@
+ #else
+ 
+ #include <math.h>
++double log(double);   /* decomp build: the PS2 libc headers here lack it */
+ #define LOG_V_2(R)  (log(2.0)/log(R))
+ 
+ #endif
+@@ -170,8 +171,8 @@
+   #define  s_mp_copy(sp, dp, count) memcpy(dp, sp, (count) * sizeof(mp_digit))
+  #endif /* MP_MEMCPY */
+ 
+- #define  s_mp_alloc(nb, ni)  XCALLOC(nb, ni)
+- #define  s_mp_free(ptr) {if(ptr) XFREE(ptr);}
++ #define  s_mp_alloc(nb, ni)  calloc(nb, ni)
++ #define  s_mp_free(ptr) {if(ptr) free(ptr);}
+ #endif /* MP_MACRO */
+ 
+ mp_err   s_mp_grow(mp_int *mp, mp_size min);   /* increase allocated size */
+@@ -509,7 +510,7 @@
+ mp_err mp_set_int(mp_int *mp, long z)
+ {
+   int            ix;
+-  unsigned long  v = abs(z);
++  unsigned int   v = abs(z);
+   mp_err         res;
+ 
+   ARGCHK(mp != NULL, MP_BADARG);
+@@ -2763,7 +2764,7 @@
+ /* Allocate ni records of nb bytes each, and return a pointer to that     */
+ void    *s_mp_alloc(size_t nb, size_t ni)
+ {
+-  return XCALLOC(nb, ni);
++  return calloc(nb, ni);
+ 
+ } /* end s_mp_alloc() */
+ #endif
+@@ -2777,7 +2778,7 @@
+ void     s_mp_free(void *ptr)
+ {
+   if(ptr)
+-    XFREE(ptr);
++    free(ptr);
+ 
+ } /* end s_mp_free() */
+ #endif
+diff -u a/mpi-config.h b/mpi-config.h
+--- a/mpi-config.h
++++ b/mpi-config.h
+@@ -14,7 +14,7 @@
+  */
+ 
+ #ifndef MP_IOFUNC
+-#define MP_IOFUNC     1  /* include mp_print() ?                */
++#define MP_IOFUNC     0  /* include mp_print() ?                */
+ #endif
+ 
+ #ifndef MP_MODARITH
+@@ -26,7 +26,7 @@
+ #endif
+ 
+ #ifndef MP_LOGTAB
+-#define MP_LOGTAB     1  /* use table of logs instead of log()? */
++#define MP_LOGTAB     0  /* use table of logs instead of log()? */
+ #endif
+ 
+ #ifndef MP_MEMSET
+@@ -59,7 +59,7 @@
+ #endif
+ 
+ #ifndef MP_MACRO
+-#define MP_MACRO      1  /* use macros for frequent calls?      */
++#define MP_MACRO      0  /* use macros for frequent calls?      */
+ #endif
+ 
+ #ifndef MP_SQUARE
+diff -u a/mycrypt.h b/mycrypt.h
+--- a/mycrypt.h
++++ b/mycrypt.h
+@@ -54,17 +54,17 @@
+    CRYPT_INVALID_PRIME_SIZE
+ };
+ 
+-#include <mycrypt_cfg.h>
+-#include <mycrypt_macros.h>
+-#include <mycrypt_cipher.h>
+-#include <mycrypt_hash.h>
+-#include <mycrypt_prng.h>
+-#include <mycrypt_pk.h>
+-#include <mycrypt_gf.h>
+-#include <mycrypt_misc.h>
+-#include <mycrypt_kr.h>
++#include "mycrypt_cfg.h"
++#include "mycrypt_macros.h"
++#include "mycrypt_cipher.h"
++#include "mycrypt_hash.h"
++#include "mycrypt_prng.h"
++#include "mycrypt_pk.h"
++#include "mycrypt_gf.h"
++#include "mycrypt_misc.h"
++#include "mycrypt_kr.h"
+ 
+-#include <mycrypt_argchk.h>
++#include "mycrypt_argchk.h"
+ 
+ 
+ #ifdef __cplusplus
+diff -u a/mycrypt_cfg.h b/mycrypt_cfg.h
+--- a/mycrypt_cfg.h
++++ b/mycrypt_cfg.h
+@@ -7,16 +7,17 @@
+ #ifndef MYCRYPT_CFG_H
+ #define MYCRYPT_CFG_H
+ 
+-/* you can change how memory allocation works ... */
+-extern void *XMALLOC(size_t n);
+-extern void *XCALLOC(size_t n, size_t s);
+-extern void XFREE(void *p);
++/* STATION's copy (SOE's, 2002: a release from before v0.67, when the build
++ * options still lived in this file).  What the image measures: rijndael and MPI
++ * are linked, and the symmetric_key union is 4,176 bytes, Blowfish's 32-bit
++ * schedule.  Nothing else in the cipher set can be read off the image. */
++#define RIJNDAEL
++#define BLOWFISH
++#define MPI
+ 
+-/* change the clock function too */
+-extern clock_t XCLOCK(void);
+ 
+ /* type of argument checking, 0=default, 1=fatal and 2=none */
+-#define ARGTYPE  0
++#define ARGTYPE  2
+ 
+ /* Controls endianess and size of registers.  Leave uncommented to get platform neutral [slower] code */
+ /* detect x86-32 machines somewhat */
+@@ -25,12 +26,6 @@
+    #define ENDIAN_32BITWORD
+ #endif
+ 
+-/* detects MIPS R5900 processors (PS2) */
+-#if (defined(__R5900) || defined(R5900) || defined(__R5900__)) && (defined(_mips) || defined(__mips__) || defined(mips))
+-   #define ENDIAN_LITTLE
+-   #define ENDIAN_64BITWORD
+-#endif
+-
+ /* #define ENDIAN_LITTLE */
+ /* #define ENDIAN_BIG */
+ 
+diff -u a/mycrypt_cipher.h b/mycrypt_cipher.h
+--- a/mycrypt_cipher.h
++++ b/mycrypt_cipher.h
+@@ -5,21 +5,21 @@
+  */
+ #ifdef BLOWFISH
+ struct blowfish_key {
+-   unsigned long S[4][256];
+-   unsigned long K[18];
++   unsigned int S[4][256];
++   unsigned int K[18];
+ };
+ #endif
+ 
+ #ifdef RC5
+ struct rc5_key {
+    int rounds;
+-   unsigned long K[50];
++   unsigned int K[50];
+ };
+ #endif
+ 
+ #ifdef RC6
+ struct rc6_key {
+-   unsigned long K[44];
++   unsigned int K[44];
+ };
+ #endif
+ 
+@@ -32,30 +32,30 @@
+ 
+ #ifdef SERPENT
+ struct serpent_key {
+-   unsigned long K[132];
++   unsigned int K[132];
+ };
+ #endif
+ 
+ #ifdef RIJNDAEL
+ struct rijndael_key {
+-   unsigned long eK[64], dK[64], k_len;
++   unsigned int eK[64], dK[64], k_len;
+ };
+ #endif
+ 
+ #ifdef XTEA
+ struct xtea_key {
+-   unsigned long K[4];
++   unsigned int K[4];
+ };
+ #endif
+ 
+ #ifdef TWOFISH
+ #ifndef TWOFISH_SMALL
+    struct twofish_key {
+-      unsigned long S[4][256], K[40];
++      unsigned int S[4][256], K[40];
+    };
+ #else
+    struct twofish_key {
+-      unsigned long K[40];
++      unsigned int K[40];
+       unsigned char S[32], start;
+    };
+ #endif
+@@ -80,17 +80,17 @@
+ 
+ #ifdef DES
+ struct des_key {
+-    unsigned long ek[32], dk[32];
++    unsigned int ek[32], dk[32];
+ };
+ 
+ struct des3_key {
+-    unsigned long ek[3][32], dk[3][32];
++    unsigned int ek[3][32], dk[3][32];
+ };
+ #endif
+ 
+ #ifdef CAST5
+ struct cast5_key {
+-    unsigned long K[32], keylen;
++    unsigned int K[32], keylen;
+ };
+ #endif
+ 
+diff -u a/mycrypt_macros.h b/mycrypt_macros.h
+--- a/mycrypt_macros.h
++++ b/mycrypt_macros.h
+@@ -17,10 +17,10 @@
+        (y)[1] = (unsigned char)(((x)>>8)&255); (y)[0] = (unsigned char)((x)&255); }
+ 
+ #define LOAD32L(x, y)                            \
+-     { x = ((unsigned long)((y)[3] & 255)<<24) | \
+-           ((unsigned long)((y)[2] & 255)<<16) | \
+-           ((unsigned long)((y)[1] & 255)<<8)  | \
+-           ((unsigned long)((y)[0] & 255)); }
++     { x = ((unsigned int)((y)[3] & 255)<<24) | \
++           ((unsigned int)((y)[2] & 255)<<16) | \
++           ((unsigned int)((y)[1] & 255)<<8)  | \
++           ((unsigned int)((y)[0] & 255)); }
+ 
+ #define STORE64L(x, y)                                                                     \
+      { (y)[7] = (unsigned char)(((x)>>56)&255); (y)[6] = (unsigned char)(((x)>>48)&255);   \
+@@ -183,8 +183,8 @@
+ #define BSWAP(x)  ( ((x>>24)&0x000000FFUL) | ((x<<24)&0xFF000000UL)  | \
+                     ((x>>8)&0x0000FF00UL)  | ((x<<8)&0x00FF0000UL) )
+ 
+-#define ROL(x, y) ( (((x)<<((y)&31)) | (((x)&0xFFFFFFFFUL)>>(32-((y)&31)))) & 0xFFFFFFFFUL)
+-#define ROR(x, y) ( ((((x)&0xFFFFFFFFUL)>>((y)&31)) | ((x)<<(32-((y)&31)))) & 0xFFFFFFFFUL)
++#define ROL(x, y) ( ((x)<<((y)&31)) | ((x)>>(32-((y)&31))) )
++#define ROR(x, y) ( ((x)>>((y)&31)) | ((x)<<(32-((y)&31))) )
+ 
+ #define ROL64(x, y) \
+     ( (((x)<<((ulong64)(y)&63)) | \

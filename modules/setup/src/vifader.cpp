@@ -1,5 +1,5 @@
 // vifader.cpp (name ours) -- SETUP 0x0056B088 .. 0x0056B3A0.  The screen fade.
-#include "setup.h"
+#include "vifader.h"
 
 // 0x0056B088.
 VIFader::VIFader()

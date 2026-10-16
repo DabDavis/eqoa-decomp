@@ -30,13 +30,14 @@ template int VIArray<VIItemStat>::Init(const VIArray<VIItemStat> &);  // 0x00bbc
 template VIArray<VIItemStat>::~VIArray();  // 0x00bbb7b8
 template int VIArray<VIItemStat>::Init(int);  // 0x00c02d78
 
-// 0x00bbbc50..0x00bbc708: 6 members; element size measured.
-template int VIArray<VIRec4_BBC218>::DestroyPool();  // 0x00bbbc50
-template VIArray<VIRec4_BBC218>::~VIArray();  // 0x00bbbca0
-template int VIArray<VIRec4_BBC218>::Clear();  // 0x00bbc1b8
-template int VIArray<VIRec4_BBC218>::Allocate();  // 0x00bbc218
-template int VIArray<VIRec4_BBC218>::Init(int);  // 0x00bbc290
-template int VIArray<VIRec4_BBC218>::Init(const VIArray<VIRec4_BBC218> &);  // 0x00bbc708
+// 0x00bbbc50..0x00bbc708: VIArray<int> (the element was a 4-byte placeholder record
+// here; STATION's VIMemStreamArray.cpp shows it is int).  6 members.
+template int VIArray<int>::DestroyPool();  // 0x00bbbc50
+template VIArray<int>::~VIArray();  // 0x00bbbca0
+template int VIArray<int>::Clear();  // 0x00bbc1b8
+template int VIArray<int>::Allocate();  // 0x00bbc218
+template int VIArray<int>::Init(int);  // 0x00bbc290
+template int VIArray<int>::Init(const VIArray<int> &);  // 0x00bbc708
 
 // 0x00bbbd18..0x00bbc880: 5 members; element size measured.
 struct VIRec44_BBC808 { int m_data[11]; };

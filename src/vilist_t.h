@@ -130,4 +130,26 @@ template <class T> int VIList<T>::Erase(int i)
     return (int)n;
 }
 
+// Before node i (End() = 0x7FFFFFFF appends).  No SUPPORT TU emits it; STATION's
+// page and XML-parser TUs do (VIList<VIGUIObject *>, VIList<VIXMLCallback>).
+template <class T> int VIList<T>::Insert(const T &v, int i)
+{
+    if (i == 0x7FFFFFFF)
+        return Add(v);
+    Node *p = (Node *)i;
+    Node *n = new Node;
+    n->m_data = v;
+    if (n == 0)
+        return -1;
+    n->m_prev = p->m_prev;
+    n->m_next = p;
+    if (p != m_head)
+        p->m_prev->m_next = n;
+    else
+        m_head = n;
+    p->m_prev = n;
+    m_size++;
+    return 0;
+}
+
 #endif // VI_VILIST_T_H

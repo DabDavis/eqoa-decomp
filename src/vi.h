@@ -5268,6 +5268,10 @@ public:
     T  *m_data;         // +0x08
 
     VIVector();
+    // STATION/CLIENT: copy-constructed out of line, the three words zeroed then
+    // Init(a) (STATION 0x002DF5F8, CLIENT 0x00BE8AD0: a VIVector member of a
+    // copied record).  SUPPORT never copies one.
+    VIVector(const VIVector<T> &a);
     ~VIVector();
 
     // Inline in the class body, as VIArray's are: no Begin/End/Next symbol
@@ -5283,6 +5287,13 @@ public:
     int Init(const VIVector<T> &a);
     int Add();
     int Add(const T &v);
+
+    // [lane cswnd] STATION's CS request: an inline subscript, as VIArray's.
+    // PickSubcategory is byte-exact only through it: the inline's `this` is an
+    // address pseudo (`addiu t1,c,136; lw a0,8(t1)`), and `data + i*size`
+    // keeps the data pointer as the first operand.  No vtable, so nothing
+    // that does not call it changes.
+    T &operator[](int i) const { return m_data[i]; }
 };
 
 // 12 bytes, no constructor and no destructor: VIVector<VISceneDisplayElem>'s
@@ -7351,7 +7362,7 @@ VITrailFx *VITrailFxBegin(long now, int numSegments, float life);
 void       VITrailFxEnd(VITrailFx *t);
 void       VITrailFxRender(long now, VIRaster &r, VICamera &c);
 
-#endif
+// (VI_H used to close here; everything below is guarded too -- see the end.)
 
 // ------------------------------------------------------------ VIZoneRoom --
 // SUPPORT 0x00499778 .. 0x00499EC0.  One room of a zone: a box, two index
@@ -9534,3 +9545,5 @@ public:
     int CalcHitColor(VIPickSegment &seg, VIVect3 &a, VIVect3 &b, VIVect3 &c,
                      VIColor32 &ca, VIColor32 &cb, VIColor32 &cc);
 };
+
+#endif  // VI_H

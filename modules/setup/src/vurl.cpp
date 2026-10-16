@@ -1,7 +1,7 @@
 // vurl.cpp (name ours) -- SETUP 0x005DC568 .. 0x005DD9C0: the HTTP/1.x client over libinet
 // that every download ends in, and STATION's too.  Blocking, except GetPoll; the
 // listener hears each chunk as it lands.
-#include "patcher.h"
+#include "vurl.h"
 
 // 0x005DC568.
 VUrl::VUrl(const char *url)

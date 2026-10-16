@@ -25,6 +25,14 @@ template <class T> VIVector<T>::VIVector()
     m_data = 0;
 }
 
+template <class T> VIVector<T>::VIVector(const VIVector<T> &a)
+{
+    m_size = 0;
+    m_capacity = 0;
+    m_data = 0;
+    Init(a);
+}
+
 template <class T> VIVector<T>::~VIVector()
 {
     if (m_data)

@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **1,661 of 1,805**: its whole libxml2 2.3.6 block, 458 of the 462 patcher functions and 250 of the 251 screens)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **1,208 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **1,661 of 1,805**: its whole libxml2 2.3.6 block, 458 of the 462 patcher functions and 250 of the 251 screens; STATION **1,983 of 2,339**, every function written but three (2026-10-16))
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -83,8 +83,8 @@ SUPPORT is one of five EE modules, and the only one that names its own functions
 | Module | Own code | Functions (sweep) | Names it exports | What it is |
 |---|---|---|---|---|
 | SUPPORT | 887 KB | 4,376 | 4,102 | the engine (the count includes the unnamed statics and per-TU template copies) |
-| CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat |
-| STATION | 587 KB | 2,339 | 1 (`station_main`) | login, server select, character creation |
+| CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat: **1,208 byte-exact** (phase 62; eight TUs shared with STATION) |
+| STATION | 587 KB | 2,339 | 1 (`station_main`) | the Station login, account pages, customer service, the account server: **1,983 byte-exact**, every function written but three (2026-10-16; `modules/station/README.md`) |
 | SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA: **1,661 byte-exact**: all of libxml2 2.3.6, the Verant patcher 458 of 462, and the screens 250 of 251 (2026-10-16) |
 | MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key: **44 of 44 byte-exact** (2026-10-16) |
 
@@ -6564,6 +6564,25 @@ labelled in the source as a batch order, not proven original. The others got wor
 closes and the next one opens CLIENT.
 
 ## Phase 62: CLIENT (opened 2026-10-15)
+
+**2026-10-16: CLIENT shares eight TUs with STATION, 1,136 -> 1,208 byte-exact.** Its `src/`
+links to STATION's `vidatetime`, `vimemstream{array,ops,set,vector}`, `vinet`, `vicsclient`
+and `vicsrecords`. Its `vimemstream.cpp` goes the other way, to STATION. `game.h` includes
+the shared headers instead of its own copies, and `VIClientPart33950` is now `VICSClient`.
+
+Six of eqtmpl's placeholder element types turned out to be real types. Their blocks moved
+into the TUs that emit them:
+
+| Placeholder | Real type |
+|---|---|
+| `VIPtr_CB9308 *` | `int` |
+| `VIRec4_BBBF08` | `int` |
+| `VIRec4_BBC218` | `int` |
+| `VIRec136_BE8808` | `VICSSubcategory` |
+| `VIRec24_BE84C8` | `VICSMessageHeader` |
+| `VIElem_BE8C48` | `VICSCategory` |
+
+`claude-notes/decomp-station-20261016.md` has the details.
 
 **598 of 5,973 CLIENT functions byte-exact (70,816 bytes) plus 1,703 verified duplicates, 723 named, and the network opcode
 dispatcher written in full** (`VIClient::ProcessMessage`, 2,093 instructions; its compare

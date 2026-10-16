@@ -83,7 +83,7 @@ The TU names are all ours; only libxml's files are named by asserts in the image
 | `patcherchanges(_impl)`, `patcherdistributioninfo(_impl)` | 11, 12, 43, 57 | the manifest tree; the `_Impl`'s inline `Call*` members are emitted after its `__tf` |
 | `patcherdownloader`, `directorydownloader`, `distributiondownloader`, `filedownloader`, `filedeltadownloader` | 41, 16, 24, 28, 10 | the downloaders |
 | `http_get` | 26/27 | one HTTP download into memory, optionally gzip |
-| `vurl` | 23/24 | the HTTP/1.x client over libinet (shared with STATION) |
+| `vurl` | 23/24 | the HTTP/1.x client over libinet; STATION links the same file (its `src/vurl.cpp` and `vurl.h` are symlinks here, `vurl.h` split out of `patcher.h`) |
 | `delta` | 6/6 | the delta coder, its index sort and binary search |
 | `patcherutil` | 11/11 | time formatters, `FormatString`, `GetTempName`, `uthread_*` |
 | `vmemcardfile` | 9/9 | a memory card file over `sceMc*` |
@@ -107,7 +107,7 @@ as verified duplicates.
 |---|---|---|
 | `main` | 14/14 | `setup_main` and the live `VIMap<int, int>` |
 | `visetup` | 39/39 | `VISetup`, 0x21AE0 bytes: the boot state machine, `RunPatcher`, the card I/O, the patcher callbacks |
-| `vifader`, `visplashfx`, `viwindowmanager` | 7, 7, 8 | the fade, the title's animated layers, the window driver |
+| `vifader`, `visplashfx`, `viwindowmanager` | 7, 7, 8 | the fade (STATION links the same `vifader.cpp`, with `vifader.h` split out of `setup.h`), the title's animated layers, the window driver (STATION's is an older one, its own) |
 | `viwndbeta`, `viwndconnect`, `viwndcontroller`, `viwnddnas` | 16, 18, 9, 13 | the windows, one TU each, in alphabetical link order |
 | `viwndeula`, `viwndlanguage`, `viwndlegal`, `viwndmessage` | 11/12, 9, 9, 13 | |
 | `viwndoptions`, `viwndpatcher`, `viwndpresents`, `viwndreadmessage`, `viwndsplash` | 20, 17, 9, 13, 18 | |
@@ -126,4 +126,6 @@ returns `void` (`claude-notes/decomp-setup-ties-20261016.md`).
   libxml, 266 in the patcher and only 18 in the game's screens. Most of the
   screens' bodies changed since the beta, so their names came over by slot order
   instead (the beta links the same files in the same order).
-- STATION shares libxml, `VUrl` and some UI code. It does NOT share the patcher.
+- STATION shares libxml (all but `testXPath.c`), `VUrl` and `VIFader`, by symlink to the
+  files here; its `VIWndMessage` is this one except an older `OnDrawSelf`. It does NOT share
+  the patcher.

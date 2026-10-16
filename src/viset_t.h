@@ -34,9 +34,15 @@ template <class T> VISet<T>::~VISet()
     }
 }
 
+// NOT `return m_size`, as VIMap's: the sentinel is counted in m_size, so Size()
+// discounts it and clamps.  SUPPORT never emits it; CLIENT (0x00CB9668) and
+// STATION (0x002E4208) do, from VIMemStreamSet.cpp.
 template <class T> int VISet<T>::Size() const
 {
-    return m_size;
+    int n = m_size - 1;
+    if (n < 0)
+        n = 0;
+    return n;
 }
 
 // The sentinel index IS the past-the-end iterator.

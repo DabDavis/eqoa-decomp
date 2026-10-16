@@ -7,7 +7,7 @@
 // Two functions assert ("MaxBytes >= 1" on line 399 and "MaxBytes >=
 // sizeof(uint16)" on line 422, the two ReadString overloads), so those must sit
 // on their original lines when written.
-#include "game.h"
+#include "vimemstream.h"
 
 extern "C" void *memcpy(void *, const void *, int);
 

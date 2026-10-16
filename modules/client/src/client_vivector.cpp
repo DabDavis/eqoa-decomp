@@ -10,39 +10,18 @@
 #include "game.h"
 #include "vivector_t.h"
 
-// 0x00bbbe38..0x00cba218: 7 members; size measured.
-struct VIRec4_BBBF08 { int m_data[1]; };
-template int VIVector<VIRec4_BBBF08>::DestroyPool();  // 0x00bbbe38
-template VIVector<VIRec4_BBBF08>::~VIVector();  // 0x00bbbe88
-template int VIVector<VIRec4_BBBF08>::Allocate();  // 0x00bbbf08
-template int VIVector<VIRec4_BBBF08>::Add(const VIRec4_BBBF08 &);  // 0x00bbbfe0
-template int VIVector<VIRec4_BBBF08>::Clear();  // 0x00cba088
-template int VIVector<VIRec4_BBBF08>::Init(int);  // 0x00cba1c8
-template int VIVector<VIRec4_BBBF08>::Add();  // 0x00cba218
+// 0x00bbbe38..0x00bbbfe0: VIVector<int> (the element was VIRec4_BBBF08 here; STATION's
+// VIMemStreamVector.cpp shows it is int).  Clear, Init(int) and Add() at 0x00cba088..
+// are VIMemStreamVector.cpp's own copies, in vimemstreamvector.cpp (shared with STATION).
+template int VIVector<int>::DestroyPool();  // 0x00bbbe38
+template VIVector<int>::~VIVector();  // 0x00bbbe88
+template int VIVector<int>::Allocate();  // 0x00bbbf08
+template int VIVector<int>::Add(const int &);  // 0x00bbbfe0
 
-// 0x00be81c8..0x00bfce98: 7 members; size measured.
-struct VIRec136_BE8808 { int m_data[34]; };
-template int VIVector<VIRec136_BE8808>::DestroyPool();  // 0x00be81c8
-template VIVector<VIRec136_BE8808>::~VIVector();  // 0x00be8218
-template int VIVector<VIRec136_BE8808>::Clear();  // 0x00be87a0
-template int VIVector<VIRec136_BE8808>::Allocate();  // 0x00be8808
-template int VIVector<VIRec136_BE8808>::Init(const VIVector<VIRec136_BE8808> &);  // 0x00be8988
-template int VIVector<VIRec136_BE8808>::Init(int);  // 0x00bfce48
-template int VIVector<VIRec136_BE8808>::Add();  // 0x00bfce98
-
-// 0x00be8390..0x00be8620: 6 members; size measured.
-struct VIRec24_BE84C8 { int m_data[6]; };
-template int VIVector<VIRec24_BE84C8>::DestroyPool();  // 0x00be8390
-template VIVector<VIRec24_BE84C8>::~VIVector();  // 0x00be83e0
-template int VIVector<VIRec24_BE84C8>::Clear();  // 0x00be8460
-template int VIVector<VIRec24_BE84C8>::Allocate();  // 0x00be84c8
-template int VIVector<VIRec24_BE84C8>::Init(int);  // 0x00be85d0
-template int VIVector<VIRec24_BE84C8>::Add();  // 0x00be8620
-
-// 0x00be8738..0x00be8c48: 2 members; size not measurable from these members.
-struct VIElem_BE8C48 { int m_data[1]; };
-template int VIVector<VIElem_BE8C48>::Clear();  // 0x00be8738
-template int VIVector<VIElem_BE8C48>::Init(int);  // 0x00be8c48
+// 0x00be81c8..0x00be8c48 and 0x00bfce48..0x00bfce98: VIVector<VICSSubcategory>,
+// <VICSMessageHeader> and <VICSCategory> (the placeholders VIRec136_BE8808,
+// VIRec24_BE84C8 and VIElem_BE8C48 here before) -- vicsclient.cpp's and
+// vicsrecords.cpp's own copies, in those files (shared with STATION).
 
 // 0x00c03490..0x00c03818: 7 members; size measured.
 struct VIRec32_C035B0 { int m_data[8]; };

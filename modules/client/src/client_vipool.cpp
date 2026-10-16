@@ -101,16 +101,7 @@ template VIPool<VIPtr_C01508 *>::~VIPool();  // 0x00c011d8
 template int VIPool<VIPtr_C01508 *>::Clear();  // 0x00c01240
 template int VIPool<VIPtr_C01508 *>::Init(int);  // 0x00c01508
 
-// 0x00cb9118..0x00cb9410: 8 members; pointer argument.
-struct VIPtr_CB9308;
-template int VIPool<VIPtr_CB9308 *>::End() const;  // 0x00cb9118
-template int VIPool<VIPtr_CB9308 *>::Begin() const;  // 0x00cb9128
-template int VIPool<VIPtr_CB9308 *>::Next(int) const;  // 0x00cb9158
-template int VIPool<VIPtr_CB9308 *>::DestroyPool();  // 0x00cb91a0
-template int VIPool<VIPtr_CB9308 *>::Clear();  // 0x00cb91f8
-template int VIPool<VIPtr_CB9308 *>::LinkFreeChain(int);  // 0x00cb9260
-template int VIPool<VIPtr_CB9308 *>::Allocate();  // 0x00cb9308
-template int VIPool<VIPtr_CB9308 *>::Add();  // 0x00cb9410
+// 0x00cb9110..0x00cb9410: VIPool<int>, VIMemStream ops' own copies -- in vimemstreamops.cpp (shared with STATION).
 
 // 0x00cc0b20..0x00cc2018: 9 members; size measured.
 struct VIRec524_CC0F38 { int m_data[131]; };

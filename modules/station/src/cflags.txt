@@ -1,0 +1,8 @@
+# Flags for every STATION TU, C and C++ (eqcheck.compile_cmd).  STATION links the
+# same libxml2 2.3.6 build as SETUP, minus testXPath.c: src/libxml/ holds symlinks
+# to SETUP's files (fetched by modules/setup/libxml/fetch.py, patched), and the PS2
+# build's config.h and libc headers come with them.
+-Ilibxml/ps2 -Ilibxml/include
+# The crypto libraries (src/crypto/, fetched by modules/station/crypto/fetch.py)
+# find unistd.h here; last, so nothing above can resolve to it.
+-Icrypto/ps2

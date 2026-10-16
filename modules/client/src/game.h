@@ -38,218 +38,13 @@ extern "C" int   __VIAssertf_line;
 #define VIASSERTF(x, fmt, args...) \
     { __VIAssertf_file = __FILE__; __VIAssertf_line = __LINE__; _VIAssertf(x, fmt, ## args); }
 
-// SUPPORT's DRDP library, declared here rather than by including drdp.h beside
-// vi.h (no SUPPORT TU includes both).  Same C++ linkage, so the same names.
-struct drdp_t;
-struct connection_t;
-void connection_close(connection_t *pConnection);
-void drdp_flush(drdp_t *pDrdp);
-struct endpoint_t;
-int  connection_open(connection_t **ppConnection, endpoint_t *pEndpoint, unsigned long uiDst);
-void connection_set_failure(connection_t *pConnection, int iRetry, int iWarn, int iFail);
-endpoint_t *drdp_get_system_endpoint(drdp_t *pDrdp);
-int  drdp_receive_packet(drdp_t *pDrdp, void *pData, int iSize, int *piRead, int iTimeout);
-void drdp_set_time(drdp_t *pDrdp, unsigned int uiTime);
-void drdp_destroy(drdp_t *pDrdp);
-void connection_send(connection_t *pConnection, const void *pData, int size, int message_type);
-void connection_get_timeout(connection_t *pConnection, int *piTimeout);
-struct drdp_addr_t
-{
-    unsigned char  m_ucIp[4];
-    unsigned short m_usPort;
-};
-void drdp_endpoint_to_address(unsigned long uiId, unsigned char *pIp, unsigned short *pusPort, unsigned short *pusDrdpPort);
-namespace drdp { struct logger_t; }
-int  drdp_namelookup(const char *pName, drdp_addr_t *pAddress);
-int  drdp_create_client(drdp_t **ppDrdp, const drdp_addr_t *pAddress, unsigned int uiTime, bool bNoSend, drdp::logger_t *pLogger);
-unsigned short drdp_get_port_udp(const drdp_t *pDrdp);
-void drdp_set_port_udp(drdp_t *pDrdp, unsigned short usPort);
-void drdp_address_to_endpoint(const unsigned char *pIp, unsigned short usPort, unsigned short usDrdpPort, unsigned long *puiId);
-void connection_set_simulated(connection_t *pConnection, int iDrop, int iDelay, int iJitter);
-void drdp_send_addr(drdp_t *pDrdp, const drdp_addr_t *pAddress, int iCount, const void *pData, int iSize);
-int connection_get_cstat_max();
-unsigned long connection_get_cstat(const connection_t *pConnection, int iIndex);
-const char *connection_get_cstat_label(int iIndex);
+#include "drdpapi.h"      // SUPPORT's DRDP library as CLIENT and STATION call it, shared
 
-// VIMemStream.cpp: the stream every network message is read through.  32 bytes,
-// all words (phase 62 survey, from Write/Read/the dispatcher's inline ctor).
-// The constructor and destructor are INLINE: the dispatcher builds one on its
-// stack and frees an owned buffer on the way out.
-struct VIMemStreamInt;
-struct VIMemStreamByte
-{
-    explicit VIMemStreamByte(unsigned char v) : m_v(v) {}
-    unsigned char m_v;
-};
-struct VIMemStreamRaw
-{
-    explicit VIMemStreamRaw(unsigned int v) : m_v(v) {}
-    unsigned int m_v;
-};
+#include "vimemstream.h"   // VIMemStream.cpp's classes, shared with STATION
 
-// A whole stream wrapped for operator<< / >>: the nested message func_00BF57B0 builds
-// (an inner stream inside an outer one).  Passed by reference; name provisional.
-class VIMemStream;
-struct VIMemStreamBlob
-{
-    VIMemStreamBlob(VIMemStream &s) : m_stream(&s) {}
-    VIMemStream *m_stream;
-};
-
-class VIMemStream
-{
-public:
-    VIMemStream(const void *data, int size)
-    {
-        m_wbuf = 0;
-        m_rbuf = (const char *)data;
-        m_capacity = size;
-        m_size = size;
-        m_rpos = 0;
-        m_error = 0;
-        m_dryRun = 0;
-        m_owned = 0;
-    }
-    // A stream that WRITES into the caller's buffer (Send006B, a char[32] on the stack):
-    // the non-const overload of the reader above.
-    VIMemStream(void *buf, int capacity)
-    {
-        m_wbuf = (char *)buf;
-        m_rbuf = (const char *)buf;
-        m_capacity = capacity;
-        m_size = 0;
-        m_rpos = 0;
-        m_error = 0;
-        m_dryRun = 0;
-        m_owned = 0;
-    }
-    // An empty stream that owns (and grows) its own buffer: what every sender builds.
-    VIMemStream()
-    {
-        m_wbuf = 0;
-        m_rbuf = 0;
-        m_capacity = 0;
-        m_size = 0;
-        m_rpos = 0;
-        m_error = 0;
-        m_dryRun = 0;
-        m_owned = 1;
-    }
-    ~VIMemStream()
-    {
-        if (m_owned && m_wbuf)
-            free(m_wbuf);
-    }
-
-    VIMemStream(const VIMemStream &s);                // 0x00CB8260: deep-copies an owned buffer
-    void SetBuffer(void *buf, int capacity);          // 0x00CB82F8: write into a caller's buffer
-    void SetData(const void *data, int size);         // 0x00CB8370: read from a caller's buffer
-    void Grow(int capacity);                          // 0x00CB83E8: becomes owned, then realloc
-    void Write(const void *src, int size, int count); // 0x00CB8460
-    void Read(void *dst, int size, int count);        // 0x00CB8520
-    void Skip(int n);                                 // 0x00CB85A8
-    // Inline: the value is computed in a register and stored to the stack only for the
-    // call (WriteUnsigned's byte, WriteString's length).
-    void WriteByte(unsigned char b) { Write(&b, 1, 1); }
-    void WriteU16(unsigned short v) { Write(&v, 2, 1); }
-    void WriteU32(unsigned int v) { Write(&v, 4, 1); }
-    void WriteU64(unsigned long v) { Write(&v, 8, 1); }
-    void WriteSigned(int v);                          // 0x00CB85E0: zigzag
-    void ReadSigned(int &v);                          // 0x00CB8610: zigzag
-    void WriteUnsigned(unsigned int v);               // 0x00CB8658: 7-bit varint
-    void ReadUnsigned(unsigned int &v);               // 0x00CB86B8: 7-bit varint
-    void ReadString(char *dst, unsigned int MaxBytes);            // 0x00CB8740 (line 399)
-    void ReadString(unsigned short *dst, unsigned int MaxBytes);  // 0x00CB87E8 (line 422)
-    void WriteString(const char *s);                  // 0x00CB88A0: u32 length, then the bytes
-    void WriteString(const unsigned short *s);        // 0x00CB8918: u32 length in characters
-    void SetDryRun(int on);                           // 0x00CB8990
-    int  GetDryRun();                                 // 0x00CB8998
-    VIMemStream &operator<<(const VIMemStreamBlob &b);  // 0x00CB89A0: a zigzag length, then the rest of b's stream
-    VIMemStream &operator>>(const VIMemStreamBlob &b);  // 0x00CB8A38: the reverse, into b's stream
-
-    // An inline reader (0x03D5).  An inlined helper's locals are known addressable
-    // when they are laid out, so they take block temporaries: 0x03D5's byte sits at
-    // sp+224, after the record, not with the other cases' bytes at sp+2112.
-    bool ReadBool() { unsigned char b; Read(&b, 1, 1); return b != 0; }
-    // The same read as a chainable operator (the guild member's reader chains it).
-    VIMemStream &operator>>(bool &v) { unsigned char b; Read(&b, 1, 1); v = b != 0; return *this; }
-    // A byte, the same way (Msg0010: the address goes through the reference, so `addiu`
-    // where a direct `&local` would be `ori`).
-    VIMemStream &operator>>(unsigned char &v) { Read(&v, 1, 1); return *this; }
-
-    // An inline reader that takes its target BY VALUE as an 8-byte object (see
-    // VIMemStreamInt below).
-    inline VIMemStream &operator>>(VIMemStreamInt v);
-    inline VIMemStream &operator<<(VIMemStreamInt v);
-    // A raw word (SendOpSigned2Int's last field): its own wrapper type, since a plain
-    // operator<<(unsigned int) would take every int ahead of the zigzag wrapper.
-    VIMemStream &operator<<(VIMemStreamRaw v) { Write(&v, 4, 1); return *this; }
-    // The byte is copied to a local, so it lives in the inline's FRAME (a 16-byte temp
-    // allocated in chain order) and not behind an ADDRESSOF at the end of the frame.
-    VIMemStream &operator<<(VIMemStreamByte v) { unsigned char b = v.m_v; Write(&b, 1, 1); return *this; }
-
-    // One value by reference.  Binding the reference keeps `&a[k].f` an ADDR_EXPR, which
-    // expands as (this + k*size) + offset; `Read(&a[k].f, 4, 1)` folds the offset into
-    // the array base instead (Channel44, 40 records of 160 bytes).
-    template <class T> void Read(T &v) { Read(&v, sizeof(T), 1); }
-    template <class T, int N> void Read(T (&v)[N]) { Read(v, sizeof(T), N); }
-
-    // Out of line: Msg07E0 calls them (0x00BE3660..0x00BE3678, VIClient.cpp's tail).
-    int  GetPos();                                    // 0x00BE3660: m_rpos
-    int  Remaining();                                 // 0x00BE3668: m_size - m_rpos
-    const char *GetBuffer();                          // 0x00BE3678: m_rbuf
-
-    char       *m_wbuf;                               // +0x00: Write's buffer, freed if owned
-    const char *m_rbuf;                               // +0x04: Read's source
-    int         m_capacity;                           // +0x08
-    int         m_size;                               // +0x0C: Read's limit
-    int         m_rpos;                               // +0x10
-    int         m_error;                              // +0x14: sticky overrun
-    int         m_dryRun;                             // +0x18: advance without copying
-    int         m_owned;                              // +0x1C
-
-    int GetError() { return m_error; }                 // inline: VIJournal's asserts
-};
-
-// A colour as the wire carries it: three bytes (Msg0A7B).  Name provisional.
-struct VIRGB
-{
-    unsigned char r, g, b;
-};
-VIMemStream &operator>>(VIMemStream &s, VIRGB &c);              // 0x00CB8F60, name provisional
-VIMemStream &operator>>(VIMemStream &s, VIVect3 &v);            // 0x00CB8D98, name provisional: three floats
-
-// What an int field is read through in VIPlayerRecord's reader, the VIMemStreamArray.h element
-// loop and the dispatcher's 0x03D6: the target's address stored TWICE into a
-// block temporary just before ReadSigned, and never read back.  That is an
-// inlined function's parameter living in memory: under EABI an 8-byte struct of
-// two 4-byte words is BLKmode (its 4-byte alignment is below DImode's), so the
-// inliner store_expr's it into the simulated argument area, built in place by
-// the constructor, and cse forwards the read.  A 4-byte wrapper travels in a
-// register and leaves no store.  Both words are the field's address, which
-// suits a two-way description of a field (read into it, write from it); the
-// names are provisional, only the shape is measured.
-struct VIMemStreamInt
-{
-    int       *m_in;
-    const int *m_out;
-    VIMemStreamInt(int &v) : m_in(&v), m_out(&v) {}
-    VIMemStreamInt(const int &v) : m_in((int *)&v), m_out(0) {}
-};
-
-inline VIMemStream &VIMemStream::operator>>(VIMemStreamInt v)
-{
-    ReadSigned(*v.m_in);
-    return *this;
-}
-
-// The write side goes through the same wrapper: a non-const int builds {&v, &v}
-// (SendOpSigned's parameter), a const one {&v, 0} (RequestBuddy's const record).
-inline VIMemStream &VIMemStream::operator<<(VIMemStreamInt v)
-{
-    WriteSigned(*v.m_in);
-    return *this;
-}
+#include "vimemstreamx.h"  // VIRGB and the VIMemStream* TUs' operators, shared with STATION
+#include "vinet.h"         // VINet.cpp: VIClientConn, VIClientDrdpRef, the senders, shared
+#include "vidatetime.h"    // the CS time and date and their operators, shared
 
 struct VIDialogBox;
 
@@ -713,7 +508,6 @@ public:
 
 // A VIArray element the spellbook's ability list is built in (GetAbilityList stores map
 // iterators into it).  Placeholder name kept: client_viarray.cpp's copies carry it.
-struct VIRec4_BBC218 { int m_data[1]; };
 
 // A per-race camera setting (the race camera lookup, GetRaceCamera: race x expansion).
 // Only the floats ApplyRaceCamera and SetCameraStyle read are named.  Name provisional.
@@ -956,12 +750,9 @@ public:
     void Recv0579(VIMemStream &s);                              // 0x00BEF788, name provisional
 };
 
-class VIClientPart33950
-{
-public:
-    void OnConnect();                                           // 0x00BE7298, name provisional (the pump's 0xFF)
-    void Recv07B0(VIMemStream &s);                              // 0x00BE71B0, name provisional
-};
+// The customer-service client (0x00BE7120 .. 0x00BE8DF0): STATION's VICSClient,
+// the same source (vicsclient.h, shared).  VIClient embeds it at +0x33950.
+#include "vicsclient.h"
 
 class VIClientPart382E8
 {
@@ -1120,49 +911,8 @@ public:
     float m_keys[20];                                // +0x04: 0.0 = up
 };
 
-// Slot 1's result: two words, returned through a hidden pointer -- so the class is
-// addressable (a destructor or copy constructor), or eight bytes would come back in v0.
-// A send target: func_00BB5968 asks for type 251 and hands it to func_00CBA2D0 with a
-// built stream.  Name provisional.
-// VINet.cpp (0x00CBA2D0..): send a stream's unread bytes on a client connection, then
-// consume them; and the connection's statistics as text, "%I: %s\n" per counter.
-struct VIClientConn;
-void VINetSend(VIMemStream &s, const VIClientConn &c);                       // 0x00CBA2D0, name provisional
-void VINetStats(unsigned short *buf, int size, connection_t *c);             // 0x00CBA5A8, name provisional
-struct VIClientDrdpRef;
-void VINetSendTo(VIMemStream &s, const VIClientDrdpRef &r);                 // 0x00CBA3D8, name provisional: to a raw DRDP address
+// VIClientConn (slot 1's result) and VIClientDrdpRef are in vinet.h, shared with STATION.
 void ReleaseMat(VIRaster &r, VIDictionary &d, int mat);                     // 0x00BBFE00, name provisional: VIClient.cpp's guard round ReleaseMaterial
-int drdp_process_packet(drdp_t *pDrdp, const void *pData, int iSize);
-unsigned int drdp_get_time(const drdp_t *pDrdp);
-struct message_t;
-message_t *drdp_receive(drdp_t *pDrdp);
-void message_destroy(message_t *pMessage);
-unsigned long message_get_src(const message_t *pMessage);
-unsigned char message_get_type(const message_t *pMessage);
-void *message_get_data(message_t *pMessage);
-unsigned int message_get_size(const message_t *pMessage);
-connection_t *message_get_connection(message_t *pMessage);
-void connection_get_arrival_history(connection_t *pConnection, unsigned long *puiHistory);
-void connection_get_arrival_number(connection_t *pConnection, unsigned short *pusNumber);
-void connection_get_ping_time(connection_t *pConnection, int *piPing);
-unsigned int connection_get_time_last_arrival(const connection_t *pConnection);
-
-struct VIClientConn
-{
-    VIClientConn(connection_t *conn, int type) : m_conn(conn), m_type(type) {}
-    ~VIClientConn() {}
-    connection_t *m_conn;                          // +0x00: VIClient::m_conn
-    int           m_type;                          // +0x04: the DRDP message type (251 = 0xFB, the dispatcher's)
-};
-
-// What GetDrdpRef returns: the DRDP instance and a 64-bit address, 16 bytes, so
-// through a hidden pointer.  Msg0790Done's.  Name provisional.
-struct VIClientDrdpRef
-{
-    VIClientDrdpRef(drdp_t *drdp, long addr) : m_drdp(drdp), m_addr(addr) {}
-    drdp_t *m_drdp;                                // +0x00: VIClient::m_drdp
-    long    m_addr;                                // +0x08
-};
 
 // VIClient's base, RTTI "9VIClientI".  It has no data, so the vptr is at +0.  The
 // vtable (0x00CDB4C0, 160 bytes) is entry 0 __tf8VIClient, these 18 virtuals in this
@@ -1178,7 +928,7 @@ public:
     virtual VIClientPart2EF24 *GetP2EF24() = 0;                 // slot 5
     virtual VIClientPart2EFCC *GetP2EFCC() = 0;                 // slot 6
     virtual VIClientPart2EFD0 *GetP2EFD0() = 0;                 // slot 7
-    virtual VIClientPart33950 *GetP33950() = 0;                 // slot 8
+    virtual VICSClient *GetP33950() = 0;                 // slot 8
     virtual VIClientPart38300 *GetP38300() = 0;                 // slot 9
     virtual VIClientPart382E8 *GetP382E8() = 0;                 // slot 10
     virtual VIClientPart38334 *GetP38334() = 0;                 // slot 11
@@ -1263,7 +1013,7 @@ public:
     VIClientPart2EF24 *GetP2EF24();                   // 0x00BCDE48: slot 5
     VIClientPart2EFCC *GetP2EFCC();                   // 0x00BCDE58: slot 6
     VIClientPart2EFD0 *GetP2EFD0();                   // 0x00BCDE68: slot 7
-    VIClientPart33950 *GetP33950();                   // 0x00BCDE78: slot 8
+    VICSClient *GetP33950();                   // 0x00BCDE78: slot 8
     VIClientPart38300 *GetP38300();                   // 0x00BCE1A0: slot 9
     VIClientPart382E8 *GetP382E8();                   // 0x00BCE1B0: slot 10
     VIClientPart38334 *GetP38334();                   // 0x00BCE1C0: slot 11
@@ -1635,7 +1385,7 @@ public:
     int  LeaderByte263();                                       // 0x00BD9350
 
     int  GetObjectName(unsigned int type, int i, unsigned short *buf, unsigned int size);// 0x00BC9968
-    void GetAbilityList(VIArray<VIRec4_BBC218> &out);           // 0x00BCB9D8
+    void GetAbilityList(VIArray<int> &out);           // 0x00BCB9D8
     int  GetInvItemSellPrice(int i);                            // 0x00BCC818
     void DropInvites(int id);                                   // 0x00BD7B30
 
@@ -1655,7 +1405,7 @@ public:
     void ApplyRaceCamera();                                     // 0x00BC7A80
 
     void UpdateMusic();                                         // 0x00BD9010
-    void GetAbilityRecords(int i, VIArray<VIRec4_BBC218> &out); // 0x00BCBC60
+    void GetAbilityRecords(int i, VIArray<int> &out); // 0x00BCBC60
     void SetKey(int key, int down);                   // 0x00BCF9C0
     void ToggleFollow();                                        // 0x00BD5D70
 
@@ -2075,8 +1825,8 @@ public:
     VIClientPart2EFCC m_p2EFCC;                         // +0x2EFCC: slot 6
     VIClientPart2EFD0 m_p2EFD0;                         // +0x2EFD0: slot 7
     char          m_g_m_p33950[0x33950 - (0x2EFD0 + sizeof(VIClientPart2EFD0))];
-    VIClientPart33950 m_p33950;                         // +0x33950: slot 8
-    char          m_g_m_p382E4[0x382E4 - (0x33950 + sizeof(VIClientPart33950))];
+    VICSClient m_p33950;                         // +0x33950: slot 8
+    char          m_g_m_p382E4[0x382E4 - (0x33950 + sizeof(VICSClient))];
     unsigned char m_p382E4;                             // +0x382E4: group reset: == 2 -> GroupChanged(0)
     char          m_g382E5[0x382E8 - (0x382E5)];
     VIClientPart382E8 m_p382E8;                         // +0x382E8: slot 10

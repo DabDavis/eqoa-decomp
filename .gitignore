@@ -8,3 +8,32 @@ __pycache__/
 # upstream libxml2 2.3.6, put in place by modules/setup/libxml/fetch.py
 modules/setup/src/libxml/*.c
 modules/setup/src/libxml/include/
+# upstream libdes 3.24 and LibTomCrypt 0.75, put in place by modules/station/crypto/fetch.py
+modules/station/src/crypto/cbc_cksm.c
+modules/station/src/crypto/des.h
+modules/station/src/crypto/des_locl.h
+modules/station/src/crypto/ecb_enc.c
+modules/station/src/crypto/ncbc_enc.c
+modules/station/src/crypto/podd.h
+modules/station/src/crypto/set_key.c
+modules/station/src/crypto/sk.h
+modules/station/src/crypto/spr.h
+modules/station/src/crypto/str2key.c
+modules/station/src/crypto/supp.c
+modules/station/src/crypto/aes.c
+modules/station/src/crypto/aes_tab.c
+modules/station/src/crypto/mpi-config.h
+modules/station/src/crypto/mpi-types.h
+modules/station/src/crypto/mpi.c
+modules/station/src/crypto/mpi.h
+modules/station/src/crypto/mycrypt.h
+modules/station/src/crypto/mycrypt_argchk.h
+modules/station/src/crypto/mycrypt_cfg.h
+modules/station/src/crypto/mycrypt_cipher.h
+modules/station/src/crypto/mycrypt_gf.h
+modules/station/src/crypto/mycrypt_hash.h
+modules/station/src/crypto/mycrypt_kr.h
+modules/station/src/crypto/mycrypt_macros.h
+modules/station/src/crypto/mycrypt_misc.h
+modules/station/src/crypto/mycrypt_pk.h
+modules/station/src/crypto/mycrypt_prng.h

@@ -11781,7 +11781,7 @@ VIClientGuild *VIClient::GetGuild() { return &m_guild; }                // 0x00B
 VIClientPart2EF24 *VIClient::GetP2EF24() { return &m_p2EF24; }          // 0x00BCDE48
 VIClientPart2EFCC *VIClient::GetP2EFCC() { return &m_p2EFCC; }          // 0x00BCDE58
 VIClientPart2EFD0 *VIClient::GetP2EFD0() { return &m_p2EFD0; }          // 0x00BCDE68
-VIClientPart33950 *VIClient::GetP33950() { return &m_p33950; }          // 0x00BCDE78
+VICSClient *VIClient::GetP33950() { return &m_p33950; }          // 0x00BCDE78
 VIClientPart38300 *VIClient::GetP38300() { return &m_p38300; }          // 0x00BCE1A0
 VIClientPart382E8 *VIClient::GetP382E8() { return &m_p382E8; }          // 0x00BCE1B0
 VIClientPart38334 *VIClient::GetP38334() { return &m_p38334; }          // 0x00BCE1C0
@@ -14142,12 +14142,12 @@ int VIClient::GetObjectName(unsigned int type, int i, unsigned short *buf, unsig
 }
 
 // 0x00BCB9D8
-void VIClient::GetAbilityList(VIArray<VIRec4_BBC218> &out)
+void VIClient::GetAbilityList(VIArray<int> &out)
 {
     out.Init(m_abilities.Size());
     int n = 0;
     for (int i = m_abilities.Begin(); i != m_abilities.End(); i = m_abilities.Next(i))
-        out.m_data[n++].m_data[0] = i;
+        out.m_data[n++] = i;
 }
 
 // 0x00BCC818
@@ -14344,13 +14344,13 @@ void VIClient::UpdateMusic()
 }
 
 // 0x00BCBC60
-void VIClient::GetAbilityRecords(int i, VIArray<VIRec4_BBC218> &out)
+void VIClient::GetAbilityRecords(int i, VIArray<int> &out)
 {
     VIArray<VIRec144_BE08C8> &recs = m_abilities.Value(i).m_p1BC;
     out.Init(recs.m_size);
     int n = 0;
     for (int k = recs.Begin(); k != recs.End(); k = recs.Next(k))
-        out.m_data[n++].m_data[0] = k;
+        out.m_data[n++] = k;
 }
 
 // 0x00BCF9C0
