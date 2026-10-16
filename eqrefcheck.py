@@ -487,10 +487,15 @@ def check_function(rep: Report, tu: str, obj: Obj, fn, names: Names, st, img, d,
                    allfuncs: bool):
     name, ndx, at, size = fn
     try:
-        sym = st.get(name)
+        # a static whose name another TU also uses is mapped as `<tu>:<name>`
+        # (eqcheck.score looks there first too)
+        sym = st.get(f"{tu}:{name}")
     except KeyError:
-        rep.bump("fn: no target symbol")
-        return
+        try:
+            sym = st.get(name)
+        except KeyError:
+            rep.bump("fn: no target symbol")
+            return
     if sym.span == 0:
         rep.bump("fn: target unsized")
         return

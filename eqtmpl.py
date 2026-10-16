@@ -97,13 +97,20 @@ class Module:
         return (w & 0x03FFFFFF) << 2 if (w >> 26) == 3 else None
 
 
+def module_header() -> str:
+    """The header a candidate TU includes: CLIENT's `game.h`, else SUPPORT's `vi.h`
+    (SETUP and MCERR build on vi.h; the compile command already puts SUPPORT's src/
+    on the include path)."""
+    return "game.h" if (C.SRC / "game.h").exists() else "vi.h"
+
+
 def compile_classes(work: Path, family: str, instances: list[str], decls: str = "") -> dict | None:
     """{member: (bytes, section, offset, relocations)} for `template class F<a>;` per a."""
     work.mkdir(parents=True, exist_ok=True)
     hdr = FAMILIES[family][0]
     body = "".join(f"template class {family}<{a}>;\n" for a in instances)
     src = work / "inst.cpp"
-    src.write_text(f'#include "game.h"\n#include "{hdr}"\n{decls}\n{body}')
+    src.write_text(f'#include "{module_header()}"\n#include "{hdr}"\n{decls}\n{body}')
     r = subprocess.run(C.compile_cmd("inst") + ["-I" + str(C.SRC), str(src), "-o", str(work / "inst.s")],
                        capture_output=True, text=True, cwd=work)
     if r.returncode:
@@ -537,7 +544,7 @@ def compile_classes_raw(work: Path, family: str, body: str) -> dict | None:
     work.mkdir(parents=True, exist_ok=True)
     hdr = FAMILIES[family][0]
     src = work / "inst.cpp"
-    src.write_text(f'#include "game.h"\n#include "{hdr}"\n{body}\n')
+    src.write_text(f'#include "{module_header()}"\n#include "{hdr}"\n{body}\n')
     r = subprocess.run(C.compile_cmd("inst") + ["-I" + str(C.SRC), str(src), "-o", str(work / "inst.s")],
                        capture_output=True, text=True, cwd=work)
     if r.returncode:
@@ -584,7 +591,7 @@ def cmd_emit(args) -> int:
                          _mangle_type(dummy))
         return tables[K]
 
-    lines = [args.head.rstrip() + "\n", '#include "game.h"', f'#include "{FAMILIES[family][0]}"']
+    lines = [args.head.rstrip() + "\n", f'#include "{module_header()}"', f'#include "{FAMILIES[family][0]}"']
     sym = C.SRC.parent / "symbols.txt"
     text = sym.read_text()
     renamed = 0

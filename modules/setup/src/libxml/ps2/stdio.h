@@ -1,8 +1,15 @@
 #ifndef _STDIO_H
 #define _STDIO_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <stddef.h>
 #include <stdarg.h>
+/* newlib's FILE, as far as ferror() reaches: _flags at +12, __SERR 0x40. */
+struct __sFILE { unsigned char *_p; int _r; int _w; short _flags; short _file; };
 typedef struct __sFILE FILE;
+#define __SERR 0x0040
+#define ferror(p) (((p)->_flags & __SERR) != 0)
 struct _reent { int _errno; FILE *_stdin; FILE *_stdout; FILE *_stderr; };
 extern struct _reent *_impure_ptr;
 #define stdin  (_impure_ptr->_stdin)
@@ -37,4 +44,7 @@ long ftell(FILE *);
 int remove(const char *);
 int rename(const char *, const char *);
 void perror(const char *);
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -10,42 +10,42 @@
 # copies=1 only: body identical with relocations masked and unique in both builds). Marked `beta-export`;
 # measured on SUPPORT's real names, about 1% of such names are a renamed or sibling function.  Trust a name once your object matches.
 0x00566C00  [CODE]  setup_main__Fv
-0x00566E68  [CODE]  func_00566E68
-0x00566EC0  [CODE]  func_00566EC0
-0x00566EC8  [CODE]  func_00566EC8
-0x00566F80  [CODE]  func_00566F80
-0x00566FD8  [CODE]  func_00566FD8
-0x00567048  [CODE]  func_00567048
-0x005670F0  [CODE]  func_005670F0
-0x00567248  [CODE]  func_00567248
-0x005672A0  [CODE]  func_005672A0
-0x00567398  [CODE]  func_00567398
-0x00567450  [CODE]  func_00567450
-0x00567508  [CODE]  func_00567508
-0x005677D0  [CODE]  func_005677D0
-0x00567838  [CODE]  func_00567838
-0x00567960  [CODE]  func_00567960
-0x00567B00  [CODE]  func_00567B00  # old:setup_data2_ArialUI_csf
-0x00567FF0  [CODE]  func_00567FF0
-0x005680D0  [CODE]  func_005680D0
-0x00568158  [CODE]  func_00568158  # old:setup_movies_eqoa_pss
-0x00568678  [CODE]  func_00568678
-0x005688D8  [CODE]  func_005688D8
+0x00566E68  [CODE]  Begin__Ct5VIMap2ZiZi
+0x00566EC0  [CODE]  End__Ct5VIMap2ZiZi
+0x00566EC8  [CODE]  Next__Ct5VIMap2ZiZii
+0x00566F80  [CODE]  DestroyPool__t5VIMap2ZiZi
+0x00566FD8  [CODE]  Clear__t5VIMap2ZiZi
+0x00567048  [CODE]  LinkFreeChain__t5VIMap2ZiZii
+0x005670F0  [CODE]  Allocate__t5VIMap2ZiZi
+0x00567248  [CODE]  Init__t5VIMap2ZiZii
+0x005672A0  [CODE]  AddNode__t5VIMap2ZiZiii
+0x00567398  [CODE]  LeftRotate__t5VIMap2ZiZii
+0x00567450  [CODE]  RightRotate__t5VIMap2ZiZii
+0x00567508  [CODE]  Insert__t5VIMap2ZiZiRCiT1
+0x005677D0  [CODE]  Find__Ct5VIMap2ZiZiRCi
+0x00567838  [CODE]  __7VISetup
+0x00567960  [CODE]  _$_7VISetup
+0x00567B00  [CODE]  Init__7VISetupi  # old:setup_data2_ArialUI_csf
+0x00567FF0  [CODE]  Free__7VISetup
+0x005680D0  [CODE]  MovieStopCallback__Fv
+0x00568158  [CODE]  Process__7VISetup  # old:setup_movies_eqoa_pss
+0x00568678  [CODE]  MainLoopBegin__7VISetup
+0x005688D8  [CODE]  MainLoopEnd__7VISetup
 0x005689B8  [CODE]  MainLoop__7VISetup  # beta-export
-0x00568A00  [CODE]  func_00568A00
-0x00568A28  [CODE]  func_00568A28
-0x005693F8  [CODE]  func_005693F8  # old:VIWnd::method_005693F8
-0x00569478  [CODE]  func_00569478
-0x00569500  [CODE]  func_00569500  # old:VITimer::method_00569500
+0x00568A00  [CODE]  sAlarmCallback__FiUsPv  # beta-order (40 bytes, beta 32)
+0x00568A28  [CODE]  RunPatcher__7VISetup  # beta-order (2512 bytes, beta 2392)
+0x005693F8  [CODE]  RestartConnect__7VISetup  # beta-order (128 bytes, beta 128)
+0x00569478  [CODE]  OnFile__7VISetupPCc  # beta-order (136 bytes, beta 136)
+0x00569500  [CODE]  OnTick__7VISetupi  # beta-order (352 bytes, beta 352)
 0x00569660  [CODE]  OnError__7VISetupiPCc  # beta-export
-0x00569688  [CODE]  func_00569688
+0x00569688  [CODE]  ValidatePatchMemCard__7VISetup  # beta-order (160 bytes, beta 144)
 0x00569728  [CODE]  DeletePatchImage__7VISetupP12VIPatchImage  # beta-export
-0x00569798  [CODE]  func_00569798
-0x00569B98  [CODE]  func_00569B98  # old:load_SUPPORT_AUT
-0x0056A148  [CODE]  func_0056A148
-0x0056A2A0  [CODE]  func_0056A2A0
-0x0056A368  [CODE]  func_0056A368  # old:setup_splash_screen
-0x0056A410  [CODE]  func_0056A410  # old:VISoundDevice::method
+0x00569798  [CODE]  ReadPatchData__7VISetupPP12VIPatchImage
+0x00569B98  [CODE]  WritePatchData__7VISetupPP12VIPatchImage  # old:load_SUPPORT_AUT
+0x0056A148  [CODE]  EncryptRel__7VISetupP12VIPatchImage
+0x0056A2A0  [CODE]  HandleMemCardAbnormal__7VISetup
+0x0056A368  [CODE]  StartAmbientSoundtrack__7VISetup  # old:setup_splash_screen
+0x0056A410  [CODE]  StopAmbientSoundtrack__7VISetup  # old:VISoundDevice::method
 0x0056A460  [CODE]  func_0056A460
 0x0056A4B8  [CODE]  func_0056A4B8
 0x0056A4C0  [CODE]  func_0056A4C0
@@ -60,49 +60,49 @@
 0x0056AB00  [CODE]  func_0056AB00
 0x0056ADC8  [CODE]  func_0056ADC8
 0x0056AE30  [CODE]  __8VICamera  # beta-export
-0x0056AFC0  [CODE]  func_0056AFC0  # old:VISetup
-0x0056B010  [CODE]  func_0056B010
-0x0056B020  [CODE]  func_0056B020
-0x0056B028  [CODE]  func_0056B028
-0x0056B030  [CODE]  func_0056B030
-0x0056B038  [CODE]  func_0056B038
-0x0056B040  [CODE]  func_0056B040
-0x0056B048  [CODE]  func_0056B048
-0x0056B050  [CODE]  func_0056B050
-0x0056B058  [CODE]  func_0056B058
-0x0056B060  [CODE]  func_0056B060
-0x0056B068  [CODE]  func_0056B068
-0x0056B070  [CODE]  func_0056B070
-0x0056B078  [CODE]  func_0056B078
-0x0056B080  [CODE]  func_0056B080
+0x0056AFC0  [CODE]  __tf7VISetup  # beta-order (80 bytes, beta 80)
+0x0056B010  [CODE]  RestartRequired__C7VISetup  # beta-order (16 bytes, beta 16)
+0x0056B020  [CODE]  OnStart__7VISetup  # beta-order (8 bytes, beta 8)
+0x0056B028  [CODE]  OnProduct__7VISetupPCc  # beta-order (8 bytes, beta 8)
+0x0056B030  [CODE]  OnUnzip__7VISetupPCc  # beta-order (8 bytes, beta 8)
+0x0056B038  [CODE]  OnFileFinished__7VISetupPCc  # beta-order (8 bytes, beta 8)
+0x0056B040  [CODE]  OnCancel__7VISetup  # beta-order (8 bytes, beta 8)
+0x0056B048  [CODE]  OnForceComputerRestart__7VISetup  # beta-order (8 bytes, beta 8)
+0x0056B050  [CODE]  OnSetTickCount__7VISetupi  # beta-order (8 bytes, beta 8)
+0x0056B058  [CODE]  OnSetFileTickCount__7VISetupi  # beta-order (8 bytes, beta 8)
+0x0056B060  [CODE]  OnFileTick__7VISetupi  # beta-order (8 bytes, beta 8)
+0x0056B068  [CODE]  OnStatusInfo__7VISetupPCc  # beta-order (8 bytes, beta 8)
+0x0056B070  [CODE]  OnEstimate__7VISetupll  # beta-order (8 bytes, beta 8)
+0x0056B078  [CODE]  OnFinish__7VISetup  # beta-order (8 bytes, beta 8)
+0x0056B080  [CODE]  OnFatalError__7VISetupiPCc  # beta-order (8 bytes, beta 8)
 0x0056B088  [CODE]  __7VIFader  # beta-export
-0x0056B098  [CODE]  func_0056B098
-0x0056B0E0  [CODE]  func_0056B0E0
+0x0056B098  [CODE]  _$_7VIFader  # beta-order (72 bytes, beta 72)
+0x0056B0E0  [CODE]  Init__7VIFaderP8VIRasterP12VIDictionaryf  # beta-order (144 bytes, beta 160)
 0x0056B170  [CODE]  Free__7VIFader  # old:VIRaster::method_0056B170; beta-export
 0x0056B1C0  [CODE]  Begin__7VIFaderff  # beta-export
 0x0056B200  [CODE]  End__7VIFader  # beta-export
 0x0056B210  [CODE]  Update__7VIFader  # beta-export
-0x0056B3A0  [CODE]  func_0056B3A0  # old:setup_Bird_Animation_tga
-0x0056B5E0  [CODE]  func_0056B5E0  # old:VIRaster::method_0056B5E0
-0x0056B6F8  [CODE]  func_0056B6F8  # old:VITimer::method_0056B6F8
-0x0056B7A8  [CODE]  func_0056B7A8
-0x0056BEC0  [CODE]  func_0056BEC0  # old:VIRaster::method_0056BEC0
-0x0056CAC8  [CODE]  func_0056CAC8
+0x0056B3A0  [CODE]  VISplashFxInit__FP8VIRasterP12VIDictionary  # old:setup_Bird_Animation_tga
+0x0056B5E0  [CODE]  VISplashFxFree__Fv  # old:VIRaster::method_0056B5E0
+0x0056B6F8  [CODE]  VISplashFxReset__Fv  # old:VITimer::method_0056B6F8
+0x0056B7A8  [CODE]  VISplashFxRender__Fi  # the betas' VISplashFxRender__Fv; Frontiers takes `int draw` (every caller passes 1)
+0x0056BEC0  [CODE]  VISplashFxRenderIsland__Fi  # ours: Frontiers-only static, unnamed in every build; old:VIRaster::method_0056BEC0
+0x0056CAC8  [CODE]  visplashfx:__static_initialization_and_destruction_0
 0x0056D150  [CODE]  _GLOBAL_$I$VISplashFxInit__FP8VIRasterP12VIDictionary  # beta-export
-0x0056D170  [CODE]  func_0056D170  # old:VIWnd::method_0056D170
-0x0056D1A8  [CODE]  func_0056D1A8  # old:VISetup::vfunc6
+0x0056D170  [CODE]  __15VIWindowManager  # beta-order (56 bytes, beta 56)
+0x0056D1A8  [CODE]  _$_15VIWindowManager  # beta-order (40 bytes, beta 40)
 0x0056D1D0  [CODE]  Init__15VIWindowManagerP5VIPadP10VIKeyboard  # beta-export
-0x0056D208  [CODE]  func_0056D208
-0x0056D210  [CODE]  func_0056D210
+0x0056D208  [CODE]  Free__15VIWindowManager
+0x0056D210  [CODE]  GetRoot__15VIWindowManager
 0x0056D218  [CODE]  SetRoot__15VIWindowManagerP5VIWnd  # old:VIWnd::called_0056D218; beta-export
 0x0056D220  [CODE]  Update__15VIWindowManager  # beta-export
-0x0056D4B8  [CODE]  func_0056D4B8  # old:VIWindowManager
-0x0056D508  [CODE]  func_0056D508  # old:VIWindowManager::ctor_or_dtor
-0x0056D548  [CODE]  func_0056D548  # old:VIWindowManager::vfunc3
-0x0056D598  [CODE]  func_0056D598
-0x0056D5A0  [CODE]  func_0056D5A0
+0x0056D4B8  [CODE]  __tf15VIWindowManager  # beta-order (80 bytes, beta 80)
+0x0056D508  [CODE]  __9VIWndBeta  # beta-order (64 bytes, beta 64)
+0x0056D548  [CODE]  _$_9VIWndBeta  # beta-order (80 bytes, beta 80)
+0x0056D598  [CODE]  Init__9VIWndBeta  # beta-order (8 bytes, beta 8)
+0x0056D5A0  [CODE]  Free__9VIWndBeta  # beta-order (8 bytes, beta 8)
 0x0056D5A8  [CODE]  OnDrawSelf__9VIWndBeta  # old:VIWindowManager::vfunc7; beta-export
-0x0056D6A0  [CODE]  func_0056D6A0  # old:VIWindowManager::vfunc9
+0x0056D6A0  [CODE]  OnKeyUp__9VIWndBetai  # beta-order (8 bytes, beta 8)
 0x0056D6A8  [CODE]  OnKeyDown__9VIWndBetai  # old:VIWindowManager::vfunc11; beta-export
 0x0056D708  [CODE]  OnMessage__9VIWndBetaP5VIWndiii  # old:setup_Welcome; beta-export
 0x0056D7C8  [CODE]  func_0056D7C8
@@ -118,40 +118,40 @@
 0x0056DDB0  [CODE]  func_0056DDB0
 0x0056DE68  [CODE]  func_0056DE68
 0x0056E130  [CODE]  func_0056E130
-0x0056E198  [CODE]  func_0056E198
-0x0056E1A8  [CODE]  func_0056E1A8
-0x0056E1F8  [CODE]  func_0056E1F8
-0x0056E260  [CODE]  func_0056E260
-0x0056E2C0  [CODE]  func_0056E2C0
-0x0056E338  [CODE]  func_0056E338
-0x0056E388  [CODE]  func_0056E388
-0x0056E3A0  [CODE]  func_0056E3A0  # old:VIWndBeta
-0x0056E3F0  [CODE]  func_0056E3F0
-0x0056E470  [CODE]  func_0056E470  # old:VIWndBeta::vfunc4
-0x0056E4F0  [CODE]  func_0056E4F0  # old:VIWnd::method_0056E4F0
+0x0056E198  [CODE]  __t7VIArray1Z10VIItemStat
+0x0056E1A8  [CODE]  DestroyPool__t7VIArray1Z10VIItemStat
+0x0056E1F8  [CODE]  _$_t7VIArray1Z10VIItemStat
+0x0056E260  [CODE]  Clear__t7VIArray1Z10VIItemStat
+0x0056E2C0  [CODE]  Allocate__t7VIArray1Z10VIItemStat
+0x0056E338  [CODE]  Init__t7VIArray1Z10VIItemStati
+0x0056E388  [CODE]  GetItem__Ct10VIItemList1Z9VINetItemi
+0x0056E3A0  [CODE]  __tf9VIWndBeta  # old:VIWndBeta
+0x0056E3F0  [CODE]  __12VIWndConnect
+0x0056E470  [CODE]  _$_12VIWndConnect  # old:VIWndBeta::vfunc4
+0x0056E4F0  [CODE]  Init__12VIWndConnect  # old:VIWnd::method_0056E4F0
 0x0056E558  [CODE]  Free__12VIWndConnect  # old:VIWnd::method_0056E558; beta-export
-0x0056E588  [CODE]  func_0056E588  # old:VIWndBeta::vfunc8; old:setup_Connected
-0x0056F028  [CODE]  func_0056F028  # old:VIWndBeta::vfunc12
-0x0056F2B0  [CODE]  func_0056F2B0  # old:VIWndBeta::vfunc10
-0x0056F2B8  [CODE]  func_0056F2B8  # old:VIWndBeta::vfunc14
-0x0056F4E8  [CODE]  func_0056F4E8  # old:VIWnd::called_0056F4E8
-0x0056F518  [CODE]  func_0056F518  # old:VIString::method_0056F518
-0x0056F5D8  [CODE]  func_0056F5D8  # old:VIString::method_0056F5D8
-0x0056F698  [CODE]  func_0056F698  # old:load_PPP_IRX
-0x0056FB20  [CODE]  func_0056FB20
-0x0056FF08  [CODE]  func_0056FF08  # old:VIWndConnect
-0x0056FF58  [CODE]  func_0056FF58
-0x0056FF68  [CODE]  func_0056FF68
-0x0056FF70  [CODE]  func_0056FF70
-0x0056FF78  [CODE]  func_0056FF78
-0x0056FF80  [CODE]  func_0056FF80  # old:VIWndConnect::ctor_or_dtor
-0x0056FFC0  [CODE]  func_0056FFC0  # old:VIWndConnect::vfunc3
-0x00570010  [CODE]  func_00570010
-0x00570018  [CODE]  func_00570018
-0x00570020  [CODE]  func_00570020  # old:VIWndConnect::vfunc7
-0x005701D8  [CODE]  func_005701D8  # old:VIWndConnect::vfunc9
-0x005701E0  [CODE]  func_005701E0  # old:VIWndConnect::vfunc11
-0x00570248  [CODE]  func_00570248  # old:VIWndConnect::vfunc13
+0x0056E588  [CODE]  OnDrawSelf__12VIWndConnect  # old:VIWndBeta::vfunc8; old:setup_Connected
+0x0056F028  [CODE]  OnKeyDown__12VIWndConnecti  # old:VIWndBeta::vfunc12
+0x0056F2B0  [CODE]  OnKeyUp__12VIWndConnecti  # old:VIWndBeta::vfunc10
+0x0056F2B8  [CODE]  OnMessage__12VIWndConnectP5VIWndiii  # old:VIWndBeta::vfunc14
+0x0056F4E8  [CODE]  EndConnect__12VIWndConnect  # old:VIWnd::called_0056F4E8
+0x0056F518  [CODE]  LoadIrxRetry__FPCciT0i  # old:VIString::method_0056F518
+0x0056F5D8  [CODE]  LoadIrxRetry2__FPCciT0i  # old:VIString::method_0056F5D8
+0x0056F698  [CODE]  BeginConnect__12VIWndConnect  # old:load_PPP_IRX
+0x0056FB20  [CODE]  SetCombination__12VIWndConnect
+0x0056FF08  [CODE]  __tf12VIWndConnect  # old:VIWndConnect
+0x0056FF58  [CODE]  SetNetConfig__12VIWndConnectP11VINetConfigii
+0x0056FF68  [CODE]  Selection__C12VIWndConnect
+0x0056FF70  [CODE]  Cancelled__12VIWndConnect
+0x0056FF78  [CODE]  SetCancelled__12VIWndConnecti
+0x0056FF80  [CODE]  __15VIWndController  # old:VIWndConnect::ctor_or_dtor
+0x0056FFC0  [CODE]  _$_15VIWndController  # old:VIWndConnect::vfunc3
+0x00570010  [CODE]  Init__15VIWndController
+0x00570018  [CODE]  Free__15VIWndController
+0x00570020  [CODE]  OnDrawSelf__15VIWndController  # old:VIWndConnect::vfunc7
+0x005701D8  [CODE]  OnKeyUp__15VIWndControlleri  # old:VIWndConnect::vfunc9
+0x005701E0  [CODE]  OnKeyDown__15VIWndControlleri  # old:VIWndConnect::vfunc11
+0x00570248  [CODE]  OnMessage__15VIWndControllerP5VIWndiii  # old:VIWndConnect::vfunc13
 0x005702F8  [CODE]  func_005702F8
 0x00570350  [CODE]  func_00570350
 0x00570358  [CODE]  func_00570358
@@ -172,17 +172,17 @@
 0x00570DF0  [CODE]  func_00570DF0
 0x00570E68  [CODE]  func_00570E68
 0x00570EB8  [CODE]  func_00570EB8
-0x00570ED0  [CODE]  func_00570ED0  # old:VIWndController
-0x00570F20  [CODE]  func_00570F20
-0x00570F78  [CODE]  func_00570F78  # old:VIWndController::vfunc4
-0x00570FF0  [CODE]  func_00570FF0  # old:VIWnd::method_00570FF0
-0x00571048  [CODE]  func_00571048  # old:VIWnd::method_00571048
-0x00571078  [CODE]  func_00571078  # old:setup_dnas_64
-0x00571568  [CODE]  func_00571568  # old:VIWndController::vfunc12
-0x005715A0  [CODE]  func_005715A0  # old:VIWndController::vfunc10
-0x005715A8  [CODE]  func_005715A8  # old:VIWndController::vfunc14_005715A8
-0x00571758  [CODE]  func_00571758  # old:setup_splash00_tga
-0x00571990  [CODE]  func_00571990  # old:VIWndController::called
+0x00570ED0  [CODE]  __tf15VIWndController  # old:VIWndController
+0x00570F20  [CODE]  __9VIWndDnas
+0x00570F78  [CODE]  _$_9VIWndDnas  # old:VIWndController::vfunc4
+0x00570FF0  [CODE]  Init__9VIWndDnasP7VIScene  # old:VIWnd::method_00570FF0
+0x00571048  [CODE]  Free__9VIWndDnas  # old:VIWnd::method_00571048
+0x00571078  [CODE]  OnDrawSelf__9VIWndDnas  # old:setup_dnas_64
+0x00571568  [CODE]  OnKeyDown__9VIWndDnasi  # old:VIWndController::vfunc12
+0x005715A0  [CODE]  OnKeyUp__9VIWndDnasi  # old:VIWndController::vfunc10
+0x005715A8  [CODE]  OnMessage__9VIWndDnasP5VIWndiii  # old:VIWndController::vfunc14_005715A8
+0x00571758  [CODE]  DrawFakeSplashInterface__9VIWndDnas  # old:setup_splash00_tga
+0x00571990  [CODE]  ErrorText__9VIWndDnasRC14sceDNAS2Status  # old:VIWndController::called
 0x00571CD0  [CODE]  func_00571CD0
 0x00571D28  [CODE]  func_00571D28
 0x00571D30  [CODE]  func_00571D30
@@ -196,20 +196,20 @@
 0x005722B8  [CODE]  func_005722B8
 0x00572370  [CODE]  func_00572370
 0x00572638  [CODE]  func_00572638
-0x005726A0  [CODE]  func_005726A0  # old:VIWndDnas
-0x005726F0  [CODE]  func_005726F0
-0x00572718  [CODE]  func_00572718
-0x00572768  [CODE]  func_00572768  # old:VIWndDnas::ctor_or_dtor
-0x005727B0  [CODE]  func_005727B0  # old:VIWndDnas::vfunc3
-0x00572810  [CODE]  func_00572810  # old:setup_EULA_WAD
-0x00572B28  [CODE]  func_00572B28  # old:VIWndDnas::called
-0x00572B60  [CODE]  func_00572B60  # old:VIWndDnas::vfunc7
-0x00572E60  [CODE]  func_00572E60  # old:VIWndDnas::vfunc9
-0x00572E68  [CODE]  func_00572E68  # old:VIWndDnas::vfunc11
-0x005731C0  [CODE]  func_005731C0  # old:VIWndDnas::vfunc13
-0x00573290  [CODE]  func_00573290  # old:VIFont::method
-0x00573568  [CODE]  func_00573568  # old:VIUI::method_00573568
-0x005735C0  [CODE]  func_005735C0  # old:VIUI::method_005735C0
+0x005726A0  [CODE]  __tf9VIWndDnas  # old:VIWndDnas
+0x005726F0  [CODE]  Status__9VIWndDnas
+0x00572718  [CODE]  SetStatus__9VIWndDnasG14sceDNAS2Status
+0x00572768  [CODE]  __9VIWndEula  # old:VIWndDnas::ctor_or_dtor
+0x005727B0  [CODE]  _$_9VIWndEula  # old:VIWndDnas::vfunc3
+0x00572810  [CODE]  Init__9VIWndEula  # old:setup_EULA_WAD
+0x00572B28  [CODE]  Free__9VIWndEula  # old:VIWndDnas::called
+0x00572B60  [CODE]  OnDrawSelf__9VIWndEula  # old:VIWndDnas::vfunc7
+0x00572E60  [CODE]  OnKeyUp__9VIWndEulai  # old:VIWndDnas::vfunc9
+0x00572E68  [CODE]  OnKeyDown__9VIWndEulai  # old:VIWndDnas::vfunc11
+0x005731C0  [CODE]  OnMessage__9VIWndEulaP5VIWndiii  # old:VIWndDnas::vfunc13
+0x00573290  [CODE]  ComputeTextRows__9VIWndEula  # old:VIFont::method
+0x00573568  [CODE]  Down__9VIWndEula  # old:VIUI::method_00573568
+0x005735C0  [CODE]  Up__9VIWndEula  # old:VIUI::method_005735C0
 0x00573610  [CODE]  func_00573610
 0x00573668  [CODE]  func_00573668
 0x00573670  [CODE]  func_00573670
@@ -230,15 +230,15 @@
 0x00574108  [CODE]  func_00574108
 0x00574180  [CODE]  func_00574180
 0x005741D0  [CODE]  func_005741D0
-0x005741E8  [CODE]  func_005741E8  # old:VIWndEula
-0x00574238  [CODE]  func_00574238  # old:VIWndEula::ctor_or_dtor
-0x00574278  [CODE]  func_00574278  # old:setup_English
-0x005742C8  [CODE]  func_005742C8
-0x00574308  [CODE]  func_00574308
-0x00574310  [CODE]  func_00574310  # old:VIWndEula::vfunc7
-0x005744B8  [CODE]  func_005744B8  # old:VIWndEula::vfunc9
-0x005744C0  [CODE]  func_005744C0  # old:VIWndEula::vfunc11
-0x005745E0  [CODE]  func_005745E0  # old:VIWndEula::vfunc13
+0x005741E8  [CODE]  __tf9VIWndEula  # old:VIWndEula
+0x00574238  [CODE]  __13VIWndLanguage  # old:VIWndEula::ctor_or_dtor
+0x00574278  [CODE]  _$_13VIWndLanguage  # old:setup_English
+0x005742C8  [CODE]  Init__13VIWndLanguage
+0x00574308  [CODE]  Free__13VIWndLanguage
+0x00574310  [CODE]  OnDrawSelf__13VIWndLanguage  # old:VIWndEula::vfunc7
+0x005744B8  [CODE]  OnKeyUp__13VIWndLanguagei  # old:VIWndEula::vfunc9
+0x005744C0  [CODE]  OnKeyDown__13VIWndLanguagei  # old:VIWndEula::vfunc11
+0x005745E0  [CODE]  OnMessage__13VIWndLanguageP5VIWndiii  # old:VIWndEula::vfunc13
 0x005746D8  [CODE]  func_005746D8
 0x00574730  [CODE]  func_00574730
 0x00574738  [CODE]  func_00574738
@@ -259,49 +259,49 @@
 0x005751D0  [CODE]  func_005751D0
 0x00575248  [CODE]  func_00575248
 0x00575298  [CODE]  func_00575298
-0x005752B0  [CODE]  func_005752B0  # old:VIWndLanguage
-0x00575300  [CODE]  func_00575300  # old:VIWnd::method_00575300
-0x00575338  [CODE]  func_00575338  # old:VIWndLanguage::vfunc4
-0x00575360  [CODE]  func_00575360
-0x00575368  [CODE]  func_00575368
-0x00575370  [CODE]  func_00575370  # old:setup_legal_l_tga
-0x005754E0  [CODE]  func_005754E0  # old:VIWndLanguage::vfunc12
-0x00575540  [CODE]  func_00575540  # old:VIWndLanguage::vfunc10
-0x00575548  [CODE]  func_00575548  # old:VIWndLanguage::vfunc14
-0x00575588  [CODE]  func_00575588  # old:VIWndLegal
-0x005755D8  [CODE]  func_005755D8
-0x00575620  [CODE]  func_00575620  # old:VIWndLegal::vfunc4
-0x00575670  [CODE]  func_00575670  # old:VIWnd::called_00575670
-0x00575680  [CODE]  func_00575680  # old:VIWnd::called_00575680
-0x00575688  [CODE]  func_00575688  # old:VIWndLegal::vfunc8
-0x005758F0  [CODE]  func_005758F0  # old:VIWndLegal::vfunc12
-0x00575A40  [CODE]  func_00575A40  # old:VIWndLegal::vfunc10
-0x00575A48  [CODE]  func_00575A48  # old:VIWndLegal::vfunc14
-0x00575B08  [CODE]  func_00575B08  # old:VIString::method_00575B08
-0x00575B80  [CODE]  func_00575B80  # old:VIString::method_00575B80
-0x00575C00  [CODE]  func_00575C00  # old:VIWndOptions::called
-0x00575CF0  [CODE]  func_00575CF0  # old:VIString::method_00575CF0
-0x00575D80  [CODE]  func_00575D80  # old:VIWndMessage
+0x005752B0  [CODE]  __tf13VIWndLanguage  # old:VIWndLanguage
+0x00575300  [CODE]  __10VIWndLegal  # old:VIWnd::method_00575300
+0x00575338  [CODE]  _$_10VIWndLegal  # old:VIWndLanguage::vfunc4
+0x00575360  [CODE]  Init__10VIWndLegal
+0x00575368  [CODE]  Free__10VIWndLegal
+0x00575370  [CODE]  OnDrawSelf__10VIWndLegal  # old:setup_legal_l_tga
+0x005754E0  [CODE]  OnKeyDown__10VIWndLegali  # old:VIWndLanguage::vfunc12
+0x00575540  [CODE]  OnKeyUp__10VIWndLegali  # old:VIWndLanguage::vfunc10
+0x00575548  [CODE]  OnMessage__10VIWndLegalP5VIWndiii  # old:VIWndLanguage::vfunc14
+0x00575588  [CODE]  __tf10VIWndLegal  # old:VIWndLegal
+0x005755D8  [CODE]  __12VIWndMessage
+0x00575620  [CODE]  _$_12VIWndMessage  # old:VIWndLegal::vfunc4
+0x00575670  [CODE]  Init__12VIWndMessage  # old:VIWnd::called_00575670
+0x00575680  [CODE]  Free__12VIWndMessage  # old:VIWnd::called_00575680
+0x00575688  [CODE]  OnDrawSelf__12VIWndMessage  # old:VIWndLegal::vfunc8
+0x005758F0  [CODE]  OnKeyDown__12VIWndMessagei  # old:VIWndLegal::vfunc12
+0x00575A40  [CODE]  OnKeyUp__12VIWndMessagei  # old:VIWndLegal::vfunc10
+0x00575A48  [CODE]  OnMessage__12VIWndMessageP5VIWndiii  # old:VIWndLegal::vfunc14
+0x00575B08  [CODE]  Setup__12VIWndMessagePCcT115VIMESSAGEPROMPTRC8VIVect2Ii  # old:VIString::method_00575B08
+0x00575B80  [CODE]  Setup__12VIWndMessagePCcPCUs15VIMESSAGEPROMPTRC8VIVect2Ii  # old:VIString::method_00575B80
+0x00575C00  [CODE]  Setup__12VIWndMessagePCUsT115VIMESSAGEPROMPTRC8VIVect2Ii  # old:VIWndOptions::called
+0x00575CF0  [CODE]  Highlight__12VIWndMessagePCUsi  # old:VIString::method_00575CF0
+0x00575D80  [CODE]  __tf12VIWndMessage  # old:VIWndMessage
 0x00575DD0  [CODE]  func_00575DD0
-0x00575DD8  [CODE]  func_00575DD8
-0x00575E38  [CODE]  func_00575E38  # old:VIWndMessage::vfunc12_00575E38
-0x00575ED0  [CODE]  func_00575ED0  # old:VIWnd::called_00575ED0
-0x00575F60  [CODE]  func_00575F60  # old:VIWnd::called_00575F60
-0x00575FC8  [CODE]  func_00575FC8  # old:VIWndMessage::vfunc16_00575FC8
-0x00576518  [CODE]  func_00576518  # old:VIWndMessage::vfunc20_00576518
-0x005767A0  [CODE]  func_005767A0  # old:VIWndMessage::called_005767A0
-0x00576890  [CODE]  func_00576890  # old:VIWndMessage::vfunc18_00576890
-0x00576898  [CODE]  func_00576898  # old:VIWndMessage::vfunc22_00576898
-0x00576BD0  [CODE]  func_00576BD0  # old:VIWndMessage::called_00576BD0
-0x00576C60  [CODE]  func_00576C60  # old:VIWndMessage::called_00576C60
-0x00576D48  [CODE]  func_00576D48  # old:VIWndMessage::called_00576D48
-0x00577030  [CODE]  func_00577030  # old:VIWndMessage::called_00577030
-0x00577340  [CODE]  func_00577340  # old:VIWndMessage::called_00577340
-0x00577528  [CODE]  func_00577528  # old:VIUI::method_00577528
-0x00577578  [CODE]  func_00577578  # old:VIWndMessage::called_00577578
-0x005778C0  [CODE]  func_005778C0  # old:VIWndMessage::called_005778C0
-0x00577BD0  [CODE]  func_00577BD0  # old:VIWndMessage::called_00577BD0
-0x00578080  [CODE]  func_00578080  # old:VIWndMessage::called_00578080
+0x00575DD8  [CODE]  __12VIWndOptions
+0x00575E38  [CODE]  _$_12VIWndOptions  # old:VIWndMessage::vfunc12_00575E38
+0x00575ED0  [CODE]  Init__12VIWndOptionsP7VIScene  # old:VIWnd::called_00575ED0
+0x00575F60  [CODE]  Free__12VIWndOptions  # old:VIWnd::called_00575F60
+0x00575FC8  [CODE]  OnDrawSelf__12VIWndOptions  # old:VIWndMessage::vfunc16_00575FC8
+0x00576518  [CODE]  OnKeyDown__12VIWndOptionsi  # old:VIWndMessage::vfunc20_00576518
+0x005767A0  [CODE]  SaveOptions__12VIWndOptions  # old:VIWndMessage::called_005767A0
+0x00576890  [CODE]  OnKeyUp__12VIWndOptionsi  # old:VIWndMessage::vfunc18_00576890
+0x00576898  [CODE]  OnMessage__12VIWndOptionsP5VIWndiii  # old:VIWndMessage::vfunc22_00576898
+0x00576BD0  [CODE]  Prev__12VIWndOptions  # old:VIWndMessage::called_00576BD0
+0x00576C60  [CODE]  Next__12VIWndOptions  # old:VIWndMessage::called_00576C60
+0x00576D48  [CODE]  Decrement__12VIWndOptions  # old:VIWndMessage::called_00576D48
+0x00577030  [CODE]  Increment__12VIWndOptions  # old:VIWndMessage::called_00577030
+0x00577340  [CODE]  Select__12VIWndOptions  # old:VIWndMessage::called_00577340
+0x00577528  [CODE]  Back__12VIWndOptions  # old:VIUI::method_00577528
+0x00577578  [CODE]  DrawMenu__12VIWndOptions  # old:VIWndMessage::called_00577578
+0x005778C0  [CODE]  DrawGamePage__12VIWndOptions  # old:VIWndMessage::called_005778C0
+0x00577BD0  [CODE]  DrawInterfacePage__12VIWndOptions  # old:VIWndMessage::called_00577BD0
+0x00578080  [CODE]  DrawSoundPage__12VIWndOptions  # old:VIWndMessage::called_00578080
 0x005783D8  [CODE]  func_005783D8
 0x00578430  [CODE]  func_00578430
 0x00578438  [CODE]  func_00578438
@@ -315,19 +315,19 @@
 0x005789C0  [CODE]  func_005789C0
 0x00578A78  [CODE]  func_00578A78
 0x00578D40  [CODE]  func_00578D40
-0x00578DA8  [CODE]  func_00578DA8  # old:VIWndOptions
-0x00578DF8  [CODE]  func_00578DF8
-0x00578E58  [CODE]  func_00578E58  # old:VIWndOptions::vfunc4_00578E58
-0x00578ED8  [CODE]  func_00578ED8  # old:VIWnd::method_00578ED8
-0x00578F50  [CODE]  func_00578F50  # old:VIWnd::method_00578F50
-0x00578F98  [CODE]  func_00578F98  # old:VIWndOptions::vfunc8_00578F98
-0x00579750  [CODE]  func_00579750  # old:VIWndOptions::vfunc12
-0x00579A20  [CODE]  func_00579A20  # old:VIWndOptions::vfunc10_00579A20
-0x00579A28  [CODE]  func_00579A28  # old:VIWndOptions::vfunc14
-0x00579CA8  [CODE]  func_00579CA8  # old:VITimer::called
-0x00579CB0  [CODE]  func_00579CB0
-0x00579CD0  [CODE]  func_00579CD0
-0x00579D10  [CODE]  func_00579D10  # old:setup_splash00_tga
+0x00578DA8  [CODE]  __tf12VIWndOptions  # old:VIWndOptions
+0x00578DF8  [CODE]  __12VIWndPatcher
+0x00578E58  [CODE]  _$_12VIWndPatcher  # old:VIWndOptions::vfunc4_00578E58
+0x00578ED8  [CODE]  Init__12VIWndPatcher  # old:VIWnd::method_00578ED8
+0x00578F50  [CODE]  Free__12VIWndPatcher  # old:VIWnd::method_00578F50
+0x00578F98  [CODE]  OnDrawSelf__12VIWndPatcher  # old:VIWndOptions::vfunc8_00578F98
+0x00579750  [CODE]  OnKeyDown__12VIWndPatcheri  # old:VIWndOptions::vfunc12
+0x00579A20  [CODE]  OnKeyUp__12VIWndPatcheri  # old:VIWndOptions::vfunc10_00579A20
+0x00579A28  [CODE]  OnMessage__12VIWndPatcherP5VIWndiii  # old:VIWndOptions::vfunc14
+0x00579CA8  [CODE]  SetProgress__12VIWndPatcherf  # old:VITimer::called
+0x00579CB0  [CODE]  AppendMessage__12VIWndPatcherPCUs
+0x00579CD0  [CODE]  ShowPatchMessage__12VIWndPatcher
+0x00579D10  [CODE]  DrawFakeSplashInterface__12VIWndPatcher  # old:setup_splash00_tga
 0x00579F48  [CODE]  func_00579F48
 0x00579FA0  [CODE]  func_00579FA0
 0x00579FA8  [CODE]  func_00579FA8
@@ -341,45 +341,45 @@
 0x0057A530  [CODE]  func_0057A530
 0x0057A5E8  [CODE]  func_0057A5E8
 0x0057A8B0  [CODE]  func_0057A8B0
-0x0057A918  [CODE]  func_0057A918  # old:VIWndPatcher
-0x0057A968  [CODE]  func_0057A968
-0x0057A970  [CODE]  func_0057A970
-0x0057A978  [CODE]  func_0057A978
-0x0057A980  [CODE]  func_0057A980
-0x0057A988  [CODE]  func_0057A988  # old:VIWndPatcher::ctor_or_dtor
-0x0057A9C0  [CODE]  func_0057A9C0  # old:VIWndPatcher::vfunc3
-0x0057A9E8  [CODE]  func_0057A9E8
-0x0057A9F0  [CODE]  func_0057A9F0
-0x0057A9F8  [CODE]  func_0057A9F8  # old:setup_presents_l_tga
-0x0057AB68  [CODE]  func_0057AB68  # old:VIWndPatcher::vfunc11
-0x0057ABC8  [CODE]  func_0057ABC8  # old:VIWndPatcher::vfunc9
-0x0057ABD0  [CODE]  func_0057ABD0  # old:VIWndPatcher::vfunc13
-0x0057AC10  [CODE]  func_0057AC10  # old:VIWndPresents
-0x0057AC60  [CODE]  func_0057AC60
+0x0057A918  [CODE]  __tf12VIWndPatcher  # old:VIWndPatcher
+0x0057A968  [CODE]  State__12VIWndPatcher
+0x0057A970  [CODE]  SetState__12VIWndPatcheri
+0x0057A978  [CODE]  Selection__C12VIWndPatcher
+0x0057A980  [CODE]  SetRestartRequired__12VIWndPatcheri
+0x0057A988  [CODE]  __13VIWndPresents  # old:VIWndPatcher::ctor_or_dtor
+0x0057A9C0  [CODE]  _$_13VIWndPresents  # old:VIWndPatcher::vfunc3
+0x0057A9E8  [CODE]  Init__13VIWndPresents
+0x0057A9F0  [CODE]  Free__13VIWndPresents
+0x0057A9F8  [CODE]  OnDrawSelf__13VIWndPresents  # old:setup_presents_l_tga
+0x0057AB68  [CODE]  OnKeyDown__13VIWndPresentsi  # old:VIWndPatcher::vfunc11
+0x0057ABC8  [CODE]  OnKeyUp__13VIWndPresentsi  # old:VIWndPatcher::vfunc9
+0x0057ABD0  [CODE]  OnMessage__13VIWndPresentsP5VIWndiii  # old:VIWndPatcher::vfunc13
+0x0057AC10  [CODE]  __tf13VIWndPresents  # old:VIWndPresents
+0x0057AC60  [CODE]  __16VIWndReadMessage
 0x0057ACB0  [CODE]  _$_16VIWndReadMessage  # old:VIWndPresents::vfunc4; beta-export
-0x0057AD08  [CODE]  func_0057AD08  # old:VIWnd::called_0057AD08
-0x0057AD28  [CODE]  func_0057AD28
-0x0057AD30  [CODE]  func_0057AD30  # old:VIWndPresents::vfunc8
-0x0057AEA0  [CODE]  func_0057AEA0  # old:VIWndPresents::vfunc12
-0x0057AF68  [CODE]  func_0057AF68  # old:VIWndPresents::vfunc14
-0x0057B030  [CODE]  func_0057B030  # old:VIWndOptions::called
-0x0057B038  [CODE]  func_0057B038  # old:VIString::method_0057B038
-0x0057B078  [CODE]  func_0057B078  # old:VIString::method_0057B078
-0x0057B0A0  [CODE]  func_0057B0A0  # old:VIUI::method_0057B0A0
-0x0057B0F0  [CODE]  func_0057B0F0  # old:VIUI::method_0057B0F0
-0x0057B150  [CODE]  func_0057B150  # old:VIWndReadMessage
-0x0057B1A0  [CODE]  func_0057B1A0
-0x0057B1F8  [CODE]  func_0057B1F8  # old:VIWndReadMessage::vfunc4
-0x0057B270  [CODE]  func_0057B270  # old:VIWnd::method_0057B270
-0x0057B338  [CODE]  func_0057B338  # old:VIWnd::method_0057B338
-0x0057B3B8  [CODE]  func_0057B3B8  # old:VIWndReadMessage::vfunc8; old:setup_splash00_tga
-0x0057B938  [CODE]  func_0057B938  # old:VIWndReadMessage::vfunc12
-0x0057BAD0  [CODE]  func_0057BAD0  # old:VIWndReadMessage::vfunc10
-0x0057BAD8  [CODE]  func_0057BAD8  # old:VIWndReadMessage::vfunc14
-0x0057BCD0  [CODE]  func_0057BCD0  # old:VIWnd::called_0057BCD0
-0x0057BD10  [CODE]  func_0057BD10
-0x0057BDD8  [CODE]  func_0057BDD8  # old:VIWndReadMessage::called_0057BDD8
-0x0057C090  [CODE]  func_0057C090  # old:VIWndReadMessage::called_0057C090
+0x0057AD08  [CODE]  Init__16VIWndReadMessage  # old:VIWnd::called_0057AD08
+0x0057AD28  [CODE]  Clear__16VIWndReadMessage
+0x0057AD30  [CODE]  OnDrawSelf__16VIWndReadMessage  # old:VIWndPresents::vfunc8
+0x0057AEA0  [CODE]  OnKeyDown__16VIWndReadMessagei  # old:VIWndPresents::vfunc12
+0x0057AF68  [CODE]  OnMessage__16VIWndReadMessageP5VIWndiii  # old:VIWndPresents::vfunc14
+0x0057B030  [CODE]  Message__C16VIWndReadMessage  # old:VIWndOptions::called
+0x0057B038  [CODE]  SetMessage__16VIWndReadMessagePCUs  # old:VIString::method_0057B038
+0x0057B078  [CODE]  AppendMessage__16VIWndReadMessagePCUs  # old:VIString::method_0057B078
+0x0057B0A0  [CODE]  Prev__16VIWndReadMessage  # old:VIUI::method_0057B0A0
+0x0057B0F0  [CODE]  Next__16VIWndReadMessage  # old:VIUI::method_0057B0F0
+0x0057B150  [CODE]  __tf16VIWndReadMessage  # old:VIWndReadMessage
+0x0057B1A0  [CODE]  __11VIWndSplash
+0x0057B1F8  [CODE]  _$_11VIWndSplash  # old:VIWndReadMessage::vfunc4
+0x0057B270  [CODE]  Init__11VIWndSplashP7VISceneP5VIPad  # old:VIWnd::method_0057B270
+0x0057B338  [CODE]  Free__11VIWndSplash  # old:VIWnd::method_0057B338
+0x0057B3B8  [CODE]  OnDrawSelf__11VIWndSplash  # old:VIWndReadMessage::vfunc8; old:setup_splash00_tga
+0x0057B938  [CODE]  OnKeyDown__11VIWndSplashi  # old:VIWndReadMessage::vfunc12
+0x0057BAD0  [CODE]  OnKeyUp__11VIWndSplashi  # old:VIWndReadMessage::vfunc10
+0x0057BAD8  [CODE]  OnMessage__11VIWndSplashP5VIWndiii  # old:VIWndReadMessage::vfunc14
+0x0057BCD0  [CODE]  RestartConnect__11VIWndSplash  # old:VIWnd::called_0057BCD0
+0x0057BD10  [CODE]  NetCnfCombination__11VIWndSplash
+0x0057BDD8  [CODE]  Connect__11VIWndSplash  # old:VIWndReadMessage::called_0057BDD8
+0x0057C090  [CODE]  ScanNetworkConfigurations__11VIWndSplash  # old:VIWndReadMessage::called_0057C090
 0x0057C2C0  [CODE]  func_0057C2C0
 0x0057C318  [CODE]  func_0057C318
 0x0057C320  [CODE]  func_0057C320
@@ -393,27 +393,27 @@
 0x0057C8A8  [CODE]  func_0057C8A8
 0x0057C960  [CODE]  func_0057C960
 0x0057CC28  [CODE]  func_0057CC28
-0x0057CC90  [CODE]  func_0057CC90  # old:VIWndSplash
-0x0057CCE0  [CODE]  func_0057CCE0
-0x0057CCE8  [CODE]  func_0057CCE8
-0x0057CCF8  [CODE]  func_0057CCF8
-0x0057CD08  [CODE]  func_0057CD08
-0x0057CD10  [CODE]  func_0057CD10
-0x0057CDD8  [CODE]  func_0057CDD8  # old:VIWndSplash::called_0057CDD8
-0x0057CDE0  [CODE]  func_0057CDE0
-0x0057CDE8  [CODE]  func_0057CDE8
-0x0057CDF0  [CODE]  func_0057CDF0
-0x0057CDF8  [CODE]  func_0057CDF8
+0x0057CC90  [CODE]  __tf11VIWndSplash  # beta-order (80 bytes, beta 80); old:VIWndSplash
+0x0057CCE0  [CODE]  Selection__C11VIWndSplash  # beta-order (8 bytes, beta 8)
+0x0057CCE8  [CODE]  NotifyDetached__11VIWndSplash  # beta-order (16 bytes, beta 16)
+0x0057CCF8  [CODE]  NotifyIspLost__11VIWndSplash  # beta-order (16 bytes, beta 16)
+0x0057CD08  [CODE]  DefaultNetConfig__C11VIWndSplash  # beta-order (8 bytes, beta 8)
+0x0057CD10  [CODE]  DefaultSceCombination__C11VIWndSplash  # beta-order (200 bytes, beta 200)
+0x0057CDD8  [CODE]  rmdir__FPc  # beta-order (8 bytes, beta 8); old:VIWndSplash::called_0057CDD8
+0x0057CDE0  [CODE]  chdir__FPCc  # beta-order (8 bytes, beta 8)
+0x0057CDE8  [CODE]  mkdir__FPc  # beta-order (8 bytes, beta 8)
+0x0057CDF0  [CODE]  mkdir__FPci  # beta-order (8 bytes, beta 8)
+0x0057CDF8  [CODE]  getcwd__FPci  # beta-order (16 bytes, beta 16)
 0x0057CE08  [CODE]  _strlwr__FPc  # old:DistributionDownloader::called_0057CE08; beta-export
 0x0057CE60  [CODE]  Sleep__Fi  # old:PatcherAPI::called_0057CE60; beta-export
-0x0057CE80  [CODE]  func_0057CE80  # old:setup_host0__main_elf
+0x0057CE80  [CODE]  GetCommandLine__Fv  # beta-order (16 bytes, beta 16)
 0x0057CE90  [CODE]  time  # old:PatcherAPI::called_0057CE90; beta-export
 0x0057CEA8  [CODE]  link
 0x0057CEB0  [CODE]  MakeDeltaData__FPciT0iPii  # beta-export
 0x0057D218  [CODE]  UnmakeDeltaData__FPciT0iPi  # old:DistributionDownloader::called_0057D218; beta-export
 0x0057D350  [CODE]  UnmakeDeltaDataFile__FPcT0i  # old:setup_delta_hld; beta-export
-0x0057D530  [CODE]  func_0057D530
-0x0057D560  [CODE]  func_0057D560
+0x0057D530  [CODE]  SortIndex__FPPci  # ours: static, unnamed in every build
+0x0057D560  [CODE]  QSort__FPPcT0  # ours: static, unnamed in every build
 0x0057D828  [CODE]  DeltaIBSearch__FPvT0ii  # beta-export
 0x0057D938  [CODE]  __19DirectoryDownloader  # old:VIWndSplash::ctor_or_dtor; beta-export
 0x0057D978  [CODE]  _$_19DirectoryDownloader  # old:VIWndSplash::vfunc3; beta-export
@@ -424,13 +424,13 @@
 0x0057DC90  [CODE]  GetTotalSize__19DirectoryDownloaderi  # old:VIWndSplash::vfunc25; beta-export
 0x0057DD08  [CODE]  GetDownloadSize__19DirectoryDownloaderi  # old:VIWndSplash::vfunc27; beta-export
 0x0057DD80  [CODE]  GetFileCount__19DirectoryDownloaderi  # old:VIWndSplash::vfunc33; beta-export
-0x0057DDF8  [CODE]  func_0057DDF8  # old:_HomeDirectory_
+0x0057DDF8  [CODE]  Download__19DirectoryDownloaderi  # beta-order (432 bytes, beta 384)
 0x0057DFA8  [CODE]  Delete__19DirectoryDownloader  # old:VIWndSplash::vfunc31; beta-export
 0x0057E038  [CODE]  UseCRC__19DirectoryDownloaderb  # old:VIWndSplash::vfunc11; beta-export
 0x0057E0F8  [CODE]  MakeDirectory__19DirectoryDownloader  # old:VIWndSplash::called_0057E0F8; beta-export
 0x0057E128  [CODE]  DeleteDirectory__19DirectoryDownloader  # old:VIWndSplash::called_0057E128; beta-export
 0x0057E158  [CODE]  GetFullPath__19DirectoryDownloaderPCcN21  # old:_CurrentDirectory_; beta-export
-0x0057E2B8  [CODE]  func_0057E2B8  # old:DirectoryDownloader
+0x0057E2B8  [CODE]  __tf19DirectoryDownloader  # beta-order (80 bytes, beta 80)
 0x0057E308  [CODE]  __22DistributionDownloader  # old:PatcherAPI::called_0057E308; beta-export
 0x0057E390  [CODE]  _$_22DistributionDownloader  # old:DirectoryDownloader::vfunc4; beta-export
 0x0057E440  [CODE]  Initialize__22DistributionDownloaderP8_xmlNodeP17PatcherDownloaderT2PCcT4  # old:DirectoryDownloader::vfunc8; beta-export
@@ -454,17 +454,17 @@
 0x0057FD38  [CODE]  GetXtraDistribution__22DistributionDownloaderi  # old:DirectoryDownloader::called_0057FD38; beta-export
 0x0057FDB8  [CODE]  SetXtraDistribution__22DistributionDownloaderib  # beta-export
 0x0057FDD0  [CODE]  IsXtraDistribution__22DistributionDownloaderi  # beta-export
-0x0057FDF0  [CODE]  func_0057FDF0  # old:DistributionDownloader
+0x0057FDF0  [CODE]  __tf22DistributionDownloader  # beta-order (80 bytes, beta 80)
 0x0057FE40  [CODE]  __19FileDeltaDownloader  # beta-export
 0x0057FE70  [CODE]  _$_19FileDeltaDownloader  # beta-export
 0x0057FF28  [CODE]  Initialize__19FileDeltaDownloaderPCciT1N21iii  # beta-export
 0x0057FFF0  [CODE]  Download__19FileDeltaDownloaderPciP10PatcherAPI  # old:DistributionDownloader::called_0057FFF0; beta-export
 0x00580028  [CODE]  SetNext__19FileDeltaDownloaderP19FileDeltaDownloader  # beta-export
-0x00580078  [CODE]  func_00580078  # old:DistributionDownloader::called_00580078
+0x00580078  [CODE]  GetNext__19FileDeltaDownloader  # beta-order (8 bytes, beta 8)
 0x00580080  [CODE]  Matches__19FileDeltaDownloaderUi  # old:DistributionDownloader::called_00580080; beta-export
-0x00580090  [CODE]  func_00580090
-0x00580098  [CODE]  func_00580098  # old:DistributionDownloader::called_00580098
-0x005800A0  [CODE]  func_005800A0  # old:DistributionDownloader::called_005800A0
+0x00580090  [CODE]  GetDeltaFilePath__19FileDeltaDownloader  # beta-order (8 bytes, beta 8)
+0x00580098  [CODE]  GetDownloadSize__19FileDeltaDownloader  # beta-order (8 bytes, beta 8)
+0x005800A0  [CODE]  GetTotalSize__19FileDeltaDownloader  # beta-order (8 bytes, beta 8)
 0x005800A8  [CODE]  __14FileDownloader  # beta-export
 0x00580120  [CODE]  _$_14FileDownloader  # old:DistributionDownloader::vfunc4; beta-export
 0x005801B0  [CODE]  Initialize__14FileDownloaderP8_xmlNodeP17PatcherDownloaderT2PCcT4  # old:setup_DeltaFile; beta-export
@@ -476,11 +476,11 @@
 0x00580860  [CODE]  GetDownloadSize__14FileDownloaderi  # old:DistributionDownloader::vfunc28; beta-export
 0x005808A0  [CODE]  UseCRC__14FileDownloaderb  # old:DistributionDownloader::vfunc12; beta-export
 0x00580930  [CODE]  UsingCRC__14FileDownloader  # old:DistributionDownloader::vfunc14; beta-export
-0x00580960  [CODE]  func_00580960  # old:DistributionDownloader::vfunc30
+0x00580960  [CODE]  Download__14FileDownloaderi  # beta-order (656 bytes, beta 544)
 0x00580BF0  [CODE]  Delete__14FileDownloader  # old:DistributionDownloader::vfunc32; beta-export
 0x00580C58  [CODE]  FileDiscrepancy__14FileDownloader  # old:DistributionDownloader::called_00580C58; beta-export
 0x00580CF0  [CODE]  PartialPatchCheck__14FileDownloader  # old:DistributionDownloader::called_00580CF0; beta-export
-0x00580D78  [CODE]  func_00580D78  # old:DistributionDownloader::called_00580D78
+0x00580D78  [CODE]  NeedsPartialPatch__14FileDownloader  # beta-order (8 bytes, beta 8)
 0x00580D80  [CODE]  PartialPatchDownload__14FileDownloaderb  # old:DistributionDownloader::called_00580D80; beta-export
 0x00580ED8  [CODE]  SizeDiscrepancy__14FileDownloaderPv  # old:DistributionDownloader::called_00580ED8; beta-export
 0x00580F50  [CODE]  TimeDiscrepancy__14FileDownloaderPv  # beta-export
@@ -492,13 +492,13 @@
 0x00581418  [CODE]  ScanFiles__14FileDownloaderi  # old:DistributionDownloader::vfunc20; beta-export
 0x00581480  [CODE]  AddDeltaFile__14FileDownloaderP8_xmlNodePCcN32  # old:setup_Server; beta-export
 0x00581618  [CODE]  ScanAsTest__14FileDownloader  # old:DistributionDownloader::vfunc6; beta-export
-0x00581658  [CODE]  func_00581658  # old:FileDownloader
+0x00581658  [CODE]  __tf14FileDownloader  # beta-order (80 bytes, beta 80)
 0x005816A8  [CODE]  __8Http_getP12VIPatchImage  # old:PatcherAPI::called_005816A8; beta-export
 0x00581738  [CODE]  _$_8Http_get  # old:PatcherAPI::called_00581738; beta-export
 0x005817C0  [CODE]  Initialize__8Http_getPc  # old:PatcherAPI::called_005817C0; beta-export
-0x005817D0  [CODE]  func_005817D0
+0x005817D0  [CODE]  Get_thread__FPv  # beta-order (32 bytes, beta 32)
 0x005817F0  [CODE]  Get__8Http_getPcN31i  # old:DistributionDownloader::called_005817F0; beta-export
-0x005818F8  [CODE]  func_005818F8
+0x005818F8  [CODE]  WriteFile__8Http_getPc  # beta-order (408 bytes, beta 376)
 0x00581A90  [CODE]  FreeMem__8Http_get  # beta-export
 0x00581AD0  [CODE]  MemoryGet__8Http_getPciT1N21i  # old:PatcherAPI::called_00581AD0; beta-export
 0x00581B10  [CODE]  http_get_byte__8Http_getP10z_stream_s  # beta-export
@@ -518,71 +518,71 @@
 0x00582158  [CODE]  GetBytesUnzipped__8Http_get  # old:PatcherAPI::called_00582158; beta-export
 0x00582160  [CODE]  GetTimeUnzipped__8Http_get  # old:PatcherAPI::called_00582160; beta-export
 0x00582168  [CODE]  SetReadIntoMemory__8Http_geti  # beta-export
-0x00582188  [CODE]  func_00582188  # old:Http_get
+0x00582188  [CODE]  __tf8Http_get  # beta-order (64 bytes, beta 64)
 0x005821C8  [CODE]  SetUrlListener__8Http_getP13VIUrlListener  # beta-export
 0x005821D0  [CODE]  __3LogPci  # beta-export
-0x005821E0  [CODE]  func_005821E0
+0x005821E0  [CODE]  _$_3Log  # beta-order (72 bytes, beta 72)
 0x00582228  [CODE]  level__3Logi  # beta-export
 0x00582230  [CODE]  write__3LogiPce  # beta-export
-0x00582318  [CODE]  func_00582318
+0x00582318  [CODE]  close__3Log  # beta-order (8 bytes, beta 8)
 0x00582320  [CODE]  error  # beta-export
 0x00582350  [CODE]  gz_compress  # beta-export
-0x00582418  [CODE]  func_00582418
+0x00582418  [CODE]  gz_uncompress  # beta-order (8 bytes, beta 8)
 0x00582420  [CODE]  file_compress  # beta-export
-0x005824C8  [CODE]  func_005824C8
+0x005824C8  [CODE]  file_uncompress  # beta-order (8 bytes, beta 8)
 0x005824D0  [CODE]  __10PatcherAPI  # beta-export
 0x00582518  [CODE]  _$_10PatcherAPI  # old:Http_get::vfunc4; beta-export
 0x00582670  [CODE]  InitializeFromLocalFile__10PatcherAPIPCci  # old:Http_get::vfunc10; beta-export
 0x005826B0  [CODE]  Initialize__10PatcherAPIPCciT1i  # old:Http_get::vfunc6; beta-export
 0x005826F8  [CODE]  Initialize__10PatcherAPIPCciT1N21i  # old:Http_get::vfunc8; beta-export
-0x00582750  [CODE]  func_00582750
+0x00582750  [CODE]  NeedDownload__10PatcherAPIi  # beta-order (40 bytes, beta 40)
 0x00582778  [CODE]  DownloadAll__10PatcherAPIi  # beta-export
-0x005827A8  [CODE]  func_005827A8
-0x005827D0  [CODE]  func_005827D0
-0x005827F8  [CODE]  func_005827F8
-0x00582820  [CODE]  func_00582820
-0x00582848  [CODE]  func_00582848  # old:DirectoryDownloader::called_00582848
+0x005827A8  [CODE]  DeleteOldFiles__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x005827D0  [CODE]  Download__10PatcherAPIPCci  # beta-order (40 bytes, beta 40)
+0x005827F8  [CODE]  Uninstall__10PatcherAPIPCc  # beta-order (40 bytes, beta 40)
+0x00582820  [CODE]  Select__10PatcherAPIPCcb  # beta-order (40 bytes, beta 40)
+0x00582848  [CODE]  GetDistributionList__10PatcherAPI  # beta-order (40 bytes, beta 40)
 0x00582870  [CODE]  Cancel__10PatcherAPIi  # old:PatcherAPI::called_00582870; beta-export
-0x005828F8  [CODE]  func_005828F8
-0x00582920  [CODE]  func_00582920
-0x00582948  [CODE]  func_00582948
-0x00582970  [CODE]  func_00582970
-0x00582998  [CODE]  func_00582998
-0x005829C0  [CODE]  func_005829C0
-0x005829E8  [CODE]  func_005829E8
+0x005828F8  [CODE]  Continue__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582920  [CODE]  GetProductName__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582948  [CODE]  GetVersion__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582970  [CODE]  GetProductChanges__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582998  [CODE]  SetRoot__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x005829C0  [CODE]  SetDistributionRoot__10PatcherAPIPCcT1  # beta-order (40 bytes, beta 40)
+0x005829E8  [CODE]  RescanFiles__10PatcherAPIPCci  # beta-order (40 bytes, beta 40)
 0x00582A10  [CODE]  RescanTestFiles__10PatcherAPIPCci  # beta-export
-0x00582A38  [CODE]  func_00582A38
-0x00582A60  [CODE]  func_00582A60
-0x00582A88  [CODE]  func_00582A88
-0x00582AB0  [CODE]  func_00582AB0
-0x00582AD8  [CODE]  func_00582AD8
-0x00582B00  [CODE]  func_00582B00
-0x00582B28  [CODE]  func_00582B28
-0x00582B50  [CODE]  func_00582B50
-0x00582B78  [CODE]  func_00582B78
-0x00582BA0  [CODE]  func_00582BA0
+0x00582A38  [CODE]  SetLocal__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582A60  [CODE]  GetRoot__10PatcherAPIPCc  # beta-order (40 bytes, beta 40)
+0x00582A88  [CODE]  GetLocal__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582AB0  [CODE]  UseCRC__10PatcherAPIbi  # beta-order (40 bytes, beta 40)
+0x00582AD8  [CODE]  UsingCRC__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582B00  [CODE]  GetEstimate__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582B28  [CODE]  GetEstimateRemaining__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582B50  [CODE]  GetFileCount__10PatcherAPIPCci  # beta-order (40 bytes, beta 40)
+0x00582B78  [CODE]  GetTotalSize__10PatcherAPIPCci  # beta-order (40 bytes, beta 40)
+0x00582BA0  [CODE]  GetDownloadSize__10PatcherAPIPCci  # beta-order (40 bytes, beta 40)
 0x00582BC8  [CODE]  OnForceRestart__10PatcherAPIPCcb  # beta-export
-0x00582BE8  [CODE]  func_00582BE8  # old:DistributionDownloader::called_00582BE8
-0x00582C10  [CODE]  func_00582C10  # old:DistributionDownloader::called_00582C10
-0x00582C38  [CODE]  func_00582C38
-0x00582C60  [CODE]  func_00582C60
-0x00582C88  [CODE]  func_00582C88
-0x00582CB0  [CODE]  func_00582CB0
-0x00582CD8  [CODE]  func_00582CD8  # old:DistributionDownloader::called_00582CD8
-0x00582D00  [CODE]  func_00582D00  # old:Http_get::vfunc12
-0x00582D08  [CODE]  func_00582D08
+0x00582BE8  [CODE]  DownloadFile__10PatcherAPIPciT1T1ill  # beta-order (40 bytes, beta 40)
+0x00582C10  [CODE]  DownloadToMemory__10PatcherAPIPciT1iT1i  # beta-order (40 bytes, beta 40)
+0x00582C38  [CODE]  GetFile__10PatcherAPIPCcT1i  # beta-order (40 bytes, beta 40)
+0x00582C60  [CODE]  DownloadMemoryFile__10PatcherAPIiPciT2i  # beta-order (40 bytes, beta 40)
+0x00582C88  [CODE]  SetRestartName__10PatcherAPIPCcT1  # beta-order (40 bytes, beta 40)
+0x00582CB0  [CODE]  Restart__10PatcherAPIb  # beta-order (40 bytes, beta 40)
+0x00582CD8  [CODE]  PatchPatcher__10PatcherAPIPCcT1  # beta-order (40 bytes, beta 40)
+0x00582D00  [CODE]  ValidUser__10PatcherAPIPCcT1  # beta-order (8 bytes, beta 8)
+0x00582D08  [CODE]  IsBusy__10PatcherAPI  # beta-order (40 bytes, beta 40)
 0x00582D30  [CODE]  GenerateLocalPath__10PatcherAPIPCc  # beta-export
-0x00582DB0  [CODE]  func_00582DB0
-0x00582DD8  [CODE]  func_00582DD8  # old:DirectoryDownloader::called_00582DD8
-0x00582E00  [CODE]  func_00582E00
-0x00582E28  [CODE]  func_00582E28  # old:VIWndSplash::called_00582E28
-0x00582E50  [CODE]  func_00582E50  # old:DistributionDownloader::called_00582E50
-0x00582E78  [CODE]  func_00582E78
-0x00582EA0  [CODE]  func_00582EA0
-0x00582EA8  [CODE]  func_00582EA8
-0x00582EB0  [CODE]  func_00582EB0
-0x00582ED8  [CODE]  func_00582ED8  # old:DistributionDownloader::called_00582ED8
-0x00582F00  [CODE]  func_00582F00  # old:PatcherAPI
+0x00582DB0  [CODE]  SetCheckOnInitialize__10PatcherAPIb  # beta-order (40 bytes, beta 40)
+0x00582DD8  [CODE]  CheckOnInitialize__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582E00  [CODE]  SetQuickScan__10PatcherAPIb  # beta-order (40 bytes, beta 40)
+0x00582E28  [CODE]  QuickScan__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582E50  [CODE]  IncrementScanCount__10PatcherAPI  # beta-order (40 bytes, beta 40)
+0x00582E78  [CODE]  InitialScan__10PatcherAPIPCc  # beta-order (40 bytes, beta 40)
+0x00582EA0  [CODE]  OnSetScanTickCount__10PatcherAPIi  # beta-order (8 bytes, beta 8)
+0x00582EA8  [CODE]  OnScanTick__10PatcherAPIi  # beta-order (8 bytes, beta 8)
+0x00582EB0  [CODE]  SetPatchImage__10PatcherAPIP12VIPatchImage  # beta-order (40 bytes, beta 40)
+0x00582ED8  [CODE]  FindPatchImage__10PatcherAPIPCc  # beta-order (40 bytes, beta 40)
+0x00582F00  [CODE]  __tf10PatcherAPI  # beta-order (64 bytes, beta 64)
 0x00582F40  [CODE]  __15PatcherAPI_Impl  # beta-export
 0x00583058  [CODE]  _$_15PatcherAPI_Impl  # old:PatcherAPI::vfunc13_00583058; beta-export
 0x005831A0  [CODE]  DownloadMemoryFile__15PatcherAPI_ImpliPciT2i  # beta-export
@@ -592,7 +592,7 @@
 0x00583698  [CODE]  ContinueInitialization__15PatcherAPI_Impli  # old:setup_VerantPatcher; beta-export
 0x00583888  [CODE]  StartInitializeThread__15PatcherAPI_ImplP8_xmlNode  # beta-export
 0x00583958  [CODE]  SetInitializing__15PatcherAPI_Implb  # old:PatcherAPI::called_00583958; beta-export
-0x00583980  [CODE]  func_00583980
+0x00583980  [CODE]  CommandLineOperations__15PatcherAPI_Impl  # beta-order (8 bytes, beta 8)
 0x00583988  [CODE]  PatchPatcher__15PatcherAPI_ImplPCcT1  # old:DistributionDownloader::called_00583988; beta-export
 0x005839C8  [CODE]  SetRestartName__15PatcherAPI_ImplPCcT1  # old:setup_PatchPatcher; beta-export
 0x00583A30  [CODE]  AddCommandLineArg__15PatcherAPI_ImplPCc  # beta-export
@@ -611,18 +611,18 @@
 0x00584610  [CODE]  UseCRC__15PatcherAPI_Implbi  # beta-export
 0x005846B8  [CODE]  InitialScan__15PatcherAPI_ImplPCc  # old:PatcherAPI::method_005846B8; beta-export
 0x005847A0  [CODE]  UsingCRC__15PatcherAPI_Impl  # beta-export
-0x005847E0  [CODE]  func_005847E0
-0x00584808  [CODE]  func_00584808
-0x00584830  [CODE]  func_00584830
+0x005847E0  [CODE]  NeedDownload__15PatcherAPI_Impli  # beta-order (40 bytes, beta 40)
+0x00584808  [CODE]  DeleteOldFiles__15PatcherAPI_Impl  # beta-order (40 bytes, beta 40)
+0x00584830  [CODE]  Download__15PatcherAPI_ImplPCci  # beta-order (256 bytes, beta 232)
 0x00584930  [CODE]  Uninstall__15PatcherAPI_ImplPCc  # old:PatcherAPI::method_00584930; beta-export
 0x00584A40  [CODE]  GetFileCount__15PatcherAPI_ImplPCci  # old:PatcherAPI::called_00584A40; beta-export
 0x00584B98  [CODE]  InitialScanRoutine__15PatcherAPI_ImplPCc  # old:PatcherAPI::called_00584B98; beta-export
-0x00584D00  [CODE]  func_00584D00  # old:PatcherAPI::called_00584D00
+0x00584D00  [CODE]  DownloadRoutine__15PatcherAPI_ImplPCci  # beta-order (600 bytes, beta 544)
 0x00584F58  [CODE]  ThreadBusy__15PatcherAPI_Impl  # beta-export
 0x00584F80  [CODE]  Select__15PatcherAPI_ImplPCcb  # old:PatcherAPI::method_00584F80; beta-export
 0x005850B8  [CODE]  Cancel__15PatcherAPI_Impl  # old:PatcherAPI::called_005850B8; beta-export
 0x005850D0  [CODE]  Continue__15PatcherAPI_Impl  # beta-export
-0x00585100  [CODE]  func_00585100
+0x00585100  [CODE]  GetProductName__15PatcherAPI_Impl  # beta-order (8 bytes, beta 8)
 0x00585108  [CODE]  GetVersion__15PatcherAPI_Impl  # beta-export
 0x00585110  [CODE]  GetProductChanges__15PatcherAPI_Impl  # beta-export
 0x00585118  [CODE]  GetDistributionList__15PatcherAPI_Impl  # old:PatcherAPI::called_00585118; beta-export
@@ -634,7 +634,7 @@
 0x00585A88  [CODE]  OnBytesDownloaded__15PatcherAPI_ImplPCcT1ii  # old:PatcherAPI::vfunc11_00585A88; beta-export
 0x00585B30  [CODE]  DownloadFile__15PatcherAPI_ImplPciT1T1ill  # old:DistributionDownloader::called_00585B30; beta-export
 0x005864F8  [CODE]  GetFile__15PatcherAPI_ImplPCcT1i  # old:PatcherAPI::method_005864F8; beta-export
-0x00586598  [CODE]  func_00586598
+0x00586598  [CODE]  Restart__15PatcherAPI_Implb  # beta-order (32 bytes, beta 32)
 0x005865B8  [CODE]  Patcher_thread__FPv  # beta-export
 0x005866B8  [CODE]  SetThreadInUse__15PatcherAPI_Implbi  # old:PatcherAPI::called_005866B8; beta-export
 0x00586760  [CODE]  NeedsExit__15PatcherAPI_Impl  # old:PatcherAPI::called_00586760; beta-export
@@ -645,74 +645,74 @@
 0x00586798  [CODE]  IncrementScanCount__15PatcherAPI_Impl  # old:DistributionDownloader::called_00586798; beta-export
 0x005867F8  [CODE]  SetPatchImage__15PatcherAPI_ImplP12VIPatchImage  # beta-export
 0x00586808  [CODE]  FindPatchImage__15PatcherAPI_ImplPCc  # beta-export
-0x00586870  [CODE]  func_00586870  # old:PatcherAPI_Impl
-0x005868C0  [CODE]  func_005868C0  # old:VIUrlListener
+0x00586870  [CODE]  __tf15PatcherAPI_Impl  # beta-order (80 bytes, beta 80)
+0x005868C0  [CODE]  __tf13VIUrlListener  # beta-order (64 bytes, beta 64)
 0x00586900  [CODE]  __14PatcherChanges  # beta-export
 0x00586960  [CODE]  _$_14PatcherChanges  # old:VIUrlListener::vfunc5; beta-export
-0x005869D0  [CODE]  func_005869D0  # old:VIUrlListener::vfunc7
-0x005869F0  [CODE]  func_005869F0
-0x00586A10  [CODE]  func_00586A10
-0x00586A30  [CODE]  func_00586A30
-0x00586A50  [CODE]  func_00586A50
-0x00586A70  [CODE]  func_00586A70
-0x00586A90  [CODE]  func_00586A90
-0x00586AB0  [CODE]  func_00586AB0
-0x00586AD0  [CODE]  func_00586AD0  # old:PatcherChanges
+0x005869D0  [CODE]  Initialize__14PatcherChangesiPcP14PatcherChangesT3  # beta-order (32 bytes, beta 32)
+0x005869F0  [CODE]  GetPrevious__14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00586A10  [CODE]  GetNext__14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00586A30  [CODE]  SetPrevious__14PatcherChangesP14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00586A50  [CODE]  SetNext__14PatcherChangesP14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00586A70  [CODE]  GetVersion__14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00586A90  [CODE]  GetTextChanges__14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00586AB0  [CODE]  GetHtmlChanges__14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00586AD0  [CODE]  __tf14PatcherChanges  # beta-order (64 bytes, beta 64)
 0x00586B10  [CODE]  __19PatcherChanges_Impl  # beta-export
 0x00586B38  [CODE]  _$_19PatcherChanges_Impl  # beta-export
 0x00586BD8  [CODE]  Initialize__19PatcherChanges_ImpliPcP14PatcherChangesT3  # old:VIUrlListener::called_00586BD8; beta-export
 0x00586C48  [CODE]  GetVersion__19PatcherChanges_Impl  # beta-export
-0x00586C50  [CODE]  func_00586C50
-0x00586C58  [CODE]  func_00586C58
+0x00586C50  [CODE]  GetTextChanges__19PatcherChanges_Impl  # beta-order (8 bytes, beta 8)
+0x00586C58  [CODE]  GetHtmlChanges__19PatcherChanges_Impl  # beta-order (8 bytes, beta 8)
 0x00586C60  [CODE]  ExtractTextChangesFromHTMLChanges__19PatcherChanges_Impl  # old:VIUrlListener::called_00586C60; beta-export
-0x00586C90  [CODE]  func_00586C90
-0x00586C98  [CODE]  func_00586C98
+0x00586C90  [CODE]  GetPrevious__19PatcherChanges_Impl  # beta-order (8 bytes, beta 8)
+0x00586C98  [CODE]  GetNext__19PatcherChanges_Impl  # beta-order (8 bytes, beta 8)
 0x00586CA0  [CODE]  SetPrevious__19PatcherChanges_ImplP14PatcherChanges  # old:VIUrlListener::called_00586CA0; beta-export
 0x00586CB0  [CODE]  SetNext__19PatcherChanges_ImplP14PatcherChanges  # old:VIUrlListener::called_00586CB0; beta-export
-0x00586CC0  [CODE]  func_00586CC0  # old:PatcherChanges_Impl
+0x00586CC0  [CODE]  __tf19PatcherChanges_Impl  # beta-order (64 bytes, beta 64)
 0x00586D00  [CODE]  __23PatcherDistributionInfo  # old:DirectoryDownloader::called_00586D00; beta-export
 0x00586D48  [CODE]  _$_23PatcherDistributionInfo  # beta-export
 0x00586DB8  [CODE]  Initialize__23PatcherDistributionInfoP8_xmlNodeP10PatcherAPI  # old:PatcherAPI::called_00586DB8; beta-export
-0x00586E10  [CODE]  func_00586E10
-0x00586E30  [CODE]  func_00586E30
-0x00586E50  [CODE]  func_00586E50
-0x00586E70  [CODE]  func_00586E70
-0x00586E90  [CODE]  func_00586E90  # old:PatcherAPI::called_00586E90
-0x00586EB0  [CODE]  func_00586EB0  # old:VIWndSplash::called_00586EB0
-0x00586ED0  [CODE]  func_00586ED0
-0x00586EF0  [CODE]  func_00586EF0
-0x00586F10  [CODE]  func_00586F10
-0x00586F30  [CODE]  func_00586F30
-0x00586F50  [CODE]  func_00586F50
-0x00586F70  [CODE]  func_00586F70
-0x00586F90  [CODE]  func_00586F90  # old:DirectoryDownloader::called_00586F90
-0x00586FB0  [CODE]  func_00586FB0  # old:PatcherAPI::called_00586FB0
-0x00586FD0  [CODE]  func_00586FD0  # old:PatcherAPI::called_00586FD0
-0x00586FF0  [CODE]  func_00586FF0  # old:DirectoryDownloader::called_00586FF0
-0x00587010  [CODE]  func_00587010
-0x00587030  [CODE]  func_00587030  # old:DirectoryDownloader::called_00587030
-0x00587050  [CODE]  func_00587050  # old:DirectoryDownloader::called_00587050
-0x00587070  [CODE]  func_00587070  # old:DirectoryDownloader::called_00587070
-0x00587090  [CODE]  func_00587090  # old:DirectoryDownloader::called_00587090
-0x005870B0  [CODE]  func_005870B0  # old:PatcherAPI::called_005870B0
-0x005870D0  [CODE]  func_005870D0
-0x005870F0  [CODE]  func_005870F0
-0x00587110  [CODE]  func_00587110  # old:PatcherAPI::called_00587110
-0x00587130  [CODE]  func_00587130  # old:DirectoryDownloader::called_00587130
-0x00587150  [CODE]  func_00587150
-0x00587170  [CODE]  func_00587170
-0x00587190  [CODE]  func_00587190
-0x005871B0  [CODE]  func_005871B0  # old:PatcherAPI::called_005871B0
-0x005871D0  [CODE]  func_005871D0
-0x005871F0  [CODE]  func_005871F0
-0x00587210  [CODE]  func_00587210
-0x00587230  [CODE]  func_00587230
+0x00586E10  [CODE]  NeedDownload__23PatcherDistributionInfoi  # beta-order (32 bytes, beta 32)
+0x00586E30  [CODE]  GetParent__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586E50  [CODE]  GetChild__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586E70  [CODE]  GetPrevious__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586E90  [CODE]  GetNext__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586EB0  [CODE]  GetPatcher__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586ED0  [CODE]  GetName__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586EF0  [CODE]  GetTitle__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586F10  [CODE]  GetPath__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586F30  [CODE]  GetServer__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586F50  [CODE]  GetPort__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586F70  [CODE]  IsOptional__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586F90  [CODE]  IsSelected__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00586FB0  [CODE]  Select__23PatcherDistributionInfob  # beta-order (32 bytes, beta 32)
+0x00586FD0  [CODE]  SelectChildren__23PatcherDistributionInfob  # beta-order (32 bytes, beta 32)
+0x00586FF0  [CODE]  IsRestricted__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587010  [CODE]  GetRestrictedFilename__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587030  [CODE]  RestrictedFileExists__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587050  [CODE]  GetTotalSize__23PatcherDistributionInfoi  # beta-order (32 bytes, beta 32)
+0x00587070  [CODE]  GetDownloadSize__23PatcherDistributionInfoi  # beta-order (32 bytes, beta 32)
+0x00587090  [CODE]  GetFileCount__23PatcherDistributionInfoi  # beta-order (32 bytes, beta 32)
+0x005870B0  [CODE]  InitialScan__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x005870D0  [CODE]  SetDistributionRoot__23PatcherDistributionInfoPCc  # beta-order (32 bytes, beta 32)
+0x005870F0  [CODE]  GetDistributionRoot__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587110  [CODE]  RescanFiles__23PatcherDistributionInfoi  # beta-order (32 bytes, beta 32)
+0x00587130  [CODE]  Download__23PatcherDistributionInfoi  # beta-order (32 bytes, beta 32)
+0x00587150  [CODE]  Continue__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587170  [CODE]  DeleteOld__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587190  [CODE]  Uninstall__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x005871B0  [CODE]  UseCRC__23PatcherDistributionInfob  # beta-order (32 bytes, beta 32)
+0x005871D0  [CODE]  UsingCRC__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x005871F0  [CODE]  SetChanges__23PatcherDistributionInfoP14PatcherChanges  # beta-order (32 bytes, beta 32)
+0x00587210  [CODE]  GetChanges__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587230  [CODE]  GetVersion__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
 0x00587250  [CODE]  GetDistributionByName__23PatcherDistributionInfoP23PatcherDistributionInfoPCc  # old:PatcherAPI::called_00587250; beta-export
-0x00587318  [CODE]  func_00587318  # old:DirectoryDownloader::called_00587318
-0x00587340  [CODE]  func_00587340
-0x00587368  [CODE]  func_00587368  # old:PatcherAPI::called_00587368
-0x00587388  [CODE]  func_00587388  # old:PatcherAPI::called_00587388
-0x005873B0  [CODE]  func_005873B0  # old:PatcherDistributionInfo
+0x00587318  [CODE]  SetXtraDistribution__23PatcherDistributionInfoib  # beta-order (40 bytes, beta 40)
+0x00587340  [CODE]  IsXtraDistribution__23PatcherDistributionInfoi  # beta-order (40 bytes, beta 40)
+0x00587368  [CODE]  CalculateHierarchicalProperties__23PatcherDistributionInfo  # beta-order (32 bytes, beta 32)
+0x00587388  [CODE]  ResetScanFlag__23PatcherDistributionInfoi  # beta-order (40 bytes, beta 40)
+0x005873B0  [CODE]  __tf23PatcherDistributionInfo  # beta-order (64 bytes, beta 64)
 0x005873F0  [CODE]  __28PatcherDistributionInfo_Impl  # old:DirectoryDownloader::called_005873F0; beta-export
 0x00587448  [CODE]  _$_28PatcherDistributionInfo_Impl  # beta-export
 0x00587570  [CODE]  Initialize__28PatcherDistributionInfo_ImplP8_xmlNodeP10PatcherAPI  # old:PatcherAPI::called_00587570; beta-export
@@ -720,23 +720,23 @@
 0x005876C8  [CODE]  CheckPatcherAPI__28PatcherDistributionInfo_Impl  # old:DirectoryDownloader::called_005876C8; beta-export
 0x005876F8  [CODE]  NeedDownload__28PatcherDistributionInfo_Impli  # beta-export
 0x00587738  [CODE]  NeedDelete__28PatcherDistributionInfo_Impl  # beta-export
-0x00587770  [CODE]  func_00587770  # old:DirectoryDownloader::called_00587770
-0x005877D8  [CODE]  func_005877D8
-0x00587840  [CODE]  func_00587840  # old:DirectoryDownloader::called_00587840
-0x005878A8  [CODE]  func_005878A8
-0x00587910  [CODE]  func_00587910
-0x00587918  [CODE]  func_00587918
-0x00587920  [CODE]  func_00587920
-0x00587928  [CODE]  func_00587928
-0x00587930  [CODE]  func_00587930
-0x00587938  [CODE]  func_00587938
-0x00587940  [CODE]  func_00587940
-0x00587948  [CODE]  func_00587948  # old:DirectoryDownloader::called_00587948
+0x00587770  [CODE]  GetParent__28PatcherDistributionInfo_Impl  # beta-order (104 bytes, beta 104)
+0x005877D8  [CODE]  GetChild__28PatcherDistributionInfo_Impl  # beta-order (104 bytes, beta 104)
+0x00587840  [CODE]  GetPrevious__28PatcherDistributionInfo_Impl  # beta-order (104 bytes, beta 104)
+0x005878A8  [CODE]  GetNext__28PatcherDistributionInfo_Impl  # beta-order (104 bytes, beta 104)
+0x00587910  [CODE]  GetPatcher__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587918  [CODE]  GetName__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587920  [CODE]  GetTitle__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587928  [CODE]  GetPath__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587930  [CODE]  GetServer__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587938  [CODE]  GetPort__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587940  [CODE]  IsOptional__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587948  [CODE]  IsSelected__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
 0x00587950  [CODE]  Select__28PatcherDistributionInfo_Implb  # beta-export
 0x00587960  [CODE]  SelectChildren__28PatcherDistributionInfo_Implb  # old:PatcherAPI::method_00587960; beta-export
 0x005879C8  [CODE]  IsRestricted__28PatcherDistributionInfo_Impl  # old:DirectoryDownloader::called_005879C8; beta-export
-0x005879D0  [CODE]  func_005879D0
-0x005879D8  [CODE]  func_005879D8  # old:DirectoryDownloader::called_005879D8
+0x005879D0  [CODE]  GetRestrictedFilename__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x005879D8  [CODE]  RestrictedFileExists__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
 0x005879E0  [CODE]  GetTotalSize__28PatcherDistributionInfo_Impli  # old:DirectoryDownloader::called_005879E0; beta-export
 0x00587A18  [CODE]  GetDownloadSize__28PatcherDistributionInfo_Impli  # old:DirectoryDownloader::called_00587A18; beta-export
 0x00587A50  [CODE]  GetFileCount__28PatcherDistributionInfo_Impli  # old:DirectoryDownloader::called_00587A50; beta-export
@@ -750,20 +750,20 @@
 0x00587D08  [CODE]  Uninstall__28PatcherDistributionInfo_Impl  # beta-export
 0x00587D90  [CODE]  UseCRC__28PatcherDistributionInfo_Implb  # old:PatcherAPI::called_00587D90; beta-export
 0x00587DC8  [CODE]  UsingCRC__28PatcherDistributionInfo_Impl  # beta-export
-0x00587E00  [CODE]  func_00587E00
-0x00587E10  [CODE]  func_00587E10
-0x00587E18  [CODE]  func_00587E18
-0x00587E20  [CODE]  func_00587E20  # old:DirectoryDownloader::called_00587E20
-0x00587E30  [CODE]  func_00587E30  # old:PatcherAPI::called_00587E30
+0x00587E00  [CODE]  SetChanges__28PatcherDistributionInfo_ImplP14PatcherChanges  # beta-order (16 bytes, beta 16)
+0x00587E10  [CODE]  GetChanges__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587E18  [CODE]  GetDistributionDownloader__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
+0x00587E20  [CODE]  SetDistributionDownloader__28PatcherDistributionInfo_ImplP22DistributionDownloader  # beta-order (16 bytes, beta 16)
+0x00587E30  [CODE]  SetDistributionInfo__28PatcherDistributionInfo_ImplP23PatcherDistributionInfo  # beta-order (16 bytes, beta 16)
 0x00587E40  [CODE]  GetVersion__28PatcherDistributionInfo_Impl  # beta-export
 0x00587E48  [CODE]  SetXMLInfo__28PatcherDistributionInfo_ImplP8_xmlNode  # old:setup_RemotePath; beta-export
-0x00588010  [CODE]  func_00588010  # old:PatcherAPI::called_00588010
+0x00588010  [CODE]  GetDistributionInfo__28PatcherDistributionInfo_Impl  # beta-order (8 bytes, beta 8)
 0x00588018  [CODE]  SetXtraDistribution__28PatcherDistributionInfo_Implib  # old:DirectoryDownloader::called_00588018; beta-export
-0x00588040  [CODE]  func_00588040
-0x00588068  [CODE]  func_00588068  # old:PatcherAPI::called_00588068
-0x00588090  [CODE]  func_00588090
+0x00588040  [CODE]  IsXtraDistribution__28PatcherDistributionInfo_Impli  # beta-order (40 bytes, beta 40)
+0x00588068  [CODE]  CalculateHierarchicalProperties__28PatcherDistributionInfo_Impl  # beta-order (40 bytes, beta 40)
+0x00588090  [CODE]  GetDownloaderByFile__28PatcherDistributionInfo_ImplPCc  # beta-order (40 bytes, beta 40)
 0x005880B8  [CODE]  ResetScanFlag__28PatcherDistributionInfo_Impli  # beta-export
-0x005880F0  [CODE]  func_005880F0  # old:PatcherDistributionInfo_Impl
+0x005880F0  [CODE]  __tf28PatcherDistributionInfo_Impl  # beta-order (64 bytes, beta 64)
 0x00588130  [CODE]  IncrementScanCount__28PatcherDistributionInfo_Impl  # beta-export
 0x00588158  [CODE]  CallFinish__28PatcherDistributionInfo_Impl  # beta-export
 0x00588190  [CODE]  CallForceRestart__28PatcherDistributionInfo_ImplPcb  # beta-export
@@ -776,31 +776,31 @@
 0x00588678  [CODE]  Initialize__17PatcherDownloaderP8_xmlNodeP17PatcherDownloaderT2PCcT4P23PatcherDistributionInfo  # old:VIWndSplash::vfunc9; beta-export
 0x00588718  [CODE]  UseCRC__17PatcherDownloaderb  # old:PatcherDistributionInfo_Impl::vfunc11; beta-export
 0x005887A8  [CODE]  IgnoreTimeStamp__17PatcherDownloaderb  # old:VIWndSplash::vfunc15; beta-export
-0x005887B8  [CODE]  func_005887B8
-0x005887C0  [CODE]  func_005887C0
+0x005887B8  [CODE]  IgnoringTimeStamp__17PatcherDownloader  # beta-order (8 bytes, beta 8)
+0x005887C0  [CODE]  IsInstallOnly__17PatcherDownloader  # beta-order (8 bytes, beta 8)
 0x005887C8  [CODE]  UsingCRC__17PatcherDownloader  # old:VIWndSplash::vfunc13; beta-export
 0x00588850  [CODE]  CalculateHierarchicalProperties__17PatcherDownloader  # beta-export
 0x00588908  [CODE]  FlagDownloaded__17PatcherDownloader  # beta-export
 0x00588918  [CODE]  FlagDeleted__17PatcherDownloader  # beta-export
 0x00588928  [CODE]  NeedDownload__17PatcherDownloaderi  # old:DistributionDownloader::called_00588928; beta-export
-0x00588970  [CODE]  func_00588970  # old:VIWndSplash::vfunc5
+0x00588970  [CODE]  ScanAsTest__17PatcherDownloader  # beta-order (8 bytes, beta 8)
 0x00588978  [CODE]  NeedDelete__17PatcherDownloader  # old:DistributionDownloader::called_00588978; beta-export
 0x00588980  [CODE]  GetServer__17PatcherDownloader  # old:DistributionDownloader::called_00588980; beta-export
 0x005889A8  [CODE]  GetPort__17PatcherDownloader  # old:DistributionDownloader::called_005889A8; beta-export
-0x005889D0  [CODE]  func_005889D0  # old:DirectoryDownloader::called
+0x005889D0  [CODE]  IsDistributionDownloader__17PatcherDownloader  # beta-order (8 bytes, beta 8)
 0x005889D8  [CODE]  GetDistributionInfo__17PatcherDownloader  # old:VIWndSplash::vfunc37; beta-export
 0x005889E0  [CODE]  SetDistributionInfo__17PatcherDownloaderP23PatcherDistributionInfo  # old:VIWndSplash::vfunc39; beta-export
 0x00588A20  [CODE]  SetDistributionRoot__17PatcherDownloaderPCc  # old:VIWndSplash::vfunc17; beta-export
 0x00588AB8  [CODE]  ScanFiles__17PatcherDownloaderi  # old:VIWndSplash::vfunc19; beta-export
 0x00588B58  [CODE]  GetDistributionRoot__17PatcherDownloader  # old:VIWndSplash::vfunc21; beta-export
 0x00588B70  [CODE]  ResetScanFlag__17PatcherDownloaderi  # old:VIWndSplash::vfunc45; beta-export
-0x00588BD8  [CODE]  func_00588BD8
+0x00588BD8  [CODE]  GetPrevious__17PatcherDownloader  # beta-order (8 bytes, beta 8)
 0x00588BE0  [CODE]  GetNext__17PatcherDownloader  # old:VIWndSplash::called_00588BE0; beta-export
-0x00588BE8  [CODE]  func_00588BE8
-0x00588BF0  [CODE]  func_00588BF0  # old:VIWndSplash::called_00588BF0
-0x00588BF8  [CODE]  func_00588BF8
-0x00588C08  [CODE]  func_00588C08  # old:VIWndSplash::called_00588C08
-0x00588C18  [CODE]  func_00588C18
+0x00588BE8  [CODE]  GetParent__17PatcherDownloader  # beta-order (8 bytes, beta 8)
+0x00588BF0  [CODE]  GetChild__17PatcherDownloader  # beta-order (8 bytes, beta 8)
+0x00588BF8  [CODE]  SetParent__17PatcherDownloaderP17PatcherDownloader  # beta-order (16 bytes, beta 16)
+0x00588C08  [CODE]  SetChild__17PatcherDownloaderP17PatcherDownloader  # beta-order (16 bytes, beta 16)
+0x00588C18  [CODE]  SetPrevious__17PatcherDownloaderP17PatcherDownloader  # beta-order (16 bytes, beta 16)
 0x00588C28  [CODE]  SetNext__17PatcherDownloaderP17PatcherDownloader  # old:VIWndSplash::called_00588C28; beta-export
 0x00588C38  [CODE]  PrepForUninstall__17PatcherDownloader  # old:VIWndSplash::vfunc35; beta-export
 0x00588CA8  [CODE]  GenerateLocalPath__17PatcherDownloaderPCc  # beta-export
@@ -810,7 +810,7 @@
 0x00588F68  [CODE]  SetTopLevel__17PatcherDownloaderb  # old:PatcherAPI::called_00588F68; beta-export
 0x00588F78  [CODE]  IsTopLevel__17PatcherDownloader  # beta-export
 0x00588F80  [CODE]  GetDownloaderByFile__17PatcherDownloaderPCc  # beta-export
-0x00589038  [CODE]  func_00589038  # old:PatcherDownloader
+0x00589038  [CODE]  __tf17PatcherDownloader  # beta-order (64 bytes, beta 64)
 0x00589078  [CODE]  FormatSeconds__Fl  # beta-export
 0x00589180  [CODE]  FormatSecondsToMinutes__Fl  # beta-export
 0x00589378  [CODE]  FormatTime__Fl  # beta-export
@@ -831,7 +831,7 @@
 0x00589A88  [CODE]  Write__12VMemCardFilePci  # beta-export
 0x00589AC8  [CODE]  Read__12VMemCardFilePci  # beta-export
 0x00589B08  [CODE]  GetSize__12VMemCardFile  # beta-export
-0x00589B50  [CODE]  func_00589B50
+0x00589B50  [CODE]  PullXMLAttribute__FP8_xmlNodePCc  # beta-order (32 bytes, beta 32)
 0x00589B70  [CODE]  PullXMLAttributeLong__FP8_xmlNodePCc  # beta-export
 0x00589BC0  [CODE]  PullXMLAttributeFloat__FP8_xmlNodePCc  # beta-export
 0x00589C20  [CODE]  PullXMLAttributeBool__FP8_xmlNodePCc  # beta-export
@@ -1796,7 +1796,7 @@
 0x005DC698  [CODE]  Initialize__4VUrl  # beta-export
 0x005DC720  [CODE]  SetUrlListener__4VUrlP13VIUrlListener  # old:PatcherAPI::called_005DC720; beta-export
 0x005DC728  [CODE]  SetPort__4VUrli  # beta-export
-0x005DC730  [CODE]  func_005DC730  # old:PatcherAPI::called_005DC730
+0x005DC730  [CODE]  GetError__4VUrl  # beta-order (8 bytes, beta 8); old:PatcherAPI::called_005DC730
 0x005DC738  [CODE]  GetErrorString__4VUrl  # old:PatcherAPI::called_005DC738; beta-export
 0x005DC740  [CODE]  SetThreadPriority__4VUrli  # beta-export
 0x005DC748  [CODE]  SetProtocol__4VUrli  # beta-export
@@ -1804,8 +1804,8 @@
 0x005DC820  [CODE]  SetRelativePath__4VUrlPCc  # beta-export
 0x005DC898  [CODE]  ParseURL__4VUrlPCc  # beta-export
 0x005DCAA0  [CODE]  OpenSocket__4VUrl  # beta-export
-0x005DCBB8  [CODE]  func_005DCBB8  # old:setup_Content_Length
-0x005DCFC0  [CODE]  func_005DCFC0  # old:setup_Content_Length
+0x005DCBB8  [CODE]  Get__4VUrlPci  # beta-order (1032 bytes, beta 1064; retail splits a second function off after it); old:setup_Content_Length
+0x005DCFC0  [CODE]  GetPoll__4VUrlPci  # ours: Frontiers-only, unnamed in every build (STATION 0x002DD248); old:setup_Content_Length
 0x005DD498  [CODE]  Mkdirhier__4VUrlPCc  # beta-export
 0x005DD590  [CODE]  OpenMemCardFile__4VUrlPCc  # beta-export
 0x005DD618  [CODE]  CloseMemCardFile__4VUrl  # beta-export
@@ -2000,10 +2000,10 @@
 0x005E49F8  [LIB]  func_005E49F8
 0x005E4A14  [LIB]  func_005E4A14
 0x005E4A38  [END]  setup_code_end
-0x005E4AC0  [DATA]  data_005E4AC0
-0x005E4AC4  [DATA]  data_005E4AC4
-0x005E4AC8  [DATA]  data_005E4AC8
-0x005E4B00  [DATA]  data_005E4B00
+0x005E4AC0  [DATA]  visetup:sPad
+0x005E4AC4  [DATA]  visetup:sKeyboard
+0x005E4AC8  [DATA]  sTickPct
+0x005E4B00  [DATA]  sNetStatus
 0x005E4C40  [DATA]  data_005E4C40
 0x005E4C60  [DATA]  data_005E4C60
 0x005E4C64  [DATA]  data_005E4C64
@@ -2024,7 +2024,7 @@
 0x005E4CBD  [DATA]  data_005E4CBD
 0x005E4CC0  [DATA]  data_005E4CC0
 0x005E4CC4  [DATA]  data_005E4CC4
-0x005E4CC8  [DATA]  data_005E4CC8
+0x005E4CC8  [DATA]  gPatcherCancel  # ours: PatcherAPI_Impl::Cancel sets it, the downloaders poll it
 0x005E4CD0  [DATA]  data_005E4CD0
 0x005E4CD4  [DATA]  data_005E4CD4
 0x005E4CD8  [DATA]  data_005E4CD8
@@ -2302,7 +2302,7 @@
 0x005E96D0  [DATA]  data_005E96D0
 0x005E96D8  [DATA]  data_005E96D8
 0x005E96E0  [DATA]  data_005E96E0
-0x005E9760  [DATA]  data_005E9760
+0x005E9760  [DATA]  _vt$9VIWndDnas
 0x005E97A0  [DATA]  data_005E97A0
 0x005E9A38  [DATA]  data_005E9A38
 0x005E9A48  [DATA]  data_005E9A48
@@ -2341,7 +2341,7 @@
 0x005E9FE8  [DATA]  data_005E9FE8
 0x005E9FF0  [DATA]  data_005E9FF0
 0x005EA000  [DATA]  data_005EA000
-0x005EA018  [DATA]  data_005EA018
+0x005EA018  [DATA]  _vt$12VIWndOptions
 0x005EA058  [DATA]  data_005EA058
 0x005EA088  [DATA]  data_005EA088
 0x005EA090  [DATA]  data_005EA090
@@ -4717,8 +4717,8 @@
 0x005F9C38  [DATA]  data_005F9C38
 0x005F9C40  [DATA]  data_005F9C40
 0x005F9C48  [DATA]  data_005F9C48
-0x005F9D20  [DATA]  data_005F9D20
-0x005F9D60  [DATA]  data_005F9D60
+0x005F9D20  [DATA]  sIrx
+0x005F9D60  [DATA]  sTickTime
 0x005F9D70  [DATA]  data_005F9D70
 0x005F9D90  [DATA]  data_005F9D90
 0x005F9DC0  [DATA]  data_005F9DC0
@@ -4759,13 +4759,13 @@
 0x005FA19C  [DATA]  data_005FA19C
 0x005FA1C0  [DATA]  data_005FA1C0
 0x005FA1D0  [DATA]  data_005FA1D0
-0x005FA300  [DATA]  data_005FA300
-0x005FA328  [DATA]  data_005FA328
-0x005FA330  [DATA]  data_005FA330
-0x005FA338  [DATA]  data_005FA338
-0x005FA340  [DATA]  data_005FA340
-0x005FA348  [DATA]  data_005FA348
-0x005FA380  [DATA]  data_005FA380
+0x005FA300  [DATA]  sTracks
+0x005FA328  [DATA]  sOutput
+0x005FA330  [DATA]  viwndoptions:sKeyboard
+0x005FA338  [DATA]  sOnOff
+0x005FA340  [DATA]  sCamera
+0x005FA348  [DATA]  sPitch
+0x005FA380  [DATA]  sList  # ours: viwndsplash.cpp's ezNetCnf combination list (ScanNetworkConfigurations)
 0x005FA7C0  [DATA]  data_005FA7C0
 0x005FA7C4  [DATA]  data_005FA7C4
 0x005FA7C8  [DATA]  data_005FA7C8
@@ -4783,19 +4783,19 @@
 0x005FBD58  [DATA]  data_005FBD58
 0x005FBD70  [DATA]  data_005FBD70
 0x005FBD80  [DATA]  data_005FBD80
-0x005FBD90  [DATA]  data_005FBD90
+0x005FBD90  [DATA]  __ti9VIWndBeta
 0x005FBDA0  [DATA]  data_005FBDA0
 0x005FBDB0  [DATA]  data_005FBDB0
-0x005FBDC0  [DATA]  data_005FBDC0
+0x005FBDC0  [DATA]  __ti9VIWndDnas
 0x005FBDD0  [DATA]  data_005FBDD0
 0x005FBDE0  [DATA]  data_005FBDE0
 0x005FBDF0  [DATA]  data_005FBDF0
-0x005FBE00  [DATA]  data_005FBE00
-0x005FBE10  [DATA]  data_005FBE10
+0x005FBE00  [DATA]  __ti12VIWndMessage
+0x005FBE10  [DATA]  __ti12VIWndOptions
 0x005FBE20  [DATA]  data_005FBE20
 0x005FBE30  [DATA]  data_005FBE30
-0x005FBE40  [DATA]  data_005FBE40
-0x005FBE50  [DATA]  data_005FBE50
+0x005FBE40  [DATA]  __ti16VIWndReadMessage
+0x005FBE50  [DATA]  __ti11VIWndSplash
 0x005FBE60  [DATA]  data_005FBE60
 0x005FBE70  [DATA]  data_005FBE70
 0x005FBE80  [DATA]  data_005FBE80

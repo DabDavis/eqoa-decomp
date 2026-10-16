@@ -1,5 +1,8 @@
 #ifndef _CTYPE_H
 #define _CTYPE_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* newlib's: the table is indexed at +1 (EOF), and toupper is the GNU
    statement-expression macro -- the image reads `_ctype_+0x1`. */
 #define _U 01
@@ -24,4 +27,7 @@ extern const char _ctype_[];
 #define iscntrl(c)  ((_ctype_+1)[(unsigned)(c)]&_C)
 #define toupper(c) __extension__ ({ int __x = (c); islower(__x) ? (__x - 'a' + 'A') : __x; })
 #define tolower(c) __extension__ ({ int __x = (c); isupper(__x) ? (__x - 'A' + 'a') : __x; })
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -237,7 +237,7 @@ const unsigned short *VIUIWindow::T(unsigned short id)
     return (const unsigned short *)m_ui->m_words.GetString(id, m_ui->m_language);
 }
 
-int VIUIWindow::Text(const unsigned short *s, int x, int y,
+void VIUIWindow::Text(const unsigned short *s, int x, int y,
                      const VIColor32F &c, unsigned int f)
 {
     VIVect2I at = RowCenter(y);
@@ -249,10 +249,10 @@ int VIUIWindow::Text(const unsigned short *s, int x, int y,
     TextBox(s, x, y, 640, 1, c, f);     // no `return` (see VIString::vsnprintf16)
 }
 
-int VIUIWindow::Text(const unsigned short *s, int x, int y, VIUICOLOR c,
+void VIUIWindow::Text(const unsigned short *s, int x, int y, VIUICOLOR c,
                      unsigned int f)
 {
-    return Text(s, x, y, m_colors[c], f);
+    Text(s, x, y, m_colors[c], f);
 }
 
 // Phase 61.  Word-wrapped text in a block of rows: a NEWLINE ends a line,

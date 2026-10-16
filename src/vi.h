@@ -6227,20 +6227,24 @@ public:
     void SetHomeShardName(const unsigned short *s);
 
     int            m_flags;             // 0x000
-    unsigned char  m_language;          // 0x004: CLIENT ApplyOptions hands it to VIBattleMusic::Preload (lbu); the name is doubtful
-    char           m_x05;               // 0x005
-    unsigned char  m_x06;               // 0x006: CLIENT ToggleCameraStyle reads it with lbu
-    char           m_x07;               // 0x007
-    float          m_musicVolume;       // 0x008
-    float          m_effectVolume;      // 0x00C
+    // SETUP's Options window (viwndoptions.cpp) names each setting by its
+    // WORDS.TXT label, and fixes the signedness of the bytes it tests.
+    unsigned char  m_language;          // 0x004: the BATTLE MUSIC track (Options: None, Song 1..8, Random), not a language
+    unsigned char  m_x05;               // 0x005: Sound Output, 1 = Stereo (SetOutputMode)
+    unsigned char  m_x06;               // 0x006: CLIENT ToggleCameraStyle reads it with lbu; 3rd Person Camera, 1 = Follow
+    unsigned char  m_x07;               // 0x007: Camera Pitch Axis, 1 = Inverted
+    float          m_musicVolume;       // 0x008: Options calls this Fx Volume and sets sound class 0 (SFX) from it
+    float          m_effectVolume;      // 0x00C: Options calls this Music Volume and sets class 1 (MUSIC) from it
     char           m_username[64];      // 0x010
     char           m_password[64];      // 0x050
-    char           m_x90[2];            // 0x090
-    unsigned char  m_x92;               // 0x092: CLIENT's DamageFromSelf shows no damage of one's own while it is set
-    char           m_x93[2];            // 0x093
-    unsigned char  m_x95;               // 0x095: CLIENT's MaybeStopAutoAttack leaves auto-attack on while it is set
+    char           m_x90;               // 0x090
+    unsigned char  m_x91;               // 0x091: Soft Keyboard, 1 = Compact
+    unsigned char  m_x92;               // 0x092: CLIENT's DamageFromSelf shows no damage of one's own while it is set; Options shows !m_x92 as Damage Numbers
+    unsigned char  m_x93;               // 0x093: Faction Messages OFF while set
+    unsigned char  m_x94;               // 0x094: Loot Messages OFF while set
+    unsigned char  m_x95;               // 0x095: CLIENT's MaybeStopAutoAttack leaves auto-attack on while it is set; Options' Auto Attack
     unsigned char  m_region;            // 0x096
-    unsigned char  m_x97;               // 0x097: CLIENT's Rumble vibrates only while it is set (lbu)
+    unsigned char  m_x97;               // 0x097: CLIENT's Rumble vibrates only while it is set (lbu); Options' Vibration
     unsigned short m_homeShard[64];     // 0x098
     char           m_pad[740];          // 0x118
     int            m_magic;             // 0x3FC
@@ -7865,9 +7869,9 @@ public:
     const unsigned short *T(const unsigned short *s);
     const unsigned short *T(unsigned short id);
 
-    int Text(const unsigned short *s, int x, int y, const VIColor32F &c,
+    void Text(const unsigned short *s, int x, int y, const VIColor32F &c,
              unsigned int f);
-    int Text(const unsigned short *s, int x, int y, VIUICOLOR c,
+    void Text(const unsigned short *s, int x, int y, VIUICOLOR c,
              unsigned int f);
     int TextBox(const unsigned short *s, int x, int y, int w, int h,
                 const VIColor32F &c, unsigned int f);

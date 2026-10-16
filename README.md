@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **953 of 1,805**, its whole libxml2 2.3.6 block)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **1,654 of 1,805**: its whole libxml2 2.3.6 block, 454 of the 462 patcher functions and 247 of the 251 screens)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -30,7 +30,7 @@ decomp goes ahead.
 | `_q.py` | one TU, named symbols, 4.5 s — for sweeping source variants |
 | `_tu.py` | one TU, EVERY function in it, plus regressions against `MATCHED.txt` |
 | `_perm.py` | permute a run of source lines, rebuild one TU, score one symbol |
-| `_lane.py` | isolated copies of `src/` + `build/`, so several functions are ground at once |
+| `_lane.py` | isolated copies of `src/` + `build/`, so several functions are ground at once; with `EQMODULE` set, also that module's `src/` and `symbols.txt` (merged per address) |
 | `eqperm.py` | **the permuter**: random source rewrites of one open function, built and scored ~25/s on 7 cores, unattended; `reduce` strips a find back to the hunks it needs (singly, then in pairs and adjacent runs, since an added `{`/`}` pair is two or three hunks that build only together); `--alloc W` adds the ALLOCATION-ORDER term: priority gaps, read from the candidate's own `-dl`/`-dg` dumps, of the call-crossing pseudos the target allocated in the other order -- a gradient through ties the byte score cannot see; `--length W` penalises a different instruction count, because the alignment grade can prefer a SHORTER function that aligns well; `--anchor N` workers never drift from the start text; `batch LIST` runs a list of searches back to back, then reduces every run's best find several at once and writes one summary table, for an unattended night (needs `pip install tree-sitter tree-sitter-cpp`; `claude-notes/decomp-eqperm-textbox-20261015.md`) |
 | `eqperm_mut.py` | its mutations, on tree-sitter's C++ syntax tree: statement order, temporaries and named references, declaration position and scope, if/else polarity, operand order, `+=` forms, `&a[i]` vs `a + i` |
 | `eqmodule.py` | the modules that do not name their own functions (MCERR first): `seed` sweeps the image into a symbol map for the repository, `status` counts named and byte-exact, `imports` lists the import table, `sweepcheck` holds the sweep against SUPPORT's real map. See "Other modules" below |
@@ -85,7 +85,7 @@ SUPPORT is one of five EE modules, and the only one that names its own functions
 | SUPPORT | 887 KB | 4,376 | 4,102 | the engine (the count includes the unnamed statics and per-TU template copies) |
 | CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat |
 | STATION | 587 KB | 2,339 | 1 (`station_main`) | login, server select, character creation |
-| SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA: **953 byte-exact**, all of libxml2 2.3.6 (2026-10-16) |
+| SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA: **1,654 byte-exact**: all of libxml2 2.3.6, the Verant patcher 454 of 462, and the screens 247 of 251 (2026-10-16) |
 | MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key: **44 of 44 byte-exact** (2026-10-16) |
 
 All five share SUPPORT's build: no `$gp`, `sq ra` saves. Each ends in the same runtime
@@ -6669,4 +6669,70 @@ applies `eqoa.patch`. The patch, the PS2 `config.h` and the libc stubs are ours.
 
 SUPPORT, CLIENT and MCERR are unchanged by it: test_eqdecomp passes 48/48, and
 SUPPORT's callee and data-reference reports are byte-identical to the kit's.
+
+## SETUP (2026-10-16): the Verant patcher, 454 of 462
+
+The patcher block, 462 functions in 20 TUs (`modules/setup/src/`, classes in
+`patcher.h`), is all written and 454 of them are byte-exact. SETUP is now
+**1,407 of 1,805**. The 390 screen functions are what remain.
+
+- `eqcallcheck`: 6,328 call sites, 0 mismatched.
+- `eqrefcheck`: 0 findings in 1,405 functions.
+
+The code is a Win32 port: POSIX stubs, `Sleep` = `SleepThread`, a `uthread_*`
+shim, and 64-bit `long` sizes everywhere. It includes:
+- the delta coder: a sorted 16-byte-key index, file-static quicksort cursors
+  and a binary search that walks back;
+- `VUrl`, 1,128 bytes and shared with STATION;
+- `GetPoll`, a resumable Get that only Frontiers has.
+
+The eight open functions are allocation and scheduling ties, tabled in
+`claude-notes/decomp-setup-patcher-20261016.md` with the levers. Four are
+general:
+- a parameter whose only trace is an entry store ABOVE the locals had its
+  address taken and the use folded away;
+- spill-slot order is declaration order;
+- a call in an argument list precomputes every argument;
+- a `move` right after a load whose copy lives long is a GCSE reaching
+  register, meaning the source reloads.
+
+**Header fix:** the `PatcherAPI` forwarders' return types must equal the
+`_Impl`'s (`short GetVersion`, `char *GetLocal`, `long GetEstimate`). A
+mismatch fails to compile under g++ 2.95, and a later `_Impl` change had
+silently broken `patcherapi.cpp`; the full `eqcheck` run caught it. Run the
+whole module after any `patcher.h` change.
+
+## SETUP (2026-10-16): the screens, 247 of 251
+
+The last block, `VISetup` and its windows (`0x00566C00 .. 0x0057CDD8`), is written in
+18 TUs with every class in `modules/setup/src/setup.h`; 247 of its 251 functions are
+byte-exact. **SETUP is 1,654 of 1,805**, 450,284 of its 483,568 bytes. The rest is
+12 ties (8 patcher, 4 screens) and dead template copies, which `eqcheck` counts as
+129 verified duplicates.
+
+- `eqcallcheck`: 7,855 call sites, 0 mismatched.
+- `eqrefcheck`: 5,541 data references, 0 findings.
+
+**How it was split.** The TU boundaries come from each class's template copies and
+`__tf`. The method names are the 2002 betas', slot by slot. Eight lanes worked in
+parallel, one class group each. `_lane.py` now carries a module (set `EQMODULE`):
+it copies `modules/<m>/src` and `symbols.txt`, and merges `symbols.txt` per address.
+
+**Two `vi.h` changes** were re-scored on SUPPORT (3,665), CLIENT (1,128) and MCERR
+(44/44) with no regression:
+- `VIUIWindow::Text` returns `void`;
+- `VIGameOptions`' option bytes are `unsigned char`, with the settings named in
+  comments.
+
+**Levers** (long form in `claude-notes/decomp-setup-screens-20261016.md`):
+- `do { if (ok) break; … } while (1)` keeps a retry loop's test at the top; `for (;;)`
+  and `while` come out rotated.
+- loop.c moves a loop's exit block back from the return label to the nearest barrier
+  at the target's loop depth. A trailing `fail:` therefore drags every inner `return`
+  block to the end.
+- An `if (r == 3) return -1;` that shares the function's one `return 0` keeps its
+  branch, where jump.c would otherwise make a `movn`.
+- `*(long long *)&a = *(long long *)&b` is a quadword `lq`/`sq` copy.
+- One shared loop counter, and calls written in each arm rather than through a
+  pointer variable, decided two large functions' allocation.
 

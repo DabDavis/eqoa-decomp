@@ -109,7 +109,7 @@ def source_path(stem: str) -> Path:
 
 
 def _module_cflags() -> list[str]:
-    """Extra flags for the module's C sources, from `SRC/cflags.txt` (one or more
+    """Extra flags for every TU of a module, from `SRC/cflags.txt` (one or more
     per line, `#` comments allowed; an `-I` path is relative to SRC)."""
     f = SRC / "cflags.txt"
     if not f.exists():
@@ -127,10 +127,9 @@ def compile_cmd(stem: str, tc: str | None = None, flags: list[str] | None = None
         tc, flags = TU_OVERRIDE[stem]
     cmd = driver(tc or TOOLCHAIN) + ["-S"] + list(FLAGS if flags is None else flags)
     if E.MODULE != "SUPPORT":
-        if source_path(stem).suffix == ".c":
-            # a C source brings its own headers first (SETUP's libxml: the PS2
-            # build's config.h and the libc it compiled against)
-            cmd += _module_cflags()
+        # the module's own include path comes first (SETUP: the PS2 build's
+        # libc and libxml's headers, for its C and its C++ alike)
+        cmd += _module_cflags()
         # another module's classes derive from SUPPORT's (VIWnd, VIUIWindow), so
         # its TUs include SUPPORT's headers
         cmd.append("-I" + str(HERE / "src"))

@@ -680,6 +680,9 @@ def _includes() -> list[str]:
     (the same path `eqcheck.compile_cmd` gives the compiler)."""
     inc = ["-I", str(C.SRC)]
     if E.MODULE != "SUPPORT":
+        # the module's own cflags.txt include path (SETUP: its libc and libxml
+        # headers) comes first, as in eqcheck.compile_cmd
+        inc += C._module_cflags()
         inc += ["-I", str(C.HERE / "src")]
     return inc
 
