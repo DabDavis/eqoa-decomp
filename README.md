@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16)
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **13 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **953 of 1,805**, its whole libxml2 2.3.6 block)
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -85,7 +85,7 @@ SUPPORT is one of five EE modules, and the only one that names its own functions
 | SUPPORT | 887 KB | 4,376 | 4,102 | the engine (the count includes the unnamed statics and per-TU template copies) |
 | CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat |
 | STATION | 587 KB | 2,339 | 1 (`station_main`) | login, server select, character creation |
-| SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA |
+| SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA: **953 byte-exact**, all of libxml2 2.3.6 (2026-10-16) |
 | MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key: **44 of 44 byte-exact** (2026-10-16) |
 
 All five share SUPPORT's build: no `$gp`, `sq ra` saves. Each ends in the same runtime
@@ -6637,4 +6637,36 @@ Five of the facts it fixed are SUPPORT's, in `vi.h`:
 **Check:** every SUPPORT and CLIENT TU was compiled against the old and the new
 headers. Only `viwnd.s` differs, and it is still 18/18. SUPPORT's callee and
 data-reference reports are byte-identical to the kit's `ref_*.txt`.
+
+## SETUP (2026-10-16): libxml2 2.3.6, 953 of 953 from upstream source
+
+71% of SETUP is libxml2 2.3.6 (`xmlParserVersion` "20306"), built in the game's
+tree as `C:/code-frontiers-gm/Patcher/libxml/`. The release source, compiled
+with this harness's settled toolchain, matches every function of that block:
+- 594 that the beta transfer named, and 359 statics named here by their
+  position between those;
+- `eqcallcheck -a`: 4,966 call sites, 0 mismatched;
+- `eqrefcheck -a`: 0 findings.
+
+**What closed it was the PS2 build's configuration, read off the image.** A
+summary is below; each row's evidence is in `modules/setup/README.md` and
+`claude-notes/decomp-setup-libxml-20261016.md`.
+- no `HAVE_STDLIB_H`, `HAVE_ZLIB_H` or `HAVE_FLOAT_H`;
+- `HUGE_VAL` is `__infinity[0].d`;
+- `snprintf` → `sprintf`;
+- no-op `read`/`write`/`close`;
+- `testXPath.c` is linked, and its `main` is the module's;
+- three small source edits.
+
+**The upstream files are not in this repository.**
+`modules/setup/libxml/fetch.py` downloads the release (SHA-256 pinned) and
+applies `eqoa.patch`. The patch, the PS2 `config.h` and the libc stubs are ours.
+
+**Harness:** C sources are first-class.
+- `eqcheck.sources()` builds `*.c`, one directory deep.
+- A module's `src/cflags.txt` adds flags for its C sources.
+- A static that two TUs both define is mapped `<tu>:<name>`.
+
+SUPPORT, CLIENT and MCERR are unchanged by it: test_eqdecomp passes 48/48, and
+SUPPORT's callee and data-reference reports are byte-identical to the kit's.
 

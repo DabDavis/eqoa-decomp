@@ -1,0 +1,105 @@
+--- a/encoding.c
++++ b/encoding.c
+@@ -1,3 +1,4 @@
++#line 1 "C:/code-frontiers-gm/Patcher/libxml/encoding.c"
+ /*
+  * encoding.c : implements the encoding conversion functions needed for XML
+  *
+--- a/include/libxml/xmlversion.h
++++ b/include/libxml/xmlversion.h
+@@ -35,7 +35,7 @@
+ /*
+  * Whether the FTP support is configured in
+  */
+-#if 1
++#if 0
+ #define LIBXML_FTP_ENABLED
+ #else
+ #define LIBXML_FTP_DISABLED
+@@ -44,7 +44,7 @@
+ /*
+  * Whether the HTTP support is configured in
+  */
+-#if 1
++#if 0
+ #define LIBXML_HTTP_ENABLED
+ #else
+ #define LIBXML_HTTP_DISABLED
+@@ -99,7 +99,7 @@
+  * Whether iconv support is available
+  */
+ #ifndef WIN32
+-#if 1
++#if 0
+ #define LIBXML_ICONV_ENABLED
+ #else
+ #define LIBXML_ICONV_DISABLED
+@@ -131,7 +131,6 @@
+ #endif
+ 
+ #ifdef __GNUC__
+-#include <ansidecl.h>
+ #ifndef ATTRIBUTE_UNUSED
+ #define ATTRIBUTE_UNUSED
+ #endif
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -2120,7 +2120,7 @@
+ 
+     /* Allocate the Input stack */
+     ctxt->inputTab = (xmlParserInputPtr *)
+-	        xmlMalloc(5 * sizeof(xmlParserInputPtr));
++	        xmlMalloc(50 * sizeof(xmlParserInputPtr));	/* EQOA: 5 upstream; the image allocates 200 bytes, inputMax stays 5 */
+     if (ctxt->inputTab == NULL) {
+         xmlGenericError(xmlGenericErrorContext,
+ 		"xmlInitParserCtxt: out of memory\n");
+@@ -2182,7 +2182,7 @@
+     ctxt->name = NULL;
+ 
+     /* Allocate the space stack */
+-    ctxt->spaceTab = (int *) xmlMalloc(10 * sizeof(int));
++    ctxt->spaceTab = (int *) xmlMalloc(40 * sizeof(int));	/* EQOA: 10 upstream; the image allocates 160 bytes, spaceMax stays 10 */
+     if (ctxt->spaceTab == NULL) {
+         xmlGenericError(xmlGenericErrorContext,
+ 		"xmlInitParserCtxt: out of memory\n");
+--- a/xmlIO.c
++++ b/xmlIO.c
+@@ -1536,6 +1536,14 @@
+  *
+  * Returns a new allocated string containing the directory, or NULL.
+  */
++/* EQOA: no working directory on the PS2.  The image has this two-instruction
++ * function (`return buf`) between xmlOutputBufferFlush and here, and
++ * xmlParserGetDirectory calls it. */
++static char *
++getcwd(char *buf, int size) {
++    return(buf);
++}
++
+ char *
+ xmlParserGetDirectory(const char *filename) {
+     char *ret = NULL;
+--- a/xpath.c
++++ b/xpath.c
+@@ -1,3 +1,4 @@
++#line 1 "C:/code-frontiers-gm/Patcher/libxml/xpath.c"
+ /*
+  * xpath.c: XML Path Language implementation
+  *          XPath is a language for addressing parts of an XML document,
+@@ -23,6 +24,9 @@
+ #endif
+ 
+ #include <libxml/xmlversion.h>
++/* EQOA: the game's copy of this file is three lines longer above line 2680
++ * (every __LINE__ from there on reads 3 higher); their content is unknown and
++ * nothing before that line carries a line number, so they are placed here. */
+ #ifdef LIBXML_XPATH_ENABLED
+ 
+ #include <stdio.h>
+--- a/xpointer.c
++++ b/xpointer.c
+@@ -1,3 +1,4 @@
++#line 1 "C:/code-frontiers-gm/Patcher/libxml/xpointer.c"
+ /*
+  * xpointer.c : Code to handle XML Pointer
+  *

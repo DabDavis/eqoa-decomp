@@ -26,7 +26,7 @@ def main():
     before = set(C.obj_functions(o)) if o.exists() else set()
     for f in (o, asm):
         if f.exists(): f.unlink()
-    r = subprocess.run(C.compile_cmd(tu) + [str(C.SRC / (tu + ".cpp")), "-o", str(asm)],
+    r = subprocess.run(C.compile_cmd(tu) + [str(C.source_path(tu)), "-o", str(asm)],
                        capture_output=True, text=True, cwd=C.BUILD)
     if not asm.exists():
         print("BUILD FAILED (compile)\n" + r.stderr); return 2
@@ -42,7 +42,7 @@ def main():
     for n in C.obj_functions(o):
         if rx and not rx.search(n): continue
         k, w, t, res = C.score(st, img, o, n)
-        rows.append((k, w, t, n))
+        rows.append((k, w, t, C.map_name(st, o, n)))
     rows.sort(key=lambda x: (x[0] != "match", x[1], x[3]))
     ok = sum(1 for x in rows if x[0] == "match")
     for k, w, t, n in rows:

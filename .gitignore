@@ -5,3 +5,6 @@ build/
 tools/
 __pycache__/
 *.pyc
+# upstream libxml2 2.3.6, put in place by modules/setup/libxml/fetch.py
+modules/setup/src/libxml/*.c
+modules/setup/src/libxml/include/

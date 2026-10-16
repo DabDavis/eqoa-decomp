@@ -838,45 +838,45 @@
 0x00589CD0  [CODE]  PullXMLAttributeBool__FP8_xmlNodePCcb  # beta-export
 0x00589E10  [CODE]  PullDefinedXMLAttBool__FP8_xmlNodePCc  # beta-export
 0x00589F50  [CODE]  xmlDebugDumpString  # old:setup__NULL_; beta-export
-0x0058A070  [CODE]  func_0058A070  # old:PatcherDownloader::called_0058A070
-0x0058A280  [CODE]  func_0058A280  # old:PatcherDownloader::called_0058A280
-0x0058A6E0  [CODE]  func_0058A6E0  # old:setup_ELEMDECL_
-0x0058A9A8  [CODE]  func_0058A9A8  # old:setup_ENTITYDECL_
-0x0058AD08  [CODE]  func_0058AD08  # old:PatcherDownloader::called_0058AD08
-0x0058AE38  [CODE]  func_0058AE38  # old:PatcherDownloader::called_0058AE38
-0x0058AE98  [CODE]  func_0058AE98  # old:setup_content_
+0x0058A070  [CODE]  xmlDebugDumpDtdNode  # libxml2 2.3.6, matched by position
+0x0058A280  [CODE]  xmlDebugDumpAttrDecl  # libxml2 2.3.6, matched by position
+0x0058A6E0  [CODE]  xmlDebugDumpElemDecl  # libxml2 2.3.6, matched by position
+0x0058A9A8  [CODE]  xmlDebugDumpEntityDecl  # libxml2 2.3.6, matched by position
+0x0058AD08  [CODE]  xmlDebugDumpNamespace  # libxml2 2.3.6, matched by position
+0x0058AE38  [CODE]  xmlDebugDumpNamespaceList  # libxml2 2.3.6, matched by position
+0x0058AE98  [CODE]  xmlDebugDumpEntity  # libxml2 2.3.6, matched by position
 0x0058B0A8  [CODE]  xmlDebugDumpAttr  # old:PatcherDownloader::called_0058B0A8; beta-export
-0x0058B250  [CODE]  func_0058B250  # old:PatcherDownloader::called_0058B250
+0x0058B250  [CODE]  xmlDebugDumpAttrList  # libxml2 2.3.6, matched by position
 0x0058B2B0  [CODE]  xmlDebugDumpOneNode  # old:setup_content_; beta-export
 0x0058B830  [CODE]  xmlDebugDumpNode  # beta-export
-0x0058B890  [CODE]  func_0058B890
+0x0058B890  [CODE]  xmlDebugDumpNodeList  # libxml2 2.3.6, matched by position
 0x0058B8F0  [CODE]  xmlDebugDumpDocumentHead  # old:setup_version_; beta-export
 0x0058BBB8  [CODE]  xmlDebugDumpDocument  # beta-export
 0x0058BC48  [CODE]  xmlDebugDumpDTD  # beta-export
-0x0058BDF0  [CODE]  func_0058BDF0
+0x0058BDF0  [CODE]  xmlDebugDumpEntityCallback  # libxml2 2.3.6, matched by position
 0x0058BF58  [CODE]  xmlDebugDumpEntities  # beta-export
-0x0058C1D0  [CODE]  func_0058C1D0  # old:PatcherDownloader::called_0058C1D0
+0x0058C1D0  [CODE]  xmlLsCountNode  # libxml2 2.3.6, matched by position
 0x0058C278  [CODE]  xmlLsOneNode  # old:PatcherDownloader::called_0058C278; beta-export
-0x0058C518  [CODE]  func_0058C518  # old:PatcherDownloader::called_0058C518
-0x0058C5B0  [CODE]  func_0058C5B0  # old:PatcherDownloader::called_0058C5B0
-0x0058C630  [CODE]  func_0058C630  # old:PatcherDownloader::called_0058C630
-0x0058C6D8  [CODE]  func_0058C6D8
-0x0058C7B8  [CODE]  func_0058C7B8  # old:PatcherDownloader::method_0058C7B8
-0x0058C8E8  [CODE]  func_0058C8E8  # old:PatcherDownloader::method_0058C8E8
-0x0058C9B8  [CODE]  func_0058C9B8
-0x0058CA68  [CODE]  func_0058CA68
-0x0058CC00  [CODE]  func_0058CC00
+0x0058C518  [CODE]  xmlShellList  # libxml2 2.3.6, matched by position
+0x0058C5B0  [CODE]  xmlShellDir  # libxml2 2.3.6, matched by position
+0x0058C630  [CODE]  xmlShellCat  # libxml2 2.3.6, matched by position
+0x0058C6D8  [CODE]  xmlShellLoad  # libxml2 2.3.6, matched by position
+0x0058C7B8  [CODE]  xmlShellWrite  # libxml2 2.3.6, matched by position
+0x0058C8E8  [CODE]  xmlShellSave  # libxml2 2.3.6, matched by position
+0x0058C9B8  [CODE]  xmlShellValidate  # libxml2 2.3.6, matched by position
+0x0058CA68  [CODE]  xmlShellDu  # libxml2 2.3.6, matched by position
+0x0058CC00  [CODE]  xmlShellPwd  # libxml2 2.3.6, matched by position
 0x0058CDB8  [CODE]  xmlShell  # old:setup_validate; beta-export
-0x0058D890  [CODE]  func_0058D890
+0x0058D890  [CODE]  xmlGetUTF8Char  # libxml2 2.3.6, matched by position
 0x0058D9E8  [CODE]  xmlCheckUTF8  # beta-export
-0x0058DA88  [CODE]  func_0058DA88
-0x0058DB48  [CODE]  func_0058DB48
+0x0058DA88  [CODE]  asciiToUTF8  # libxml2 2.3.6, matched by position
+0x0058DB48  [CODE]  UTF8Toascii  # libxml2 2.3.6, matched by position
 0x0058DCA0  [CODE]  isolat1ToUTF8  # beta-export
 0x0058DD78  [CODE]  UTF8Toisolat1  # beta-export
-0x0058DEC0  [CODE]  func_0058DEC0
-0x0058E090  [CODE]  func_0058E090
-0x0058E2E0  [CODE]  func_0058E2E0
-0x0058E4A8  [CODE]  func_0058E4A8
+0x0058DEC0  [CODE]  UTF16LEToUTF8  # libxml2 2.3.6, matched by position
+0x0058E090  [CODE]  UTF8ToUTF16LE  # libxml2 2.3.6, matched by position
+0x0058E2E0  [CODE]  UTF16BEToUTF8  # libxml2 2.3.6, matched by position
+0x0058E4A8  [CODE]  UTF8ToUTF16BE  # libxml2 2.3.6, matched by position
 0x0058E6F8  [CODE]  xmlDetectCharEncoding  # beta-export
 0x0058E8D0  [CODE]  xmlCleanupEncodingAliases  # beta-export
 0x0058E9A0  [CODE]  xmlGetEncodingAlias  # old:PatcherDownloader::called_0058E9A0; beta-export
@@ -884,7 +884,7 @@
 0x0058EC78  [CODE]  xmlDelEncodingAlias  # beta-export
 0x0058ED80  [CODE]  xmlParseCharEncoding  # old:setup_UTF_16; beta-export
 0x0058F0A8  [CODE]  xmlGetCharEncodingName  # old:setup_UTF_16; beta-export
-0x0058F1B0  [CODE]  func_0058F1B0
+0x0058F1B0  [CODE]  xmlNewCharEncodingHandler  # libxml2 2.3.6, matched by position
 0x0058F2D8  [CODE]  xmlInitCharEncodingHandlers  # old:setup_UTF_16LE; beta-export
 0x0058F448  [CODE]  xmlCleanupCharEncodingHandlers  # beta-export
 0x0058F530  [CODE]  xmlRegisterCharEncodingHandler  # beta-export
@@ -894,44 +894,44 @@
 0x0058FAD0  [CODE]  xmlCharEncInFunc  # beta-export
 0x0058FC30  [CODE]  xmlCharEncOutFunc  # beta-export
 0x0058FE78  [CODE]  xmlCharEncCloseFunc  # beta-export
-0x0058FE98  [CODE]  func_0058FE98  # old:PatcherDownloader::called_0058FE98
-0x0058FF60  [CODE]  func_0058FF60
+0x0058FE98  [CODE]  xmlFreeEntity  # libxml2 2.3.6, matched by position
+0x0058FF60  [CODE]  xmlAddEntity  # libxml2 2.3.6, matched by position
 0x00590138  [CODE]  xmlInitializePredefinedEntities  # beta-export
 0x00590260  [CODE]  xmlCleanupPredefinedEntities  # beta-export
 0x00590298  [CODE]  xmlGetPredefinedEntity  # beta-export
 0x005902E0  [CODE]  xmlAddDtdEntity  # beta-export
 0x00590398  [CODE]  xmlAddDocEntity  # beta-export
-0x00590450  [CODE]  func_00590450
+0x00590450  [CODE]  xmlGetEntityFromTable  # libxml2 2.3.6, matched by position
 0x00590470  [CODE]  xmlGetParameterEntity  # beta-export
 0x005904E8  [CODE]  xmlGetDtdEntity  # beta-export
 0x00590528  [CODE]  xmlGetDocEntity  # beta-export
-0x005905D0  [CODE]  func_005905D0
+0x005905D0  [CODE]  growBuffer  # libxml2 2.3.6, matched by position
 0x00590630  [CODE]  xmlEncodeEntities  # beta-export
 0x005909E0  [CODE]  xmlEncodeEntitiesReentrant  # old:setup_ISO_8859_1; beta-export
 0x00590ED8  [CODE]  xmlEncodeSpecialChars  # beta-export
-0x005910B0  [CODE]  func_005910B0
-0x005910D0  [CODE]  func_005910D0
-0x005910F0  [CODE]  func_005910F0
-0x005911F0  [CODE]  func_005911F0
+0x005910B0  [CODE]  xmlCreateEntitiesTable  # libxml2 2.3.6, matched by position
+0x005910D0  [CODE]  xmlFreeEntitiesTable  # libxml2 2.3.6, matched by position
+0x005910F0  [CODE]  xmlCopyEntity  # libxml2 2.3.6, matched by position
+0x005911F0  [CODE]  xmlCopyEntitiesTable  # libxml2 2.3.6, matched by position
 0x00591210  [CODE]  xmlDumpEntityDecl  # beta-export
-0x00591490  [CODE]  func_00591490
-0x005914B8  [CODE]  func_005914B8
+0x00591490  [CODE]  xmlDumpEntitiesTable  # libxml2 2.3.6, matched by position
+0x005914B8  [CODE]  xmlGenericErrorDefaultFunc  # libxml2 2.3.6, matched by position
 0x00591520  [CODE]  xmlSetGenericErrorFunc  # beta-export
 0x00591550  [CODE]  xmlParserPrintFileInfo  # beta-export
 0x005915B8  [CODE]  xmlParserPrintFileContext  # beta-export
-0x005917F8  [CODE]  func_005917F8
-0x005918D8  [CODE]  func_005918D8
-0x00591A28  [CODE]  func_00591A28
-0x00591B78  [CODE]  func_00591B78
-0x00591C80  [CODE]  func_00591C80
-0x00591D88  [CODE]  func_00591D88
+0x005917F8  [CODE]  xmlGetVarStr  # libxml2 2.3.6, matched by position
+0x005918D8  [CODE]  xmlParserError  # libxml2 2.3.6, matched by position
+0x00591A28  [CODE]  xmlParserWarning  # libxml2 2.3.6, matched by position
+0x00591B78  [CODE]  xmlParserValidityError  # libxml2 2.3.6, matched by position
+0x00591C80  [CODE]  xmlParserValidityWarning  # libxml2 2.3.6, matched by position
+0x00591D88  [CODE]  xmlHashComputeKey  # libxml2 2.3.6, matched by position
 0x00591DD8  [CODE]  xmlHashCreate  # beta-export
 0x00591E78  [CODE]  xmlHashFree  # beta-export
-0x00591FB8  [CODE]  func_00591FB8
-0x00591FE0  [CODE]  func_00591FE0
+0x00591FB8  [CODE]  xmlHashAddEntry  # libxml2 2.3.6, matched by position
+0x00591FE0  [CODE]  xmlHashAddEntry2  # libxml2 2.3.6, matched by position
 0x00592000  [CODE]  xmlHashUpdateEntry  # beta-export
 0x00592028  [CODE]  xmlHashUpdateEntry2  # beta-export
-0x00592050  [CODE]  func_00592050
+0x00592050  [CODE]  xmlHashLookup  # libxml2 2.3.6, matched by position
 0x00592070  [CODE]  xmlHashLookup2  # beta-export
 0x00592090  [CODE]  xmlHashAddEntry3  # beta-export
 0x00592248  [CODE]  xmlHashUpdateEntry3  # beta-export
@@ -940,100 +940,100 @@
 0x005925A8  [CODE]  xmlHashScan3  # beta-export
 0x005926E8  [CODE]  xmlHashCopy  # beta-export
 0x005927E0  [CODE]  xmlHashSize  # beta-export
-0x005927F8  [CODE]  func_005927F8
-0x00592820  [CODE]  func_00592820
+0x005927F8  [CODE]  xmlHashRemoveEntry  # libxml2 2.3.6, matched by position
+0x00592820  [CODE]  xmlHashRemoveEntry2  # libxml2 2.3.6, matched by position
 0x00592840  [CODE]  xmlHashRemoveEntry3  # beta-export
-0x005929D8  [CODE]  func_005929D8
-0x00592A88  [CODE]  func_00592A88
-0x00592AF0  [CODE]  func_00592AF0
-0x00592E00  [CODE]  func_00592E00
+0x005929D8  [CODE]  htmlnamePush  # libxml2 2.3.6, matched by position
+0x00592A88  [CODE]  htmlnamePop  # libxml2 2.3.6, matched by position
+0x00592AF0  [CODE]  htmlCurrentChar  # libxml2 2.3.6, matched by position
+0x00592E00  [CODE]  htmlSkipBlankChars  # libxml2 2.3.6, matched by position
 0x00592F40  [CODE]  htmlInitAutoClose  # beta-export
 0x00593018  [CODE]  htmlTagLookup  # beta-export
-0x00593080  [CODE]  func_00593080
-0x00593178  [CODE]  func_00593178
-0x00593298  [CODE]  func_00593298
+0x00593080  [CODE]  htmlCheckAutoClose  # libxml2 2.3.6, matched by position
+0x00593178  [CODE]  htmlAutoCloseOnClose  # libxml2 2.3.6, matched by position
+0x00593298  [CODE]  htmlAutoClose  # libxml2 2.3.6, matched by position
 0x00593420  [CODE]  htmlAutoCloseTag  # beta-export
 0x005934C0  [CODE]  htmlIsAutoClosed  # beta-export
-0x00593538  [CODE]  func_00593538  # old:setup_script
-0x005937E0  [CODE]  func_005937E0
+0x00593538  [CODE]  htmlCheckImplied  # libxml2 2.3.6, matched by position
+0x005937E0  [CODE]  htmlCheckParagraph  # libxml2 2.3.6, matched by position
 0x005938E0  [CODE]  htmlIsScriptAttribute  # beta-export
 0x00593978  [CODE]  htmlEntityLookup  # beta-export
-0x005939F0  [CODE]  func_005939F0
+0x005939F0  [CODE]  htmlEntityValueLookup  # libxml2 2.3.6, matched by position
 0x00593A58  [CODE]  UTF8ToHtml  # beta-export
 0x00593C80  [CODE]  htmlEncodeEntities  # beta-export
-0x00593ED8  [CODE]  func_00593ED8
-0x00593F30  [CODE]  func_00593F30
-0x00593FE8  [CODE]  func_00593FE8
+0x00593ED8  [CODE]  htmlDecodeEntities  # libxml2 2.3.6, matched by position
+0x00593F30  [CODE]  htmlNewInputStream  # libxml2 2.3.6, matched by position
+0x00593FE8  [CODE]  HTMLparser:areBlanks  # libxml2 2.3.6, matched by position
 0x00594168  [CODE]  htmlNewDocNoDtD  # beta-export
 0x00594250  [CODE]  htmlNewDoc  # beta-export
-0x00594288  [CODE]  func_00594288
-0x005943F8  [CODE]  func_005943F8
-0x00594660  [CODE]  func_00594660
+0x00594288  [CODE]  htmlParseHTMLName  # libxml2 2.3.6, matched by position
+0x005943F8  [CODE]  htmlParseName  # libxml2 2.3.6, matched by position
+0x00594660  [CODE]  htmlParseHTMLAttribute  # libxml2 2.3.6, matched by position
 0x00594AB8  [CODE]  htmlParseEntityRef  # beta-export
-0x00594BE8  [CODE]  func_00594BE8
-0x00594D50  [CODE]  func_00594D50
-0x00595018  [CODE]  func_00595018
-0x00595220  [CODE]  func_00595220
-0x005953C0  [CODE]  func_005953C0
-0x00595630  [CODE]  func_00595630
-0x005959D0  [CODE]  func_005959D0
+0x00594BE8  [CODE]  htmlParseAttValue  # libxml2 2.3.6, matched by position
+0x00594D50  [CODE]  htmlParseSystemLiteral  # libxml2 2.3.6, matched by position
+0x00595018  [CODE]  htmlParsePubidLiteral  # libxml2 2.3.6, matched by position
+0x00595220  [CODE]  htmlParseScript  # libxml2 2.3.6, matched by position
+0x005953C0  [CODE]  htmlParseCharData  # libxml2 2.3.6, matched by position
+0x00595630  [CODE]  htmlParseExternalID  # libxml2 2.3.6, matched by position
+0x005959D0  [CODE]  htmlParseComment  # libxml2 2.3.6, matched by position
 0x00595E98  [CODE]  htmlParseCharRef  # beta-export
-0x005961C0  [CODE]  func_005961C0
-0x00596338  [CODE]  func_00596338
-0x00596410  [CODE]  func_00596410  # old:setup_charset_
-0x005965F8  [CODE]  func_005965F8
-0x005966F8  [CODE]  func_005966F8
-0x00596DD0  [CODE]  func_00596DD0
-0x00597068  [CODE]  func_00597068
-0x00597350  [CODE]  func_00597350  # old:setup_script
+0x005961C0  [CODE]  htmlParseDocTypeDecl  # libxml2 2.3.6, matched by position
+0x00596338  [CODE]  htmlParseAttribute  # libxml2 2.3.6, matched by position
+0x00596410  [CODE]  htmlCheckEncoding  # libxml2 2.3.6, matched by position
+0x005965F8  [CODE]  htmlCheckMeta  # libxml2 2.3.6, matched by position
+0x005966F8  [CODE]  htmlParseStartTag  # libxml2 2.3.6, matched by position
+0x00596DD0  [CODE]  htmlParseEndTag  # libxml2 2.3.6, matched by position
+0x00597068  [CODE]  htmlParseReference  # libxml2 2.3.6, matched by position
+0x00597350  [CODE]  htmlParseContent  # libxml2 2.3.6, matched by position
 0x00597708  [CODE]  htmlParseElement  # beta-export
-0x00597AE0  [CODE]  func_00597AE0
-0x00597EA8  [CODE]  func_00597EA8
-0x00598150  [CODE]  func_00598150
-0x00598170  [CODE]  func_00598170  # old:setup_malloc
-0x00598240  [CODE]  func_00598240
-0x00598340  [CODE]  func_00598340  # old:setup_script
+0x00597AE0  [CODE]  htmlParseDocument  # libxml2 2.3.6, matched by position
+0x00597EA8  [CODE]  htmlInitParserCtxt  # libxml2 2.3.6, matched by position
+0x00598150  [CODE]  htmlFreeParserCtxt  # libxml2 2.3.6, matched by position
+0x00598170  [CODE]  htmlCreateDocParserCtxt  # libxml2 2.3.6, matched by position
+0x00598240  [CODE]  htmlParseLookupSequence  # libxml2 2.3.6, matched by position
+0x00598340  [CODE]  htmlParseTryOrFinish  # libxml2 2.3.6, matched by position
 0x00599498  [CODE]  htmlParseChunk  # beta-export
 0x00599640  [CODE]  htmlCreatePushParserCtxt  # beta-export
 0x005998D8  [CODE]  htmlSAXParseDoc  # beta-export
-0x00599960  [CODE]  func_00599960
+0x00599960  [CODE]  htmlParseDoc  # libxml2 2.3.6, matched by position
 0x00599980  [CODE]  htmlCreateFileParserCtxt  # old:setup_malloc; beta-export
 0x00599B40  [CODE]  htmlSAXParseFile  # beta-export
-0x00599BC8  [CODE]  func_00599BC8
-0x00599BE8  [CODE]  func_00599BE8
+0x00599BC8  [CODE]  htmlParseFile  # libxml2 2.3.6, matched by position
+0x00599BE8  [CODE]  htmlHandleOmittedElem  # libxml2 2.3.6, matched by position
 0x00599BF8  [CODE]  htmlGetMetaEncoding  # old:setup_Charset_; beta-export
 0x00599EE8  [CODE]  htmlSetMetaEncoding  # old:setup_content; beta-export
-0x0059A2B0  [CODE]  func_0059A2B0
-0x0059A3A8  [CODE]  func_0059A3A8
-0x0059A480  [CODE]  func_0059A480
-0x0059A500  [CODE]  func_0059A500
+0x0059A2B0  [CODE]  htmlDtdDump  # libxml2 2.3.6, matched by position
+0x0059A3A8  [CODE]  htmlAttrDump  # libxml2 2.3.6, matched by position
+0x0059A480  [CODE]  htmlAttrListDump  # libxml2 2.3.6, matched by position
+0x0059A500  [CODE]  htmlNodeListDump  # libxml2 2.3.6, matched by position
 0x0059A580  [CODE]  htmlNodeDump  # old:setup_textnoenc; beta-export
 0x0059A990  [CODE]  htmlNodeDumpFile  # old:PatcherDownloader::called_0059A990; beta-export
-0x0059AA00  [CODE]  func_0059AA00
+0x0059AA00  [CODE]  htmlDocContentDump  # libxml2 2.3.6, matched by position
 0x0059AA90  [CODE]  htmlDocDumpMemory  # beta-export
-0x0059AB20  [CODE]  func_0059AB20
-0x0059AC18  [CODE]  func_0059AC18
-0x0059ACF0  [CODE]  func_0059ACF0
-0x0059AD80  [CODE]  func_0059AD80
+0x0059AB20  [CODE]  htmlDtdDumpOutput  # libxml2 2.3.6, matched by position
+0x0059AC18  [CODE]  htmlAttrDumpOutput  # libxml2 2.3.6, matched by position
+0x0059ACF0  [CODE]  htmlAttrListDumpOutput  # libxml2 2.3.6, matched by position
+0x0059AD80  [CODE]  htmlNodeListDumpOutput  # libxml2 2.3.6, matched by position
 0x0059AE10  [CODE]  htmlNodeDumpOutput  # old:setup_textnoenc; beta-export
 0x0059B238  [CODE]  htmlDocContentDumpOutput  # old:PatcherDownloader::called_0059B238; beta-export
 0x0059B2C0  [CODE]  htmlDocDump  # old:PatcherDownloader::called_0059B2C0; beta-export
 0x0059B398  [CODE]  htmlSaveFile  # old:PatcherDownloader::method_0059B398; beta-export
 0x0059B470  [CODE]  htmlSaveFileEnc  # old:PatcherDownloader::method_0059B470; beta-export
-0x0059B580  [CODE]  func_0059B580
-0x0059B5E0  [CODE]  func_0059B5E0
-0x0059B600  [CODE]  func_0059B600
-0x0059B668  [CODE]  func_0059B668
-0x0059B6D0  [CODE]  func_0059B6D0
-0x0059B730  [CODE]  func_0059B730
+0x0059B580  [CODE]  xmlLinkDeallocator  # libxml2 2.3.6, matched by position
+0x0059B5E0  [CODE]  xmlLinkCompare  # libxml2 2.3.6, matched by position
+0x0059B600  [CODE]  xmlListLowerSearch  # libxml2 2.3.6, matched by position
+0x0059B668  [CODE]  xmlListHigherSearch  # libxml2 2.3.6, matched by position
+0x0059B6D0  [CODE]  xmlListLinkSearch  # libxml2 2.3.6, matched by position
+0x0059B730  [CODE]  xmlListLinkReverseSearch  # libxml2 2.3.6, matched by position
 0x0059B790  [CODE]  xmlListCreate  # beta-export
-0x0059B878  [CODE]  func_0059B878
-0x0059B8A0  [CODE]  func_0059B8A0
+0x0059B878  [CODE]  xmlListSearch  # libxml2 2.3.6, matched by position
+0x0059B8A0  [CODE]  xmlListReverseSearch  # libxml2 2.3.6, matched by position
 0x0059B8C8  [CODE]  xmlListInsert  # beta-export
 0x0059B948  [CODE]  xmlListAppend  # beta-export
 0x0059B9C8  [CODE]  xmlListDelete  # beta-export
-0x0059BA10  [CODE]  func_0059BA10
-0x0059BA50  [CODE]  func_0059BA50
+0x0059BA10  [CODE]  xmlListRemoveFirst  # libxml2 2.3.6, matched by position
+0x0059BA50  [CODE]  xmlListRemoveLast  # libxml2 2.3.6, matched by position
 0x0059BA90  [CODE]  xmlListRemoveAll  # beta-export
 0x0059BAE8  [CODE]  xmlListClear  # beta-export
 0x0059BB40  [CODE]  xmlListEmpty  # beta-export
@@ -1044,7 +1044,7 @@
 0x0059BBF0  [CODE]  xmlListPopBack  # beta-export
 0x0059BC30  [CODE]  xmlListPushFront  # beta-export
 0x0059BCA8  [CODE]  xmlListPushBack  # beta-export
-0x0059BD28  [CODE]  func_0059BD28
+0x0059BD28  [CODE]  xmlLinkGetData  # libxml2 2.3.6, matched by position
 0x0059BD30  [CODE]  xmlListReverse  # beta-export
 0x0059BD68  [CODE]  xmlListSort  # beta-export
 0x0059BDD0  [CODE]  xmlListWalk  # beta-export
@@ -1056,15 +1056,15 @@
 0x0059C060  [CODE]  inputPop  # beta-export
 0x0059C0B8  [CODE]  nodePush  # beta-export
 0x0059C168  [CODE]  nodePop  # beta-export
-0x0059C1C0  [CODE]  func_0059C1C0
+0x0059C1C0  [CODE]  namePush  # libxml2 2.3.6, matched by position
 0x0059C270  [CODE]  namePop  # beta-export
-0x0059C2C8  [CODE]  func_0059C2C8
-0x0059C380  [CODE]  func_0059C380
+0x0059C2C8  [CODE]  spacePush  # libxml2 2.3.6, matched by position
+0x0059C380  [CODE]  spacePop  # libxml2 2.3.6, matched by position
 0x0059C3E0  [CODE]  xmlSkipBlankChars  # beta-export
 0x0059C568  [CODE]  xmlPopInput  # beta-export
 0x0059C620  [CODE]  xmlPushInput  # beta-export
 0x0059C720  [CODE]  xmlParseCharRef  # beta-export
-0x0059CC20  [CODE]  func_0059CC20
+0x0059CC20  [CODE]  xmlParseStringCharRef  # libxml2 2.3.6, matched by position
 0x0059CEE0  [CODE]  xmlParserHandlePEReference  # beta-export
 0x0059D2E0  [CODE]  xmlStringDecodeEntities  # beta-export
 0x0059D7B0  [CODE]  xmlStrndup  # beta-export
@@ -1083,11 +1083,11 @@
 0x0059DDF8  [CODE]  xmlStrlen  # beta-export
 0x0059DE30  [CODE]  xmlStrncat  # beta-export
 0x0059DF20  [CODE]  xmlStrcat  # beta-export
-0x0059DF90  [CODE]  func_0059DF90
+0x0059DF90  [CODE]  parser:areBlanks  # libxml2 2.3.6, matched by position
 0x0059E100  [CODE]  xmlSplitQName  # beta-export
 0x0059E430  [CODE]  xmlParseName  # beta-export
 0x0059E598  [CODE]  xmlParseNameComplex  # beta-export
-0x0059EAC8  [CODE]  func_0059EAC8
+0x0059EAC8  [CODE]  xmlParseStringName  # libxml2 2.3.6, matched by position
 0x0059EDE8  [CODE]  xmlParseNmtoken  # beta-export
 0x0059F2B8  [CODE]  xmlParseEntityValue  # beta-export
 0x0059F888  [CODE]  xmlParseAttValue  # beta-export
@@ -1113,7 +1113,7 @@
 0x005A6498  [CODE]  xmlParseElementDecl  # beta-export
 0x005A6C50  [CODE]  xmlParseMarkupDecl  # beta-export
 0x005A6D20  [CODE]  xmlParseTextDecl  # beta-export
-0x005A7238  [CODE]  func_005A7238
+0x005A7238  [CODE]  xmlParseConditionalSections  # libxml2 2.3.6, matched by position
 0x005A7BC0  [CODE]  xmlParseExternalSubset  # beta-export
 0x005A80B0  [CODE]  xmlParseReference  # beta-export
 0x005A8670  [CODE]  xmlParseEntityRef  # beta-export
@@ -1121,7 +1121,7 @@
 0x005A8D10  [CODE]  xmlParsePEReference  # beta-export
 0x005A9038  [CODE]  xmlParseStringPEReference  # beta-export
 0x005A9260  [CODE]  xmlParseDocTypeDecl  # beta-export
-0x005A9438  [CODE]  func_005A9438
+0x005A9438  [CODE]  xmlParseInternalSubset  # libxml2 2.3.6, matched by position
 0x005A9640  [CODE]  xmlParseAttribute  # old:setup_xml_lang; beta-export
 0x005A9860  [CODE]  xmlParseStartTag  # beta-export
 0x005A9E20  [CODE]  xmlParseEndTag  # beta-export
@@ -1137,8 +1137,8 @@
 0x005AC5C0  [CODE]  xmlParseMisc  # beta-export
 0x005AC808  [CODE]  xmlParseDocument  # beta-export
 0x005ACDF0  [CODE]  xmlParseExtParsedEnt  # beta-export
-0x005AD180  [CODE]  func_005AD180
-0x005AD280  [CODE]  func_005AD280
+0x005AD180  [CODE]  xmlParseLookupSequence  # libxml2 2.3.6, matched by position
+0x005AD280  [CODE]  xmlParseTryOrFinish  # libxml2 2.3.6, matched by position
 0x005AE5B8  [CODE]  xmlParseChunk  # beta-export
 0x005AE7E8  [CODE]  xmlStopParser  # beta-export
 0x005AE810  [CODE]  xmlCreatePushParserCtxt  # beta-export
@@ -1154,9 +1154,9 @@
 0x005AFC70  [CODE]  xmlCreateEntityParserCtxt  # beta-export
 0x005AFDA0  [CODE]  xmlCreateFileParserCtxt  # beta-export
 0x005AFEC8  [CODE]  xmlSAXParseFile  # old:PatcherAPI::called_005AFEC8; beta-export
-0x005AFFC0  [CODE]  func_005AFFC0
-0x005AFFE8  [CODE]  func_005AFFE8  # old:PatcherAPI::called_005AFFE8
-0x005B0010  [CODE]  func_005B0010
+0x005AFFC0  [CODE]  xmlRecoverDoc  # libxml2 2.3.6, matched by position
+0x005AFFE8  [CODE]  xmlParseFile  # libxml2 2.3.6, matched by position
+0x005B0010  [CODE]  xmlRecoverFile  # libxml2 2.3.6, matched by position
 0x005B0038  [CODE]  xmlSetupParserForBuffer  # old:setup_malloc; beta-export
 0x005B00F0  [CODE]  xmlSAXUserParseFile  # beta-export
 0x005B01A8  [CODE]  xmlCreateMemoryParserCtxt  # beta-export
@@ -1166,11 +1166,11 @@
 0x005B0368  [CODE]  xmlSAXUserParseMemory  # beta-export
 0x005B0418  [CODE]  xmlCreateDocParserCtxt  # beta-export
 0x005B0460  [CODE]  xmlSAXParseDoc  # beta-export
-0x005B0510  [CODE]  func_005B0510
+0x005B0510  [CODE]  xmlParseDoc  # libxml2 2.3.6, matched by position
 0x005B0538  [CODE]  xmlInitParser  # beta-export
 0x005B05B0  [CODE]  xmlCleanupParser  # beta-export
-0x005B05D8  [CODE]  func_005B05D8
-0x005B05E8  [CODE]  func_005B05E8
+0x005B05D8  [CODE]  xmlPedanticParserDefault  # libxml2 2.3.6, matched by position
+0x005B05E8  [CODE]  xmlSubstituteEntitiesDefault  # libxml2 2.3.6, matched by position
 0x005B05F8  [CODE]  xmlKeepBlanksDefault  # beta-export
 0x005B0618  [CODE]  xmlCheckVersion  # beta-export
 0x005B06E0  [CODE]  xmlGetFeaturesList  # beta-export
@@ -1211,18 +1211,18 @@
 0x005B47C8  [CODE]  xmlParserFindNodeInfoIndex  # beta-export
 0x005B4878  [CODE]  xmlParserAddNodeInfo  # beta-export
 0x005B4AA0  [CODE]  xmlCheckLanguageID  # beta-export
-0x005B4C80  [CODE]  func_005B4C80
-0x005B4CD8  [CODE]  func_005B4CD8
-0x005B4D30  [CODE]  func_005B4D30
-0x005B4D88  [CODE]  func_005B4D88
-0x005B4DE0  [CODE]  func_005B4DE0
-0x005B4E38  [CODE]  func_005B4E38
-0x005B4E88  [CODE]  func_005B4E88
-0x005B4EE0  [CODE]  func_005B4EE0
-0x005B4F30  [CODE]  func_005B4F30
-0x005B4F80  [CODE]  func_005B4F80
-0x005B4FD8  [CODE]  func_005B4FD8
-0x005B5028  [CODE]  func_005B5028
+0x005B4C80  [CODE]  xmlDecodeEntities  # libxml2 2.3.6, matched by position
+0x005B4CD8  [CODE]  xmlNamespaceParseNCName  # libxml2 2.3.6, matched by position
+0x005B4D30  [CODE]  xmlNamespaceParseQName  # libxml2 2.3.6, matched by position
+0x005B4D88  [CODE]  xmlNamespaceParseNSDef  # libxml2 2.3.6, matched by position
+0x005B4DE0  [CODE]  xmlParseQuotedString  # libxml2 2.3.6, matched by position
+0x005B4E38  [CODE]  xmlParseNamespace  # libxml2 2.3.6, matched by position
+0x005B4E88  [CODE]  xmlScanName  # libxml2 2.3.6, matched by position
+0x005B4EE0  [CODE]  xmlParserHandleReference  # libxml2 2.3.6, matched by position
+0x005B4F30  [CODE]  xmlHandleEntity  # libxml2 2.3.6, matched by position
+0x005B4F80  [CODE]  xmlNewGlobalNs  # libxml2 2.3.6, matched by position
+0x005B4FD8  [CODE]  xmlUpgradeOldNs  # libxml2 2.3.6, matched by position
+0x005B5028  [CODE]  getPublicId  # libxml2 2.3.6, matched by position
 0x005B5030  [CODE]  getSystemId  # beta-export
 0x005B5040  [CODE]  getLineNumber  # beta-export
 0x005B5050  [CODE]  getColumnNumber  # beta-export
@@ -1233,13 +1233,13 @@
 0x005B5140  [CODE]  externalSubset  # beta-export
 0x005B5370  [CODE]  resolveEntity  # beta-export
 0x005B53F8  [CODE]  getEntity  # beta-export
-0x005B5480  [CODE]  func_005B5480
+0x005B5480  [CODE]  getParameterEntity  # libxml2 2.3.6, matched by position
 0x005B54A0  [CODE]  entityDecl  # beta-export
 0x005B55F8  [CODE]  attributeDecl  # beta-export
-0x005B5790  [CODE]  func_005B5790
-0x005B5890  [CODE]  func_005B5890
+0x005B5790  [CODE]  elementDecl  # libxml2 2.3.6, matched by position
+0x005B5890  [CODE]  notationDecl  # libxml2 2.3.6, matched by position
 0x005B5990  [CODE]  unparsedEntityDecl  # beta-export
-0x005B5AA8  [CODE]  func_005B5AA8
+0x005B5AA8  [CODE]  setDocumentLocator  # libxml2 2.3.6, matched by position
 0x005B5AB0  [CODE]  startDocument  # beta-export
 0x005B5B78  [CODE]  endDocument  # beta-export
 0x005B5C68  [CODE]  attribute  # beta-export
@@ -1247,9 +1247,9 @@
 0x005B6498  [CODE]  endElement  # beta-export
 0x005B6550  [CODE]  reference  # beta-export
 0x005B65A0  [CODE]  characters  # beta-export
-0x005B6748  [CODE]  func_005B6748
+0x005B6748  [CODE]  ignorableWhitespace  # libxml2 2.3.6, matched by position
 0x005B6750  [CODE]  processingInstruction  # beta-export
-0x005B6810  [CODE]  func_005B6810
+0x005B6810  [CODE]  globalNamespace  # libxml2 2.3.6, matched by position
 0x005B6830  [CODE]  setNamespace  # beta-export
 0x005B68C0  [CODE]  getNamespace  # beta-export
 0x005B68D0  [CODE]  checkNamespace  # beta-export
@@ -1259,11 +1259,11 @@
 0x005B6B30  [CODE]  xmlDefaultSAXHandlerInit  # beta-export
 0x005B6CF0  [CODE]  htmlDefaultSAXHandlerInit  # beta-export
 0x005B6DE0  [CODE]  sgmlDefaultSAXHandlerInit  # beta-export
-0x005B6EB8  [CODE]  func_005B6EB8
-0x005B6FF0  [CODE]  func_005B6FF0
+0x005B6EB8  [CODE]  testXPath  # libxml2 2.3.6, matched by position
+0x005B6FF0  [CODE]  testXPathFile  # libxml2 2.3.6, matched by position
 0x005B70F8  [CODE]  main  # old:setup___xptr; beta-export
-0x005B74E8  [CODE]  func_005B74E8
-0x005B74F8  [CODE]  func_005B74F8
+0x005B74E8  [CODE]  xmlSetBufferAllocationScheme  # libxml2 2.3.6, matched by position
+0x005B74F8  [CODE]  xmlGetBufferAllocationScheme  # libxml2 2.3.6, matched by position
 0x005B7508  [CODE]  xmlNewNs  # beta-export
 0x005B7670  [CODE]  xmlSetNs  # beta-export
 0x005B7680  [CODE]  xmlFreeNs  # beta-export
@@ -1281,34 +1281,34 @@
 0x005B84E8  [CODE]  xmlNewProp  # beta-export
 0x005B8668  [CODE]  xmlNewNsProp  # beta-export
 0x005B87E8  [CODE]  xmlNewDocProp  # beta-export
-0x005B88E0  [CODE]  func_005B88E0
+0x005B88E0  [CODE]  xmlFreePropList  # libxml2 2.3.6, matched by position
 0x005B8928  [CODE]  xmlFreeProp  # beta-export
 0x005B89B8  [CODE]  xmlRemoveProp  # beta-export
 0x005B8A38  [CODE]  xmlNewPI  # beta-export
 0x005B8AF0  [CODE]  xmlNewNode  # beta-export
-0x005B8B90  [CODE]  func_005B8B90
-0x005B8C30  [CODE]  func_005B8C30
+0x005B8B90  [CODE]  xmlNewDocNode  # libxml2 2.3.6, matched by position
+0x005B8C30  [CODE]  xmlNewDocRawNode  # libxml2 2.3.6, matched by position
 0x005B8CD0  [CODE]  xmlNewDocFragment  # beta-export
 0x005B8D58  [CODE]  xmlNewText  # beta-export
-0x005B8DF8  [CODE]  func_005B8DF8
+0x005B8DF8  [CODE]  xmlNewTextChild  # libxml2 2.3.6, matched by position
 0x005B8E88  [CODE]  xmlNewCharRef  # beta-export
 0x005B8F78  [CODE]  xmlNewReference  # beta-export
-0x005B9090  [CODE]  func_005B9090
+0x005B9090  [CODE]  xmlNewDocText  # libxml2 2.3.6, matched by position
 0x005B90C0  [CODE]  xmlNewTextLen  # beta-export
 0x005B9170  [CODE]  xmlNewDocTextLen  # beta-export
 0x005B91A8  [CODE]  xmlNewComment  # old:setup_comment; beta-export
 0x005B9248  [CODE]  xmlNewCDataBlock  # beta-export
-0x005B92F8  [CODE]  func_005B92F8
+0x005B92F8  [CODE]  xmlNewDocComment  # libxml2 2.3.6, matched by position
 0x005B9328  [CODE]  xmlSetTreeDoc  # beta-export
 0x005B9390  [CODE]  xmlSetListDoc  # beta-export
-0x005B93E0  [CODE]  func_005B93E0
+0x005B93E0  [CODE]  xmlNewChild  # libxml2 2.3.6, matched by position
 0x005B9470  [CODE]  xmlAddNextSibling  # beta-export
 0x005B9548  [CODE]  xmlAddPrevSibling  # beta-export
 0x005B9678  [CODE]  xmlAddSibling  # beta-export
 0x005B9780  [CODE]  xmlAddChildList  # beta-export
 0x005B9870  [CODE]  xmlAddChild  # beta-export
 0x005B9A10  [CODE]  xmlGetLastChild  # beta-export
-0x005B9A28  [CODE]  func_005B9A28
+0x005B9A28  [CODE]  xmlFreeNodeList  # libxml2 2.3.6, matched by position
 0x005B9A70  [CODE]  xmlFreeNode  # old:setup_textnoenc; beta-export
 0x005B9B68  [CODE]  xmlUnlinkNode  # beta-export
 0x005B9BF0  [CODE]  xmlReplaceNode  # beta-export
@@ -1316,20 +1316,20 @@
 0x005B9CF8  [CODE]  xmlCopyNamespaceList  # beta-export
 0x005B9D68  [CODE]  xmlCopyProp  # beta-export
 0x005B9E80  [CODE]  xmlCopyPropList  # beta-export
-0x005B9F00  [CODE]  func_005B9F00  # old:setup_textnoenc
-0x005BA150  [CODE]  func_005BA150
+0x005B9F00  [CODE]  xmlStaticCopyNode  # libxml2 2.3.6, matched by position
+0x005BA150  [CODE]  xmlStaticCopyNodeList  # libxml2 2.3.6, matched by position
 0x005BA210  [CODE]  xmlCopyNode  # beta-export
 0x005BA238  [CODE]  xmlCopyNodeList  # beta-export
 0x005BA258  [CODE]  xmlCopyDtd  # beta-export
 0x005BA310  [CODE]  xmlCopyDoc  # beta-export
 0x005BA428  [CODE]  xmlDocGetRootElement  # beta-export
 0x005BA478  [CODE]  xmlDocSetRootElement  # beta-export
-0x005BA520  [CODE]  func_005BA520  # old:setup_xml_lang
+0x005BA520  [CODE]  xmlNodeSetLang  # libxml2 2.3.6, matched by position
 0x005BA568  [CODE]  xmlNodeGetLang  # old:setup_xml_lang; beta-export
 0x005BA5C0  [CODE]  xmlNodeSetSpacePreserve  # old:setup_xml_space; beta-export
 0x005BA640  [CODE]  xmlNodeGetSpacePreserve  # old:setup_xml_space; beta-export
 0x005BA718  [CODE]  xmlNodeSetName  # beta-export
-0x005BA7A0  [CODE]  func_005BA7A0  # old:setup_xml_base
+0x005BA7A0  [CODE]  xmlNodeSetBase  # libxml2 2.3.6, matched by position
 0x005BA7E8  [CODE]  xmlNodeGetBase  # old:setup_xml_base; beta-export
 0x005BA980  [CODE]  xmlNodeGetContent  # beta-export
 0x005BAB78  [CODE]  xmlNodeSetContent  # beta-export
@@ -1365,32 +1365,32 @@
 0x005BC718  [CODE]  xmlBufferAddHead  # beta-export
 0x005BC810  [CODE]  xmlBufferCat  # beta-export
 0x005BC830  [CODE]  xmlBufferCCat  # beta-export
-0x005BC908  [CODE]  func_005BC908
-0x005BC928  [CODE]  func_005BC928
+0x005BC908  [CODE]  xmlBufferWriteCHAR  # libxml2 2.3.6, matched by position
+0x005BC928  [CODE]  xmlBufferWriteChar  # libxml2 2.3.6, matched by position
 0x005BC948  [CODE]  xmlBufferWriteQuotedString  # beta-export
-0x005BC9F8  [CODE]  func_005BC9F8
-0x005BCA90  [CODE]  func_005BCA90
-0x005BCAE0  [CODE]  func_005BCAE0
-0x005BCC10  [CODE]  func_005BCC10
-0x005BCCF0  [CODE]  func_005BCCF0
-0x005BCD50  [CODE]  func_005BCD50
+0x005BC9F8  [CODE]  xmlNsDump  # libxml2 2.3.6, matched by position
+0x005BCA90  [CODE]  xmlNsListDump  # libxml2 2.3.6, matched by position
+0x005BCAE0  [CODE]  xmlDtdDump  # libxml2 2.3.6, matched by position
+0x005BCC10  [CODE]  xmlAttrDump  # libxml2 2.3.6, matched by position
+0x005BCCF0  [CODE]  xmlAttrListDump  # libxml2 2.3.6, matched by position
+0x005BCD50  [CODE]  xmlNodeListDump  # libxml2 2.3.6, matched by position
 0x005BCE58  [CODE]  xmlNodeDump  # old:setup_textnoenc; beta-export
 0x005BD310  [CODE]  xmlElemDump  # old:PatcherDownloader::called_005BD310; beta-export
-0x005BD3C0  [CODE]  func_005BD3C0
-0x005BD460  [CODE]  func_005BD460
-0x005BD4B0  [CODE]  func_005BD4B0
-0x005BD5F0  [CODE]  func_005BD5F0
-0x005BD6D0  [CODE]  func_005BD6D0
-0x005BD738  [CODE]  func_005BD738
+0x005BD3C0  [CODE]  xmlNsDumpOutput  # libxml2 2.3.6, matched by position
+0x005BD460  [CODE]  xmlNsListDumpOutput  # libxml2 2.3.6, matched by position
+0x005BD4B0  [CODE]  xmlDtdDumpOutput  # libxml2 2.3.6, matched by position
+0x005BD5F0  [CODE]  xmlAttrDumpOutput  # libxml2 2.3.6, matched by position
+0x005BD6D0  [CODE]  xmlAttrListDumpOutput  # libxml2 2.3.6, matched by position
+0x005BD738  [CODE]  xmlNodeListDumpOutput  # libxml2 2.3.6, matched by position
 0x005BD848  [CODE]  xmlNodeDumpOutput  # old:setup_textnoenc; beta-export
-0x005BDD48  [CODE]  func_005BDD48  # old:PatcherDownloader::called_005BDD48
+0x005BDD48  [CODE]  xmlDocContentDumpOutput  # libxml2 2.3.6, matched by position
 0x005BDEC0  [CODE]  xmlDocDumpFormatMemoryEnc  # old:setup_xmlDocDumpFormatMemoryEnc; beta-export
 0x005BE0E8  [CODE]  xmlDocDumpMemory  # beta-export
-0x005BE108  [CODE]  func_005BE108
+0x005BE108  [CODE]  xmlDocDumpFormatMemory  # libxml2 2.3.6, matched by position
 0x005BE128  [CODE]  xmlDocDumpMemoryEnc  # beta-export
 0x005BE148  [CODE]  xmlGetDocCompressMode  # beta-export
 0x005BE160  [CODE]  xmlSetDocCompressMode  # beta-export
-0x005BE198  [CODE]  func_005BE198
+0x005BE198  [CODE]  xmlGetCompressMode  # libxml2 2.3.6, matched by position
 0x005BE1A8  [CODE]  xmlSetCompressMode  # beta-export
 0x005BE1E0  [CODE]  xmlDocDump  # old:PatcherDownloader::called_005BE1E0; beta-export
 0x005BE2D8  [CODE]  xmlSaveFileTo  # old:PatcherDownloader::method_005BE2D8; beta-export
@@ -1399,228 +1399,228 @@
 0x005BE4F8  [CODE]  xmlCreateURI  # beta-export
 0x005BE568  [CODE]  xmlSaveUri  # beta-export
 0x005BF3C0  [CODE]  xmlPrintURI  # beta-export
-0x005BF420  [CODE]  func_005BF420
+0x005BF420  [CODE]  xmlCleanURI  # libxml2 2.3.6, matched by position
 0x005BF528  [CODE]  xmlFreeURI  # beta-export
 0x005BF608  [CODE]  xmlNormalizeURIPath  # beta-export
 0x005BF948  [CODE]  xmlURIUnescapeString  # beta-export
 0x005BFAF8  [CODE]  xmlURIEscape  # beta-export
-0x005BFCF0  [CODE]  func_005BFCF0
-0x005BFF58  [CODE]  func_005BFF58
-0x005C01C0  [CODE]  func_005C01C0
-0x005C02E0  [CODE]  func_005C02E0
-0x005C06A0  [CODE]  func_005C06A0
-0x005C0CE8  [CODE]  func_005C0CE8
-0x005C1060  [CODE]  func_005C1060
-0x005C14C8  [CODE]  func_005C14C8
-0x005C18B0  [CODE]  func_005C18B0
-0x005C19A8  [CODE]  func_005C19A8
-0x005C1A38  [CODE]  func_005C1A38
+0x005BFCF0  [CODE]  xmlParseURIFragment  # libxml2 2.3.6, matched by position
+0x005BFF58  [CODE]  xmlParseURIQuery  # libxml2 2.3.6, matched by position
+0x005C01C0  [CODE]  xmlParseURIScheme  # libxml2 2.3.6, matched by position
+0x005C02E0  [CODE]  xmlParseURIOpaquePart  # libxml2 2.3.6, matched by position
+0x005C06A0  [CODE]  xmlParseURIServer  # libxml2 2.3.6, matched by position
+0x005C0CE8  [CODE]  xmlParseURIRelSegment  # libxml2 2.3.6, matched by position
+0x005C1060  [CODE]  xmlParseURIPathSegments  # libxml2 2.3.6, matched by position
+0x005C14C8  [CODE]  xmlParseURIAuthority  # libxml2 2.3.6, matched by position
+0x005C18B0  [CODE]  xmlParseURIHierPart  # libxml2 2.3.6, matched by position
+0x005C19A8  [CODE]  xmlParseAbsoluteURI  # libxml2 2.3.6, matched by position
+0x005C1A38  [CODE]  xmlParseRelativeURI  # libxml2 2.3.6, matched by position
 0x005C1B58  [CODE]  xmlParseURIReference  # beta-export
 0x005C1C30  [CODE]  xmlParseURI  # beta-export
 0x005C1CA0  [CODE]  xmlBuildURI  # beta-export
-0x005C2210  [CODE]  func_005C2210
-0x005C22C0  [CODE]  func_005C22C0
+0x005C2210  [CODE]  nodeVPush  # libxml2 2.3.6, matched by position
+0x005C22C0  [CODE]  nodeVPop  # libxml2 2.3.6, matched by position
 0x005C2318  [CODE]  xmlSplitQName2  # beta-export
 0x005C2408  [CODE]  xmlNewElementContent  # beta-export
 0x005C2558  [CODE]  xmlCopyElementContent  # beta-export
 0x005C2600  [CODE]  xmlFreeElementContent  # beta-export
-0x005C26B0  [CODE]  func_005C26B0  # old:setup__PCDATA
+0x005C26B0  [CODE]  xmlDumpElementContent  # libxml2 2.3.6, matched by position
 0x005C28E0  [CODE]  xmlSprintfElementContent  # beta-export
-0x005C2AF0  [CODE]  func_005C2AF0
-0x005C2B10  [CODE]  func_005C2B10
+0x005C2AF0  [CODE]  xmlCreateElementTable  # libxml2 2.3.6, matched by position
+0x005C2B10  [CODE]  xmlFreeElement  # libxml2 2.3.6, matched by position
 0x005C2B80  [CODE]  xmlAddElementDecl  # beta-export
-0x005C2E88  [CODE]  func_005C2E88
-0x005C2EA8  [CODE]  func_005C2EA8
-0x005C2F70  [CODE]  func_005C2F70
+0x005C2E88  [CODE]  xmlFreeElementTable  # libxml2 2.3.6, matched by position
+0x005C2EA8  [CODE]  xmlCopyElement  # libxml2 2.3.6, matched by position
+0x005C2F70  [CODE]  xmlCopyElementTable  # libxml2 2.3.6, matched by position
 0x005C2F90  [CODE]  xmlDumpElementDecl  # beta-export
-0x005C30D8  [CODE]  func_005C30D8
+0x005C30D8  [CODE]  xmlDumpElementTable  # libxml2 2.3.6, matched by position
 0x005C3100  [CODE]  xmlCreateEnumeration  # beta-export
 0x005C3190  [CODE]  xmlFreeEnumeration  # beta-export
 0x005C31F8  [CODE]  xmlCopyEnumeration  # beta-export
-0x005C3258  [CODE]  func_005C3258
-0x005C32D0  [CODE]  func_005C32D0
-0x005C32F0  [CODE]  func_005C32F0
+0x005C3258  [CODE]  xmlDumpEnumeration  # libxml2 2.3.6, matched by position
+0x005C32D0  [CODE]  xmlCreateAttributeTable  # libxml2 2.3.6, matched by position
+0x005C32F0  [CODE]  xmlScanAttributeDeclCallback  # libxml2 2.3.6, matched by position
 0x005C3300  [CODE]  xmlScanAttributeDecl  # beta-export
-0x005C3398  [CODE]  func_005C3398
-0x005C3458  [CODE]  func_005C3458
+0x005C3398  [CODE]  xmlScanIDAttributeDecl  # libxml2 2.3.6, matched by position
+0x005C3458  [CODE]  xmlFreeAttribute  # libxml2 2.3.6, matched by position
 0x005C3500  [CODE]  xmlAddAttributeDecl  # beta-export
-0x005C3848  [CODE]  func_005C3848
-0x005C3868  [CODE]  func_005C3868
-0x005C3948  [CODE]  func_005C3948
+0x005C3848  [CODE]  xmlFreeAttributeTable  # libxml2 2.3.6, matched by position
+0x005C3868  [CODE]  xmlCopyAttribute  # libxml2 2.3.6, matched by position
+0x005C3948  [CODE]  xmlCopyAttributeTable  # libxml2 2.3.6, matched by position
 0x005C3968  [CODE]  xmlDumpAttributeDecl  # beta-export
-0x005C3C18  [CODE]  func_005C3C18
-0x005C3C40  [CODE]  func_005C3C40
-0x005C3C60  [CODE]  func_005C3C60
+0x005C3C18  [CODE]  xmlDumpAttributeTable  # libxml2 2.3.6, matched by position
+0x005C3C40  [CODE]  xmlCreateNotationTable  # libxml2 2.3.6, matched by position
+0x005C3C60  [CODE]  xmlFreeNotation  # libxml2 2.3.6, matched by position
 0x005C3CD8  [CODE]  xmlAddNotationDecl  # beta-export
-0x005C3EA8  [CODE]  func_005C3EA8
-0x005C3EC8  [CODE]  func_005C3EC8
-0x005C3F78  [CODE]  func_005C3F78
+0x005C3EA8  [CODE]  xmlFreeNotationTable  # libxml2 2.3.6, matched by position
+0x005C3EC8  [CODE]  xmlCopyNotation  # libxml2 2.3.6, matched by position
+0x005C3F78  [CODE]  xmlCopyNotationTable  # libxml2 2.3.6, matched by position
 0x005C3F98  [CODE]  xmlDumpNotationDecl  # beta-export
-0x005C4058  [CODE]  func_005C4058
-0x005C4080  [CODE]  func_005C4080
-0x005C40A0  [CODE]  func_005C40A0
+0x005C4058  [CODE]  xmlDumpNotationTable  # libxml2 2.3.6, matched by position
+0x005C4080  [CODE]  xmlCreateIDTable  # libxml2 2.3.6, matched by position
+0x005C40A0  [CODE]  xmlFreeID  # libxml2 2.3.6, matched by position
 0x005C40F0  [CODE]  xmlAddID  # beta-export
-0x005C4270  [CODE]  func_005C4270
+0x005C4270  [CODE]  xmlFreeIDTable  # libxml2 2.3.6, matched by position
 0x005C4290  [CODE]  xmlIsID  # beta-export
 0x005C4388  [CODE]  xmlRemoveID  # beta-export
 0x005C4440  [CODE]  xmlGetID  # beta-export
-0x005C44C8  [CODE]  func_005C44C8
-0x005C44E8  [CODE]  func_005C44E8
-0x005C4540  [CODE]  func_005C4540
-0x005C4560  [CODE]  func_005C4560
+0x005C44C8  [CODE]  xmlCreateRefTable  # libxml2 2.3.6, matched by position
+0x005C44E8  [CODE]  xmlFreeRef  # libxml2 2.3.6, matched by position
+0x005C4540  [CODE]  xmlFreeRefList  # libxml2 2.3.6, matched by position
+0x005C4560  [CODE]  xmlWalkRemoveRef  # libxml2 2.3.6, matched by position
 0x005C45A0  [CODE]  xmlAddRef  # beta-export
-0x005C4768  [CODE]  func_005C4768
+0x005C4768  [CODE]  xmlFreeRefTable  # libxml2 2.3.6, matched by position
 0x005C4788  [CODE]  xmlIsRef  # beta-export
 0x005C4830  [CODE]  xmlRemoveRef  # beta-export
 0x005C4918  [CODE]  xmlGetRefs  # beta-export
 0x005C4998  [CODE]  xmlGetDtdElementDesc  # beta-export
-0x005C4A50  [CODE]  func_005C4A50
+0x005C4A50  [CODE]  xmlGetDtdQElementDesc  # libxml2 2.3.6, matched by position
 0x005C4A88  [CODE]  xmlGetDtdAttrDesc  # beta-export
-0x005C4B50  [CODE]  func_005C4B50
+0x005C4B50  [CODE]  xmlGetDtdQAttrDesc  # libxml2 2.3.6, matched by position
 0x005C4B98  [CODE]  xmlGetDtdNotationDesc  # beta-export
 0x005C4BD0  [CODE]  xmlValidateNotationUse  # beta-export
 0x005C4C78  [CODE]  xmlIsMixedElement  # beta-export
-0x005C4D10  [CODE]  func_005C4D10
-0x005C4E28  [CODE]  func_005C4E28
-0x005C5098  [CODE]  func_005C5098
-0x005C51F0  [CODE]  func_005C51F0
-0x005C5538  [CODE]  func_005C5538
+0x005C4D10  [CODE]  xmlValidateNameValue  # libxml2 2.3.6, matched by position
+0x005C4E28  [CODE]  xmlValidateNamesValue  # libxml2 2.3.6, matched by position
+0x005C5098  [CODE]  xmlValidateNmtokenValue  # libxml2 2.3.6, matched by position
+0x005C51F0  [CODE]  xmlValidateNmtokensValue  # libxml2 2.3.6, matched by position
+0x005C5538  [CODE]  xmlValidateNotationDecl  # libxml2 2.3.6, matched by position
 0x005C5540  [CODE]  xmlValidateAttributeValue  # beta-export
-0x005C55C0  [CODE]  func_005C55C0
+0x005C55C0  [CODE]  xmlValidateAttributeValue2  # libxml2 2.3.6, matched by position
 0x005C58B0  [CODE]  xmlValidNormalizeAttributeValue  # beta-export
-0x005C5A68  [CODE]  func_005C5A68
+0x005C5A68  [CODE]  xmlValidateAttributeIdCallback  # libxml2 2.3.6, matched by position
 0x005C5A90  [CODE]  xmlValidateAttributeDecl  # beta-export
 0x005C5D68  [CODE]  xmlValidateElementDecl  # beta-export
 0x005C5FC0  [CODE]  xmlValidateOneAttribute  # beta-export
-0x005C6470  [CODE]  func_005C6470
-0x005C6570  [CODE]  func_005C6570
+0x005C6470  [CODE]  xmlValidateFindNextElement  # libxml2 2.3.6, matched by position
+0x005C6570  [CODE]  xmlValidateElementTypeExpr  # libxml2 2.3.6, matched by position
 0x005C6770  [CODE]  xmlValidateElementTypeElement  # beta-export
-0x005C6A30  [CODE]  func_005C6A30
+0x005C6A30  [CODE]  xmlSprintfElementChilds  # libxml2 2.3.6, matched by position
 0x005C6B50  [CODE]  xmlValidateOneElement  # beta-export
 0x005C73C0  [CODE]  xmlValidateRoot  # beta-export
 0x005C7518  [CODE]  xmlValidateElement  # beta-export
-0x005C7650  [CODE]  func_005C7650
-0x005C7870  [CODE]  func_005C7870
-0x005C7898  [CODE]  func_005C7898
+0x005C7650  [CODE]  xmlValidateRef  # libxml2 2.3.6, matched by position
+0x005C7870  [CODE]  xmlWalkValidateList  # libxml2 2.3.6, matched by position
+0x005C7898  [CODE]  xmlValidateCheckRefCallback  # libxml2 2.3.6, matched by position
 0x005C78D0  [CODE]  xmlValidateDocumentFinal  # beta-export
 0x005C7940  [CODE]  xmlValidateDtd  # beta-export
-0x005C7A08  [CODE]  func_005C7A08
+0x005C7A08  [CODE]  xmlValidateAttributeCallback  # libxml2 2.3.6, matched by position
 0x005C7AD8  [CODE]  xmlValidateDtdFinal  # beta-export
 0x005C7B80  [CODE]  xmlValidateDocument  # beta-export
 0x005C7CF0  [CODE]  xmlValidGetPotentialChildren  # old:setup__PCDATA; beta-export
 0x005C7E98  [CODE]  xmlValidGetValidElements  # old:setup___dummy__; beta-export
-0x005C80E0  [CODE]  func_005C80E0
-0x005C8228  [CODE]  func_005C8228
-0x005C8380  [CODE]  func_005C8380
-0x005C84D8  [CODE]  func_005C84D8
-0x005C8560  [CODE]  func_005C8560
-0x005C86B8  [CODE]  func_005C86B8
-0x005C89C8  [CODE]  func_005C89C8
-0x005C8CA0  [CODE]  func_005C8CA0
-0x005C8CC0  [CODE]  func_005C8CC0
-0x005C8FE0  [CODE]  func_005C8FE0
-0x005C90D8  [CODE]  func_005C90D8  # old:setup_include
+0x005C80E0  [CODE]  xmlXIncludeAddNode  # libxml2 2.3.6, matched by position
+0x005C8228  [CODE]  xmlXIncludeAddDoc  # libxml2 2.3.6, matched by position
+0x005C8380  [CODE]  xmlXIncludeAddTxt  # libxml2 2.3.6, matched by position
+0x005C84D8  [CODE]  xmlXIncludeNewContext  # libxml2 2.3.6, matched by position
+0x005C8560  [CODE]  xmlXIncludeFreeContext  # libxml2 2.3.6, matched by position
+0x005C86B8  [CODE]  xmlXIncludeLoadDoc  # libxml2 2.3.6, matched by position
+0x005C89C8  [CODE]  xmlXIncludeLoadTxt  # libxml2 2.3.6, matched by position
+0x005C8CA0  [CODE]  xmlXIncludePreProcessNode  # libxml2 2.3.6, matched by position
+0x005C8CC0  [CODE]  xmlXIncludeLoadNode  # libxml2 2.3.6, matched by position
+0x005C8FE0  [CODE]  xmlXIncludeIncludeNode  # libxml2 2.3.6, matched by position
+0x005C90D8  [CODE]  xmlXIncludeTestNode  # libxml2 2.3.6, matched by position
 0x005C9140  [CODE]  xmlXIncludeProcess  # beta-export
-0x005C92B8  [CODE]  func_005C92B8
-0x005C92C8  [CODE]  func_005C92C8
-0x005C92D8  [CODE]  func_005C92D8
-0x005C92E8  [CODE]  func_005C92E8
+0x005C92B8  [CODE]  xlinkGetDefaultHandler  # libxml2 2.3.6, matched by position
+0x005C92C8  [CODE]  xlinkSetDefaultHandler  # libxml2 2.3.6, matched by position
+0x005C92D8  [CODE]  xlinkGetDefaultDetect  # libxml2 2.3.6, matched by position
+0x005C92E8  [CODE]  xlinkSetDefaultDetect  # libxml2 2.3.6, matched by position
 0x005C92F8  [CODE]  xlinkIsLink  # old:setup_http___www_w3_org_1999_xhtml_; beta-export
-0x005C9480  [CODE]  func_005C9480
-0x005C9488  [CODE]  func_005C9488
-0x005C9490  [CODE]  func_005C9490
-0x005C9498  [CODE]  func_005C9498
-0x005C94A0  [CODE]  func_005C94A0
-0x005C94A8  [CODE]  func_005C94A8
-0x005C94B0  [CODE]  func_005C94B0  # old:setup_file___localhost
-0x005C9560  [CODE]  func_005C9560  # old:setup_file___localhost
-0x005C9600  [CODE]  func_005C9600
-0x005C9628  [CODE]  func_005C9628
-0x005C9650  [CODE]  func_005C9650
-0x005C9670  [CODE]  func_005C9670
-0x005C9690  [CODE]  func_005C9690
-0x005C96F8  [CODE]  func_005C96F8
-0x005C9760  [CODE]  func_005C9760
-0x005C97B8  [CODE]  func_005C97B8  # old:PatcherDownloader::called_005C97B8
+0x005C9480  [CODE]  xmlCheckFilename  # libxml2 2.3.6, matched by position
+0x005C9488  [CODE]  xmlNop  # libxml2 2.3.6, matched by position
+0x005C9490  [CODE]  xmlFdRead  # libxml2 2.3.6, matched by position
+0x005C9498  [CODE]  xmlFdWrite  # libxml2 2.3.6, matched by position
+0x005C94A0  [CODE]  xmlFdClose  # libxml2 2.3.6, matched by position
+0x005C94A8  [CODE]  xmlFileMatch  # libxml2 2.3.6, matched by position
+0x005C94B0  [CODE]  xmlFileOpen  # libxml2 2.3.6, matched by position
+0x005C9560  [CODE]  xmlFileOpenW  # libxml2 2.3.6, matched by position
+0x005C9600  [CODE]  xmlFileRead  # libxml2 2.3.6, matched by position
+0x005C9628  [CODE]  xmlFileWrite  # libxml2 2.3.6, matched by position
+0x005C9650  [CODE]  xmlFileClose  # libxml2 2.3.6, matched by position
+0x005C9670  [CODE]  xmlFileFlush  # libxml2 2.3.6, matched by position
+0x005C9690  [CODE]  xmlRegisterInputCallbacks  # libxml2 2.3.6, matched by position
+0x005C96F8  [CODE]  xmlRegisterOutputCallbacks  # libxml2 2.3.6, matched by position
+0x005C9760  [CODE]  xmlRegisterDefaultInputCallbacks  # libxml2 2.3.6, matched by position
+0x005C97B8  [CODE]  xmlRegisterDefaultOutputCallbacks  # libxml2 2.3.6, matched by position
 0x005C9810  [CODE]  xmlAllocParserInputBuffer  # beta-export
 0x005C98E8  [CODE]  xmlAllocOutputBuffer  # beta-export
 0x005C99D0  [CODE]  xmlFreeParserInputBuffer  # beta-export
 0x005C9A58  [CODE]  xmlOutputBufferClose  # old:PatcherDownloader::called_005C9A58; beta-export
-0x005C9B08  [CODE]  func_005C9B08
-0x005C9C28  [CODE]  func_005C9C28  # old:PatcherDownloader::called_005C9C28
-0x005C9D48  [CODE]  func_005C9D48
-0x005C9DC0  [CODE]  func_005C9DC0  # old:PatcherDownloader::called_005C9DC0
-0x005C9E38  [CODE]  func_005C9E38
+0x005C9B08  [CODE]  xmlParserInputBufferCreateFilename  # libxml2 2.3.6, matched by position
+0x005C9C28  [CODE]  xmlOutputBufferCreateFilename  # libxml2 2.3.6, matched by position
+0x005C9D48  [CODE]  xmlParserInputBufferCreateFile  # libxml2 2.3.6, matched by position
+0x005C9DC0  [CODE]  xmlOutputBufferCreateFile  # libxml2 2.3.6, matched by position
+0x005C9E38  [CODE]  xmlParserInputBufferCreateFd  # libxml2 2.3.6, matched by position
 0x005C9E98  [CODE]  xmlParserInputBufferCreateMem  # beta-export
-0x005C9F20  [CODE]  func_005C9F20
-0x005C9F80  [CODE]  func_005C9F80
-0x005C9FE8  [CODE]  func_005C9FE8
+0x005C9F20  [CODE]  xmlOutputBufferCreateFd  # libxml2 2.3.6, matched by position
+0x005C9F80  [CODE]  xmlParserInputBufferCreateIO  # libxml2 2.3.6, matched by position
+0x005C9FE8  [CODE]  xmlOutputBufferCreateIO  # libxml2 2.3.6, matched by position
 0x005CA050  [CODE]  xmlParserInputBufferPush  # beta-export
 0x005CA118  [CODE]  xmlParserInputBufferGrow  # beta-export
 0x005CA2E0  [CODE]  xmlParserInputBufferRead  # beta-export
 0x005CA308  [CODE]  xmlOutputBufferWrite  # beta-export
 0x005CA500  [CODE]  xmlOutputBufferWriteString  # beta-export
 0x005CA558  [CODE]  xmlOutputBufferFlush  # beta-export
-0x005CA6A8  [CODE]  func_005CA6A8
+0x005CA6A8  [CODE]  getcwd  # libxml2 2.3.6, matched by position
 0x005CA6B0  [CODE]  xmlParserGetDirectory  # beta-export
-0x005CA7B0  [CODE]  func_005CA7B0
-0x005CA860  [CODE]  func_005CA860
-0x005CA870  [CODE]  func_005CA870
+0x005CA7B0  [CODE]  xmlDefaultExternalEntityLoader  # libxml2 2.3.6, matched by position
+0x005CA860  [CODE]  xmlSetExternalEntityLoader  # libxml2 2.3.6, matched by position
+0x005CA870  [CODE]  xmlGetExternalEntityLoader  # libxml2 2.3.6, matched by position
 0x005CA880  [CODE]  xmlLoadExternalEntity  # beta-export
 0x005CA8A8  [CODE]  xmlMallocBreakpoint  # beta-export
 0x005CA8E0  [CODE]  xmlMallocLoc  # beta-export
-0x005CA9E0  [CODE]  func_005CA9E0
+0x005CA9E0  [CODE]  xmlMemMalloc  # libxml2 2.3.6, matched by position
 0x005CAA08  [CODE]  xmlReallocLoc  # beta-export
 0x005CAB18  [CODE]  xmlMemRealloc  # beta-export
 0x005CAB40  [CODE]  xmlMemFree  # beta-export
 0x005CABE0  [CODE]  xmlMemStrdupLoc  # beta-export
-0x005CACE8  [CODE]  func_005CACE8
+0x005CACE8  [CODE]  xmlMemoryStrdup  # libxml2 2.3.6, matched by position
 0x005CAD10  [CODE]  xmlMemUsed  # beta-export
 0x005CAD28  [CODE]  xmlMemShow  # beta-export
 0x005CAD60  [CODE]  xmlMemDisplay  # beta-export
 0x005CAD80  [CODE]  debugmem_tag_error  # beta-export
-0x005CADB8  [CODE]  func_005CADB8
+0x005CADB8  [CODE]  xmlMemoryDump  # libxml2 2.3.6, matched by position
 0x005CADC0  [CODE]  xmlInitMemory  # beta-export
 0x005CADD8  [CODE]  xmlMemSetup  # beta-export
 0x005CAE40  [CODE]  xmlMemGet  # beta-export
 0x005CAE88  [CODE]  isinf  # beta-export
 0x005CAEF0  [CODE]  xmlXPathInit  # beta-export
-0x005CAFA0  [CODE]  func_005CAFA0
+0x005CAFA0  [CODE]  xmlXPathNewCompExpr  # libxml2 2.3.6, matched by position
 0x005CB088  [CODE]  xmlXPathFreeCompExpr  # beta-export
-0x005CB168  [CODE]  func_005CB168
-0x005CB300  [CODE]  func_005CB300
-0x005CB3F8  [CODE]  func_005CB3F8
-0x005CB4C8  [CODE]  func_005CB4C8
-0x005CB600  [CODE]  func_005CB600
-0x005CB708  [CODE]  func_005CB708
+0x005CB168  [CODE]  xmlXPathCompExprAdd  # libxml2 2.3.6, matched by position
+0x005CB300  [CODE]  xmlXPathDebugDumpNode  # libxml2 2.3.6, matched by position
+0x005CB3F8  [CODE]  xmlXPathDebugDumpNodeList  # libxml2 2.3.6, matched by position
+0x005CB4C8  [CODE]  xmlXPathDebugDumpNodeSet  # libxml2 2.3.6, matched by position
+0x005CB600  [CODE]  xmlXPathDebugDumpValueTree  # libxml2 2.3.6, matched by position
+0x005CB708  [CODE]  xmlXPathDebugDumpLocationSet  # libxml2 2.3.6, matched by position
 0x005CB830  [CODE]  xmlXPathDebugDumpObject  # beta-export
-0x005CBBB0  [CODE]  func_005CBBB0  # old:setup_PREDICATE
+0x005CBBB0  [CODE]  xmlXPathDebugDumpStepOp  # libxml2 2.3.6, matched by position
 0x005CC328  [CODE]  xmlXPathDebugDumpCompExpr  # beta-export
 0x005CC410  [CODE]  valuePush  # beta-export
 0x005CC4C0  [CODE]  valuePop  # beta-export
-0x005CC518  [CODE]  func_005CC518  # old:setup__Infinity
+0x005CC518  [CODE]  xmlXPathFormatNumber  # libxml2 2.3.6, matched by position
 0x005CCA10  [CODE]  xmlXPatherror  # beta-export
 0x005CCC78  [CODE]  xmlXPathCmpNodes  # beta-export
 0x005CCDE0  [CODE]  xmlXPathNodeSetSort  # beta-export
-0x005CCEF8  [CODE]  func_005CCEF8
+0x005CCEF8  [CODE]  xmlXPathNodeSetCreate  # libxml2 2.3.6, matched by position
 0x005CCFC8  [CODE]  xmlXPathNodeSetAdd  # beta-export
 0x005CD0D0  [CODE]  xmlXPathNodeSetAddUnique  # beta-export
 0x005CD1B0  [CODE]  xmlXPathNodeSetMerge  # beta-export
-0x005CD378  [CODE]  func_005CD378
-0x005CD428  [CODE]  func_005CD428
+0x005CD378  [CODE]  xmlXPathNodeSetDel  # libxml2 2.3.6, matched by position
+0x005CD428  [CODE]  xmlXPathNodeSetRemove  # libxml2 2.3.6, matched by position
 0x005CD498  [CODE]  xmlXPathFreeNodeSet  # beta-export
-0x005CD4E8  [CODE]  func_005CD4E8
+0x005CD4E8  [CODE]  xmlXPathFreeValueTree  # libxml2 2.3.6, matched by position
 0x005CD580  [CODE]  xmlXPathNewNodeSet  # beta-export
 0x005CD610  [CODE]  xmlXPathNewValueTree  # beta-export
 0x005CD6A0  [CODE]  xmlXPathNewNodeSetList  # beta-export
 0x005CD748  [CODE]  xmlXPathWrapNodeSet  # beta-export
 0x005CD7D0  [CODE]  xmlXPathFreeNodeSetList  # old:PatcherDownloader::called_005CD7D0; beta-export
-0x005CD7F8  [CODE]  func_005CD7F8
+0x005CD7F8  [CODE]  xmlXPathRegisterFunc  # libxml2 2.3.6, matched by position
 0x005CD818  [CODE]  xmlXPathRegisterFuncNS  # beta-export
 0x005CD8A8  [CODE]  xmlXPathFunctionLookup  # beta-export
 0x005CD8C8  [CODE]  xmlXPathFunctionLookupNS  # beta-export
 0x005CD908  [CODE]  xmlXPathRegisteredFuncsCleanup  # beta-export
-0x005CD940  [CODE]  func_005CD940
+0x005CD940  [CODE]  xmlXPathRegisterVariable  # libxml2 2.3.6, matched by position
 0x005CD960  [CODE]  xmlXPathRegisterVariableNS  # beta-export
 0x005CD9F8  [CODE]  xmlXPathRegisterVariableLookup  # beta-export
 0x005CDA10  [CODE]  xmlXPathVariableLookup  # beta-export
@@ -1638,15 +1638,15 @@
 0x005CE108  [CODE]  xmlXPathNewContext  # beta-export
 0x005CE1D0  [CODE]  xmlXPathFreeContext  # beta-export
 0x005CE218  [CODE]  xmlXPathNewParserContext  # beta-export
-0x005CE2D8  [CODE]  func_005CE2D8
+0x005CE2D8  [CODE]  xmlXPathCompParserContext  # libxml2 2.3.6, matched by position
 0x005CE3B8  [CODE]  xmlXPathFreeParserContext  # beta-export
-0x005CE418  [CODE]  func_005CE418
-0x005CE588  [CODE]  func_005CE588
-0x005CE6D8  [CODE]  func_005CE6D8
-0x005CE998  [CODE]  func_005CE998
-0x005CEAE8  [CODE]  func_005CEAE8
-0x005CEBE8  [CODE]  func_005CEBE8
-0x005CEC70  [CODE]  func_005CEC70
+0x005CE418  [CODE]  xmlXPathCompareNodeSetFloat  # libxml2 2.3.6, matched by position
+0x005CE588  [CODE]  xmlXPathCompareNodeSetString  # libxml2 2.3.6, matched by position
+0x005CE6D8  [CODE]  xmlXPathCompareNodeSets  # libxml2 2.3.6, matched by position
+0x005CE998  [CODE]  xmlXPathCompareNodeSetValue  # libxml2 2.3.6, matched by position
+0x005CEAE8  [CODE]  xmlXPathEqualNodeSetString  # libxml2 2.3.6, matched by position
+0x005CEBE8  [CODE]  xmlXPathEqualNodeSetFloat  # libxml2 2.3.6, matched by position
+0x005CEC70  [CODE]  xmlXPathEqualNodeSets  # libxml2 2.3.6, matched by position
 0x005CEF68  [CODE]  xmlXPathEqualValues  # beta-export
 0x005CF3A0  [CODE]  xmlXPathCompareValues  # beta-export
 0x005CF5F8  [CODE]  xmlXPathValueFlipSign  # beta-export
@@ -1665,7 +1665,7 @@
 0x005CFF18  [CODE]  xmlXPathNextFollowingSibling  # beta-export
 0x005CFF70  [CODE]  xmlXPathNextPrecedingSibling  # beta-export
 0x005CFFC8  [CODE]  xmlXPathNextFollowing  # beta-export
-0x005D0048  [CODE]  func_005D0048
+0x005D0048  [CODE]  xmlXPathIsAncestor  # libxml2 2.3.6, matched by position
 0x005D00B0  [CODE]  xmlXPathNextPreceding  # beta-export
 0x005D0168  [CODE]  xmlXPathNextNamespace  # beta-export
 0x005D0218  [CODE]  xmlXPathNextAttribute  # beta-export
@@ -1676,7 +1676,7 @@
 0x005D04B8  [CODE]  xmlXPathIdFunction  # beta-export
 0x005D0848  [CODE]  xmlXPathLocalNameFunction  # beta-export
 0x005D09D0  [CODE]  xmlXPathNamespaceURIFunction  # beta-export
-0x005D0B30  [CODE]  func_005D0B30
+0x005D0B30  [CODE]  xmlXPathNameFunction  # libxml2 2.3.6, matched by position
 0x005D0CC0  [CODE]  xmlXPathConvertString  # beta-export
 0x005D0E18  [CODE]  xmlXPathStringFunction  # beta-export
 0x005D0EC8  [CODE]  xmlXPathStringLengthFunction  # beta-export
@@ -1701,36 +1701,36 @@
 0x005D2640  [CODE]  xmlXPathCeilingFunction  # beta-export
 0x005D2730  [CODE]  xmlXPathRoundFunction  # beta-export
 0x005D2890  [CODE]  xmlXPathParseNCName  # beta-export
-0x005D29D0  [CODE]  func_005D29D0
+0x005D29D0  [CODE]  xmlXPathParseQName  # libxml2 2.3.6, matched by position
 0x005D2A48  [CODE]  xmlXPathParseName  # beta-export
 0x005D2B98  [CODE]  xmlXPathStringEvalNumber  # beta-export
-0x005D2DF0  [CODE]  func_005D2DF0
-0x005D2FE8  [CODE]  func_005D2FE8
-0x005D31C0  [CODE]  func_005D31C0
-0x005D33D8  [CODE]  func_005D33D8
+0x005D2DF0  [CODE]  xmlXPathCompNumber  # libxml2 2.3.6, matched by position
+0x005D2FE8  [CODE]  xmlXPathParseLiteral  # libxml2 2.3.6, matched by position
+0x005D31C0  [CODE]  xmlXPathCompLiteral  # libxml2 2.3.6, matched by position
+0x005D33D8  [CODE]  xmlXPathCompVariableReference  # libxml2 2.3.6, matched by position
 0x005D3590  [CODE]  xmlXPathIsNodeType  # old:setup_comment; beta-export
-0x005D3618  [CODE]  func_005D3618
-0x005D38E0  [CODE]  func_005D38E0
-0x005D3B78  [CODE]  func_005D3B78
-0x005D3CD0  [CODE]  func_005D3CD0
-0x005D3F48  [CODE]  func_005D3F48
-0x005D43E8  [CODE]  func_005D43E8
-0x005D45C8  [CODE]  func_005D45C8
-0x005D4788  [CODE]  func_005D4788
-0x005D49E8  [CODE]  func_005D49E8
-0x005D4BC8  [CODE]  func_005D4BC8
-0x005D4DF0  [CODE]  func_005D4DF0
-0x005D4FF0  [CODE]  func_005D4FF0
-0x005D5220  [CODE]  func_005D5220
-0x005D5478  [CODE]  func_005D5478
-0x005D5688  [CODE]  func_005D5688  # old:setup_comment
-0x005D5B68  [CODE]  func_005D5B68  # old:setup_ancestor
-0x005D5D20  [CODE]  func_005D5D20  # old:setup_range_to
-0x005D6348  [CODE]  func_005D6348
-0x005D66E0  [CODE]  func_005D66E0
-0x005D68E0  [CODE]  func_005D68E0
-0x005D6E88  [CODE]  func_005D6E88
-0x005D7C48  [CODE]  func_005D7C48
+0x005D3618  [CODE]  xmlXPathCompFunctionCall  # libxml2 2.3.6, matched by position
+0x005D38E0  [CODE]  xmlXPathCompPrimaryExpr  # libxml2 2.3.6, matched by position
+0x005D3B78  [CODE]  xmlXPathCompFilterExpr  # libxml2 2.3.6, matched by position
+0x005D3CD0  [CODE]  xmlXPathScanName  # libxml2 2.3.6, matched by position
+0x005D3F48  [CODE]  xmlXPathCompPathExpr  # libxml2 2.3.6, matched by position
+0x005D43E8  [CODE]  xmlXPathCompUnionExpr  # libxml2 2.3.6, matched by position
+0x005D45C8  [CODE]  xmlXPathCompUnaryExpr  # libxml2 2.3.6, matched by position
+0x005D4788  [CODE]  xmlXPathCompMultiplicativeExpr  # libxml2 2.3.6, matched by position
+0x005D49E8  [CODE]  xmlXPathCompAdditiveExpr  # libxml2 2.3.6, matched by position
+0x005D4BC8  [CODE]  xmlXPathCompRelationalExpr  # libxml2 2.3.6, matched by position
+0x005D4DF0  [CODE]  xmlXPathCompEqualityExpr  # libxml2 2.3.6, matched by position
+0x005D4FF0  [CODE]  xmlXPathCompAndExpr  # libxml2 2.3.6, matched by position
+0x005D5220  [CODE]  xmlXPathCompileExpr  # libxml2 2.3.6, matched by position
+0x005D5478  [CODE]  xmlXPathCompPredicate  # libxml2 2.3.6, matched by position
+0x005D5688  [CODE]  xmlXPathCompNodeTest  # libxml2 2.3.6, matched by position
+0x005D5B68  [CODE]  xmlXPathIsAxisName  # libxml2 2.3.6, matched by position
+0x005D5D20  [CODE]  xmlXPathCompStep  # libxml2 2.3.6, matched by position
+0x005D6348  [CODE]  xmlXPathCompRelativeLocationPath  # libxml2 2.3.6, matched by position
+0x005D66E0  [CODE]  xmlXPathCompLocationPath  # libxml2 2.3.6, matched by position
+0x005D68E0  [CODE]  xmlXPathNodeCollectAndTest  # libxml2 2.3.6, matched by position
+0x005D6E88  [CODE]  xmlXPathCompOpEval  # libxml2 2.3.6, matched by position
+0x005D7C48  [CODE]  xmlXPathRunEval  # libxml2 2.3.6, matched by position
 0x005D7D00  [CODE]  xmlXPathEvalPredicate  # beta-export
 0x005D7DE8  [CODE]  xmlXPathEvaluatePredicateResult  # beta-export
 0x005D7ED0  [CODE]  xmlXPathCompile  # beta-export
@@ -1739,13 +1739,13 @@
 0x005D80E8  [CODE]  xmlXPathEval  # old:PatcherDownloader::called_005D80E8; beta-export
 0x005D82A8  [CODE]  xmlXPathEvalExpression  # beta-export
 0x005D8420  [CODE]  xmlXPathRegisterAllFunctions  # old:setup_boolean; beta-export
-0x005D86C8  [CODE]  func_005D86C8
-0x005D8720  [CODE]  func_005D8720
-0x005D8770  [CODE]  func_005D8770
-0x005D87D8  [CODE]  func_005D87D8
-0x005D8838  [CODE]  func_005D8838
-0x005D88D8  [CODE]  func_005D88D8
-0x005D8958  [CODE]  func_005D8958
+0x005D86C8  [CODE]  xmlXPtrGetArity  # libxml2 2.3.6, matched by position
+0x005D8720  [CODE]  xmlXPtrGetIndex  # libxml2 2.3.6, matched by position
+0x005D8770  [CODE]  xmlXPtrGetNthChild  # libxml2 2.3.6, matched by position
+0x005D87D8  [CODE]  xmlXPtrCmpPoints  # libxml2 2.3.6, matched by position
+0x005D8838  [CODE]  xmlXPtrNewPoint  # libxml2 2.3.6, matched by position
+0x005D88D8  [CODE]  xmlXPtrRangeCheckOrder  # libxml2 2.3.6, matched by position
+0x005D8958  [CODE]  xmlXPtrRangesEqual  # libxml2 2.3.6, matched by position
 0x005D89F0  [CODE]  xmlXPtrNewRange  # beta-export
 0x005D8AC8  [CODE]  xmlXPtrNewRangePoints  # beta-export
 0x005D8BA0  [CODE]  xmlXPtrNewRangePointNode  # beta-export
@@ -1753,41 +1753,41 @@
 0x005D8D40  [CODE]  xmlXPtrNewRangeNodes  # beta-export
 0x005D8DF0  [CODE]  xmlXPtrNewCollapsedRange  # beta-export
 0x005D8E88  [CODE]  xmlXPtrNewRangeNodeObject  # beta-export
-0x005D9008  [CODE]  func_005D9008
+0x005D9008  [CODE]  xmlXPtrLocationSetCreate  # libxml2 2.3.6, matched by position
 0x005D90D8  [CODE]  xmlXPtrLocationSetAdd  # beta-export
 0x005D9210  [CODE]  xmlXPtrLocationSetMerge  # beta-export
-0x005D9298  [CODE]  func_005D9298
-0x005D9348  [CODE]  func_005D9348
+0x005D9298  [CODE]  xmlXPtrLocationSetDel  # libxml2 2.3.6, matched by position
+0x005D9348  [CODE]  xmlXPtrLocationSetRemove  # libxml2 2.3.6, matched by position
 0x005D93B8  [CODE]  xmlXPtrFreeLocationSet  # beta-export
 0x005D9448  [CODE]  xmlXPtrNewLocationSetNodes  # beta-export
 0x005D9500  [CODE]  xmlXPtrNewLocationSetNodeSet  # beta-export
 0x005D95F0  [CODE]  xmlXPtrWrapLocationSet  # beta-export
-0x005D9678  [CODE]  func_005D9678
-0x005D9770  [CODE]  func_005D9770  # old:setup_xpointer
-0x005D9C08  [CODE]  func_005D9C08
-0x005D9D68  [CODE]  func_005D9D68
-0x005D9EA8  [CODE]  func_005D9EA8
+0x005D9678  [CODE]  xmlXPtrGetChildNo  # libxml2 2.3.6, matched by position
+0x005D9770  [CODE]  xmlXPtrEvalXPtrPart  # libxml2 2.3.6, matched by position
+0x005D9C08  [CODE]  xmlXPtrEvalFullXPtr  # libxml2 2.3.6, matched by position
+0x005D9D68  [CODE]  xmlXPtrEvalChildSeq  # libxml2 2.3.6, matched by position
+0x005D9EA8  [CODE]  xmlXPtrEvalXPointer  # libxml2 2.3.6, matched by position
 0x005DA080  [CODE]  xmlXPtrNewContext  # old:setup_range_to; beta-export
 0x005DA1A0  [CODE]  xmlXPtrEval  # beta-export
-0x005DA330  [CODE]  func_005DA330
+0x005DA330  [CODE]  xmlXPtrBuildRangeNodeList  # libxml2 2.3.6, matched by position
 0x005DA6F8  [CODE]  xmlXPtrBuildNodeList  # beta-export
-0x005DA8D8  [CODE]  func_005DA8D8
+0x005DA8D8  [CODE]  xmlXPtrNbLocChildren  # libxml2 2.3.6, matched by position
 0x005DA978  [CODE]  xmlXPtrHereFunction  # beta-export
 0x005DAA00  [CODE]  xmlXPtrOriginFunction  # beta-export
 0x005DAA88  [CODE]  xmlXPtrStartPointFunction  # beta-export
 0x005DACC0  [CODE]  xmlXPtrEndPointFunction  # beta-export
-0x005DAEE8  [CODE]  func_005DAEE8
+0x005DAEE8  [CODE]  xmlXPtrCoveringRange  # libxml2 2.3.6, matched by position
 0x005DB028  [CODE]  xmlXPtrRangeFunction  # beta-export
-0x005DB178  [CODE]  func_005DB178
+0x005DB178  [CODE]  xmlXPtrInsideRange  # libxml2 2.3.6, matched by position
 0x005DB2F0  [CODE]  xmlXPtrRangeInsideFunction  # beta-export
 0x005DB440  [CODE]  xmlXPtrRangeToFunction  # beta-export
 0x005DB638  [CODE]  xmlXPtrAdvanceNode  # beta-export
-0x005DB700  [CODE]  func_005DB700
-0x005DB8A0  [CODE]  func_005DB8A0
-0x005DB9F0  [CODE]  func_005DB9F0
-0x005DBB90  [CODE]  func_005DBB90
-0x005DBC58  [CODE]  func_005DBC58
-0x005DBCD8  [CODE]  func_005DBCD8
+0x005DB700  [CODE]  xmlXPtrAdvanceChar  # libxml2 2.3.6, matched by position
+0x005DB8A0  [CODE]  xmlXPtrMatchString  # libxml2 2.3.6, matched by position
+0x005DB9F0  [CODE]  xmlXPtrSearchString  # libxml2 2.3.6, matched by position
+0x005DBB90  [CODE]  xmlXPtrGetLastChar  # libxml2 2.3.6, matched by position
+0x005DBC58  [CODE]  xmlXPtrGetStartPoint  # libxml2 2.3.6, matched by position
+0x005DBCD8  [CODE]  xmlXPtrGetEndPoint  # libxml2 2.3.6, matched by position
 0x005DBD58  [CODE]  xmlXPtrStringRangeFunction  # beta-export
 0x005DC180  [CODE]  xmlXPtrEvalRangePredicate  # beta-export
 0x005DC568  [CODE]  __4VUrlPCc  # old:PatcherAPI::called_005DC568; beta-export

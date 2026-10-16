@@ -122,7 +122,7 @@ def main(argv):
     image_words = {lo: [int.from_bytes(img.read(a, 4), "little") for a in range(lo, hi, 4)]
                    for lo, hi, _ in regions}
     objs = [C.BUILD / f"{t}.o" for t in tus] if tus else \
-           [C.BUILD / f"{s.stem}.o" for s in sorted(C.SRC.glob("*.cpp"))]
+           [C.BUILD / f"{s.stem}.o" for s in C.sources()]
     covered = []                  # (addr, size) of unnamed target code we now match
     n_unnamed = n_match = n_copies = 0
     for obj in objs:

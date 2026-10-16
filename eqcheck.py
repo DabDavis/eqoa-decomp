@@ -94,12 +94,43 @@ FLAGS = ["-O2", "-G0", "-fno-exceptions"]
 TU_OVERRIDE = {"libgcc2_main": ("ee-gcc2.9-990721", ["-O2", "-G0", "-x", "c"])}
 
 
+def sources() -> list[Path]:
+    """Every TU of the current module: `*.cpp` in SRC, and C sources (`*.c`) in
+    SRC or one directory below it -- SETUP's libxml is upstream C, kept in
+    `src/libxml/`.  Object names are the stems, so a stem must be unique."""
+    return sorted(SRC.glob("*.cpp")) + sorted(SRC.glob("*.c")) + sorted(SRC.glob("*/*.c"))
+
+
+def source_path(stem: str) -> Path:
+    for s in sources():
+        if s.stem == stem:
+            return s
+    return SRC / (stem + ".cpp")
+
+
+def _module_cflags() -> list[str]:
+    """Extra flags for the module's C sources, from `SRC/cflags.txt` (one or more
+    per line, `#` comments allowed; an `-I` path is relative to SRC)."""
+    f = SRC / "cflags.txt"
+    if not f.exists():
+        return []
+    out = []
+    for line in f.read_text().splitlines():
+        for tok in line.split("#", 1)[0].split():
+            out.append("-I" + str((SRC / tok[2:]).resolve()) if tok.startswith("-I") else tok)
+    return out
+
+
 def compile_cmd(stem: str, tc: str | None = None, flags: list[str] | None = None) -> list[str]:
-    """The `-S` command for src/<stem>.cpp, up to the source path."""
+    """The `-S` command for src/<stem>.cpp (or .c), up to the source path."""
     if stem in TU_OVERRIDE and E.MODULE == "SUPPORT":
         tc, flags = TU_OVERRIDE[stem]
     cmd = driver(tc or TOOLCHAIN) + ["-S"] + list(FLAGS if flags is None else flags)
     if E.MODULE != "SUPPORT":
+        if source_path(stem).suffix == ".c":
+            # a C source brings its own headers first (SETUP's libxml: the PS2
+            # build's config.h and the libc it compiled against)
+            cmd += _module_cflags()
         # another module's classes derive from SUPPORT's (VIWnd, VIUIWindow), so
         # its TUs include SUPPORT's headers
         cmd.append("-I" + str(HERE / "src"))
@@ -117,7 +148,7 @@ def driver(name: str):
 
 def build(tc: str, flags: list[str], gnu_as: bool = False) -> tuple[list[Path], str]:
     BUILD.mkdir(exist_ok=True)
-    srcs = sorted(SRC.glob("*.cpp"))
+    srcs = sources()
     if not srcs:
         raise SystemExit(f"no sources in {SRC}")
     objs, err = [], []
@@ -206,15 +237,30 @@ def callee_mismatches(st, img, obj: Path, symbol: str, sym) -> list[tuple[int, s
     have = CC.candidate_calls(obj, symbol, syms)
     return [(off, t, have[off]) for off, t in sorted(want.items())
             if off in have and "+0x" not in t and not t.startswith("0x")
-            and not E.is_placeholder(t) and have[off] != t]
+            and not E.is_placeholder(t) and have[off] != t
+            and t != f"{obj.stem}:{have[off]}"]
+
+
+def map_name(st, obj: Path, name: str) -> str:
+    """The map's name for one of OUR functions: `<tu>:<name>` when the map
+    qualifies it (a static whose name another TU also uses), else `name`."""
+    try:
+        st.get(f"{obj.stem}:{name}")
+        return f"{obj.stem}:{name}"
+    except KeyError:
+        return name
 
 
 def score(st, img, obj: Path, symbol: str):
     """('match'|'wrong'|'no-target', wrong, total, diffreport)"""
     try:
-        sym = st.get(symbol)
+        # a static whose name another TU also uses is mapped as `<tu>:<name>`
+        sym = st.get(f"{obj.stem}:{symbol}")
     except KeyError:
-        return ("no-target", 0, 0, None)
+        try:
+            sym = st.get(symbol)
+        except KeyError:
+            return ("no-target", 0, 0, None)
     target = img.func(sym, trim=True)
     cand, sec, at = D.elf_function_at(obj, symbol)
     # the object's own relocation table says which fields the linker writes;
@@ -334,9 +380,9 @@ def main(argv=None):
                     continue
                 seen.add(key)
                 kind, wrong, tot, res = score(st, img, o, name)
-                rows.append((kind, wrong, tot, name, res))
+                rows.append((kind, wrong, tot, map_name(st, o, name), res))
                 if kind == "match":
-                    matched.append(name)
+                    matched.append(map_name(st, o, name))
                 continue
             if name in seen:
                 # the same target function, defined twice; only report it if

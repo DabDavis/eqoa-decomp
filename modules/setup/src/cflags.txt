@@ -1,0 +1,4 @@
+# Flags for SETUP's C sources (eqcheck.compile_cmd).  libxml2 2.3.6 compiles
+# against the PS2 build's config.h and the libc it saw (src/libxml/ps2/, ours),
+# then libxml's own headers (fetched by modules/setup/libxml/fetch.py, patched).
+-Ilibxml/ps2 -Ilibxml/include

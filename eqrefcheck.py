@@ -978,7 +978,7 @@ def main(argv):
     names = Names(st)
     matched = set(C.MATCHED.read_text().split()) if C.MATCHED.exists() else set()
     objs = [C.BUILD / f"{t}.o" for t in tus] if tus else \
-           [C.BUILD / f"{s.stem}.o" for s in sorted(C.SRC.glob("*.cpp"))]
+           [C.BUILD / f"{s.stem}.o" for s in C.sources()]
     rep = Report()
     rep.names, rep.dump = names, d
     for path in objs:
