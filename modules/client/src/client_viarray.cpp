@@ -19,16 +19,18 @@ template int VIArray<VIRec8_BB88A8>::Allocate();  // 0x00bb88a8
 template int VIArray<VIRec8_BB88A8>::Init(int);  // 0x00bb8920
 
 // 0x00bbb768..0x00c02d78: 6 members; element size measured.
-struct VIRec8_BBC340 { int m_data[2]; };
-template int VIArray<VIRec8_BBC340>::DestroyPool();  // 0x00bbb768
-template int VIArray<VIRec8_BBC340>::Clear();  // 0x00bbc2e0
-template int VIArray<VIRec8_BBC340>::Allocate();  // 0x00bbc340
-template int VIArray<VIRec8_BBC340>::Init(const VIArray<VIRec8_BBC340> &);  // 0x00bbc3b8
-template VIArray<VIRec8_BBC340>::~VIArray();  // 0x00bdee48
-template int VIArray<VIRec8_BBC340>::Init(int);  // 0x00c02d78
+// VIItemStat (game.h): the item's stat array.  The ctor and dtor copies the image calls
+// are VIItemList.cpp's (0x00BBB758/0x00BBB7B8); 0x00bdee48 is VIClient.cpp's dead copy.
+template VIArray<VIItemStat>::VIArray();  // 0x00bbb758
+template VIArray<VIItemStat>::VIArray(const VIArray<VIItemStat> &);  // 0x00be0178 (VIClient.cpp's; 0 refs)
+template int VIArray<VIItemStat>::DestroyPool();  // 0x00bbb768
+template int VIArray<VIItemStat>::Clear();  // 0x00bbc2e0
+template int VIArray<VIItemStat>::Allocate();  // 0x00bbc340
+template int VIArray<VIItemStat>::Init(const VIArray<VIItemStat> &);  // 0x00bbc3b8
+template VIArray<VIItemStat>::~VIArray();  // 0x00bbb7b8
+template int VIArray<VIItemStat>::Init(int);  // 0x00c02d78
 
 // 0x00bbbc50..0x00bbc708: 6 members; element size measured.
-struct VIRec4_BBC218 { int m_data[1]; };
 template int VIArray<VIRec4_BBC218>::DestroyPool();  // 0x00bbbc50
 template VIArray<VIRec4_BBC218>::~VIArray();  // 0x00bbbca0
 template int VIArray<VIRec4_BBC218>::Clear();  // 0x00bbc1b8
@@ -45,12 +47,17 @@ template int VIArray<VIRec44_BBC808>::Allocate();  // 0x00bbc808
 template int VIArray<VIRec44_BBC808>::Init(int);  // 0x00bbc880
 
 // 0x00bbc070..0x00bbc168: 2 members; element size not measurable from these members.
-struct VIElem_BBC168 { int m_data[1]; };
-template int VIArray<VIElem_BBC168>::Clear();  // 0x00bbc070
-template int VIArray<VIElem_BBC168>::Init(int);  // 0x00bbc168
+// (was the placeholder VIElem_BBC168) 792 bytes, and a member with a constructor at
+// +0x2DC: a VINetItem (764 bytes, VIItem's m_stats at +0x2DC) and 28 more.  Measured, not
+// identified: func_00BB96C0 / func_00BB9738 and the stream reader func_00BBD9E8 use it.
+struct VIRec792_BBC168 : VINetItem { int m_p2FC[7]; };
+template int VIArray<VIRec792_BBC168>::DestroyPool();  // 0x00bbbb30
+template int VIArray<VIRec792_BBC168>::Clear();  // 0x00bbc070
+template int VIArray<VIRec792_BBC168>::Allocate();  // 0x00bbc0d0
+template int VIArray<VIRec792_BBC168>::Init(int);  // 0x00bbc168
 
 // 0x00bdf258..0x00bdf750: 5 members; element size measured.
-struct VIRec436_BDF6D8 { int m_data[109]; };
+// VIRec436_BDF6D8 is game.h's (a queued dialog line).
 template int VIArray<VIRec436_BDF6D8>::DestroyPool();  // 0x00bdf258
 template VIArray<VIRec436_BDF6D8>::~VIArray();  // 0x00bdf2a8
 template int VIArray<VIRec436_BDF6D8>::Clear();  // 0x00bdf678
@@ -73,31 +80,39 @@ template int VIArray<VIRec132_BEB670>::Allocate();  // 0x00beb670
 template int VIArray<VIRec132_BEB670>::Init(int);  // 0x00beb6e8
 
 // 0x00bdf7a0..0x00bdf7f0: 2 members; element size not measurable from these members.
-struct VIElem_BDF7A0 { int m_data[1]; };
+// (VIElem_BDF7A0 is declared in game.h: viclient.cpp's EnterGameLoad holds one.)
+template VIArray<VIElem_BDF7A0>::VIArray();  // 0x00bdf858
 template int VIArray<VIElem_BDF7A0>::DestroyPool();  // 0x00bdf7a0
 template VIArray<VIElem_BDF7A0>::~VIArray();  // 0x00bdf7f0
 
 // 0x00be07a0..0x00be3208: 6 members; element size measured.
-struct VIRec144_BE08C8 { int m_data[36]; };
+// VIRec144_BE08C8 is game.h's (VIAbility's sub-record).
 template int VIArray<VIRec144_BE08C8>::DestroyPool();  // 0x00be07a0
 template VIArray<VIRec144_BE08C8>::~VIArray();  // 0x00be07f0
 template int VIArray<VIRec144_BE08C8>::Clear();  // 0x00be0868
 template int VIArray<VIRec144_BE08C8>::Allocate();  // 0x00be08c8
 template int VIArray<VIRec144_BE08C8>::Init(const VIArray<VIRec144_BE08C8> &);  // 0x00be0940
 template int VIArray<VIRec144_BE08C8>::Init(int);  // 0x00be3208
+template VIArray<VIRec144_BE08C8>::VIArray(const VIArray<VIRec144_BE08C8> &);  // 0x00be0a88
+template VIArray<VIRec144_BE08C8>::VIArray();  // 0x00be0858
 
 // 0x00be1c18..0x00be1d10: 2 members; element size not measurable from these members.
-struct VIElem_BE1D10 { int m_data[1]; };
-template int VIArray<VIElem_BE1D10>::Clear();  // 0x00be1c18
-template int VIArray<VIElem_BE1D10>::Init(int);  // 0x00be1d10
+// (was the placeholder VIElem_BE1D10): the 0x000D dump's text sets, VIRec6A in game.h.  Its
+// synthesized constructor and destructor run VIArray<VIRec388>'s, which is why the
+// placeholder could not reproduce DestroyPool and Allocate.
+template int VIArray<VIRec6A>::DestroyPool();  // 0x00be1af8
+template int VIArray<VIRec6A>::Clear();  // 0x00be1c18
+template int VIArray<VIRec6A>::Allocate();  // 0x00be1c78
+template int VIArray<VIRec6A>::Init(int);  // 0x00be1d10
 
 // 0x00be1d60..0x00be3320: 5 members; element size measured.
-struct VIRec388_BE1E10 { int m_data[97]; };
-template int VIArray<VIRec388_BE1E10>::DestroyPool();  // 0x00be1d60
-template int VIArray<VIRec388_BE1E10>::Clear();  // 0x00be1db0
-template int VIArray<VIRec388_BE1E10>::Allocate();  // 0x00be1e10
-template int VIArray<VIRec388_BE1E10>::Init(int);  // 0x00be1e88
-template VIArray<VIRec388_BE1E10>::~VIArray();  // 0x00be3320
+// (was the placeholder VIRec388_BE1E10): VIRec388 in game.h, one text-set entry.
+template VIArray<VIRec388>::VIArray();  // 0x00be3388
+template int VIArray<VIRec388>::DestroyPool();  // 0x00be1d60
+template int VIArray<VIRec388>::Clear();  // 0x00be1db0
+template int VIArray<VIRec388>::Allocate();  // 0x00be1e10
+template int VIArray<VIRec388>::Init(int);  // 0x00be1e88
+template VIArray<VIRec388>::~VIArray();  // 0x00be3320
 
 // 0x00bf90c8..0x00bf9a08: 5 members; element size measured.
 struct VIRec8_BF9990 { int m_data[2]; };

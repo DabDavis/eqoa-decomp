@@ -11,7 +11,7 @@ unsigned short *VIClient::GetReplyName() { return m_p4F0B8; }
 VIUI *VIClient::GetUI() { return &m_ui; }
 VIRaster *VIClient::GetRaster() { return &m_raster; }
 VIScene *VIClient::GetScene() { return &m_scene; }
-VIClientPart00190 *VIClient::GetP00190() { return &m_p00190; }
+VICamera *VIClient::GetP00190() { return &m_camera; }
 VIWalkCamera *VIClient::GetWalkCamera() { return &m_walkCam; }
 VIDictionary *VIClient::GetDictionary() { return &m_dict; }
 VIClientPart06D50 *VIClient::GetP06D50() { return &m_p06D50; }

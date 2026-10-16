@@ -79,6 +79,13 @@ template <class T> VIArray<T>::VIArray()
     m_data = 0;
 }
 
+template <class T> VIArray<T>::VIArray(const VIArray<T> &a)
+{
+    m_size = 0;
+    m_data = 0;
+    Init(a);
+}
+
 template <class T> VIArray<T>::~VIArray()
 {
     if (m_data)

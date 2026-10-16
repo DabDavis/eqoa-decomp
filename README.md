@@ -118,6 +118,22 @@ GPL runtime and is not decompiled. UTIL is IOP code (R3000), with another compil
       re-read off the relocations instead.
     - STATION's and SETUP's vtable pass read jump tables as vtables. Their 315 and 228
       "methods" are case labels, so they are dropped.
+- **SETUP and STATION carry real names from the 2002 betas** (2026-10-16). The two USA
+  beta discs export SETUP's own functions, about 1,350 of them; every retail build
+  exports two.
+  - 911 SETUP and 628 STATION placeholders were renamed, each row marked
+    `# beta-export`.
+  - A name was carried only where the body is identical with relocations masked and
+    unique in BOTH builds. STATION's come from the betas' SETUP, which shares the
+    patcher and UI code.
+  - **Error rate:** the same transfer onto SUPPORT's real map names a renamed or
+    sibling function about 1% of the time.
+  - **Call graph:** every callee both sides name agrees (2,949 in SETUP, 2,493 in
+    STATION, 0 disagree), though the masked bodies never compared call targets.
+  - **The `old:` vtable labels on those rows contradict the new names. The labels
+    are the wrong ones.**
+  - The tools and the candidates are in `decomp-builds/`, an offline comparison
+    tree beside this one.
 - **The sweep that seeds it is checked on the one real map.**
   - A function ends at `jr ra`, or at a tail `j` to another function, plus the delay
     slot, unless a branch inside it reaches further.

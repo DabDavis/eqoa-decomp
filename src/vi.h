@@ -4870,6 +4870,12 @@ public:
     VIArray();
     ~VIArray();
 
+    // CLIENT's: a copy constructor (out of line, 0x00BE0A88 in VIClient.cpp: {0,0} then
+    // Init) and an assignment that is Init (inline: VIItem's assignment calls Init
+    // directly).  SUPPORT never copies a VIArray, so neither is instantiated there.
+    VIArray(const VIArray<T> &a);
+    VIArray<T> &operator=(const VIArray<T> &a) { Init(a); return *this; }
+
     // Inline in the class body: no End/Begin/Next symbol exists for ANY of the
     // twenty-two instantiations, where VIPool's three are emitted out of line.
     // Phase 51.  An inline subscript, and it is NOT cosmetic: the world and
@@ -6221,9 +6227,9 @@ public:
     void SetHomeShardName(const unsigned short *s);
 
     int            m_flags;             // 0x000
-    char           m_language;          // 0x004
+    unsigned char  m_language;          // 0x004: CLIENT ApplyOptions hands it to VIBattleMusic::Preload (lbu); the name is doubtful
     char           m_x05;               // 0x005
-    char           m_x06;               // 0x006
+    unsigned char  m_x06;               // 0x006: CLIENT ToggleCameraStyle reads it with lbu
     char           m_x07;               // 0x007
     float          m_musicVolume;       // 0x008
     float          m_effectVolume;      // 0x00C
@@ -6231,9 +6237,10 @@ public:
     char           m_password[64];      // 0x050
     char           m_x90[2];            // 0x090
     unsigned char  m_x92;               // 0x092: CLIENT's DamageFromSelf shows no damage of one's own while it is set
-    char           m_x93[3];            // 0x093
+    char           m_x93[2];            // 0x093
+    unsigned char  m_x95;               // 0x095: CLIENT's MaybeStopAutoAttack leaves auto-attack on while it is set
     unsigned char  m_region;            // 0x096
-    char           m_x97;               // 0x097
+    unsigned char  m_x97;               // 0x097: CLIENT's Rumble vibrates only while it is set (lbu)
     unsigned short m_homeShard[64];     // 0x098
     char           m_pad[740];          // 0x118
     int            m_magic;             // 0x3FC

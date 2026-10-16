@@ -6,6 +6,9 @@
 # the function asserts from there (a fact), `File.cpp~` it sits between two
 # that do (inferred), `old:<label>` the old claude-eqoa-iso map's guess.
 # 16 assert-anchored, 12 by span, 601 old labels (4 moved up to the real start, 315 jump-table labels dropped).
+# 2026-10-16: 628 entries named from the 2002 betas' OWN export tables (decomp-builds/names/STATION.candidates.txt,
+# copies=1 only: body identical with relocations masked and unique in both builds). Marked `beta-export`;
+# measured on SUPPORT's real names, about 1% of such names are a renamed or sibling function.  Trust a name once your object matches.
 0x002B6B80  [CODE]  station_main__FPcT0
 0x002B6DB8  [CODE]  func_002B6DB8
 0x002B6E10  [CODE]  func_002B6E10
@@ -55,21 +58,21 @@
 0x002B8F88  [CODE]  func_002B8F88
 0x002B8FE8  [CODE]  func_002B8FE8
 0x002B9060  [CODE]  func_002B9060
-0x002B90B0  [CODE]  func_002B90B0
+0x002B90B0  [CODE]  __8VICamera  # beta-export
 0x002B9240  [CODE]  func_002B9240  # old:VIWnd::method_002B9240
 0x002B9278  [CODE]  func_002B9278  # old:VIWnd::method_002B9278
-0x002B92A0  [CODE]  func_002B92A0
+0x002B92A0  [CODE]  Init__15VIWindowManagerP5VIPadP10VIKeyboard  # beta-export
 0x002B92D8  [CODE]  func_002B92D8
 0x002B92E0  [CODE]  func_002B92E0
 0x002B92E8  [CODE]  func_002B92E8  # old:VIWnd::called_002B92E8
 0x002B9568  [CODE]  func_002B9568  # old:VIWindowManager
-0x002B95B8  [CODE]  func_002B95B8
+0x002B95B8  [CODE]  __7VIFader  # beta-export
 0x002B95C8  [CODE]  func_002B95C8
 0x002B9610  [CODE]  func_002B9610
-0x002B96A0  [CODE]  func_002B96A0  # old:VIRaster::method
-0x002B96F0  [CODE]  func_002B96F0
-0x002B9730  [CODE]  func_002B9730
-0x002B9740  [CODE]  func_002B9740  # old:VIWnd::called_002B9740
+0x002B96A0  [CODE]  Free__7VIFader  # old:VIRaster::method; beta-export
+0x002B96F0  [CODE]  Begin__7VIFaderff  # beta-export
+0x002B9730  [CODE]  End__7VIFader  # beta-export
+0x002B9740  [CODE]  Update__7VIFader  # old:VIWnd::called_002B9740; beta-export
 0x002B98D0  [CODE]  func_002B98D0  # old:VIWnd::method_002B98D0
 0x002B9A28  [CODE]  func_002B9A28  # old:VIWindowManager::vfunc182
 0x002B9A90  [CODE]  func_002B9A90  # old:VIWnd::called_002B9A90
@@ -596,13 +599,13 @@
 0x002D1E48  [CODE]  func_002D1E48  # old:VIUIWindow::method_002D1E48
 0x002D1E88  [CODE]  func_002D1E88  # old:VIWndGenericRenderer
 0x002D1EE8  [CODE]  func_002D1EE8
-0x002D1EF0  [CODE]  func_002D1EF0
+0x002D1EF0  [CODE]  NeedDelete__17PatcherDownloader  # beta-export
 0x002D1EF8  [CODE]  func_002D1EF8
 0x002D1F00  [CODE]  func_002D1F00
 0x002D1F08  [CODE]  func_002D1F08
 0x002D1F10  [CODE]  func_002D1F10
 0x002D1F20  [CODE]  func_002D1F20
-0x002D1F28  [CODE]  func_002D1F28
+0x002D1F28  [CODE]  _GLOBAL_$I$VISplashFxInit__FP8VIRasterP12VIDictionary  # beta-export
 0x002D1F48  [CODE]  func_002D1F48
 0x002D1F68  [CODE]  func_002D1F68
 0x002D21F0  [CODE]  func_002D21F0  # old:VIFlatFileDirectory::called_002D21F0
@@ -726,30 +729,30 @@
 0x002DC648  [CODE]  func_002DC648
 0x002DC700  [CODE]  func_002DC700
 0x002DC760  [CODE]  func_002DC760
-0x002DC7F0  [CODE]  func_002DC7F0
-0x002DC830  [CODE]  func_002DC830
-0x002DC8B0  [CODE]  func_002DC8B0
-0x002DC920  [CODE]  func_002DC920
-0x002DC9A8  [CODE]  func_002DC9A8
+0x002DC7F0  [CODE]  __4VUrlPCc  # beta-export
+0x002DC830  [CODE]  _$_4VUrl  # beta-export
+0x002DC8B0  [CODE]  __4VUrliPCcT2  # beta-export
+0x002DC920  [CODE]  Initialize__4VUrl  # beta-export
+0x002DC9A8  [CODE]  SetUrlListener__4VUrlP13VIUrlListener  # beta-export
 0x002DC9B0  [CODE]  func_002DC9B0
 0x002DC9B8  [CODE]  func_002DC9B8
-0x002DC9C0  [CODE]  func_002DC9C0
-0x002DC9C8  [CODE]  func_002DC9C8
-0x002DC9D0  [CODE]  func_002DC9D0
-0x002DCA30  [CODE]  func_002DCA30
-0x002DCAA8  [CODE]  func_002DCAA8
-0x002DCB20  [CODE]  func_002DCB20
-0x002DCD28  [CODE]  func_002DCD28
+0x002DC9C0  [CODE]  GetErrorString__4VUrl  # beta-export
+0x002DC9C8  [CODE]  SetThreadPriority__4VUrli  # beta-export
+0x002DC9D0  [CODE]  SetProtocol__4VUrli  # beta-export
+0x002DCA30  [CODE]  SetServer__4VUrlPCc  # beta-export
+0x002DCAA8  [CODE]  SetRelativePath__4VUrlPCc  # beta-export
+0x002DCB20  [CODE]  ParseURL__4VUrlPCc  # beta-export
+0x002DCD28  [CODE]  OpenSocket__4VUrl  # beta-export
 0x002DCE40  [CODE]  func_002DCE40  # old:station_Content_Length
 0x002DD248  [CODE]  func_002DD248  # old:station_Content_Length
-0x002DD720  [CODE]  func_002DD720
-0x002DD818  [CODE]  func_002DD818
-0x002DD8A0  [CODE]  func_002DD8A0
-0x002DD8D0  [CODE]  func_002DD8D0
-0x002DD988  [CODE]  func_002DD988
-0x002DD9B8  [CODE]  func_002DD9B8
-0x002DDC10  [CODE]  func_002DDC10
-0x002DDC40  [CODE]  func_002DDC40
+0x002DD720  [CODE]  Mkdirhier__4VUrlPCc  # beta-export
+0x002DD818  [CODE]  OpenMemCardFile__4VUrlPCc  # beta-export
+0x002DD8A0  [CODE]  CloseMemCardFile__4VUrl  # beta-export
+0x002DD8D0  [CODE]  InitMemCard__4VUrl  # beta-export
+0x002DD988  [CODE]  WriteToMemCard__4VUrlPci  # beta-export
+0x002DD9B8  [CODE]  GetToMemoryCard__4VUrlPc  # beta-export
+0x002DDC10  [CODE]  PrintError__4VUrl  # beta-export
+0x002DDC40  [CODE]  GetBytes__4VUrl  # beta-export
 0x002DDC48  [CODE]  func_002DDC48  # old:VIWnd::called_002DDC48
 0x002DDC88  [CODE]  func_002DDC88  # old:VIWnd::called_002DDC88
 0x002DDCD8  [CODE]  func_002DDCD8  # old:VITimer::called_002DDCD8
@@ -1338,7 +1341,7 @@
 0x002F53B8  [CODE]  func_002F53B8  # old:VIFile::called_002F53B8
 0x002F5460  [CODE]  func_002F5460
 0x002F5468  [CODE]  func_002F5468
-0x002F54F0  [CODE]  func_002F54F0  # old:station__NULL_
+0x002F54F0  [CODE]  xmlDebugDumpString  # old:station__NULL_; beta-export
 0x002F5610  [CODE]  func_002F5610  # old:VIWndReadCS::called_002F5610
 0x002F5820  [CODE]  func_002F5820  # old:VIWndReadCS::called_002F5820
 0x002F5C80  [CODE]  func_002F5C80  # old:station_ELEMDECL_
@@ -1346,18 +1349,18 @@
 0x002F62A8  [CODE]  func_002F62A8  # old:VIWndReadCS::called_002F62A8
 0x002F63D8  [CODE]  func_002F63D8  # old:VIWndReadCS::called_002F63D8
 0x002F6438  [CODE]  func_002F6438  # old:station_content_
-0x002F6648  [CODE]  func_002F6648  # old:VIWndReadCS::called_002F6648
+0x002F6648  [CODE]  xmlDebugDumpAttr  # old:VIWndReadCS::called_002F6648; beta-export
 0x002F67F0  [CODE]  func_002F67F0  # old:VIWndReadCS::called_002F67F0
-0x002F6850  [CODE]  func_002F6850  # old:station_content_
-0x002F6DD0  [CODE]  func_002F6DD0
+0x002F6850  [CODE]  xmlDebugDumpOneNode  # old:station_content_; beta-export
+0x002F6DD0  [CODE]  xmlDebugDumpNode  # beta-export
 0x002F6E30  [CODE]  func_002F6E30
-0x002F6E90  [CODE]  func_002F6E90  # old:station_version_
-0x002F7158  [CODE]  func_002F7158
-0x002F71E8  [CODE]  func_002F71E8
+0x002F6E90  [CODE]  xmlDebugDumpDocumentHead  # old:station_version_; beta-export
+0x002F7158  [CODE]  xmlDebugDumpDocument  # beta-export
+0x002F71E8  [CODE]  xmlDebugDumpDTD  # beta-export
 0x002F7390  [CODE]  func_002F7390
-0x002F74F8  [CODE]  func_002F74F8  # old:station_otimes
+0x002F74F8  [CODE]  xmlDebugDumpEntities  # old:station_otimes; beta-export
 0x002F7770  [CODE]  func_002F7770  # old:VIWndReadCS::called_002F7770
-0x002F7818  [CODE]  func_002F7818  # old:VIWndReadCS::called_002F7818
+0x002F7818  [CODE]  xmlLsOneNode  # old:VIWndReadCS::called_002F7818; beta-export
 0x002F7AB8  [CODE]  func_002F7AB8  # old:VIWndReadCS::called_002F7AB8
 0x002F7B50  [CODE]  func_002F7B50  # old:VIWndReadCS::called_002F7B50
 0x002F7BD0  [CODE]  func_002F7BD0  # old:VIWndReadCS::called_002F7BD0
@@ -1367,110 +1370,110 @@
 0x002F7F58  [CODE]  func_002F7F58
 0x002F8008  [CODE]  func_002F8008
 0x002F81A0  [CODE]  func_002F81A0
-0x002F8358  [CODE]  func_002F8358  # old:station_validate
+0x002F8358  [CODE]  xmlShell  # old:station_validate; beta-export
 0x002F8E30  [CODE]  func_002F8E30
-0x002F8F88  [CODE]  func_002F8F88
+0x002F8F88  [CODE]  xmlCheckUTF8  # beta-export
 0x002F9028  [CODE]  func_002F9028
 0x002F90E8  [CODE]  func_002F90E8
-0x002F9240  [CODE]  func_002F9240
-0x002F9318  [CODE]  func_002F9318
+0x002F9240  [CODE]  isolat1ToUTF8  # beta-export
+0x002F9318  [CODE]  UTF8Toisolat1  # beta-export
 0x002F9460  [CODE]  func_002F9460
 0x002F9630  [CODE]  func_002F9630
 0x002F9880  [CODE]  func_002F9880
 0x002F9A48  [CODE]  func_002F9A48
-0x002F9C98  [CODE]  func_002F9C98
-0x002F9E70  [CODE]  func_002F9E70
-0x002F9F40  [CODE]  func_002F9F40  # old:VIWndReadCS::called_002F9F40
-0x002FA040  [CODE]  func_002FA040
-0x002FA218  [CODE]  func_002FA218
-0x002FA320  [CODE]  func_002FA320  # old:station_UTF_16
-0x002FA648  [CODE]  func_002FA648  # old:station_UTF_16
+0x002F9C98  [CODE]  xmlDetectCharEncoding  # beta-export
+0x002F9E70  [CODE]  xmlCleanupEncodingAliases  # beta-export
+0x002F9F40  [CODE]  xmlGetEncodingAlias  # old:VIWndReadCS::called_002F9F40; beta-export
+0x002FA040  [CODE]  xmlAddEncodingAlias  # beta-export
+0x002FA218  [CODE]  xmlDelEncodingAlias  # beta-export
+0x002FA320  [CODE]  xmlParseCharEncoding  # old:station_UTF_16; beta-export
+0x002FA648  [CODE]  xmlGetCharEncodingName  # old:station_UTF_16; beta-export
 0x002FA750  [CODE]  func_002FA750
-0x002FA878  [CODE]  func_002FA878  # old:station_UTF_16LE
-0x002FA9E8  [CODE]  func_002FA9E8
-0x002FAAD0  [CODE]  func_002FAAD0
-0x002FABA0  [CODE]  func_002FABA0  # old:station_EBCDIC
-0x002FADD8  [CODE]  func_002FADD8  # old:VIWndReadCS::called_002FADD8
-0x002FAF60  [CODE]  func_002FAF60
-0x002FB070  [CODE]  func_002FB070
-0x002FB1D0  [CODE]  func_002FB1D0
-0x002FB418  [CODE]  func_002FB418
+0x002FA878  [CODE]  xmlInitCharEncodingHandlers  # old:station_UTF_16LE; beta-export
+0x002FA9E8  [CODE]  xmlCleanupCharEncodingHandlers  # beta-export
+0x002FAAD0  [CODE]  xmlRegisterCharEncodingHandler  # beta-export
+0x002FABA0  [CODE]  xmlGetCharEncodingHandler  # old:station_EBCDIC; beta-export
+0x002FADD8  [CODE]  xmlFindCharEncodingHandler  # old:VIWndReadCS::called_002FADD8; beta-export
+0x002FAF60  [CODE]  xmlCharEncFirstLine  # beta-export
+0x002FB070  [CODE]  xmlCharEncInFunc  # beta-export
+0x002FB1D0  [CODE]  xmlCharEncOutFunc  # beta-export
+0x002FB418  [CODE]  xmlCharEncCloseFunc  # beta-export
 0x002FB438  [CODE]  func_002FB438  # old:VIWndReadCS::called_002FB438
 0x002FB500  [CODE]  func_002FB500
-0x002FB6D8  [CODE]  func_002FB6D8
-0x002FB800  [CODE]  func_002FB800
-0x002FB838  [CODE]  func_002FB838
-0x002FB880  [CODE]  func_002FB880
-0x002FB938  [CODE]  func_002FB938
+0x002FB6D8  [CODE]  xmlInitializePredefinedEntities  # beta-export
+0x002FB800  [CODE]  xmlCleanupPredefinedEntities  # beta-export
+0x002FB838  [CODE]  xmlGetPredefinedEntity  # beta-export
+0x002FB880  [CODE]  xmlAddDtdEntity  # beta-export
+0x002FB938  [CODE]  xmlAddDocEntity  # beta-export
 0x002FB9F0  [CODE]  func_002FB9F0
-0x002FBA10  [CODE]  func_002FBA10
-0x002FBA88  [CODE]  func_002FBA88
-0x002FBAC8  [CODE]  func_002FBAC8
+0x002FBA10  [CODE]  xmlGetParameterEntity  # beta-export
+0x002FBA88  [CODE]  xmlGetDtdEntity  # beta-export
+0x002FBAC8  [CODE]  xmlGetDocEntity  # beta-export
 0x002FBB70  [CODE]  func_002FBB70
-0x002FBBD0  [CODE]  func_002FBBD0
-0x002FBF80  [CODE]  func_002FBF80  # old:station_ISO_8859_1
-0x002FC478  [CODE]  func_002FC478
+0x002FBBD0  [CODE]  xmlEncodeEntities  # beta-export
+0x002FBF80  [CODE]  xmlEncodeEntitiesReentrant  # old:station_ISO_8859_1; beta-export
+0x002FC478  [CODE]  xmlEncodeSpecialChars  # beta-export
 0x002FC650  [CODE]  func_002FC650
 0x002FC670  [CODE]  func_002FC670
 0x002FC690  [CODE]  func_002FC690
 0x002FC790  [CODE]  func_002FC790
-0x002FC7B0  [CODE]  func_002FC7B0
+0x002FC7B0  [CODE]  xmlDumpEntityDecl  # beta-export
 0x002FCA30  [CODE]  func_002FCA30
 0x002FCA58  [CODE]  func_002FCA58
-0x002FCAC0  [CODE]  func_002FCAC0
-0x002FCAF0  [CODE]  func_002FCAF0
-0x002FCB58  [CODE]  func_002FCB58
+0x002FCAC0  [CODE]  xmlSetGenericErrorFunc  # beta-export
+0x002FCAF0  [CODE]  xmlParserPrintFileInfo  # beta-export
+0x002FCB58  [CODE]  xmlParserPrintFileContext  # beta-export
 0x002FCD98  [CODE]  func_002FCD98
 0x002FCE78  [CODE]  func_002FCE78
 0x002FCFC8  [CODE]  func_002FCFC8
 0x002FD118  [CODE]  func_002FD118
 0x002FD220  [CODE]  func_002FD220
 0x002FD328  [CODE]  func_002FD328
-0x002FD378  [CODE]  func_002FD378
-0x002FD418  [CODE]  func_002FD418
+0x002FD378  [CODE]  xmlHashCreate  # beta-export
+0x002FD418  [CODE]  xmlHashFree  # beta-export
 0x002FD558  [CODE]  func_002FD558
 0x002FD580  [CODE]  func_002FD580
-0x002FD5A0  [CODE]  func_002FD5A0
-0x002FD5C8  [CODE]  func_002FD5C8
+0x002FD5A0  [CODE]  xmlHashUpdateEntry  # beta-export
+0x002FD5C8  [CODE]  xmlHashUpdateEntry2  # beta-export
 0x002FD5F0  [CODE]  func_002FD5F0
-0x002FD610  [CODE]  func_002FD610
-0x002FD630  [CODE]  func_002FD630
-0x002FD7E8  [CODE]  func_002FD7E8
-0x002FD9B8  [CODE]  func_002FD9B8
-0x002FDA88  [CODE]  func_002FDA88
-0x002FDB48  [CODE]  func_002FDB48
-0x002FDC88  [CODE]  func_002FDC88
-0x002FDD80  [CODE]  func_002FDD80
+0x002FD610  [CODE]  xmlHashLookup2  # beta-export
+0x002FD630  [CODE]  xmlHashAddEntry3  # beta-export
+0x002FD7E8  [CODE]  xmlHashUpdateEntry3  # beta-export
+0x002FD9B8  [CODE]  xmlHashLookup3  # beta-export
+0x002FDA88  [CODE]  xmlHashScan  # beta-export
+0x002FDB48  [CODE]  xmlHashScan3  # beta-export
+0x002FDC88  [CODE]  xmlHashCopy  # beta-export
+0x002FDD80  [CODE]  xmlHashSize  # beta-export
 0x002FDD98  [CODE]  func_002FDD98
 0x002FDDC0  [CODE]  func_002FDDC0
-0x002FDDE0  [CODE]  func_002FDDE0
+0x002FDDE0  [CODE]  xmlHashRemoveEntry3  # beta-export
 0x002FDF78  [CODE]  func_002FDF78
 0x002FE028  [CODE]  func_002FE028
 0x002FE090  [CODE]  func_002FE090
 0x002FE3A0  [CODE]  func_002FE3A0
-0x002FE4E0  [CODE]  func_002FE4E0
-0x002FE5B8  [CODE]  func_002FE5B8
+0x002FE4E0  [CODE]  htmlInitAutoClose  # beta-export
+0x002FE5B8  [CODE]  htmlTagLookup  # beta-export
 0x002FE620  [CODE]  func_002FE620
 0x002FE718  [CODE]  func_002FE718
 0x002FE838  [CODE]  func_002FE838
-0x002FE9C0  [CODE]  func_002FE9C0
-0x002FEA60  [CODE]  func_002FEA60
+0x002FE9C0  [CODE]  htmlAutoCloseTag  # beta-export
+0x002FEA60  [CODE]  htmlIsAutoClosed  # beta-export
 0x002FEAD8  [CODE]  func_002FEAD8  # old:station_script
 0x002FED80  [CODE]  func_002FED80
-0x002FEE80  [CODE]  func_002FEE80
-0x002FEF18  [CODE]  func_002FEF18
+0x002FEE80  [CODE]  htmlIsScriptAttribute  # beta-export
+0x002FEF18  [CODE]  htmlEntityLookup  # beta-export
 0x002FEF90  [CODE]  func_002FEF90
-0x002FEFF8  [CODE]  func_002FEFF8
-0x002FF220  [CODE]  func_002FF220
+0x002FEFF8  [CODE]  UTF8ToHtml  # beta-export
+0x002FF220  [CODE]  htmlEncodeEntities  # beta-export
 0x002FF478  [CODE]  func_002FF478
 0x002FF4D0  [CODE]  func_002FF4D0
 0x002FF588  [CODE]  func_002FF588
-0x002FF708  [CODE]  func_002FF708
-0x002FF7F0  [CODE]  func_002FF7F0
+0x002FF708  [CODE]  htmlNewDocNoDtD  # beta-export
+0x002FF7F0  [CODE]  htmlNewDoc  # beta-export
 0x002FF828  [CODE]  func_002FF828
 0x002FF998  [CODE]  func_002FF998
 0x002FFC00  [CODE]  func_002FFC00
-0x00300058  [CODE]  func_00300058
+0x00300058  [CODE]  htmlParseEntityRef  # beta-export
 0x00300188  [CODE]  func_00300188
 0x003002F0  [CODE]  func_003002F0
 0x003005B8  [CODE]  func_003005B8
@@ -1478,7 +1481,7 @@
 0x00300960  [CODE]  func_00300960
 0x00300BD0  [CODE]  func_00300BD0
 0x00300F70  [CODE]  func_00300F70
-0x00301438  [CODE]  func_00301438
+0x00301438  [CODE]  htmlParseCharRef  # beta-export
 0x00301760  [CODE]  func_00301760
 0x003018D8  [CODE]  func_003018D8
 0x003019B0  [CODE]  func_003019B0  # old:station_charset_
@@ -1487,231 +1490,231 @@
 0x00302370  [CODE]  func_00302370
 0x00302608  [CODE]  func_00302608
 0x003028F0  [CODE]  func_003028F0  # old:station_script
-0x00302CA8  [CODE]  func_00302CA8
+0x00302CA8  [CODE]  htmlParseElement  # beta-export
 0x00303080  [CODE]  func_00303080
 0x00303448  [CODE]  func_00303448
 0x003036F0  [CODE]  func_003036F0
 0x00303710  [CODE]  func_00303710  # old:station_malloc
 0x003037E0  [CODE]  func_003037E0
 0x003038E0  [CODE]  func_003038E0  # old:station_script
-0x00304A38  [CODE]  func_00304A38
-0x00304BE0  [CODE]  func_00304BE0
-0x00304E78  [CODE]  func_00304E78
+0x00304A38  [CODE]  htmlParseChunk  # beta-export
+0x00304BE0  [CODE]  htmlCreatePushParserCtxt  # beta-export
+0x00304E78  [CODE]  htmlSAXParseDoc  # beta-export
 0x00304F00  [CODE]  func_00304F00
-0x00304F20  [CODE]  func_00304F20  # old:station_malloc
-0x003050E0  [CODE]  func_003050E0
+0x00304F20  [CODE]  htmlCreateFileParserCtxt  # old:station_malloc; beta-export
+0x003050E0  [CODE]  htmlSAXParseFile  # beta-export
 0x00305168  [CODE]  func_00305168
 0x00305188  [CODE]  func_00305188
-0x00305198  [CODE]  func_00305198  # old:station_Charset_
-0x00305488  [CODE]  func_00305488  # old:station_content
+0x00305198  [CODE]  htmlGetMetaEncoding  # old:station_Charset_; beta-export
+0x00305488  [CODE]  htmlSetMetaEncoding  # old:station_content; beta-export
 0x00305850  [CODE]  func_00305850
 0x00305948  [CODE]  func_00305948
 0x00305A20  [CODE]  func_00305A20
 0x00305AA0  [CODE]  func_00305AA0
-0x00305B20  [CODE]  func_00305B20  # old:station_textnoenc
-0x00305F30  [CODE]  func_00305F30  # old:VIWndReadCS::called_00305F30
+0x00305B20  [CODE]  htmlNodeDump  # old:station_textnoenc; beta-export
+0x00305F30  [CODE]  htmlNodeDumpFile  # old:VIWndReadCS::called_00305F30; beta-export
 0x00305FA0  [CODE]  func_00305FA0
-0x00306030  [CODE]  func_00306030
+0x00306030  [CODE]  htmlDocDumpMemory  # beta-export
 0x003060C0  [CODE]  func_003060C0
 0x003061B8  [CODE]  func_003061B8
 0x00306290  [CODE]  func_00306290
 0x00306320  [CODE]  func_00306320
-0x003063B0  [CODE]  func_003063B0  # old:station_textnoenc
-0x003067D8  [CODE]  func_003067D8  # old:VIWndReadCS::called_003067D8
-0x00306860  [CODE]  func_00306860  # old:VIWndReadCS::called_00306860
-0x00306938  [CODE]  func_00306938  # old:VIWndReadCS::method_00306938
-0x00306A10  [CODE]  func_00306A10  # old:VIWndReadCS::method_00306A10
+0x003063B0  [CODE]  htmlNodeDumpOutput  # old:station_textnoenc; beta-export
+0x003067D8  [CODE]  htmlDocContentDumpOutput  # old:VIWndReadCS::called_003067D8; beta-export
+0x00306860  [CODE]  htmlDocDump  # old:VIWndReadCS::called_00306860; beta-export
+0x00306938  [CODE]  htmlSaveFile  # old:VIWndReadCS::method_00306938; beta-export
+0x00306A10  [CODE]  htmlSaveFileEnc  # old:VIWndReadCS::method_00306A10; beta-export
 0x00306B20  [CODE]  func_00306B20
 0x00306B80  [CODE]  func_00306B80
 0x00306BA0  [CODE]  func_00306BA0
 0x00306C08  [CODE]  func_00306C08
 0x00306C70  [CODE]  func_00306C70
 0x00306CD0  [CODE]  func_00306CD0
-0x00306D30  [CODE]  func_00306D30
+0x00306D30  [CODE]  xmlListCreate  # beta-export
 0x00306E18  [CODE]  func_00306E18
 0x00306E40  [CODE]  func_00306E40
-0x00306E68  [CODE]  func_00306E68
-0x00306EE8  [CODE]  func_00306EE8
-0x00306F68  [CODE]  func_00306F68
+0x00306E68  [CODE]  xmlListInsert  # beta-export
+0x00306EE8  [CODE]  xmlListAppend  # beta-export
+0x00306F68  [CODE]  xmlListDelete  # beta-export
 0x00306FB0  [CODE]  func_00306FB0
 0x00306FF0  [CODE]  func_00306FF0
-0x00307030  [CODE]  func_00307030
-0x00307088  [CODE]  func_00307088
-0x003070E0  [CODE]  func_003070E0
-0x003070F8  [CODE]  func_003070F8
-0x00307108  [CODE]  func_00307108
-0x00307118  [CODE]  func_00307118
-0x00307150  [CODE]  func_00307150
-0x00307190  [CODE]  func_00307190
-0x003071D0  [CODE]  func_003071D0
-0x00307248  [CODE]  func_00307248
+0x00307030  [CODE]  xmlListRemoveAll  # beta-export
+0x00307088  [CODE]  xmlListClear  # beta-export
+0x003070E0  [CODE]  xmlListEmpty  # beta-export
+0x003070F8  [CODE]  xmlListFront  # beta-export
+0x00307108  [CODE]  xmlListEnd  # beta-export
+0x00307118  [CODE]  xmlListSize  # beta-export
+0x00307150  [CODE]  xmlListPopFront  # beta-export
+0x00307190  [CODE]  xmlListPopBack  # beta-export
+0x003071D0  [CODE]  xmlListPushFront  # beta-export
+0x00307248  [CODE]  xmlListPushBack  # beta-export
 0x003072C8  [CODE]  func_003072C8
-0x003072D0  [CODE]  func_003072D0
-0x00307308  [CODE]  func_00307308
-0x00307370  [CODE]  func_00307370
-0x003073E0  [CODE]  func_003073E0
-0x00307450  [CODE]  func_00307450
-0x00307480  [CODE]  func_00307480
-0x003074D8  [CODE]  func_003074D8
-0x00307550  [CODE]  func_00307550
-0x00307600  [CODE]  func_00307600
-0x00307658  [CODE]  func_00307658
-0x00307708  [CODE]  func_00307708
+0x003072D0  [CODE]  xmlListReverse  # beta-export
+0x00307308  [CODE]  xmlListSort  # beta-export
+0x00307370  [CODE]  xmlListWalk  # beta-export
+0x003073E0  [CODE]  xmlListReverseWalk  # beta-export
+0x00307450  [CODE]  xmlListMerge  # beta-export
+0x00307480  [CODE]  xmlListDup  # beta-export
+0x003074D8  [CODE]  xmlListCopy  # beta-export
+0x00307550  [CODE]  inputPush  # beta-export
+0x00307600  [CODE]  inputPop  # beta-export
+0x00307658  [CODE]  nodePush  # beta-export
+0x00307708  [CODE]  nodePop  # beta-export
 0x00307760  [CODE]  func_00307760
-0x00307810  [CODE]  func_00307810
+0x00307810  [CODE]  namePop  # beta-export
 0x00307868  [CODE]  func_00307868
 0x00307920  [CODE]  func_00307920
-0x00307980  [CODE]  func_00307980
-0x00307B08  [CODE]  func_00307B08
-0x00307BC0  [CODE]  func_00307BC0
-0x00307CC0  [CODE]  func_00307CC0
+0x00307980  [CODE]  xmlSkipBlankChars  # beta-export
+0x00307B08  [CODE]  xmlPopInput  # beta-export
+0x00307BC0  [CODE]  xmlPushInput  # beta-export
+0x00307CC0  [CODE]  xmlParseCharRef  # beta-export
 0x003081C0  [CODE]  func_003081C0
-0x00308480  [CODE]  func_00308480
-0x00308880  [CODE]  func_00308880
-0x00308D50  [CODE]  func_00308D50
-0x00308DF8  [CODE]  func_00308DF8
-0x00308E50  [CODE]  func_00308E50
-0x00308F08  [CODE]  func_00308F08
-0x00308F60  [CODE]  func_00308F60
-0x00308FB0  [CODE]  func_00308FB0
-0x00309010  [CODE]  func_00309010
-0x00309088  [CODE]  func_00309088
-0x003090F8  [CODE]  func_003090F8
-0x00309188  [CODE]  func_00309188
-0x003091D0  [CODE]  func_003091D0
-0x00309268  [CODE]  func_00309268
-0x00309328  [CODE]  func_00309328
-0x00309398  [CODE]  func_00309398
-0x003093D0  [CODE]  func_003093D0
-0x003094C0  [CODE]  func_003094C0
+0x00308480  [CODE]  xmlParserHandlePEReference  # beta-export
+0x00308880  [CODE]  xmlStringDecodeEntities  # beta-export
+0x00308D50  [CODE]  xmlStrndup  # beta-export
+0x00308DF8  [CODE]  xmlStrdup  # beta-export
+0x00308E50  [CODE]  xmlCharStrndup  # beta-export
+0x00308F08  [CODE]  xmlCharStrdup  # beta-export
+0x00308F60  [CODE]  xmlStrcmp  # beta-export
+0x00308FB0  [CODE]  xmlStrEqual  # beta-export
+0x00309010  [CODE]  xmlStrncmp  # beta-export
+0x00309088  [CODE]  xmlStrcasecmp  # beta-export
+0x003090F8  [CODE]  xmlStrncasecmp  # beta-export
+0x00309188  [CODE]  xmlStrchr  # beta-export
+0x003091D0  [CODE]  xmlStrstr  # beta-export
+0x00309268  [CODE]  xmlStrcasestr  # beta-export
+0x00309328  [CODE]  xmlStrsub  # beta-export
+0x00309398  [CODE]  xmlStrlen  # beta-export
+0x003093D0  [CODE]  xmlStrncat  # beta-export
+0x003094C0  [CODE]  xmlStrcat  # beta-export
 0x00309530  [CODE]  func_00309530
-0x003096A0  [CODE]  func_003096A0
-0x003099D0  [CODE]  func_003099D0
-0x00309B38  [CODE]  func_00309B38
+0x003096A0  [CODE]  xmlSplitQName  # beta-export
+0x003099D0  [CODE]  xmlParseName  # beta-export
+0x00309B38  [CODE]  xmlParseNameComplex  # beta-export
 0x0030A068  [CODE]  func_0030A068
-0x0030A388  [CODE]  func_0030A388
-0x0030A858  [CODE]  func_0030A858
-0x0030AE28  [CODE]  func_0030AE28
-0x0030B570  [CODE]  func_0030B570
-0x0030BA50  [CODE]  func_0030BA50
-0x0030BDF0  [CODE]  func_0030BDF0
-0x0030C148  [CODE]  func_0030C148
-0x0030C538  [CODE]  func_0030C538
-0x0030CC38  [CODE]  func_0030CC38
-0x0030D380  [CODE]  func_0030D380
-0x0030D4F8  [CODE]  func_0030D4F8
-0x0030DC70  [CODE]  func_0030DC70
-0x0030E150  [CODE]  func_0030E150
-0x0030EED8  [CODE]  func_0030EED8
-0x0030F328  [CODE]  func_0030F328
-0x0030F560  [CODE]  func_0030F560
-0x0030F780  [CODE]  func_0030F780
-0x0030F9C0  [CODE]  func_0030F9C0
-0x00310068  [CODE]  func_00310068
-0x00310A20  [CODE]  func_00310A20
-0x00310F68  [CODE]  func_00310F68
-0x00311840  [CODE]  func_00311840
-0x00311A38  [CODE]  func_00311A38
-0x003121F0  [CODE]  func_003121F0
-0x003122C0  [CODE]  func_003122C0
+0x0030A388  [CODE]  xmlParseNmtoken  # beta-export
+0x0030A858  [CODE]  xmlParseEntityValue  # beta-export
+0x0030AE28  [CODE]  xmlParseAttValue  # beta-export
+0x0030B570  [CODE]  xmlParseSystemLiteral  # beta-export
+0x0030BA50  [CODE]  xmlParsePubidLiteral  # beta-export
+0x0030BDF0  [CODE]  xmlParseCharData  # beta-export
+0x0030C148  [CODE]  xmlParseCharDataComplex  # beta-export
+0x0030C538  [CODE]  xmlParseExternalID  # beta-export
+0x0030CC38  [CODE]  xmlParseComment  # beta-export
+0x0030D380  [CODE]  xmlParsePITarget  # beta-export
+0x0030D4F8  [CODE]  xmlParsePI  # beta-export
+0x0030DC70  [CODE]  xmlParseNotationDecl  # beta-export
+0x0030E150  [CODE]  xmlParseEntityDecl  # beta-export
+0x0030EED8  [CODE]  xmlParseDefaultDecl  # beta-export
+0x0030F328  [CODE]  xmlParseNotationType  # beta-export
+0x0030F560  [CODE]  xmlParseEnumerationType  # beta-export
+0x0030F780  [CODE]  xmlParseEnumeratedType  # beta-export
+0x0030F9C0  [CODE]  xmlParseAttributeType  # beta-export
+0x00310068  [CODE]  xmlParseAttributeListDecl  # beta-export
+0x00310A20  [CODE]  xmlParseElementMixedContentDecl  # beta-export
+0x00310F68  [CODE]  xmlParseElementChildrenContentDecl  # beta-export
+0x00311840  [CODE]  xmlParseElementContentDecl  # beta-export
+0x00311A38  [CODE]  xmlParseElementDecl  # beta-export
+0x003121F0  [CODE]  xmlParseMarkupDecl  # beta-export
+0x003122C0  [CODE]  xmlParseTextDecl  # beta-export
 0x003127D8  [CODE]  func_003127D8
-0x00313160  [CODE]  func_00313160
-0x00313650  [CODE]  func_00313650
-0x00313C10  [CODE]  func_00313C10
-0x00313F80  [CODE]  func_00313F80
-0x003142B0  [CODE]  func_003142B0
-0x003145D8  [CODE]  func_003145D8
-0x00314800  [CODE]  func_00314800
+0x00313160  [CODE]  xmlParseExternalSubset  # beta-export
+0x00313650  [CODE]  xmlParseReference  # beta-export
+0x00313C10  [CODE]  xmlParseEntityRef  # beta-export
+0x00313F80  [CODE]  xmlParseStringEntityRef  # beta-export
+0x003142B0  [CODE]  xmlParsePEReference  # beta-export
+0x003145D8  [CODE]  xmlParseStringPEReference  # beta-export
+0x00314800  [CODE]  xmlParseDocTypeDecl  # beta-export
 0x003149D8  [CODE]  func_003149D8
-0x00314BE0  [CODE]  func_00314BE0  # old:station_xml_lang
-0x00314E00  [CODE]  func_00314E00
-0x003153C0  [CODE]  func_003153C0
-0x00315790  [CODE]  func_00315790
-0x00315E78  [CODE]  func_00315E78
-0x00316200  [CODE]  func_00316200
-0x00316628  [CODE]  func_00316628
-0x003167E8  [CODE]  func_003167E8
-0x00316AD8  [CODE]  func_00316AD8
-0x00316DF8  [CODE]  func_00316DF8
-0x003171C0  [CODE]  func_003171C0
-0x00317708  [CODE]  func_00317708
-0x00317B60  [CODE]  func_00317B60
-0x00317DA8  [CODE]  func_00317DA8
-0x00318390  [CODE]  func_00318390
+0x00314BE0  [CODE]  xmlParseAttribute  # old:station_xml_lang; beta-export
+0x00314E00  [CODE]  xmlParseStartTag  # beta-export
+0x003153C0  [CODE]  xmlParseEndTag  # beta-export
+0x00315790  [CODE]  xmlParseCDSect  # beta-export
+0x00315E78  [CODE]  xmlParseContent  # beta-export
+0x00316200  [CODE]  xmlParseElement  # beta-export
+0x00316628  [CODE]  xmlParseVersionNum  # beta-export
+0x003167E8  [CODE]  xmlParseVersionInfo  # beta-export
+0x00316AD8  [CODE]  xmlParseEncName  # beta-export
+0x00316DF8  [CODE]  xmlParseEncodingDecl  # beta-export
+0x003171C0  [CODE]  xmlParseSDDecl  # beta-export
+0x00317708  [CODE]  xmlParseXMLDecl  # beta-export
+0x00317B60  [CODE]  xmlParseMisc  # beta-export
+0x00317DA8  [CODE]  xmlParseDocument  # beta-export
+0x00318390  [CODE]  xmlParseExtParsedEnt  # beta-export
 0x00318720  [CODE]  func_00318720
 0x00318820  [CODE]  func_00318820
-0x00319B58  [CODE]  func_00319B58
-0x00319D88  [CODE]  func_00319D88
-0x00319DB0  [CODE]  func_00319DB0
-0x0031A070  [CODE]  func_0031A070
-0x0031A250  [CODE]  func_0031A250
-0x0031A3D0  [CODE]  func_0031A3D0
-0x0031A5A8  [CODE]  func_0031A5A8
-0x0031A5D0  [CODE]  func_0031A5D0  # old:station_pseudoroot
-0x0031AA38  [CODE]  func_0031AA38  # old:station_pseudoroot
-0x0031AE38  [CODE]  func_0031AE38  # old:station_pseudoroot
-0x0031B130  [CODE]  func_0031B130
-0x0031B1F0  [CODE]  func_0031B1F0
-0x0031B210  [CODE]  func_0031B210
-0x0031B340  [CODE]  func_0031B340
-0x0031B468  [CODE]  func_0031B468
+0x00319B58  [CODE]  xmlParseChunk  # beta-export
+0x00319D88  [CODE]  xmlStopParser  # beta-export
+0x00319DB0  [CODE]  xmlCreatePushParserCtxt  # beta-export
+0x0031A070  [CODE]  xmlCreateIOParserCtxt  # beta-export
+0x0031A250  [CODE]  xmlIOParseDTD  # beta-export
+0x0031A3D0  [CODE]  xmlSAXParseDTD  # beta-export
+0x0031A5A8  [CODE]  xmlParseDTD  # beta-export
+0x0031A5D0  [CODE]  xmlParseCtxtExternalEntity  # old:station_pseudoroot; beta-export
+0x0031AA38  [CODE]  xmlParseExternalEntity  # old:station_pseudoroot; beta-export
+0x0031AE38  [CODE]  xmlParseBalancedChunkMemory  # old:station_pseudoroot; beta-export
+0x0031B130  [CODE]  xmlSAXParseEntity  # beta-export
+0x0031B1F0  [CODE]  xmlParseEntity  # beta-export
+0x0031B210  [CODE]  xmlCreateEntityParserCtxt  # beta-export
+0x0031B340  [CODE]  xmlCreateFileParserCtxt  # beta-export
+0x0031B468  [CODE]  xmlSAXParseFile  # beta-export
 0x0031B560  [CODE]  func_0031B560
 0x0031B588  [CODE]  func_0031B588
 0x0031B5B0  [CODE]  func_0031B5B0
-0x0031B5D8  [CODE]  func_0031B5D8  # old:station_malloc
-0x0031B690  [CODE]  func_0031B690
-0x0031B748  [CODE]  func_0031B748
-0x0031B818  [CODE]  func_0031B818
-0x0031B8B8  [CODE]  func_0031B8B8  # old:VIFile::called_0031B8B8
-0x0031B8E0  [CODE]  func_0031B8E0
-0x0031B908  [CODE]  func_0031B908
-0x0031B9B8  [CODE]  func_0031B9B8
-0x0031BA00  [CODE]  func_0031BA00
+0x0031B5D8  [CODE]  xmlSetupParserForBuffer  # old:station_malloc; beta-export
+0x0031B690  [CODE]  xmlSAXUserParseFile  # beta-export
+0x0031B748  [CODE]  xmlCreateMemoryParserCtxt  # beta-export
+0x0031B818  [CODE]  xmlSAXParseMemory  # beta-export
+0x0031B8B8  [CODE]  xmlParseMemory  # old:VIFile::called_0031B8B8; beta-export
+0x0031B8E0  [CODE]  xmlRecoverMemory  # beta-export
+0x0031B908  [CODE]  xmlSAXUserParseMemory  # beta-export
+0x0031B9B8  [CODE]  xmlCreateDocParserCtxt  # beta-export
+0x0031BA00  [CODE]  xmlSAXParseDoc  # beta-export
 0x0031BAB0  [CODE]  func_0031BAB0
-0x0031BAD8  [CODE]  func_0031BAD8
-0x0031BB50  [CODE]  func_0031BB50
+0x0031BAD8  [CODE]  xmlInitParser  # beta-export
+0x0031BB50  [CODE]  xmlCleanupParser  # beta-export
 0x0031BB78  [CODE]  func_0031BB78
 0x0031BB88  [CODE]  func_0031BB88
-0x0031BB98  [CODE]  func_0031BB98
-0x0031BBB8  [CODE]  func_0031BBB8
-0x0031BC80  [CODE]  func_0031BC80
-0x0031BCF0  [CODE]  func_0031BCF0  # old:station_validate
-0x0031C248  [CODE]  func_0031C248  # old:station_validate
-0x0031C878  [CODE]  func_0031C878
-0x0031C8E8  [CODE]  func_0031C8E8
-0x0031C920  [CODE]  func_0031C920
-0x0031D418  [CODE]  func_0031D418
-0x0031D520  [CODE]  func_0031D520
-0x0031DA60  [CODE]  func_0031DA60
-0x0031DB38  [CODE]  func_0031DB38
-0x0031DB98  [CODE]  func_0031DB98
-0x0031DBE8  [CODE]  func_0031DBE8
-0x0031DCE0  [CODE]  func_0031DCE0
-0x0031DDE0  [CODE]  func_0031DDE0
-0x0031DEB8  [CODE]  func_0031DEB8
-0x0031DFE8  [CODE]  func_0031DFE8
-0x0031E3F8  [CODE]  func_0031E3F8
-0x0031E748  [CODE]  func_0031E748
-0x0031E990  [CODE]  func_0031E990
-0x0031EA68  [CODE]  func_0031EA68
-0x0031EAA0  [CODE]  func_0031EAA0
-0x0031EDF8  [CODE]  func_0031EDF8  # old:station_UTF_16LE
-0x0031F038  [CODE]  func_0031F038
-0x0031F0F8  [CODE]  func_0031F0F8
-0x0031F1A0  [CODE]  func_0031F1A0
-0x0031F268  [CODE]  func_0031F268
-0x0031F460  [CODE]  func_0031F460
-0x0031F528  [CODE]  func_0031F528
-0x0031F668  [CODE]  func_0031F668
-0x0031FA90  [CODE]  func_0031FA90
-0x0031FC10  [CODE]  func_0031FC10  # old:station_malloc
-0x0031FC90  [CODE]  func_0031FC90
-0x0031FCC0  [CODE]  func_0031FCC0
-0x0031FD18  [CODE]  func_0031FD18
-0x0031FD28  [CODE]  func_0031FD28
-0x0031FD68  [CODE]  func_0031FD68
-0x0031FE18  [CODE]  func_0031FE18
-0x00320040  [CODE]  func_00320040
+0x0031BB98  [CODE]  xmlKeepBlanksDefault  # beta-export
+0x0031BBB8  [CODE]  xmlCheckVersion  # beta-export
+0x0031BC80  [CODE]  xmlGetFeaturesList  # beta-export
+0x0031BCF0  [CODE]  xmlGetFeature  # old:station_validate; beta-export
+0x0031C248  [CODE]  xmlSetFeature  # old:station_validate; beta-export
+0x0031C878  [CODE]  xmlIsChar  # beta-export
+0x0031C8E8  [CODE]  xmlIsBlank  # beta-export
+0x0031C920  [CODE]  xmlIsBaseChar  # beta-export
+0x0031D418  [CODE]  xmlIsDigit  # beta-export
+0x0031D520  [CODE]  xmlIsCombining  # beta-export
+0x0031DA60  [CODE]  xmlIsExtender  # beta-export
+0x0031DB38  [CODE]  xmlIsIdeographic  # beta-export
+0x0031DB98  [CODE]  xmlIsLetter  # beta-export
+0x0031DBE8  [CODE]  xmlIsPubidChar  # beta-export
+0x0031DCE0  [CODE]  xmlParserInputRead  # beta-export
+0x0031DDE0  [CODE]  xmlParserInputGrow  # beta-export
+0x0031DEB8  [CODE]  xmlParserInputShrink  # beta-export
+0x0031DFE8  [CODE]  xmlNextChar  # beta-export
+0x0031E3F8  [CODE]  xmlCurrentChar  # beta-export
+0x0031E748  [CODE]  xmlStringCurrentChar  # beta-export
+0x0031E990  [CODE]  xmlCopyCharMultiByte  # beta-export
+0x0031EA68  [CODE]  xmlCopyChar  # beta-export
+0x0031EAA0  [CODE]  xmlSwitchEncoding  # beta-export
+0x0031EDF8  [CODE]  xmlSwitchToEncoding  # old:station_UTF_16LE; beta-export
+0x0031F038  [CODE]  xmlFreeInputStream  # beta-export
+0x0031F0F8  [CODE]  xmlNewInputStream  # beta-export
+0x0031F1A0  [CODE]  xmlNewIOInputStream  # beta-export
+0x0031F268  [CODE]  xmlNewEntityInputStream  # beta-export
+0x0031F460  [CODE]  xmlNewStringInputStream  # beta-export
+0x0031F528  [CODE]  xmlNewInputFromFile  # beta-export
+0x0031F668  [CODE]  xmlInitParserCtxt  # beta-export
+0x0031FA90  [CODE]  xmlFreeParserCtxt  # beta-export
+0x0031FC10  [CODE]  xmlNewParserCtxt  # old:station_malloc; beta-export
+0x0031FC90  [CODE]  xmlClearParserCtxt  # beta-export
+0x0031FCC0  [CODE]  xmlParserFindNodeInfo  # beta-export
+0x0031FD18  [CODE]  xmlInitNodeInfoSeq  # beta-export
+0x0031FD28  [CODE]  xmlClearNodeInfoSeq  # beta-export
+0x0031FD68  [CODE]  xmlParserFindNodeInfoIndex  # beta-export
+0x0031FE18  [CODE]  xmlParserAddNodeInfo  # beta-export
+0x00320040  [CODE]  xmlCheckLanguageID  # beta-export
 0x00320220  [CODE]  func_00320220
 0x00320278  [CODE]  func_00320278
 0x003202D0  [CODE]  func_003202D0
@@ -1724,184 +1727,184 @@
 0x00320520  [CODE]  func_00320520
 0x00320578  [CODE]  func_00320578
 0x003205C8  [CODE]  func_003205C8
-0x003205D0  [CODE]  func_003205D0
-0x003205E0  [CODE]  func_003205E0
-0x003205F0  [CODE]  func_003205F0
-0x00320600  [CODE]  func_00320600
-0x00320618  [CODE]  func_00320618
-0x00320628  [CODE]  func_00320628
-0x00320638  [CODE]  func_00320638
-0x003206E0  [CODE]  func_003206E0
-0x00320910  [CODE]  func_00320910
-0x00320998  [CODE]  func_00320998
+0x003205D0  [CODE]  getSystemId  # beta-export
+0x003205E0  [CODE]  getLineNumber  # beta-export
+0x003205F0  [CODE]  getColumnNumber  # beta-export
+0x00320600  [CODE]  isStandalone  # beta-export
+0x00320618  [CODE]  hasInternalSubset  # beta-export
+0x00320628  [CODE]  hasExternalSubset  # beta-export
+0x00320638  [CODE]  internalSubset  # beta-export
+0x003206E0  [CODE]  externalSubset  # beta-export
+0x00320910  [CODE]  resolveEntity  # beta-export
+0x00320998  [CODE]  getEntity  # beta-export
 0x00320A20  [CODE]  func_00320A20
-0x00320A40  [CODE]  func_00320A40
-0x00320B98  [CODE]  func_00320B98
+0x00320A40  [CODE]  entityDecl  # beta-export
+0x00320B98  [CODE]  attributeDecl  # beta-export
 0x00320D30  [CODE]  func_00320D30
 0x00320E30  [CODE]  func_00320E30
-0x00320F30  [CODE]  func_00320F30
+0x00320F30  [CODE]  unparsedEntityDecl  # beta-export
 0x00321048  [CODE]  func_00321048
-0x00321050  [CODE]  func_00321050
-0x00321118  [CODE]  func_00321118
-0x00321208  [CODE]  func_00321208
-0x00321698  [CODE]  func_00321698
-0x00321A38  [CODE]  func_00321A38
-0x00321AF0  [CODE]  func_00321AF0
-0x00321B40  [CODE]  func_00321B40
+0x00321050  [CODE]  startDocument  # beta-export
+0x00321118  [CODE]  endDocument  # beta-export
+0x00321208  [CODE]  attribute  # beta-export
+0x00321698  [CODE]  startElement  # beta-export
+0x00321A38  [CODE]  endElement  # beta-export
+0x00321AF0  [CODE]  reference  # beta-export
+0x00321B40  [CODE]  characters  # beta-export
 0x00321CE8  [CODE]  func_00321CE8
-0x00321CF0  [CODE]  func_00321CF0
+0x00321CF0  [CODE]  processingInstruction  # beta-export
 0x00321DB0  [CODE]  func_00321DB0
-0x00321DD0  [CODE]  func_00321DD0
-0x00321E60  [CODE]  func_00321E60
-0x00321E70  [CODE]  func_00321E70
-0x00321F88  [CODE]  func_00321F88
-0x00321FA8  [CODE]  func_00321FA8
-0x00322048  [CODE]  func_00322048
-0x003220D0  [CODE]  func_003220D0
-0x00322290  [CODE]  func_00322290
-0x00322380  [CODE]  func_00322380
+0x00321DD0  [CODE]  setNamespace  # beta-export
+0x00321E60  [CODE]  getNamespace  # beta-export
+0x00321E70  [CODE]  checkNamespace  # beta-export
+0x00321F88  [CODE]  namespaceDecl  # beta-export
+0x00321FA8  [CODE]  comment  # beta-export
+0x00322048  [CODE]  cdataBlock  # beta-export
+0x003220D0  [CODE]  xmlDefaultSAXHandlerInit  # beta-export
+0x00322290  [CODE]  htmlDefaultSAXHandlerInit  # beta-export
+0x00322380  [CODE]  sgmlDefaultSAXHandlerInit  # beta-export
 0x00322458  [CODE]  func_00322458
 0x00322468  [CODE]  func_00322468
-0x00322478  [CODE]  func_00322478
-0x003225E0  [CODE]  func_003225E0
-0x003225F0  [CODE]  func_003225F0
-0x00322658  [CODE]  func_00322658
-0x003226A0  [CODE]  func_003226A0
-0x00322798  [CODE]  func_00322798
-0x003227E8  [CODE]  func_003227E8
-0x00322990  [CODE]  func_00322990
-0x00322AC0  [CODE]  func_00322AC0
-0x00322B68  [CODE]  func_00322B68
-0x00322C70  [CODE]  func_00322C70
-0x00322F18  [CODE]  func_00322F18
-0x00323180  [CODE]  func_00323180
-0x003232F0  [CODE]  func_003232F0
-0x00323458  [CODE]  func_00323458
-0x003235D8  [CODE]  func_003235D8
-0x00323758  [CODE]  func_00323758
+0x00322478  [CODE]  xmlNewNs  # beta-export
+0x003225E0  [CODE]  xmlSetNs  # beta-export
+0x003225F0  [CODE]  xmlFreeNs  # beta-export
+0x00322658  [CODE]  xmlFreeNsList  # beta-export
+0x003226A0  [CODE]  xmlNewDtd  # beta-export
+0x00322798  [CODE]  xmlGetIntSubset  # beta-export
+0x003227E8  [CODE]  xmlCreateIntSubset  # beta-export
+0x00322990  [CODE]  xmlFreeDtd  # beta-export
+0x00322AC0  [CODE]  xmlNewDoc  # beta-export
+0x00322B68  [CODE]  xmlFreeDoc  # beta-export
+0x00322C70  [CODE]  xmlStringLenGetNodeList  # beta-export
+0x00322F18  [CODE]  xmlStringGetNodeList  # beta-export
+0x00323180  [CODE]  xmlNodeListGetString  # beta-export
+0x003232F0  [CODE]  xmlNodeListGetRawString  # beta-export
+0x00323458  [CODE]  xmlNewProp  # beta-export
+0x003235D8  [CODE]  xmlNewNsProp  # beta-export
+0x00323758  [CODE]  xmlNewDocProp  # beta-export
 0x00323850  [CODE]  func_00323850
-0x00323898  [CODE]  func_00323898
-0x00323928  [CODE]  func_00323928
-0x003239A8  [CODE]  func_003239A8
-0x00323A60  [CODE]  func_00323A60
+0x00323898  [CODE]  xmlFreeProp  # beta-export
+0x00323928  [CODE]  xmlRemoveProp  # beta-export
+0x003239A8  [CODE]  xmlNewPI  # beta-export
+0x00323A60  [CODE]  xmlNewNode  # beta-export
 0x00323B00  [CODE]  func_00323B00
 0x00323BA0  [CODE]  func_00323BA0
-0x00323C40  [CODE]  func_00323C40
-0x00323CC8  [CODE]  func_00323CC8
+0x00323C40  [CODE]  xmlNewDocFragment  # beta-export
+0x00323CC8  [CODE]  xmlNewText  # beta-export
 0x00323D68  [CODE]  func_00323D68
-0x00323DF8  [CODE]  func_00323DF8
-0x00323EE8  [CODE]  func_00323EE8
+0x00323DF8  [CODE]  xmlNewCharRef  # beta-export
+0x00323EE8  [CODE]  xmlNewReference  # beta-export
 0x00324000  [CODE]  func_00324000
-0x00324030  [CODE]  func_00324030
-0x003240E0  [CODE]  func_003240E0
-0x00324118  [CODE]  func_00324118  # old:station_comment
-0x003241B8  [CODE]  func_003241B8
+0x00324030  [CODE]  xmlNewTextLen  # beta-export
+0x003240E0  [CODE]  xmlNewDocTextLen  # beta-export
+0x00324118  [CODE]  xmlNewComment  # old:station_comment; beta-export
+0x003241B8  [CODE]  xmlNewCDataBlock  # beta-export
 0x00324268  [CODE]  func_00324268
-0x00324298  [CODE]  func_00324298
-0x00324300  [CODE]  func_00324300
+0x00324298  [CODE]  xmlSetTreeDoc  # beta-export
+0x00324300  [CODE]  xmlSetListDoc  # beta-export
 0x00324350  [CODE]  func_00324350
-0x003243E0  [CODE]  func_003243E0
-0x003244B8  [CODE]  func_003244B8
-0x003245E8  [CODE]  func_003245E8
-0x003246F0  [CODE]  func_003246F0
-0x003247E0  [CODE]  func_003247E0
-0x00324980  [CODE]  func_00324980
+0x003243E0  [CODE]  xmlAddNextSibling  # beta-export
+0x003244B8  [CODE]  xmlAddPrevSibling  # beta-export
+0x003245E8  [CODE]  xmlAddSibling  # beta-export
+0x003246F0  [CODE]  xmlAddChildList  # beta-export
+0x003247E0  [CODE]  xmlAddChild  # beta-export
+0x00324980  [CODE]  xmlGetLastChild  # beta-export
 0x00324998  [CODE]  func_00324998
-0x003249E0  [CODE]  func_003249E0  # old:station_textnoenc
-0x00324AD8  [CODE]  func_00324AD8
-0x00324B60  [CODE]  func_00324B60
-0x00324C28  [CODE]  func_00324C28
-0x00324C68  [CODE]  func_00324C68
-0x00324CD8  [CODE]  func_00324CD8
-0x00324DF0  [CODE]  func_00324DF0
+0x003249E0  [CODE]  xmlFreeNode  # old:station_textnoenc; beta-export
+0x00324AD8  [CODE]  xmlUnlinkNode  # beta-export
+0x00324B60  [CODE]  xmlReplaceNode  # beta-export
+0x00324C28  [CODE]  xmlCopyNamespace  # beta-export
+0x00324C68  [CODE]  xmlCopyNamespaceList  # beta-export
+0x00324CD8  [CODE]  xmlCopyProp  # beta-export
+0x00324DF0  [CODE]  xmlCopyPropList  # beta-export
 0x00324E70  [CODE]  func_00324E70  # old:station_textnoenc
 0x003250C0  [CODE]  func_003250C0
-0x00325180  [CODE]  func_00325180
-0x003251A8  [CODE]  func_003251A8
-0x003251C8  [CODE]  func_003251C8
-0x00325280  [CODE]  func_00325280
-0x00325398  [CODE]  func_00325398
-0x003253E8  [CODE]  func_003253E8
+0x00325180  [CODE]  xmlCopyNode  # beta-export
+0x003251A8  [CODE]  xmlCopyNodeList  # beta-export
+0x003251C8  [CODE]  xmlCopyDtd  # beta-export
+0x00325280  [CODE]  xmlCopyDoc  # beta-export
+0x00325398  [CODE]  xmlDocGetRootElement  # beta-export
+0x003253E8  [CODE]  xmlDocSetRootElement  # beta-export
 0x00325490  [CODE]  func_00325490  # old:station_xml_lang
-0x003254D8  [CODE]  func_003254D8  # old:station_xml_lang
-0x00325530  [CODE]  func_00325530  # old:station_xml_space
-0x003255B0  [CODE]  func_003255B0  # old:station_xml_space
-0x00325688  [CODE]  func_00325688
+0x003254D8  [CODE]  xmlNodeGetLang  # old:station_xml_lang; beta-export
+0x00325530  [CODE]  xmlNodeSetSpacePreserve  # old:station_xml_space; beta-export
+0x003255B0  [CODE]  xmlNodeGetSpacePreserve  # old:station_xml_space; beta-export
+0x00325688  [CODE]  xmlNodeSetName  # beta-export
 0x00325710  [CODE]  func_00325710  # old:station_xml_base
-0x00325758  [CODE]  func_00325758  # old:station_xml_base
-0x003258F0  [CODE]  func_003258F0
-0x00325AE8  [CODE]  func_00325AE8
-0x00325C10  [CODE]  func_00325C10
-0x00325D50  [CODE]  func_00325D50
-0x00325EA0  [CODE]  func_00325EA0
-0x00325EF0  [CODE]  func_00325EF0
-0x00325F78  [CODE]  func_00325F78
-0x00326110  [CODE]  func_00326110
-0x003262A0  [CODE]  func_003262A0
-0x00326468  [CODE]  func_00326468
-0x00326560  [CODE]  func_00326560
-0x00326998  [CODE]  func_00326998
-0x00326A70  [CODE]  func_00326A70
-0x00326B80  [CODE]  func_00326B80
-0x00326D38  [CODE]  func_00326D38
-0x00326E58  [CODE]  func_00326E58
-0x00326FF8  [CODE]  func_00326FF8
-0x00327018  [CODE]  func_00327018
-0x003270A0  [CODE]  func_003270A0
-0x003270E8  [CODE]  func_003270E8
-0x003271B8  [CODE]  func_003271B8
-0x003272A0  [CODE]  func_003272A0
-0x003272B0  [CODE]  func_003272B0
-0x00327300  [CODE]  func_00327300
-0x00327330  [CODE]  func_00327330
-0x003273A8  [CODE]  func_003273A8
-0x00327420  [CODE]  func_00327420  # old:VIWndReadCS::called_00327420
-0x00327470  [CODE]  func_00327470
-0x00327488  [CODE]  func_00327488
-0x003274A0  [CODE]  func_003274A0
-0x003275A0  [CODE]  func_003275A0
-0x00327688  [CODE]  func_00327688
-0x00327780  [CODE]  func_00327780
-0x003277A0  [CODE]  func_003277A0
+0x00325758  [CODE]  xmlNodeGetBase  # old:station_xml_base; beta-export
+0x003258F0  [CODE]  xmlNodeGetContent  # beta-export
+0x00325AE8  [CODE]  xmlNodeSetContent  # beta-export
+0x00325C10  [CODE]  xmlNodeSetContentLen  # beta-export
+0x00325D50  [CODE]  xmlNodeAddContentLen  # beta-export
+0x00325EA0  [CODE]  xmlNodeAddContent  # beta-export
+0x00325EF0  [CODE]  xmlTextMerge  # beta-export
+0x00325F78  [CODE]  xmlGetNsList  # beta-export
+0x00326110  [CODE]  xmlSearchNs  # beta-export
+0x003262A0  [CODE]  xmlSearchNsByHref  # beta-export
+0x00326468  [CODE]  xmlNewReconciliedNs  # beta-export
+0x00326560  [CODE]  xmlReconciliateNs  # beta-export
+0x00326998  [CODE]  xmlHasProp  # beta-export
+0x00326A70  [CODE]  xmlGetProp  # beta-export
+0x00326B80  [CODE]  xmlGetNsProp  # beta-export
+0x00326D38  [CODE]  xmlSetProp  # beta-export
+0x00326E58  [CODE]  xmlSetNsProp  # beta-export
+0x00326FF8  [CODE]  xmlNodeIsText  # beta-export
+0x00327018  [CODE]  xmlIsBlankNode  # beta-export
+0x003270A0  [CODE]  xmlTextConcat  # beta-export
+0x003270E8  [CODE]  xmlBufferCreate  # beta-export
+0x003271B8  [CODE]  xmlBufferCreateSize  # beta-export
+0x003272A0  [CODE]  xmlBufferSetAllocationScheme  # beta-export
+0x003272B0  [CODE]  xmlBufferFree  # beta-export
+0x00327300  [CODE]  xmlBufferEmpty  # beta-export
+0x00327330  [CODE]  xmlBufferShrink  # beta-export
+0x003273A8  [CODE]  xmlBufferGrow  # beta-export
+0x00327420  [CODE]  xmlBufferDump  # old:VIWndReadCS::called_00327420; beta-export
+0x00327470  [CODE]  xmlBufferContent  # beta-export
+0x00327488  [CODE]  xmlBufferLength  # beta-export
+0x003274A0  [CODE]  xmlBufferResize  # beta-export
+0x003275A0  [CODE]  xmlBufferAdd  # beta-export
+0x00327688  [CODE]  xmlBufferAddHead  # beta-export
+0x00327780  [CODE]  xmlBufferCat  # beta-export
+0x003277A0  [CODE]  xmlBufferCCat  # beta-export
 0x00327878  [CODE]  func_00327878
 0x00327898  [CODE]  func_00327898
-0x003278B8  [CODE]  func_003278B8
+0x003278B8  [CODE]  xmlBufferWriteQuotedString  # beta-export
 0x00327968  [CODE]  func_00327968
 0x00327A00  [CODE]  func_00327A00
 0x00327A50  [CODE]  func_00327A50
 0x00327B80  [CODE]  func_00327B80
 0x00327C60  [CODE]  func_00327C60
 0x00327CC0  [CODE]  func_00327CC0
-0x00327DC8  [CODE]  func_00327DC8  # old:station_textnoenc
-0x00328280  [CODE]  func_00328280  # old:VIWndReadCS::called_00328280
+0x00327DC8  [CODE]  xmlNodeDump  # old:station_textnoenc; beta-export
+0x00328280  [CODE]  xmlElemDump  # old:VIWndReadCS::called_00328280; beta-export
 0x00328330  [CODE]  func_00328330
 0x003283D0  [CODE]  func_003283D0
 0x00328420  [CODE]  func_00328420
 0x00328560  [CODE]  func_00328560
 0x00328640  [CODE]  func_00328640
 0x003286A8  [CODE]  func_003286A8
-0x003287B8  [CODE]  func_003287B8  # old:station_textnoenc
+0x003287B8  [CODE]  xmlNodeDumpOutput  # old:station_textnoenc; beta-export
 0x00328CB8  [CODE]  func_00328CB8  # old:VIWndReadCS::called_00328CB8
-0x00328E30  [CODE]  func_00328E30  # old:station_xmlDocDumpFormatMemoryEnc
-0x00329058  [CODE]  func_00329058
+0x00328E30  [CODE]  xmlDocDumpFormatMemoryEnc  # old:station_xmlDocDumpFormatMemoryEnc; beta-export
+0x00329058  [CODE]  xmlDocDumpMemory  # beta-export
 0x00329078  [CODE]  func_00329078
-0x00329098  [CODE]  func_00329098
-0x003290B8  [CODE]  func_003290B8
-0x003290D0  [CODE]  func_003290D0
+0x00329098  [CODE]  xmlDocDumpMemoryEnc  # beta-export
+0x003290B8  [CODE]  xmlGetDocCompressMode  # beta-export
+0x003290D0  [CODE]  xmlSetDocCompressMode  # beta-export
 0x00329108  [CODE]  func_00329108
-0x00329118  [CODE]  func_00329118
-0x00329150  [CODE]  func_00329150  # old:VIWndReadCS::called_00329150
-0x00329248  [CODE]  func_00329248  # old:VIWndReadCS::method_00329248
-0x00329288  [CODE]  func_00329288  # old:VIWndReadCS::method_00329288
-0x00329368  [CODE]  func_00329368  # old:VIWndReadCS::method_00329368
-0x00329468  [CODE]  func_00329468
-0x003294D8  [CODE]  func_003294D8
-0x0032A330  [CODE]  func_0032A330
+0x00329118  [CODE]  xmlSetCompressMode  # beta-export
+0x00329150  [CODE]  xmlDocDump  # old:VIWndReadCS::called_00329150; beta-export
+0x00329248  [CODE]  xmlSaveFileTo  # old:VIWndReadCS::method_00329248; beta-export
+0x00329288  [CODE]  xmlSaveFileEnc  # old:VIWndReadCS::method_00329288; beta-export
+0x00329368  [CODE]  xmlSaveFile  # old:VIWndReadCS::method_00329368; beta-export
+0x00329468  [CODE]  xmlCreateURI  # beta-export
+0x003294D8  [CODE]  xmlSaveUri  # beta-export
+0x0032A330  [CODE]  xmlPrintURI  # beta-export
 0x0032A390  [CODE]  func_0032A390
-0x0032A498  [CODE]  func_0032A498
-0x0032A578  [CODE]  func_0032A578
-0x0032A8B8  [CODE]  func_0032A8B8
-0x0032AA68  [CODE]  func_0032AA68
+0x0032A498  [CODE]  xmlFreeURI  # beta-export
+0x0032A578  [CODE]  xmlNormalizeURIPath  # beta-export
+0x0032A8B8  [CODE]  xmlURIUnescapeString  # beta-export
+0x0032AA68  [CODE]  xmlURIEscape  # beta-export
 0x0032AC60  [CODE]  func_0032AC60
 0x0032AEC8  [CODE]  func_0032AEC8
 0x0032B130  [CODE]  func_0032B130
@@ -1913,100 +1916,100 @@
 0x0032C820  [CODE]  func_0032C820
 0x0032C918  [CODE]  func_0032C918
 0x0032C9A8  [CODE]  func_0032C9A8
-0x0032CAC8  [CODE]  func_0032CAC8
-0x0032CBA0  [CODE]  func_0032CBA0
-0x0032CC10  [CODE]  func_0032CC10
+0x0032CAC8  [CODE]  xmlParseURIReference  # beta-export
+0x0032CBA0  [CODE]  xmlParseURI  # beta-export
+0x0032CC10  [CODE]  xmlBuildURI  # beta-export
 0x0032D180  [CODE]  func_0032D180
 0x0032D230  [CODE]  func_0032D230
-0x0032D288  [CODE]  func_0032D288
-0x0032D378  [CODE]  func_0032D378
-0x0032D4C8  [CODE]  func_0032D4C8
-0x0032D570  [CODE]  func_0032D570
+0x0032D288  [CODE]  xmlSplitQName2  # beta-export
+0x0032D378  [CODE]  xmlNewElementContent  # beta-export
+0x0032D4C8  [CODE]  xmlCopyElementContent  # beta-export
+0x0032D570  [CODE]  xmlFreeElementContent  # beta-export
 0x0032D620  [CODE]  func_0032D620  # old:station__PCDATA
-0x0032D850  [CODE]  func_0032D850
+0x0032D850  [CODE]  xmlSprintfElementContent  # beta-export
 0x0032DA60  [CODE]  func_0032DA60
 0x0032DA80  [CODE]  func_0032DA80
-0x0032DAF0  [CODE]  func_0032DAF0
+0x0032DAF0  [CODE]  xmlAddElementDecl  # beta-export
 0x0032DDF8  [CODE]  func_0032DDF8
 0x0032DE18  [CODE]  func_0032DE18
 0x0032DEE0  [CODE]  func_0032DEE0
-0x0032DF00  [CODE]  func_0032DF00
+0x0032DF00  [CODE]  xmlDumpElementDecl  # beta-export
 0x0032E048  [CODE]  func_0032E048
-0x0032E070  [CODE]  func_0032E070
-0x0032E100  [CODE]  func_0032E100
-0x0032E168  [CODE]  func_0032E168
+0x0032E070  [CODE]  xmlCreateEnumeration  # beta-export
+0x0032E100  [CODE]  xmlFreeEnumeration  # beta-export
+0x0032E168  [CODE]  xmlCopyEnumeration  # beta-export
 0x0032E1C8  [CODE]  func_0032E1C8
 0x0032E240  [CODE]  func_0032E240
 0x0032E260  [CODE]  func_0032E260
-0x0032E270  [CODE]  func_0032E270
+0x0032E270  [CODE]  xmlScanAttributeDecl  # beta-export
 0x0032E308  [CODE]  func_0032E308
 0x0032E3C8  [CODE]  func_0032E3C8
-0x0032E470  [CODE]  func_0032E470
+0x0032E470  [CODE]  xmlAddAttributeDecl  # beta-export
 0x0032E7B8  [CODE]  func_0032E7B8
 0x0032E7D8  [CODE]  func_0032E7D8
 0x0032E8B8  [CODE]  func_0032E8B8
-0x0032E8D8  [CODE]  func_0032E8D8
+0x0032E8D8  [CODE]  xmlDumpAttributeDecl  # beta-export
 0x0032EB88  [CODE]  func_0032EB88
 0x0032EBB0  [CODE]  func_0032EBB0
 0x0032EBD0  [CODE]  func_0032EBD0
-0x0032EC48  [CODE]  func_0032EC48
+0x0032EC48  [CODE]  xmlAddNotationDecl  # beta-export
 0x0032EE18  [CODE]  func_0032EE18
 0x0032EE38  [CODE]  func_0032EE38
 0x0032EEE8  [CODE]  func_0032EEE8
-0x0032EF08  [CODE]  func_0032EF08
+0x0032EF08  [CODE]  xmlDumpNotationDecl  # beta-export
 0x0032EFC8  [CODE]  func_0032EFC8
 0x0032EFF0  [CODE]  func_0032EFF0
 0x0032F010  [CODE]  func_0032F010
-0x0032F060  [CODE]  func_0032F060
+0x0032F060  [CODE]  xmlAddID  # beta-export
 0x0032F1E0  [CODE]  func_0032F1E0
-0x0032F200  [CODE]  func_0032F200
-0x0032F2F8  [CODE]  func_0032F2F8
-0x0032F3B0  [CODE]  func_0032F3B0
+0x0032F200  [CODE]  xmlIsID  # beta-export
+0x0032F2F8  [CODE]  xmlRemoveID  # beta-export
+0x0032F3B0  [CODE]  xmlGetID  # beta-export
 0x0032F438  [CODE]  func_0032F438
 0x0032F458  [CODE]  func_0032F458
 0x0032F4B0  [CODE]  func_0032F4B0
 0x0032F4D0  [CODE]  func_0032F4D0
-0x0032F510  [CODE]  func_0032F510
+0x0032F510  [CODE]  xmlAddRef  # beta-export
 0x0032F6D8  [CODE]  func_0032F6D8
-0x0032F6F8  [CODE]  func_0032F6F8
-0x0032F7A0  [CODE]  func_0032F7A0
-0x0032F888  [CODE]  func_0032F888
-0x0032F908  [CODE]  func_0032F908
+0x0032F6F8  [CODE]  xmlIsRef  # beta-export
+0x0032F7A0  [CODE]  xmlRemoveRef  # beta-export
+0x0032F888  [CODE]  xmlGetRefs  # beta-export
+0x0032F908  [CODE]  xmlGetDtdElementDesc  # beta-export
 0x0032F9C0  [CODE]  func_0032F9C0
-0x0032F9F8  [CODE]  func_0032F9F8
+0x0032F9F8  [CODE]  xmlGetDtdAttrDesc  # beta-export
 0x0032FAC0  [CODE]  func_0032FAC0
-0x0032FB08  [CODE]  func_0032FB08
-0x0032FB40  [CODE]  func_0032FB40
-0x0032FBE8  [CODE]  func_0032FBE8
+0x0032FB08  [CODE]  xmlGetDtdNotationDesc  # beta-export
+0x0032FB40  [CODE]  xmlValidateNotationUse  # beta-export
+0x0032FBE8  [CODE]  xmlIsMixedElement  # beta-export
 0x0032FC80  [CODE]  func_0032FC80
 0x0032FD98  [CODE]  func_0032FD98
 0x00330008  [CODE]  func_00330008
 0x00330160  [CODE]  func_00330160
 0x003304A8  [CODE]  func_003304A8
-0x003304B0  [CODE]  func_003304B0
+0x003304B0  [CODE]  xmlValidateAttributeValue  # beta-export
 0x00330530  [CODE]  func_00330530
-0x00330820  [CODE]  func_00330820
+0x00330820  [CODE]  xmlValidNormalizeAttributeValue  # beta-export
 0x003309D8  [CODE]  func_003309D8
-0x00330A00  [CODE]  func_00330A00
-0x00330CD8  [CODE]  func_00330CD8
-0x00330F30  [CODE]  func_00330F30
+0x00330A00  [CODE]  xmlValidateAttributeDecl  # beta-export
+0x00330CD8  [CODE]  xmlValidateElementDecl  # beta-export
+0x00330F30  [CODE]  xmlValidateOneAttribute  # beta-export
 0x003313E0  [CODE]  func_003313E0
 0x003314E0  [CODE]  func_003314E0
-0x003316E0  [CODE]  func_003316E0
+0x003316E0  [CODE]  xmlValidateElementTypeElement  # beta-export
 0x003319A0  [CODE]  func_003319A0
-0x00331AC0  [CODE]  func_00331AC0
-0x00332330  [CODE]  func_00332330
-0x00332488  [CODE]  func_00332488
+0x00331AC0  [CODE]  xmlValidateOneElement  # beta-export
+0x00332330  [CODE]  xmlValidateRoot  # beta-export
+0x00332488  [CODE]  xmlValidateElement  # beta-export
 0x003325C0  [CODE]  func_003325C0
 0x003327E0  [CODE]  func_003327E0
 0x00332808  [CODE]  func_00332808
-0x00332840  [CODE]  func_00332840
-0x003328B0  [CODE]  func_003328B0
+0x00332840  [CODE]  xmlValidateDocumentFinal  # beta-export
+0x003328B0  [CODE]  xmlValidateDtd  # beta-export
 0x00332978  [CODE]  func_00332978
-0x00332A48  [CODE]  func_00332A48
-0x00332AF0  [CODE]  func_00332AF0
-0x00332C60  [CODE]  func_00332C60  # old:station__PCDATA
-0x00332E08  [CODE]  func_00332E08  # old:station___dummy__
+0x00332A48  [CODE]  xmlValidateDtdFinal  # beta-export
+0x00332AF0  [CODE]  xmlValidateDocument  # beta-export
+0x00332C60  [CODE]  xmlValidGetPotentialChildren  # old:station__PCDATA; beta-export
+0x00332E08  [CODE]  xmlValidGetValidElements  # old:station___dummy__; beta-export
 0x00333050  [CODE]  func_00333050
 0x00333198  [CODE]  func_00333198
 0x003332F0  [CODE]  func_003332F0
@@ -2018,12 +2021,12 @@
 0x00333C30  [CODE]  func_00333C30
 0x00333F50  [CODE]  func_00333F50
 0x00334048  [CODE]  func_00334048  # old:station_include
-0x003340B0  [CODE]  func_003340B0
+0x003340B0  [CODE]  xmlXIncludeProcess  # beta-export
 0x00334228  [CODE]  func_00334228
 0x00334238  [CODE]  func_00334238
 0x00334248  [CODE]  func_00334248
 0x00334258  [CODE]  func_00334258
-0x00334268  [CODE]  func_00334268  # old:station_http___www_w3_org_1999_xhtml_
+0x00334268  [CODE]  xlinkIsLink  # old:station_http___www_w3_org_1999_xhtml_; beta-export
 0x003343F0  [CODE]  func_003343F0
 0x003343F8  [CODE]  func_003343F8
 0x00334400  [CODE]  func_00334400
@@ -2040,104 +2043,104 @@
 0x00334668  [CODE]  func_00334668
 0x003346D0  [CODE]  func_003346D0
 0x00334728  [CODE]  func_00334728  # old:VIWndReadCS::called_00334728
-0x00334780  [CODE]  func_00334780
-0x00334858  [CODE]  func_00334858
-0x00334940  [CODE]  func_00334940
-0x003349C8  [CODE]  func_003349C8  # old:VIWndReadCS::called_003349C8
+0x00334780  [CODE]  xmlAllocParserInputBuffer  # beta-export
+0x00334858  [CODE]  xmlAllocOutputBuffer  # beta-export
+0x00334940  [CODE]  xmlFreeParserInputBuffer  # beta-export
+0x003349C8  [CODE]  xmlOutputBufferClose  # old:VIWndReadCS::called_003349C8; beta-export
 0x00334A78  [CODE]  func_00334A78
 0x00334B98  [CODE]  func_00334B98  # old:VIWndReadCS::called_00334B98
 0x00334CB8  [CODE]  func_00334CB8
 0x00334D30  [CODE]  func_00334D30  # old:VIWndReadCS::called_00334D30
 0x00334DA8  [CODE]  func_00334DA8
-0x00334E08  [CODE]  func_00334E08
+0x00334E08  [CODE]  xmlParserInputBufferCreateMem  # beta-export
 0x00334E90  [CODE]  func_00334E90
 0x00334EF0  [CODE]  func_00334EF0
 0x00334F58  [CODE]  func_00334F58
-0x00334FC0  [CODE]  func_00334FC0
-0x00335088  [CODE]  func_00335088
-0x00335250  [CODE]  func_00335250
-0x00335278  [CODE]  func_00335278
-0x00335470  [CODE]  func_00335470
-0x003354C8  [CODE]  func_003354C8
+0x00334FC0  [CODE]  xmlParserInputBufferPush  # beta-export
+0x00335088  [CODE]  xmlParserInputBufferGrow  # beta-export
+0x00335250  [CODE]  xmlParserInputBufferRead  # beta-export
+0x00335278  [CODE]  xmlOutputBufferWrite  # beta-export
+0x00335470  [CODE]  xmlOutputBufferWriteString  # beta-export
+0x003354C8  [CODE]  xmlOutputBufferFlush  # beta-export
 0x00335618  [CODE]  func_00335618
-0x00335620  [CODE]  func_00335620
+0x00335620  [CODE]  xmlParserGetDirectory  # beta-export
 0x00335720  [CODE]  func_00335720
 0x003357D0  [CODE]  func_003357D0
 0x003357E0  [CODE]  func_003357E0
-0x003357F0  [CODE]  func_003357F0
-0x00335818  [CODE]  func_00335818
-0x00335850  [CODE]  func_00335850
+0x003357F0  [CODE]  xmlLoadExternalEntity  # beta-export
+0x00335818  [CODE]  xmlMallocBreakpoint  # beta-export
+0x00335850  [CODE]  xmlMallocLoc  # beta-export
 0x00335950  [CODE]  func_00335950
-0x00335978  [CODE]  func_00335978
-0x00335A88  [CODE]  func_00335A88
-0x00335AB0  [CODE]  func_00335AB0
-0x00335B50  [CODE]  func_00335B50
+0x00335978  [CODE]  xmlReallocLoc  # beta-export
+0x00335A88  [CODE]  xmlMemRealloc  # beta-export
+0x00335AB0  [CODE]  xmlMemFree  # beta-export
+0x00335B50  [CODE]  xmlMemStrdupLoc  # beta-export
 0x00335C58  [CODE]  func_00335C58
-0x00335C80  [CODE]  func_00335C80
-0x00335C98  [CODE]  func_00335C98
-0x00335CD0  [CODE]  func_00335CD0
-0x00335CF0  [CODE]  func_00335CF0
+0x00335C80  [CODE]  xmlMemUsed  # beta-export
+0x00335C98  [CODE]  xmlMemShow  # beta-export
+0x00335CD0  [CODE]  xmlMemDisplay  # beta-export
+0x00335CF0  [CODE]  debugmem_tag_error  # beta-export
 0x00335D28  [CODE]  func_00335D28
-0x00335D30  [CODE]  func_00335D30
-0x00335D48  [CODE]  func_00335D48
-0x00335DB0  [CODE]  func_00335DB0
-0x00335DF8  [CODE]  func_00335DF8
-0x00335E60  [CODE]  func_00335E60
+0x00335D30  [CODE]  xmlInitMemory  # beta-export
+0x00335D48  [CODE]  xmlMemSetup  # beta-export
+0x00335DB0  [CODE]  xmlMemGet  # beta-export
+0x00335DF8  [CODE]  isinf  # beta-export
+0x00335E60  [CODE]  xmlXPathInit  # beta-export
 0x00335F10  [CODE]  func_00335F10
-0x00335FF8  [CODE]  func_00335FF8
+0x00335FF8  [CODE]  xmlXPathFreeCompExpr  # beta-export
 0x003360D8  [CODE]  func_003360D8
 0x00336270  [CODE]  func_00336270
 0x00336368  [CODE]  func_00336368
 0x00336438  [CODE]  func_00336438
 0x00336570  [CODE]  func_00336570
 0x00336678  [CODE]  func_00336678
-0x003367A0  [CODE]  func_003367A0
+0x003367A0  [CODE]  xmlXPathDebugDumpObject  # beta-export
 0x00336B20  [CODE]  func_00336B20  # old:station_PREDICATE
-0x00337298  [CODE]  func_00337298
-0x00337380  [CODE]  func_00337380
-0x00337430  [CODE]  func_00337430
+0x00337298  [CODE]  xmlXPathDebugDumpCompExpr  # beta-export
+0x00337380  [CODE]  valuePush  # beta-export
+0x00337430  [CODE]  valuePop  # beta-export
 0x00337488  [CODE]  func_00337488  # old:station__Infinity
-0x00337980  [CODE]  func_00337980
-0x00337BE8  [CODE]  func_00337BE8
-0x00337D50  [CODE]  func_00337D50
+0x00337980  [CODE]  xmlXPatherror  # beta-export
+0x00337BE8  [CODE]  xmlXPathCmpNodes  # beta-export
+0x00337D50  [CODE]  xmlXPathNodeSetSort  # beta-export
 0x00337E68  [CODE]  func_00337E68
-0x00337F38  [CODE]  func_00337F38
-0x00338040  [CODE]  func_00338040
-0x00338120  [CODE]  func_00338120
+0x00337F38  [CODE]  xmlXPathNodeSetAdd  # beta-export
+0x00338040  [CODE]  xmlXPathNodeSetAddUnique  # beta-export
+0x00338120  [CODE]  xmlXPathNodeSetMerge  # beta-export
 0x003382E8  [CODE]  func_003382E8
 0x00338398  [CODE]  func_00338398
-0x00338408  [CODE]  func_00338408
+0x00338408  [CODE]  xmlXPathFreeNodeSet  # beta-export
 0x00338458  [CODE]  func_00338458
-0x003384F0  [CODE]  func_003384F0
-0x00338580  [CODE]  func_00338580
-0x00338610  [CODE]  func_00338610
-0x003386B8  [CODE]  func_003386B8
-0x00338740  [CODE]  func_00338740  # old:VIWndReadCS::called_00338740
+0x003384F0  [CODE]  xmlXPathNewNodeSet  # beta-export
+0x00338580  [CODE]  xmlXPathNewValueTree  # beta-export
+0x00338610  [CODE]  xmlXPathNewNodeSetList  # beta-export
+0x003386B8  [CODE]  xmlXPathWrapNodeSet  # beta-export
+0x00338740  [CODE]  xmlXPathFreeNodeSetList  # old:VIWndReadCS::called_00338740; beta-export
 0x00338768  [CODE]  func_00338768
-0x00338788  [CODE]  func_00338788
-0x00338818  [CODE]  func_00338818
-0x00338838  [CODE]  func_00338838
-0x00338878  [CODE]  func_00338878
+0x00338788  [CODE]  xmlXPathRegisterFuncNS  # beta-export
+0x00338818  [CODE]  xmlXPathFunctionLookup  # beta-export
+0x00338838  [CODE]  xmlXPathFunctionLookupNS  # beta-export
+0x00338878  [CODE]  xmlXPathRegisteredFuncsCleanup  # beta-export
 0x003388B0  [CODE]  func_003388B0
-0x003388D0  [CODE]  func_003388D0
-0x00338968  [CODE]  func_00338968
-0x00338980  [CODE]  func_00338980
-0x003389E8  [CODE]  func_003389E8
-0x00338A70  [CODE]  func_00338A70
-0x00338AA8  [CODE]  func_00338AA8
-0x00338B30  [CODE]  func_00338B30
-0x00338BA8  [CODE]  func_00338BA8
-0x00338BE0  [CODE]  func_00338BE0
-0x00338C68  [CODE]  func_00338C68
-0x00338CF0  [CODE]  func_00338CF0
-0x00338D90  [CODE]  func_00338D90
-0x00338E20  [CODE]  func_00338E20
-0x00338F80  [CODE]  func_00338F80
-0x00339078  [CODE]  func_00339078
-0x00339140  [CODE]  func_00339140
-0x00339188  [CODE]  func_00339188
+0x003388D0  [CODE]  xmlXPathRegisterVariableNS  # beta-export
+0x00338968  [CODE]  xmlXPathRegisterVariableLookup  # beta-export
+0x00338980  [CODE]  xmlXPathVariableLookup  # beta-export
+0x003389E8  [CODE]  xmlXPathVariableLookupNS  # beta-export
+0x00338A70  [CODE]  xmlXPathRegisteredVariablesCleanup  # beta-export
+0x00338AA8  [CODE]  xmlXPathRegisterNs  # beta-export
+0x00338B30  [CODE]  xmlXPathNsLookup  # beta-export
+0x00338BA8  [CODE]  xmlXPathRegisteredNsCleanup  # beta-export
+0x00338BE0  [CODE]  xmlXPathNewFloat  # beta-export
+0x00338C68  [CODE]  xmlXPathNewBoolean  # beta-export
+0x00338CF0  [CODE]  xmlXPathNewString  # beta-export
+0x00338D90  [CODE]  xmlXPathNewCString  # beta-export
+0x00338E20  [CODE]  xmlXPathObjectCopy  # beta-export
+0x00338F80  [CODE]  xmlXPathFreeObject  # beta-export
+0x00339078  [CODE]  xmlXPathNewContext  # beta-export
+0x00339140  [CODE]  xmlXPathFreeContext  # beta-export
+0x00339188  [CODE]  xmlXPathNewParserContext  # beta-export
 0x00339248  [CODE]  func_00339248
-0x00339328  [CODE]  func_00339328
+0x00339328  [CODE]  xmlXPathFreeParserContext  # beta-export
 0x00339388  [CODE]  func_00339388
 0x003394F8  [CODE]  func_003394F8
 0x00339648  [CODE]  func_00339648
@@ -2145,68 +2148,68 @@
 0x00339A58  [CODE]  func_00339A58
 0x00339B58  [CODE]  func_00339B58
 0x00339BE0  [CODE]  func_00339BE0
-0x00339ED8  [CODE]  func_00339ED8
-0x0033A310  [CODE]  func_0033A310
-0x0033A568  [CODE]  func_0033A568
-0x0033A610  [CODE]  func_0033A610
-0x0033A720  [CODE]  func_0033A720
-0x0033A830  [CODE]  func_0033A830
-0x0033A940  [CODE]  func_0033A940
-0x0033AA50  [CODE]  func_0033AA50
-0x0033AB80  [CODE]  func_0033AB80
-0x0033AB98  [CODE]  func_0033AB98
-0x0033AC10  [CODE]  func_0033AC10
-0x0033ACB8  [CODE]  func_0033ACB8
-0x0033AD08  [CODE]  func_0033AD08
-0x0033AD88  [CODE]  func_0033AD88
-0x0033AE58  [CODE]  func_0033AE58
-0x0033AE88  [CODE]  func_0033AE88
-0x0033AEE0  [CODE]  func_0033AEE0
-0x0033AF38  [CODE]  func_0033AF38
+0x00339ED8  [CODE]  xmlXPathEqualValues  # beta-export
+0x0033A310  [CODE]  xmlXPathCompareValues  # beta-export
+0x0033A568  [CODE]  xmlXPathValueFlipSign  # beta-export
+0x0033A610  [CODE]  xmlXPathAddValues  # beta-export
+0x0033A720  [CODE]  xmlXPathSubValues  # beta-export
+0x0033A830  [CODE]  xmlXPathMultValues  # beta-export
+0x0033A940  [CODE]  xmlXPathDivValues  # beta-export
+0x0033AA50  [CODE]  xmlXPathModValues  # beta-export
+0x0033AB80  [CODE]  xmlXPathNextSelf  # beta-export
+0x0033AB98  [CODE]  xmlXPathNextChild  # beta-export
+0x0033AC10  [CODE]  xmlXPathNextDescendant  # beta-export
+0x0033ACB8  [CODE]  xmlXPathNextDescendantOrSelf  # beta-export
+0x0033AD08  [CODE]  xmlXPathNextParent  # beta-export
+0x0033AD88  [CODE]  xmlXPathNextAncestor  # beta-export
+0x0033AE58  [CODE]  xmlXPathNextAncestorOrSelf  # beta-export
+0x0033AE88  [CODE]  xmlXPathNextFollowingSibling  # beta-export
+0x0033AEE0  [CODE]  xmlXPathNextPrecedingSibling  # beta-export
+0x0033AF38  [CODE]  xmlXPathNextFollowing  # beta-export
 0x0033AFB8  [CODE]  func_0033AFB8
-0x0033B020  [CODE]  func_0033B020
-0x0033B0D8  [CODE]  func_0033B0D8
-0x0033B188  [CODE]  func_0033B188
-0x0033B1D0  [CODE]  func_0033B1D0
-0x0033B218  [CODE]  func_0033B218
-0x0033B2A8  [CODE]  func_0033B2A8
-0x0033B338  [CODE]  func_0033B338
-0x0033B428  [CODE]  func_0033B428
-0x0033B7B8  [CODE]  func_0033B7B8
-0x0033B940  [CODE]  func_0033B940
+0x0033B020  [CODE]  xmlXPathNextPreceding  # beta-export
+0x0033B0D8  [CODE]  xmlXPathNextNamespace  # beta-export
+0x0033B188  [CODE]  xmlXPathNextAttribute  # beta-export
+0x0033B1D0  [CODE]  xmlXPathRoot  # beta-export
+0x0033B218  [CODE]  xmlXPathLastFunction  # beta-export
+0x0033B2A8  [CODE]  xmlXPathPositionFunction  # beta-export
+0x0033B338  [CODE]  xmlXPathCountFunction  # beta-export
+0x0033B428  [CODE]  xmlXPathIdFunction  # beta-export
+0x0033B7B8  [CODE]  xmlXPathLocalNameFunction  # beta-export
+0x0033B940  [CODE]  xmlXPathNamespaceURIFunction  # beta-export
 0x0033BAA0  [CODE]  func_0033BAA0
-0x0033BC30  [CODE]  func_0033BC30
-0x0033BD88  [CODE]  func_0033BD88
-0x0033BE38  [CODE]  func_0033BE38
-0x0033BF98  [CODE]  func_0033BF98
-0x0033C118  [CODE]  func_0033C118
-0x0033C290  [CODE]  func_0033C290
-0x0033C418  [CODE]  func_0033C418
-0x0033C6E0  [CODE]  func_0033C6E0
-0x0033C800  [CODE]  func_0033C800
-0x0033C958  [CODE]  func_0033C958
-0x0033CB88  [CODE]  func_0033CB88
-0x0033CD58  [CODE]  func_0033CD58
-0x0033CE58  [CODE]  func_0033CE58
-0x0033CEE8  [CODE]  func_0033CEE8
-0x0033CFA0  [CODE]  func_0033CFA0
-0x0033CFF8  [CODE]  func_0033CFF8
-0x0033D050  [CODE]  func_0033D050
-0x0033D1C8  [CODE]  func_0033D1C8
-0x0033D2B8  [CODE]  func_0033D2B8
-0x0033D398  [CODE]  func_0033D398
-0x0033D4E8  [CODE]  func_0033D4E8
-0x0033D5B0  [CODE]  func_0033D5B0
-0x0033D6A0  [CODE]  func_0033D6A0
-0x0033D800  [CODE]  func_0033D800
+0x0033BC30  [CODE]  xmlXPathConvertString  # beta-export
+0x0033BD88  [CODE]  xmlXPathStringFunction  # beta-export
+0x0033BE38  [CODE]  xmlXPathStringLengthFunction  # beta-export
+0x0033BF98  [CODE]  xmlXPathConcatFunction  # beta-export
+0x0033C118  [CODE]  xmlXPathContainsFunction  # beta-export
+0x0033C290  [CODE]  xmlXPathStartsWithFunction  # beta-export
+0x0033C418  [CODE]  xmlXPathSubstringFunction  # beta-export
+0x0033C6E0  [CODE]  xmlXPathSubstringBeforeFunction  # beta-export
+0x0033C800  [CODE]  xmlXPathSubstringAfterFunction  # beta-export
+0x0033C958  [CODE]  xmlXPathNormalizeFunction  # beta-export
+0x0033CB88  [CODE]  xmlXPathTranslateFunction  # beta-export
+0x0033CD58  [CODE]  xmlXPathConvertBoolean  # beta-export
+0x0033CE58  [CODE]  xmlXPathBooleanFunction  # beta-export
+0x0033CEE8  [CODE]  xmlXPathNotFunction  # beta-export
+0x0033CFA0  [CODE]  xmlXPathTrueFunction  # beta-export
+0x0033CFF8  [CODE]  xmlXPathFalseFunction  # beta-export
+0x0033D050  [CODE]  xmlXPathLangFunction  # beta-export
+0x0033D1C8  [CODE]  xmlXPathConvertNumber  # beta-export
+0x0033D2B8  [CODE]  xmlXPathNumberFunction  # beta-export
+0x0033D398  [CODE]  xmlXPathSumFunction  # beta-export
+0x0033D4E8  [CODE]  xmlXPathFloorFunction  # beta-export
+0x0033D5B0  [CODE]  xmlXPathCeilingFunction  # beta-export
+0x0033D6A0  [CODE]  xmlXPathRoundFunction  # beta-export
+0x0033D800  [CODE]  xmlXPathParseNCName  # beta-export
 0x0033D940  [CODE]  func_0033D940
-0x0033D9B8  [CODE]  func_0033D9B8
-0x0033DB08  [CODE]  func_0033DB08
+0x0033D9B8  [CODE]  xmlXPathParseName  # beta-export
+0x0033DB08  [CODE]  xmlXPathStringEvalNumber  # beta-export
 0x0033DD60  [CODE]  func_0033DD60
 0x0033DF58  [CODE]  func_0033DF58
 0x0033E130  [CODE]  func_0033E130
 0x0033E348  [CODE]  func_0033E348
-0x0033E500  [CODE]  func_0033E500  # old:station_comment
+0x0033E500  [CODE]  xmlXPathIsNodeType  # old:station_comment; beta-export
 0x0033E588  [CODE]  func_0033E588
 0x0033E850  [CODE]  func_0033E850
 0x0033EAE8  [CODE]  func_0033EAE8
@@ -2229,14 +2232,14 @@
 0x00341850  [CODE]  func_00341850
 0x00341DF8  [CODE]  func_00341DF8
 0x00342BB8  [CODE]  func_00342BB8
-0x00342C70  [CODE]  func_00342C70
-0x00342D58  [CODE]  func_00342D58
-0x00342E40  [CODE]  func_00342E40
-0x00342E98  [CODE]  func_00342E98
-0x00343028  [CODE]  func_00343028
-0x00343058  [CODE]  func_00343058  # old:VIWndReadCS::called_00343058
-0x00343218  [CODE]  func_00343218
-0x00343390  [CODE]  func_00343390  # old:station_boolean
+0x00342C70  [CODE]  xmlXPathEvalPredicate  # beta-export
+0x00342D58  [CODE]  xmlXPathEvaluatePredicateResult  # beta-export
+0x00342E40  [CODE]  xmlXPathCompile  # beta-export
+0x00342E98  [CODE]  xmlXPathCompiledEval  # beta-export
+0x00343028  [CODE]  xmlXPathEvalExpr  # beta-export
+0x00343058  [CODE]  xmlXPathEval  # old:VIWndReadCS::called_00343058; beta-export
+0x00343218  [CODE]  xmlXPathEvalExpression  # beta-export
+0x00343390  [CODE]  xmlXPathRegisterAllFunctions  # old:station_boolean; beta-export
 0x00343638  [CODE]  func_00343638
 0x00343690  [CODE]  func_00343690
 0x003436E0  [CODE]  func_003436E0
@@ -2244,50 +2247,50 @@
 0x003437A8  [CODE]  func_003437A8
 0x00343848  [CODE]  func_00343848
 0x003438C8  [CODE]  func_003438C8
-0x00343960  [CODE]  func_00343960
-0x00343A38  [CODE]  func_00343A38
-0x00343B10  [CODE]  func_00343B10
-0x00343BD8  [CODE]  func_00343BD8
-0x00343CB0  [CODE]  func_00343CB0
-0x00343D60  [CODE]  func_00343D60
-0x00343DF8  [CODE]  func_00343DF8
+0x00343960  [CODE]  xmlXPtrNewRange  # beta-export
+0x00343A38  [CODE]  xmlXPtrNewRangePoints  # beta-export
+0x00343B10  [CODE]  xmlXPtrNewRangePointNode  # beta-export
+0x00343BD8  [CODE]  xmlXPtrNewRangeNodePoint  # beta-export
+0x00343CB0  [CODE]  xmlXPtrNewRangeNodes  # beta-export
+0x00343D60  [CODE]  xmlXPtrNewCollapsedRange  # beta-export
+0x00343DF8  [CODE]  xmlXPtrNewRangeNodeObject  # beta-export
 0x00343F78  [CODE]  func_00343F78
-0x00344048  [CODE]  func_00344048
-0x00344180  [CODE]  func_00344180
+0x00344048  [CODE]  xmlXPtrLocationSetAdd  # beta-export
+0x00344180  [CODE]  xmlXPtrLocationSetMerge  # beta-export
 0x00344208  [CODE]  func_00344208
 0x003442B8  [CODE]  func_003442B8
-0x00344328  [CODE]  func_00344328
-0x003443B8  [CODE]  func_003443B8
-0x00344470  [CODE]  func_00344470
-0x00344560  [CODE]  func_00344560
+0x00344328  [CODE]  xmlXPtrFreeLocationSet  # beta-export
+0x003443B8  [CODE]  xmlXPtrNewLocationSetNodes  # beta-export
+0x00344470  [CODE]  xmlXPtrNewLocationSetNodeSet  # beta-export
+0x00344560  [CODE]  xmlXPtrWrapLocationSet  # beta-export
 0x003445E8  [CODE]  func_003445E8
 0x003446E0  [CODE]  func_003446E0  # old:station_xpointer
 0x00344B78  [CODE]  func_00344B78
 0x00344CD8  [CODE]  func_00344CD8
 0x00344E18  [CODE]  func_00344E18
-0x00344FF0  [CODE]  func_00344FF0  # old:station_range_to
-0x00345110  [CODE]  func_00345110
+0x00344FF0  [CODE]  xmlXPtrNewContext  # old:station_range_to; beta-export
+0x00345110  [CODE]  xmlXPtrEval  # beta-export
 0x003452A0  [CODE]  func_003452A0
-0x00345668  [CODE]  func_00345668
+0x00345668  [CODE]  xmlXPtrBuildNodeList  # beta-export
 0x00345848  [CODE]  func_00345848
-0x003458E8  [CODE]  func_003458E8
-0x00345970  [CODE]  func_00345970
-0x003459F8  [CODE]  func_003459F8
-0x00345C30  [CODE]  func_00345C30
+0x003458E8  [CODE]  xmlXPtrHereFunction  # beta-export
+0x00345970  [CODE]  xmlXPtrOriginFunction  # beta-export
+0x003459F8  [CODE]  xmlXPtrStartPointFunction  # beta-export
+0x00345C30  [CODE]  xmlXPtrEndPointFunction  # beta-export
 0x00345E58  [CODE]  func_00345E58
-0x00345F98  [CODE]  func_00345F98
+0x00345F98  [CODE]  xmlXPtrRangeFunction  # beta-export
 0x003460E8  [CODE]  func_003460E8
-0x00346260  [CODE]  func_00346260
-0x003463B0  [CODE]  func_003463B0
-0x003465A8  [CODE]  func_003465A8
+0x00346260  [CODE]  xmlXPtrRangeInsideFunction  # beta-export
+0x003463B0  [CODE]  xmlXPtrRangeToFunction  # beta-export
+0x003465A8  [CODE]  xmlXPtrAdvanceNode  # beta-export
 0x00346670  [CODE]  func_00346670
 0x00346810  [CODE]  func_00346810
 0x00346960  [CODE]  func_00346960
 0x00346B00  [CODE]  func_00346B00
 0x00346BC8  [CODE]  func_00346BC8
 0x00346C48  [CODE]  func_00346C48
-0x00346CC8  [CODE]  func_00346CC8
-0x003470F0  [CODE]  func_003470F0
+0x00346CC8  [CODE]  xmlXPtrStringRangeFunction  # beta-export
+0x003470F0  [CODE]  xmlXPtrEvalRangePredicate  # beta-export
 0x003474D8  [CODE]  func_003474D8
 0x003474F8  [CODE]  func_003474F8
 0x00347520  [CODE]  func_00347520  # old:VIString::method_00347520
@@ -2300,7 +2303,7 @@
 0x00347898  [CODE]  func_00347898
 0x003478A0  [CODE]  func_003478A0
 0x003478A8  [CODE]  func_003478A8  # old:VIString::method_003478A8
-0x003478D0  [CODE]  func_003478D0
+0x003478D0  [CODE]  GetDistributionInfo__17PatcherDownloader  # beta-export
 0x003478D8  [CODE]  func_003478D8  # old:VIString::method_003478D8
 0x00347950  [CODE]  func_00347950
 0x00347958  [CODE]  func_00347958
@@ -2309,7 +2312,7 @@
 0x00347970  [CODE]  func_00347970
 0x00347978  [CODE]  func_00347978
 0x00347980  [CODE]  func_00347980  # old:VIWnd::called_00347980
-0x003479A8  [CODE]  func_003479A8
+0x003479A8  [CODE]  DirectoryAvailable__17PatcherDownloader  # beta-export
 0x003479B0  [CODE]  func_003479B0
 0x003479B8  [CODE]  func_003479B8  # old:VIFont::method_003479B8
 0x00347AB0  [CODE]  func_00347AB0
@@ -2417,7 +2420,7 @@
 0x0034C8A0  [LIB]  name__C9type_info
 0x0034C8A8  [LIB]  func_0034C8A8
 0x0034C8C0  [LIB]  func_0034C8C0
-0x0034C900  [LIB]  func_0034C900
+0x0034C900  [LIB]  __default_terminate  # beta-export
 0x0034C910  [LIB]  __terminate
 0x0034C938  [LIB]  __throw_type_match
 0x0034C968  [LIB]  func_0034C968
@@ -2445,13 +2448,13 @@
 0x0034D8F8  [LIB]  __cp_eh_info
 0x0034D918  [LIB]  __start_cp_handler
 0x0034D950  [LIB]  __eh_alloc
-0x0034D978  [LIB]  func_0034D978
+0x0034D978  [LIB]  __eh_free  # beta-export
 0x0034D998  [LIB]  __cplus_type_matcher
 0x0034DA08  [LIB]  __cp_push_exception
 0x0034DA98  [LIB]  __cp_pop_exception
 0x0034DB60  [LIB]  __uncatch_exception
 0x0034DB90  [LIB]  func_0034DB90
-0x0034DDC8  [LIB]  func_0034DDC8
+0x0034DDC8  [LIB]  __throw_bad_typeid  # beta-export
 0x0034DE48  [LIB]  uncaught_exception__Fv
 0x0034DE80  [LIB]  what__C9exception
 0x0034DEA8  [LIB]  func_0034DEA8
@@ -2472,7 +2475,7 @@
 0x0034E7C8  [LIB]  func_0034E7C8
 0x0034EB60  [LIB]  __register_frame_info
 0x0034EB88  [LIB]  func_0034EB88
-0x0034EBE0  [LIB]  func_0034EBE0
+0x0034EBE0  [LIB]  __register_frame_table  # beta-export
 0x0034EC10  [LIB]  __deregister_frame_info
 0x0034EC88  [LIB]  __deregister_frame
 0x0034ECA8  [LIB]  __frame_state_for

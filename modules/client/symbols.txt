@@ -13,12 +13,12 @@
 0x00BB4CC0  [CODE]  func_00BB4CC0
 0x00BB4DA0  [CODE]  func_00BB4DA0
 0x00BB4DB8  [CODE]  func_00BB4DB8
-0x00BB4DD0  [CODE]  func_00BB4DD0
+0x00BB4DD0  [CODE]  Show__17VIClientPart382E8Uii  # name provisional (phase 62)
 0x00BB5400  [CODE]  func_00BB5400
 0x00BB5830  [CODE]  func_00BB5830
 0x00BB5928  [CODE]  func_00BB5928
 0x00BB5958  [CODE]  func_00BB5958
-0x00BB5960  [CODE]  func_00BB5960
+0x00BB5960  [CODE]  Reset__17VIClientPart382E8  # name provisional (phase 62)
 0x00BB5968  [CODE]  func_00BB5968
 0x00BB5A48  [CODE]  func_00BB5A48
 0x00BB5B28  [CODE]  func_00BB5B28
@@ -58,8 +58,8 @@
 0x00BB78E0  [CODE]  func_00BB78E0
 0x00BB79D0  [CODE]  func_00BB79D0
 0x00BB7AB0  [CODE]  func_00BB7AB0
-0x00BB7BA0  [CODE]  func_00BB7BA0
-0x00BB7C70  [CODE]  func_00BB7C70
+0x00BB7BA0  [CODE]  Send0701a__17VIClientPart382E8  # name provisional (phase 62)
+0x00BB7C70  [CODE]  Send0701b__17VIClientPart382E8  # name provisional (phase 62)
 0x00BB7D40  [CODE]  func_00BB7D40
 0x00BB7D70  [CODE]  func_00BB7D70
 0x00BB7DB0  [CODE]  Begin__Ct5VIMap2ZiZ13VIRec4_BB7DB0  # name provisional: placeholder value type (phase 62, template copy)
@@ -81,11 +81,11 @@
 0x00BB8848  [CODE]  Clear__t7VIArray1Z13VIRec8_BB88A8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BB88A8  [CODE]  Allocate__t7VIArray1Z13VIRec8_BB88A8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BB8920  [CODE]  Init__t7VIArray1Z13VIRec8_BB88A8i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BB8970  [CODE]  func_00BB8970
+0x00BB8970  [CODE]  Item__10VIItemListi  # name provisional: &m_items[i], 764-byte slots after two ints (phase 62)
 0x00BB8988  [CODE]  func_00BB8988
 0x00BB8AD0  [CODE]  func_00BB8AD0
-0x00BB8BE0  [CODE]  func_00BB8BE0
-0x00BB8BE8  [CODE]  func_00BB8BE8
+0x00BB8BE0  [CODE]  Count__13VIBankControl  # name provisional (phase 62)
+0x00BB8BE8  [CODE]  Item__13VIBankControli  # name provisional (phase 62)
 0x00BB8C08  [CODE]  func_00BB8C08
 0x00BB8C28  [CODE]  Close__13VIBankControl  # name provisional (phase 62 dispatcher)
 0x00BB8C30  [CODE]  func_00BB8C30
@@ -154,9 +154,9 @@
 0x00BBB410  [CODE]  func_00BBB410
 0x00BBB6D8  [CODE]  func_00BBB6D8
 0x00BBB740  [CODE]  func_00BBB740
-0x00BBB758  [CODE]  __11VIItemArray  # name provisional (phase 62 dispatcher)
-0x00BBB768  [CODE]  DestroyPool__t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBB7B8  [CODE]  _$_11VIItemArray  # name provisional (phase 62 dispatcher)
+0x00BBB758  [CODE]  __t7VIArray1Z10VIItemStat  # VIArray<VIItemStat>'s ctor, the copy every TU calls (phase 62, template copy)
+0x00BBB768  [CODE]  DestroyPool__t7VIArray1Z10VIItemStat  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
+0x00BBB7B8  [CODE]  _$_t7VIArray1Z10VIItemStat  # VIArray<VIItemStat>'s dtor, the copy every TU calls (phase 62, template copy)
 0x00BBB820  [CODE]  func_00BBB820
 0x00BBB848  [CODE]  End__Ct6VIPool1ZP12VIPtr_BBB848  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBB858  [CODE]  Begin__Ct6VIPool1ZP12VIPtr_BBB848  # name provisional: placeholder element type (phase 62, template copy)
@@ -170,7 +170,7 @@
 0x00BBBA60  [CODE]  DestroyPool__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBAB8  [CODE]  _$_t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBB20  [CODE]  func_00BBBB20
-0x00BBBB30  [CODE]  DestroyPool__t7VIArray1Z13VIElem_BBC168  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00BBBB30  [CODE]  DestroyPool__t7VIArray1Z15VIRec792_BBC168  # name provisional: element measured, 792 bytes = VINetItem + 28 (phase 62, template copy)
 0x00BBBBD8  [CODE]  func_00BBBBD8
 0x00BBBC40  [CODE]  func_00BBBC40
 0x00BBBC50  [CODE]  DestroyPool__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
@@ -178,23 +178,23 @@
 0x00BBBD08  [CODE]  func_00BBBD08
 0x00BBBD18  [CODE]  DestroyPool__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBD68  [CODE]  _$_t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBBDD0  [CODE]  func_00BBBDD0  # VIItemList.h:315
+0x00BBBDD0  [CODE]  GetSlotId__10VIItemListi  # VIItemList.h:315; name provisional (phase 62)
 0x00BBBE38  [CODE]  DestroyPool__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBE88  [CODE]  _$_t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBEF0  [CODE]  func_00BBBEF0
 0x00BBBF08  [CODE]  Allocate__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBBFE0  [CODE]  Add__t8VIVector1Z13VIRec4_BBBF08RC13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC070  [CODE]  Clear__t7VIArray1Z13VIElem_BBC168  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC0D0  [CODE]  Allocate__t7VIArray1Z13VIElem_BBC168  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
-0x00BBC168  [CODE]  Init__t7VIArray1Z13VIElem_BBC168i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC070  [CODE]  Clear__t7VIArray1Z15VIRec792_BBC168  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC0D0  [CODE]  Allocate__t7VIArray1Z15VIRec792_BBC168  # name provisional: element measured, 792 bytes = VINetItem + 28 (phase 62, template copy)
+0x00BBC168  [CODE]  Init__t7VIArray1Z15VIRec792_BBC168i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC1B8  [CODE]  Clear__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC218  [CODE]  Allocate__t7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC290  [CODE]  Init__t7VIArray1Z13VIRec4_BBC218i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC2E0  [CODE]  Clear__t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC340  [CODE]  Allocate__t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
-0x00BBC3B8  [CODE]  Init__t7VIArray1Z13VIRec8_BBC340RCt7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
+0x00BBC2E0  [CODE]  Clear__t7VIArray1Z10VIItemStat  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
+0x00BBC340  [CODE]  Allocate__t7VIArray1Z10VIItemStat  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
+0x00BBC3B8  [CODE]  Init__t7VIArray1Z10VIItemStatRCt7VIArray1Z10VIItemStat  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
 0x00BBC460  [CODE]  func_00BBC460
-0x00BBC490  [CODE]  func_00BBC490
+0x00BBC490  [CODE]  __6VIItemRC6VIItem  # name provisional: VIItem's synthesized copy constructor, out of line (phase 62)
 0x00BBC5D8  [CODE]  func_00BBC5D8
 0x00BBC708  [CODE]  Init__t7VIArray1Z13VIRec4_BBC218RCt7VIArray1Z13VIRec4_BBC218  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBC7A8  [CODE]  Clear__t7VIArray1Z14VIRec44_BBC808  # name provisional: placeholder element type (phase 62, template copy)
@@ -211,7 +211,7 @@
 0x00BBCEA8  [CODE]  Allocate__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBCFD0  [CODE]  Add__t6VIPool1Z14VIRec24_BBCE10  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBD0A8  [CODE]  func_00BBD0A8
-0x00BBD130  [CODE]  AddItem__9VIInvListR9VINetItemii  # name provisional: AddInvItem's call (phase 62)
+0x00BBD130  [CODE]  AddItem__10VIItemListR9VINetItemii  # name provisional: AddInvItem's call (phase 62)
 0x00BBD398  [CODE]  Get__10VIItemListiR9VINetItem  # name provisional: Msg0019 copies an item out of the corpse list (phase 62)
 0x00BBD430  [CODE]  Took__10VIItemListii  # name provisional: Msg0019's report back to the corpse list (phase 62)
 0x00BBD560  [CODE]  func_00BBD560
@@ -220,7 +220,7 @@
 0x00BBD918  [CODE]  Erase__t6VIPool1Z14VIRec24_BBCE10i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BBD9E8  [CODE]  func_00BBD9E8  # VIMemStreamArray.h:71
 0x00BBDA90  [CODE]  func_00BBDA90  # VIMemStreamArray.h:71
-0x00BBDB38  [CODE]  func_00BBDB38
+0x00BBDB38  [CODE]  __as__6VIItemRC6VIItem  # name provisional: the 0x2E4-byte item's copy assignment (phase 62)
 0x00BBDC80  [CODE]  func_00BBDC80
 0x00BBDCA8  [CODE]  func_00BBDCA8
 0x00BBDCF0  [CODE]  func_00BBDCF0
@@ -232,7 +232,7 @@
 0x00BBDEE8  [CODE]  func_00BBDEE8
 0x00BBDEF8  [CODE]  func_00BBDEF8
 0x00BBDF20  [CODE]  func_00BBDF20
-0x00BBDF30  [CODE]  func_00BBDF30
+0x00BBDF30  [CODE]  Expand__12VIClientTextPUsUsPCUsi  # name provisional (phase 62)
 0x00BBE450  [CODE]  func_00BBE450
 0x00BBE500  [CODE]  func_00BBE500
 0x00BBE558  [CODE]  func_00BBE558
@@ -254,329 +254,329 @@
 0x00BBEFF8  [CODE]  func_00BBEFF8
 0x00BBF070  [CODE]  func_00BBF070
 0x00BBF0C0  [CODE]  func_00BBF0C0
-0x00BBF0D8  [CODE]  func_00BBF0D8
-0x00BBF5F8  [CODE]  func_00BBF5F8
+0x00BBF0D8  [CODE]  LoadingProgress__8VIClientPv  # name provisional (phase 62)
+0x00BBF5F8  [CODE]  Rumble__FUcUciP5VIPad  # name provisional (phase 62)
 0x00BBF698  [CODE]  __8VIClient  # VIClient.cpp; ctor, named from client_main's call
-0x00BBFE00  [CODE]  func_00BBFE00
+0x00BBFE00  [CODE]  ReleaseMat__FR8VIRasterR12VIDictionaryi  # name provisional (phase 62)
 0x00BBFE30  [CODE]  func_00BBFE30
-0x00BBFE80  [CODE]  Init__8VIClientPCcPciT2iiii  # VIClient.cpp; parameter types provisional (client_main's call)
-0x00BC0098  [CODE]  func_00BC0098
-0x00BC0730  [CODE]  func_00BC0730
+0x00BBFE80  [CODE]  Init__8VIClientPCcPcT1T2iiii  # VIClient.cpp; parameter types provisional (client_main's call)
+0x00BC0098  [CODE]  InitBody__8VIClient  # name provisional (phase 62)
+0x00BC0730  [CODE]  LoadWorld__8VIClient  # name provisional (phase 62)
 0x00BC0D80  [CODE]  func_00BC0D80
-0x00BC0F28  [CODE]  func_00BC0F28
-0x00BC1498  [CODE]  func_00BC1498
+0x00BC0F28  [CODE]  EnterGameLoad__8VIClient  # name provisional (phase 62): prints "EnterGame Load: %d ms"
+0x00BC1498  [CODE]  UnloadWorld__8VIClient  # name provisional (phase 62)
 0x00BC16D0  [CODE]  Shutdown__8VIClient  # VIClient.cpp; named from client_main's call
 0x00BC1720  [CODE]  Disconnect__8VIClientii  # VIClient.cpp; name provisional: stops the music, closes the DRDP connection (Shutdown's call)
-0x00BC18C0  [CODE]  func_00BC18C0  # VIClient.cpp:1705
-0x00BC1DD0  [CODE]  func_00BC1DD0  # VIClient.cpp:1790
-0x00BC20A8  [CODE]  func_00BC20A8  # VIClient.cpp~
-0x00BC2118  [CODE]  func_00BC2118  # VIClient.cpp~
-0x00BC2128  [CODE]  func_00BC2128  # VIClient.cpp~
-0x00BC2180  [CODE]  func_00BC2180  # VIClient.cpp~
+0x00BC18C0  [CODE]  Connect__8VIClientPCcUs  # name provisional (phase 62)  # VIClient.cpp:1705
+0x00BC1DD0  [CODE]  ConnectShard__8VIClientUl  # name provisional (phase 62)  # VIClient.cpp:1790
+0x00BC20A8  [CODE]  ConnectRandomShard__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC2118  [CODE]  IsP00058Unset__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC2128  [CODE]  ReturnToSelect__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC2180  [CODE]  ShowLoginWindow__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
 0x00BC21E0  [CODE]  Notify__8VIClient  # VIClient.cpp; name provisional: Disconnect's call when not quiet
-0x00BC2248  [CODE]  func_00BC2248  # VIClient.cpp~
-0x00BC2268  [CODE]  func_00BC2268  # VIClient.cpp~
-0x00BC24C8  [CODE]  func_00BC24C8  # VIClient.cpp~
+0x00BC2248  [CODE]  Quit__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC2268  [CODE]  ConnectStatusString__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC24C8  [CODE]  DisconnectKind__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
 0x00BC2528  [CODE]  Msg0777Done__8VIClienti  # name provisional: Msg0777's last call (phase 62)
 0x00BC2638  [CODE]  _$_8VIClient  # VIClient.cpp~; dtor, named from client_main's call
 0x00BC2D18  [CODE]  IsRunning__8VIClient  # VIClient.cpp~; named from client_main's loop test
-0x00BC2D28  [CODE]  func_00BC2D28  # VIClient.cpp:2207
-0x00BC2EB0  [CODE]  func_00BC2EB0  # VIClient.cpp~
+0x00BC2D28  [CODE]  WriteQuantized__FR11VIMemStreamifff  # name provisional (phase 62)  # VIClient.cpp:2207
+0x00BC2EB0  [CODE]  WriteQuantized__FR11VIMemStreamRC7VIVect3iRC6VIBBox  # name provisional (phase 62)  # VIClient.cpp~
 0x00BC2F30  [CODE]  func_00BC2F30  # VIClient.cpp:2277
 0x00BC3AE8  [CODE]  func_00BC3AE8  # VIClient.cpp~
 0x00BC4B18  [CODE]  func_00BC4B18  # VIClient.cpp~
-0x00BC55D8  [CODE]  func_00BC55D8  # VIClient.cpp~
-0x00BC5840  [CODE]  func_00BC5840  # VIClient.cpp~
-0x00BC5AC8  [CODE]  func_00BC5AC8  # VIClient.cpp~
-0x00BC5B80  [CODE]  func_00BC5B80  # VIClient.cpp~
-0x00BC5BE8  [CODE]  func_00BC5BE8  # VIClient.cpp~
-0x00BC5C38  [CODE]  func_00BC5C38  # VIClient.cpp~
-0x00BC5F78  [CODE]  func_00BC5F78  # VIClient.cpp~
-0x00BC6108  [CODE]  func_00BC6108  # VIClient.cpp~
-0x00BC6118  [CODE]  func_00BC6118  # VIClient.cpp~
+0x00BC55D8  [CODE]  DrawFade__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC5840  [CODE]  DrawPosition__8VIClient  # name provisional: CLIENT's own copy (phase 62)  # VIClient.cpp~
+0x00BC5AC8  [CODE]  DrawPingBar__8VIClientPCcRC8VIVect2If  # name provisional (phase 62): no caller  # VIClient.cpp~
+0x00BC5B80  [CODE]  PingPoint__FiP10VIPingRingP8VIVect2If  # name provisional (phase 62): no caller  # VIClient.cpp~
+0x00BC5BE8  [CODE]  NetStatSort__FPCvT0  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC5C38  [CODE]  DrawNetStats__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC5F78  [CODE]  ResetCamera__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC6108  [CODE]  ClearPC1B0__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC6118  [CODE]  DeathCamera__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
 0x00BC6500  [CODE]  func_00BC6500  # VIClient.cpp~
-0x00BC7098  [CODE]  func_00BC7098  # VIClient.cpp~
-0x00BC70E0  [CODE]  func_00BC70E0  # VIClient.cpp~
-0x00BC70F0  [CODE]  func_00BC70F0  # VIClient.cpp~
-0x00BC7120  [CODE]  func_00BC7120  # VIClient.cpp~
+0x00BC7098  [CODE]  SetFade__8VIClientff  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC70E0  [CODE]  GetPC178__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC70F0  [CODE]  SetPC178__8VIClientRC10VIColor32F  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC7120  [CODE]  RefreshCollision__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
 0x00BC7218  [CODE]  Msg1003Done__8VIClient  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BC72C0  [CODE]  func_00BC72C0  # VIClient.cpp~
-0x00BC7478  [CODE]  func_00BC7478  # VIClient.cpp~
-0x00BC76A0  [CODE]  func_00BC76A0  # VIClient.cpp~
-0x00BC7A80  [CODE]  func_00BC7A80  # VIClient.cpp~
-0x00BC7B38  [CODE]  func_00BC7B38  # VIClient.cpp~
-0x00BC7B70  [CODE]  func_00BC7B70  # VIClient.cpp~
+0x00BC72C0  [CODE]  UpdateCreatures__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC7478  [CODE]  Extrapolate__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC76A0  [CODE]  AutoAttackTick__8VIClientP8VIEntity  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC7A80  [CODE]  ApplyRaceCamera__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC7B38  [CODE]  ApplyDefaultCamera__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC7B70  [CODE]  UpdateTimeOfDay__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
 0x00BC7BF0  [CODE]  Process__8VIClient  # VIClient.cpp~; named from client_main's loop body
-0x00BC85F8  [CODE]  func_00BC85F8  # VIClient.cpp~
-0x00BC8618  [CODE]  func_00BC8618  # VIClient.cpp~
-0x00BC8660  [CODE]  func_00BC8660  # VIClient.cpp~
-0x00BC8700  [CODE]  func_00BC8700  # VIClient.cpp~
-0x00BC89D0  [CODE]  func_00BC89D0  # VIClient.cpp~
-0x00BC8AD8  [CODE]  func_00BC8AD8  # VIClient.cpp~
-0x00BC8B08  [CODE]  func_00BC8B08  # VIClient.cpp~
-0x00BC8B28  [CODE]  func_00BC8B28  # VIClient.cpp~
-0x00BC8B68  [CODE]  func_00BC8B68  # VIClient.cpp~
-0x00BC8B98  [CODE]  func_00BC8B98  # VIClient.cpp~
-0x00BC92B0  [CODE]  func_00BC92B0  # VIClient.cpp~
-0x00BC95F0  [CODE]  func_00BC95F0  # VIClient.cpp~
-0x00BC9730  [CODE]  func_00BC9730  # VIClient.cpp~
+0x00BC85F8  [CODE]  TickLocal__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8618  [CODE]  TickNet__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8660  [CODE]  JournalTick__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8700  [CODE]  JournalConsole__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC89D0  [CODE]  JournalNetwork__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8AD8  [CODE]  ProcessPacket__8VIClientPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8B08  [CODE]  SendOp000F__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8B28  [CODE]  CompareY__FPCvT0  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8B68  [CODE]  TargetNearest__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC8B98  [CODE]  CycleTarget__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC92B0  [CODE]  TargetCentre__8VIClient  # name provisional (phase 62)
+0x00BC95F0  [CODE]  DrawReticle__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC9730  [CODE]  SelectTarget__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
 0x00BC9870  [CODE]  FindEntity__8VIClienti  # VIClient.cpp~; VIClient.cpp
-0x00BC98A8  [CODE]  func_00BC98A8  # VIClient.cpp~
-0x00BC98B8  [CODE]  func_00BC98B8  # VIClient.cpp~
-0x00BC98F0  [CODE]  func_00BC98F0  # VIClient.cpp~
-0x00BC9918  [CODE]  func_00BC9918  # VIClient.cpp~
-0x00BC9968  [CODE]  func_00BC9968  # VIClient.cpp~
-0x00BC9A10  [CODE]  func_00BC9A10  # VIClient.cpp~
-0x00BC9A60  [CODE]  func_00BC9A60  # VIClient.cpp~
-0x00BC9A88  [CODE]  func_00BC9A88  # VIClient.cpp~
-0x00BC9AB0  [CODE]  func_00BC9AB0  # VIClient.cpp~
-0x00BC9AD8  [CODE]  func_00BC9AD8  # VIClient.cpp~
-0x00BC9B00  [CODE]  func_00BC9B00  # VIClient.cpp~
-0x00BC9B28  [CODE]  func_00BC9B28  # VIClient.cpp~
-0x00BC9B50  [CODE]  func_00BC9B50  # VIClient.cpp~
-0x00BC9B78  [CODE]  func_00BC9B78  # VIClient.cpp~
-0x00BC9BA0  [CODE]  func_00BC9BA0  # VIClient.cpp~
-0x00BC9BC8  [CODE]  func_00BC9BC8  # VIClient.cpp~
-0x00BC9BF0  [CODE]  func_00BC9BF0  # VIClient.cpp~
-0x00BC9C18  [CODE]  func_00BC9C18  # VIClient.cpp~
-0x00BC9C40  [CODE]  func_00BC9C40  # VIClient.cpp~
-0x00BC9C68  [CODE]  func_00BC9C68  # VIClient.cpp~
-0x00BC9C90  [CODE]  func_00BC9C90  # VIClient.cpp~
-0x00BC9CB8  [CODE]  func_00BC9CB8  # VIClient.cpp~
-0x00BC9CE0  [CODE]  func_00BC9CE0  # VIClient.cpp~
-0x00BC9D08  [CODE]  func_00BC9D08  # VIClient.cpp~
-0x00BC9D30  [CODE]  func_00BC9D30  # VIClient.cpp~
-0x00BC9D58  [CODE]  func_00BC9D58  # VIClient.cpp~
-0x00BC9D80  [CODE]  func_00BC9D80  # VIClient.cpp~
-0x00BC9DA8  [CODE]  func_00BC9DA8  # VIClient.cpp~
-0x00BC9DD0  [CODE]  func_00BC9DD0  # VIClient.cpp~
-0x00BC9E10  [CODE]  func_00BC9E10  # VIClient.cpp~
-0x00BC9EE0  [CODE]  func_00BC9EE0  # VIClient.cpp~
-0x00BC9F60  [CODE]  func_00BC9F60  # VIClient.cpp~
-0x00BC9F88  [CODE]  func_00BC9F88  # VIClient.cpp~
-0x00BCA060  [CODE]  func_00BCA060  # VIClient.cpp~
+0x00BC98A8  [CODE]  GetInvCount__8VIClient  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC98B8  [CODE]  GetInvItemIcon__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC98F0  [CODE]  GetInvItemAmount__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9918  [CODE]  GetInvItemName__8VIClientiPUsi  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9968  [CODE]  GetObjectName__8VIClientUiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC9A10  [CODE]  GetInvItemDesc__8VIClientiPUsi  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9A60  [CODE]  GetInvItemEquipSlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9A88  [CODE]  GetInvItemWearSlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9AB0  [CODE]  GetInvItemAttackType__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9AD8  [CODE]  GetInvItemLevelReq__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9B00  [CODE]  GetInvItemP24__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9B28  [CODE]  GetInvItemP08__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9B50  [CODE]  GetInvItemClassMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9B78  [CODE]  GetInvItemRaceMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9BA0  [CODE]  GetInvItemCharges__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9BC8  [CODE]  GetInvItemP4C__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9BF0  [CODE]  GetInvItemDamage__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9C18  [CODE]  GetInvItemCurHp__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9C40  [CODE]  GetInvItemMaxHp__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9C68  [CODE]  GetInvItemRange__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9C90  [CODE]  GetInvItemMaxStack__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9CB8  [CODE]  GetInvItemP58__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9CE0  [CODE]  GetInvItemDurability__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9D08  [CODE]  GetInvItemP18__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9D30  [CODE]  GetInvItemNoTrade__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9D58  [CODE]  GetInvItemRent__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9D80  [CODE]  GetInvItemLore__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9DA8  [CODE]  GetInvItemP54__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9DD0  [CODE]  ItemIcon__8VIClientP9VINetItem  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9E10  [CODE]  IsRangedItem__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC9EE0  [CODE]  FindInvByQuickSlot__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BC9F60  [CODE]  GetInvItemQuickSlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BC9F88  [CODE]  GetStatTotal__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCA060  [CODE]  GearStat__8VIClientP10VIItemListi  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCA2E8  [CODE]  func_00BCA2E8  # VIClient.cpp~
-0x00BCA840  [CODE]  func_00BCA840  # VIClient.cpp~
-0x00BCA8F0  [CODE]  func_00BCA8F0  # VIClient.cpp~
-0x00BCA950  [CODE]  func_00BCA950  # VIClient.cpp~
-0x00BCA970  [CODE]  func_00BCA970  # VIClient.cpp~
-0x00BCAB18  [CODE]  func_00BCAB18  # VIClient.cpp~
-0x00BCAB78  [CODE]  func_00BCAB78  # VIClient.cpp~
-0x00BCABA0  [CODE]  func_00BCABA0  # VIClient.cpp~
-0x00BCAC08  [CODE]  func_00BCAC08  # VIClient.cpp~
-0x00BCAC90  [CODE]  func_00BCAC90  # VIClient.cpp~
-0x00BCADB8  [CODE]  func_00BCADB8  # VIClient.cpp~
-0x00BCAE08  [CODE]  func_00BCAE08  # VIClient.cpp~
-0x00BCAE20  [CODE]  func_00BCAE20  # VIClient.cpp~
-0x00BCAE60  [CODE]  func_00BCAE60  # VIClient.cpp~
-0x00BCAE88  [CODE]  func_00BCAE88  # VIClient.cpp~
-0x00BCAED8  [CODE]  func_00BCAED8  # VIClient.cpp~
-0x00BCAF00  [CODE]  func_00BCAF00  # VIClient.cpp~
-0x00BCAF28  [CODE]  func_00BCAF28  # VIClient.cpp~
-0x00BCAF50  [CODE]  func_00BCAF50  # VIClient.cpp~
-0x00BCAF78  [CODE]  func_00BCAF78  # VIClient.cpp~
-0x00BCAFA0  [CODE]  func_00BCAFA0  # VIClient.cpp~
-0x00BCAFC8  [CODE]  func_00BCAFC8  # VIClient.cpp~
-0x00BCAFF0  [CODE]  func_00BCAFF0  # VIClient.cpp~
-0x00BCB018  [CODE]  func_00BCB018  # VIClient.cpp~
-0x00BCB038  [CODE]  func_00BCB038  # VIClient.cpp~
+0x00BCA840  [CODE]  FindFullStack__8VIClientR10VIItemListP9VINetItemPi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCA8F0  [CODE]  CanUse__8VIPlayerP9VINetItem  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCA950  [CODE]  CanUseItem__8VIClientP9VINetItem  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCA970  [CODE]  CanUseListItem__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAB18  [CODE]  SplitDigits__8VIClientiPiN32  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAB78  [CODE]  GetInvItemStats__8VIClienti  # name provisional: a UI getter (phase 62)
+0x00BCABA0  [CODE]  UseItem__8VIClientiUc  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAC08  [CODE]  SwapItems__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAC90  [CODE]  UseItemOn__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCADB8  [CODE]  RequestQuickSlot__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAE08  [CODE]  GetLootCount__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAE20  [CODE]  GetLootItemIcon__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAE60  [CODE]  GetLootItemAmount__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAE88  [CODE]  GetLootItemName__8VIClientiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCAED8  [CODE]  GetLootItemLevelReq__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAF00  [CODE]  GetLootItemClassMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAF28  [CODE]  GetLootItemRaceMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAF50  [CODE]  GetLootItemNoTrade__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAF78  [CODE]  GetLootItemRent__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAFA0  [CODE]  GetLootItemLore__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAFC8  [CODE]  GetLootItemP4C__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCAFF0  [CODE]  GetLootItemWearSlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCB018  [CODE]  SendOp0015__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCB038  [CODE]  LootOne__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCB098  [CODE]  LootNoWindow__8VIClient  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCB0B8  [CODE]  func_00BCB0B8  # VIClient.cpp~
+0x00BCB0B8  [CODE]  RequestLootAll__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCB0D8  [CODE]  AddInvItem__8VIClientR9VINetItem  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCB138  [CODE]  Msg003C__8VIClientiii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
+0x00BCB138  [CODE]  Msg003C__8VIClientiiUc  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCB208  [CODE]  Msg003D__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCB228  [CODE]  Msg003E__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCB2F0  [CODE]  Msg003F__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCB610  [CODE]  func_00BCB610  # VIClient.cpp~
+0x00BCB610  [CODE]  EquipItem__8VIClientP10VIItemListii  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCB8A0  [CODE]  Msg0040__8VIClienti  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCB988  [CODE]  Msg0060__8VIClientP9VIInvItemi  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCB9D8  [CODE]  func_00BCB9D8  # VIClient.cpp~
-0x00BCBA80  [CODE]  func_00BCBA80  # VIClient.cpp~
-0x00BCBAA8  [CODE]  func_00BCBAA8  # VIClient.cpp~
-0x00BCBAD0  [CODE]  func_00BCBAD0  # VIClient.cpp~
-0x00BCBAF8  [CODE]  func_00BCBAF8  # VIClient.cpp~
-0x00BCBB20  [CODE]  func_00BCBB20  # VIClient.cpp~
-0x00BCBB48  [CODE]  func_00BCBB48  # VIClient.cpp~
-0x00BCBB70  [CODE]  func_00BCBB70  # VIClient.cpp~
-0x00BCBB98  [CODE]  func_00BCBB98  # VIClient.cpp~
-0x00BCBBC0  [CODE]  func_00BCBBC0  # VIClient.cpp~
-0x00BCBBE8  [CODE]  func_00BCBBE8  # VIClient.cpp~
-0x00BCBC10  [CODE]  func_00BCBC10  # VIClient.cpp~
-0x00BCBC38  [CODE]  func_00BCBC38  # VIClient.cpp~
-0x00BCBC60  [CODE]  func_00BCBC60  # VIClient.cpp~
-0x00BCBD20  [CODE]  func_00BCBD20  # VIClient.cpp~
-0x00BCBD70  [CODE]  func_00BCBD70  # VIClient.cpp~
-0x00BCBDB0  [CODE]  func_00BCBDB0  # VIClient.cpp~
-0x00BCBDF0  [CODE]  func_00BCBDF0  # VIClient.cpp~
-0x00BCBE18  [CODE]  func_00BCBE18  # VIClient.cpp~
-0x00BCBE40  [CODE]  func_00BCBE40  # VIClient.cpp~
-0x00BCBEE8  [CODE]  func_00BCBEE8  # VIClient.cpp~
-0x00BCC010  [CODE]  func_00BCC010  # VIClient.cpp~
-0x00BCC118  [CODE]  func_00BCC118  # VIClient.cpp~
-0x00BCC1F0  [CODE]  func_00BCC1F0  # VIClient.cpp~
-0x00BCC368  [CODE]  HasInvSpace__8VIClient  # name provisional: AddInvItem plays sound 3 when it returns nonzero (phase 62)
-0x00BCC388  [CODE]  func_00BCC388  # VIClient.cpp~
-0x00BCC3D8  [CODE]  func_00BCC3D8  # VIClient.cpp~
-0x00BCC3F0  [CODE]  func_00BCC3F0  # VIClient.cpp~
-0x00BCC430  [CODE]  func_00BCC430  # VIClient.cpp~
-0x00BCC480  [CODE]  func_00BCC480  # VIClient.cpp~
-0x00BCC4D0  [CODE]  func_00BCC4D0  # VIClient.cpp~
-0x00BCC4F8  [CODE]  func_00BCC4F8  # VIClient.cpp~
-0x00BCC520  [CODE]  func_00BCC520  # VIClient.cpp~
-0x00BCC548  [CODE]  func_00BCC548  # VIClient.cpp~
-0x00BCC570  [CODE]  func_00BCC570  # VIClient.cpp~
-0x00BCC598  [CODE]  func_00BCC598  # VIClient.cpp~
-0x00BCC5C0  [CODE]  func_00BCC5C0  # VIClient.cpp~
-0x00BCC5E8  [CODE]  func_00BCC5E8  # VIClient.cpp~
-0x00BCC610  [CODE]  func_00BCC610  # VIClient.cpp~
-0x00BCC638  [CODE]  func_00BCC638  # VIClient.cpp~
-0x00BCC660  [CODE]  func_00BCC660  # VIClient.cpp~
-0x00BCC688  [CODE]  func_00BCC688  # VIClient.cpp~
-0x00BCC6B0  [CODE]  func_00BCC6B0  # VIClient.cpp~
-0x00BCC6D8  [CODE]  func_00BCC6D8  # VIClient.cpp~
-0x00BCC700  [CODE]  func_00BCC700  # VIClient.cpp~
-0x00BCC728  [CODE]  func_00BCC728  # VIClient.cpp~
-0x00BCC750  [CODE]  func_00BCC750  # VIClient.cpp~
-0x00BCC778  [CODE]  func_00BCC778  # VIClient.cpp~
-0x00BCC7A0  [CODE]  func_00BCC7A0  # VIClient.cpp~
-0x00BCC7C8  [CODE]  func_00BCC7C8  # VIClient.cpp~
-0x00BCC7F0  [CODE]  func_00BCC7F0  # VIClient.cpp~
-0x00BCC818  [CODE]  func_00BCC818  # VIClient.cpp~
-0x00BCC8C0  [CODE]  func_00BCC8C0  # VIClient.cpp~
-0x00BCC950  [CODE]  func_00BCC950  # VIClient.cpp~
-0x00BCC9C0  [CODE]  func_00BCC9C0  # VIClient.cpp~
-0x00BCCA38  [CODE]  func_00BCCA38  # VIClient.cpp~
-0x00BCCA80  [CODE]  func_00BCCA80  # VIClient.cpp~
-0x00BCCB28  [CODE]  func_00BCCB28  # VIClient.cpp~
-0x00BCCB58  [CODE]  func_00BCCB58  # VIClient.cpp~
-0x00BCCB68  [CODE]  func_00BCCB68  # VIClient.cpp~
-0x00BCCB78  [CODE]  func_00BCCB78  # VIClient.cpp~
-0x00BCCB88  [CODE]  func_00BCCB88  # VIClient.cpp~
-0x00BCCBB8  [CODE]  func_00BCCBB8  # VIClient.cpp~
-0x00BCCC00  [CODE]  func_00BCCC00  # VIClient.cpp~
-0x00BCCC70  [CODE]  func_00BCCC70  # VIClient.cpp~
+0x00BCB988  [CODE]  Msg0060__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
+0x00BCB9D8  [CODE]  GetAbilityList__8VIClientRt7VIArray1Z13VIRec4_BBC218  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBA80  [CODE]  GetAbilityIconBack__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBAA8  [CODE]  GetAbilityIconFront__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBAD0  [CODE]  GetAbilitySlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBAF8  [CODE]  GetAbilityDisplayIndex__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBB20  [CODE]  GetAbilityLevel__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBB48  [CODE]  GetAbilityCastTime__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBB70  [CODE]  GetAbilityPowerCost__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBB98  [CODE]  IsAbilityLocked__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBBC0  [CODE]  GetAbilityCooldown__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBBE8  [CODE]  GetAbilityScope__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBC10  [CODE]  GetAbilityEquipReq__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBC38  [CODE]  GetAbilityRange__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBC60  [CODE]  GetAbilityRecords__8VIClientiRt7VIArray1Z13VIRec4_BBC218  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBD20  [CODE]  GetAbilityRecordName__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBD70  [CODE]  GetAbilityName__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBDB0  [CODE]  GetAbilityDesc__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBDF0  [CODE]  GetAbilityValid__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBE18  [CODE]  GetAbilityP14__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCBE40  [CODE]  IsAbilitySlotSpell__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCBEE8  [CODE]  Send0032__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC010  [CODE]  Send0033__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC118  [CODE]  Send00FE__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC1F0  [CODE]  Send003A__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC368  [CODE]  IsMerchantOpen__8VIClient  # name provisional: m_p1B300 (the merchant's id) != -1; AddInvItem (phase 62)
+0x00BCC388  [CODE]  MerchantClose__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC3D8  [CODE]  GetMerchantCount__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC3F0  [CODE]  GetMerchantItemIcon__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC430  [CODE]  GetMerchantItemName__8VIClientiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC480  [CODE]  GetMerchantItemDesc__8VIClientiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC4D0  [CODE]  GetMerchantItemP08__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC4F8  [CODE]  GetMerchantItemWearSlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC520  [CODE]  GetMerchantItemP18__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC548  [CODE]  GetMerchantItemP24__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC570  [CODE]  GetMerchantItemAttackType__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC598  [CODE]  GetMerchantItemDamage__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC5C0  [CODE]  GetMerchantItemRange__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC5E8  [CODE]  GetMerchantItemLevelReq__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC610  [CODE]  GetMerchantItemMaxHp__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC638  [CODE]  GetMerchantItemDurability__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC660  [CODE]  GetMerchantItemClassMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC688  [CODE]  GetMerchantItemRaceMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC6B0  [CODE]  GetMerchantItemP58__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC6D8  [CODE]  GetMerchantItemMaxStack__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC700  [CODE]  GetMerchantItemCharges__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC728  [CODE]  GetMerchantItemCurHp__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC750  [CODE]  GetMerchantItemNoTrade__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC778  [CODE]  GetMerchantItemRent__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC7A0  [CODE]  GetMerchantItemLore__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC7C8  [CODE]  GetMerchantItemP4C__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCC7F0  [CODE]  GetMerchantItemStats__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC818  [CODE]  GetInvItemSellPrice__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC8C0  [CODE]  GetInvItemWear__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC950  [CODE]  GetMerchantPrice__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCC9C0  [CODE]  GetInvItemCondition__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCA38  [CODE]  MerchantRequest__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCA80  [CODE]  SellItem__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCB28  [CODE]  ClosePanel6AC__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCB58  [CODE]  GetBank__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCCB68  [CODE]  GetPlayerP38__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCB78  [CODE]  SetPlayerP38__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCB88  [CODE]  Send0063__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCBB8  [CODE]  IsInvItemUsable__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCC00  [CODE]  GetInvItemRepairCost__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCC70  [CODE]  Send0062__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCCCB8  [CODE]  TradeName__8VIClientPc  # name provisional: fills Trade20's name buffer (phase 62)
 0x00BCCD58  [CODE]  TradeSetup__8VIClient  # name provisional: Trade02 calls it before the window (phase 62)
 0x00BCCDC8  [CODE]  Trade16__8VIClient  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCCE08  [CODE]  func_00BCCE08  # VIClient.cpp~
-0x00BCCE20  [CODE]  func_00BCCE20  # VIClient.cpp~
-0x00BCCE60  [CODE]  func_00BCCE60  # VIClient.cpp~
-0x00BCCEB0  [CODE]  func_00BCCEB0  # VIClient.cpp~
-0x00BCCF00  [CODE]  func_00BCCF00  # VIClient.cpp~
-0x00BCCF28  [CODE]  func_00BCCF28  # VIClient.cpp~
-0x00BCCF50  [CODE]  func_00BCCF50  # VIClient.cpp~
-0x00BCCF78  [CODE]  func_00BCCF78  # VIClient.cpp~
-0x00BCCFA0  [CODE]  func_00BCCFA0  # VIClient.cpp~
-0x00BCCFC8  [CODE]  func_00BCCFC8  # VIClient.cpp~
-0x00BCCFF0  [CODE]  func_00BCCFF0  # VIClient.cpp~
-0x00BCD018  [CODE]  func_00BCD018  # VIClient.cpp~
-0x00BCD040  [CODE]  func_00BCD040  # VIClient.cpp~
-0x00BCD068  [CODE]  func_00BCD068  # VIClient.cpp~
-0x00BCD090  [CODE]  func_00BCD090  # VIClient.cpp~
-0x00BCD0B8  [CODE]  func_00BCD0B8  # VIClient.cpp~
-0x00BCD0E0  [CODE]  func_00BCD0E0  # VIClient.cpp~
-0x00BCD108  [CODE]  func_00BCD108  # VIClient.cpp~
-0x00BCD130  [CODE]  func_00BCD130  # VIClient.cpp~
-0x00BCD158  [CODE]  func_00BCD158  # VIClient.cpp~
-0x00BCD180  [CODE]  func_00BCD180  # VIClient.cpp~
-0x00BCD1A8  [CODE]  func_00BCD1A8  # VIClient.cpp~
-0x00BCD1D0  [CODE]  func_00BCD1D0  # VIClient.cpp~
-0x00BCD1F8  [CODE]  func_00BCD1F8  # VIClient.cpp~
-0x00BCD220  [CODE]  func_00BCD220  # VIClient.cpp~
-0x00BCD248  [CODE]  func_00BCD248  # VIClient.cpp~
-0x00BCD278  [CODE]  func_00BCD278  # VIClient.cpp~
-0x00BCD2C0  [CODE]  func_00BCD2C0  # VIClient.cpp~
-0x00BCD308  [CODE]  func_00BCD308  # VIClient.cpp~
-0x00BCD328  [CODE]  func_00BCD328  # VIClient.cpp~
-0x00BCD348  [CODE]  func_00BCD348  # VIClient.cpp~
-0x00BCD368  [CODE]  func_00BCD368  # VIClient.cpp~
-0x00BCD388  [CODE]  func_00BCD388  # VIClient.cpp~
-0x00BCD3A8  [CODE]  func_00BCD3A8  # VIClient.cpp~
-0x00BCD3C8  [CODE]  func_00BCD3C8  # VIClient.cpp~
-0x00BCD3E8  [CODE]  func_00BCD3E8  # VIClient.cpp~
-0x00BCD408  [CODE]  func_00BCD408  # VIClient.cpp~
-0x00BCD428  [CODE]  func_00BCD428  # VIClient.cpp~
-0x00BCD448  [CODE]  func_00BCD448  # VIClient.cpp~
-0x00BCD468  [CODE]  func_00BCD468  # VIClient.cpp~
-0x00BCD488  [CODE]  func_00BCD488  # VIClient.cpp~
-0x00BCD4A8  [CODE]  func_00BCD4A8  # VIClient.cpp~
-0x00BCD4C8  [CODE]  func_00BCD4C8  # VIClient.cpp~
-0x00BCD4E8  [CODE]  func_00BCD4E8  # VIClient.cpp~
-0x00BCD508  [CODE]  func_00BCD508  # VIClient.cpp~
-0x00BCD528  [CODE]  func_00BCD528  # VIClient.cpp~
-0x00BCD548  [CODE]  func_00BCD548  # VIClient.cpp~
-0x00BCD568  [CODE]  func_00BCD568  # VIClient.cpp~
-0x00BCD588  [CODE]  func_00BCD588  # VIClient.cpp~
-0x00BCD5B0  [CODE]  func_00BCD5B0  # VIClient.cpp~
-0x00BCD600  [CODE]  func_00BCD600  # VIClient.cpp~
-0x00BCD750  [CODE]  func_00BCD750  # VIClient.cpp~
-0x00BCD888  [CODE]  func_00BCD888  # VIClient.cpp~
-0x00BCD8E0  [CODE]  func_00BCD8E0  # VIClient.cpp~
-0x00BCD930  [CODE]  func_00BCD930  # VIClient.cpp~
-0x00BCD980  [CODE]  func_00BCD980  # VIClient.cpp~
-0x00BCD9C8  [CODE]  func_00BCD9C8  # VIClient.cpp~
-0x00BCD9F8  [CODE]  func_00BCD9F8  # VIClient.cpp~
-0x00BCDA18  [CODE]  func_00BCDA18  # VIClient.cpp~
-0x00BCDAE8  [CODE]  func_00BCDAE8  # VIClient.cpp~
-0x00BCDAF0  [CODE]  func_00BCDAF0  # VIClient.cpp~
-0x00BCDBF8  [CODE]  func_00BCDBF8  # VIClient.cpp~
-0x00BCDCE8  [CODE]  func_00BCDCE8  # VIClient.cpp~
-0x00BCDD10  [CODE]  func_00BCDD10  # VIClient.cpp~
-0x00BCDD50  [CODE]  func_00BCDD50  # VIClient.cpp~
-0x00BCDD70  [CODE]  func_00BCDD70  # VIClient.cpp~
-0x00BCDD90  [CODE]  func_00BCDD90  # VIClient.cpp~
-0x00BCDDB0  [CODE]  func_00BCDDB0  # VIClient.cpp~
-0x00BCDDD0  [CODE]  func_00BCDDD0  # VIClient.cpp~
-0x00BCDDF0  [CODE]  func_00BCDDF0  # VIClient.cpp~
-0x00BCDE10  [CODE]  func_00BCDE10  # VIClient.cpp~
-0x00BCDE38  [CODE]  func_00BCDE38  # VIClient.cpp~
-0x00BCDE48  [CODE]  func_00BCDE48  # VIClient.cpp~
-0x00BCDE58  [CODE]  func_00BCDE58  # VIClient.cpp~
-0x00BCDE68  [CODE]  func_00BCDE68  # VIClient.cpp~
-0x00BCDE78  [CODE]  func_00BCDE78  # VIClient.cpp~
+0x00BCCE08  [CODE]  GetTradeInvCount__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCE20  [CODE]  GetTradeInvItemIcon__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCE60  [CODE]  GetTradeInvItemName__8VIClientiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCEB0  [CODE]  GetTradeInvItemDesc__8VIClientiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCCF00  [CODE]  GetTradeInvItemWearSlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCCF28  [CODE]  GetTradeInvItemEquipSlot__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCCF50  [CODE]  GetTradeInvItemP18__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCCF78  [CODE]  GetTradeInvItemAttackType__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCCFA0  [CODE]  GetTradeInvItemDamage__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCCFC8  [CODE]  GetTradeInvItemRange__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCCFF0  [CODE]  GetTradeInvItemLevelReq__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD018  [CODE]  GetTradeInvItemMaxHp__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD040  [CODE]  GetTradeInvItemDurability__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD068  [CODE]  GetTradeInvItemClassMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD090  [CODE]  GetTradeInvItemRaceMask__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD0B8  [CODE]  GetTradeInvItemP58__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD0E0  [CODE]  GetTradeInvItemMaxStack__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD108  [CODE]  GetTradeInvItemAmount__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD130  [CODE]  GetTradeInvItemCurHp__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD158  [CODE]  GetTradeInvItemCharges__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD180  [CODE]  GetTradeInvItemNoTrade__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD1A8  [CODE]  GetTradeInvItemRent__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD1D0  [CODE]  GetTradeInvItemLore__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD1F8  [CODE]  GetTradeInvItemP4C__8VIClienti  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD220  [CODE]  GetTradeCount__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD248  [CODE]  GetTradeOfferIcon__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD278  [CODE]  GetTradeOfferName__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD2C0  [CODE]  GetTradeOfferDesc__8VIClientiiPUsUi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD308  [CODE]  GetTradeOfferWearSlot__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD328  [CODE]  GetTradeOfferEquipSlot__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD348  [CODE]  GetTradeOfferP18__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD368  [CODE]  GetTradeOfferAttackType__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD388  [CODE]  GetTradeOfferDamage__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD3A8  [CODE]  GetTradeOfferRange__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD3C8  [CODE]  GetTradeOfferLevelReq__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD3E8  [CODE]  GetTradeOfferMaxHp__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD408  [CODE]  GetTradeOfferDurability__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD428  [CODE]  GetTradeOfferClassMask__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD448  [CODE]  GetTradeOfferRaceMask__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD468  [CODE]  GetTradeOfferP58__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD488  [CODE]  GetTradeOfferMaxStack__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD4A8  [CODE]  GetTradeOfferAmount__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD4C8  [CODE]  GetTradeOfferCurHp__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD4E8  [CODE]  GetTradeOfferCharges__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD508  [CODE]  GetTradeOfferNoTrade__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD528  [CODE]  GetTradeOfferRent__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD548  [CODE]  GetTradeOfferLore__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD568  [CODE]  GetTradeOfferP4C__8VIClientii  # name provisional: a UI getter (phase 62)  # VIClient.cpp~
+0x00BCD588  [CODE]  GetTradeP2BAF0__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD5B0  [CODE]  TradeSend2__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD600  [CODE]  TradeSend3__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD750  [CODE]  TradeSend4__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD888  [CODE]  TradeSend5__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD8E0  [CODE]  TradeSend6__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD930  [CODE]  TradeSend7__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD980  [CODE]  TradeCancel__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD9C8  [CODE]  GetBuddyRequestName__8VIClientPc  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCD9F8  [CODE]  DeclineBuddyRequest__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDA18  [CODE]  RequestBuddy__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDAE8  [CODE]  EmptyBCDAE8__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDAF0  [CODE]  RejectBuddyRequest__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDBF8  [CODE]  AnswerBuddyRequest__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDCE8  [CODE]  OpenPanel18__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDD10  [CODE]  ClosePanel6D0__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDD50  [CODE]  GetBuddyName__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDD70  [CODE]  GetBuddyWName__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDD90  [CODE]  GetBuddyRace__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDDB0  [CODE]  GetBuddyClass__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDDD0  [CODE]  GetBuddyLevel__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDDF0  [CODE]  GetBuddyOnline__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDE10  [CODE]  GetBuddyCount__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCDE38  [CODE]  GetGuild__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCDE48  [CODE]  GetP2EF24__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCDE58  [CODE]  GetP2EFCC__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCDE68  [CODE]  GetP2EFD0__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCDE78  [CODE]  GetP33950__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
 0x00BCDE88  [CODE]  func_00BCDE88  # VIClient.cpp~
-0x00BCE150  [CODE]  func_00BCE150  # VIClient.cpp~
-0x00BCE178  [CODE]  func_00BCE178  # VIClient.cpp~
-0x00BCE1A0  [CODE]  func_00BCE1A0  # VIClient.cpp~
-0x00BCE1B0  [CODE]  func_00BCE1B0  # VIClient.cpp~
-0x00BCE1C0  [CODE]  func_00BCE1C0  # VIClient.cpp~
-0x00BCE1D0  [CODE]  func_00BCE1D0  # VIClient.cpp~
-0x00BCE1E0  [CODE]  func_00BCE1E0  # VIClient.cpp~
-0x00BCE1F0  [CODE]  func_00BCE1F0  # VIClient.cpp~
-0x00BCE200  [CODE]  func_00BCE200  # VIClient.cpp~
-0x00BCE210  [CODE]  func_00BCE210  # VIClient.cpp~
-0x00BCE270  [CODE]  func_00BCE270  # VIClient.cpp~
-0x00BCE5D8  [CODE]  QuestHook__8VIClient  # name provisional: QuestStage calls it while the game window is modal (phase 62)
-0x00BCE7A0  [CODE]  func_00BCE7A0  # VIClient.cpp~
-0x00BCE7B0  [CODE]  func_00BCE7B0  # VIClient.cpp~
-0x00BCE7D8  [CODE]  func_00BCE7D8  # VIClient.cpp~
-0x00BCE800  [CODE]  func_00BCE800  # VIClient.cpp~
-0x00BCE848  [CODE]  func_00BCE848  # VIClient.cpp~
-0x00BCE8E0  [CODE]  func_00BCE8E0  # VIClient.cpp~
-0x00BCE990  [CODE]  func_00BCE990  # VIClient.cpp~
-0x00BCE9C0  [CODE]  func_00BCE9C0  # VIClient.cpp~
-0x00BCEAF0  [CODE]  func_00BCEAF0  # VIClient.cpp~
-0x00BCEBA0  [CODE]  func_00BCEBA0  # VIClient.cpp~
-0x00BCEC80  [CODE]  func_00BCEC80  # VIClient.cpp~
-0x00BCECA8  [CODE]  func_00BCECA8  # VIClient.cpp~
-0x00BCECD0  [CODE]  func_00BCECD0  # VIClient.cpp~
-0x00BCED18  [CODE]  func_00BCED18  # VIClient.cpp~
-0x00BCED60  [CODE]  func_00BCED60  # VIClient.cpp~
-0x00BCED88  [CODE]  func_00BCED88  # VIClient.cpp~
-0x00BCEDB0  [CODE]  func_00BCEDB0  # VIClient.cpp~
-0x00BCEDD8  [CODE]  func_00BCEDD8  # VIClient.cpp~
-0x00BCEE00  [CODE]  func_00BCEE00  # VIClient.cpp~
-0x00BCEE28  [CODE]  func_00BCEE28  # VIClient.cpp~
-0x00BCEE50  [CODE]  func_00BCEE50  # VIClient.cpp~
-0x00BCEE78  [CODE]  func_00BCEE78  # VIClient.cpp~
-0x00BCEEA0  [CODE]  func_00BCEEA0  # VIClient.cpp~
-0x00BCEEE8  [CODE]  func_00BCEEE8  # VIClient.cpp~
-0x00BCEF30  [CODE]  func_00BCEF30  # VIClient.cpp~
-0x00BCEF58  [CODE]  func_00BCEF58  # VIClient.cpp~
-0x00BCEF80  [CODE]  func_00BCEF80  # VIClient.cpp~
-0x00BCEFA8  [CODE]  func_00BCEFA8  # VIClient.cpp~
-0x00BCEFC0  [CODE]  func_00BCEFC0  # VIClient.cpp~
-0x00BCF020  [CODE]  func_00BCF020  # VIClient.cpp~
+0x00BCE150  [CODE]  ClosePanel6FC__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE178  [CODE]  ClosePanel700__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE1A0  [CODE]  GetP38300__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE1B0  [CODE]  GetP382E8__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE1C0  [CODE]  GetP38334__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE1D0  [CODE]  GetP3834C__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE1E0  [CODE]  GetP3FC10__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE1F0  [CODE]  GetP4EC58__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE200  [CODE]  GetP4F078__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE210  [CODE]  ShowNotice__8VIClientPCUsi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE270  [CODE]  BeginManualCamera__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE5D8  [CODE]  ResetView__8VIClient  # name provisional: QuestStage calls it while the game window is modal (phase 62)
+0x00BCE7A0  [CODE]  GetP4F234__8VIClient  # name provisional: VIClient vtable slot (phase 62)  # VIClient.cpp~
+0x00BCE7B0  [CODE]  OpenPanel27__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE7D8  [CODE]  ClosePanel6EC__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE800  [CODE]  OpenPanel34__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE848  [CODE]  ApplyOptions__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE8E0  [CODE]  ResetBattleMusic__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE990  [CODE]  ShowA110__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCE9C0  [CODE]  Send006A__8VIClientPC7VIRec6A  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEAF0  [CODE]  Send006B__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEBA0  [CODE]  Send006C__8VIClientiPC8VIRec388  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEC80  [CODE]  OpenPanel22__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCECA8  [CODE]  ClosePanel6DC__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCECD0  [CODE]  OpenPanel40__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCED18  [CODE]  ClosePanel6C0__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCED60  [CODE]  OpenPanel24__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCED88  [CODE]  ClosePanel6E4__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEDB0  [CODE]  OpenPanel23__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEDD8  [CODE]  ClosePanel6E0__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEE00  [CODE]  OpenPanel28__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEE28  [CODE]  ClosePanel6F4__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEE50  [CODE]  OpenPanel29__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEE78  [CODE]  ClosePanel6F8__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEEA0  [CODE]  OpenPanel35__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEEE8  [CODE]  ClosePanel704__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEF30  [CODE]  ClosePanel708__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEF58  [CODE]  ClosePanel70C__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEF80  [CODE]  ClosePanel718__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEFA8  [CODE]  GetQuestCount__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCEFC0  [CODE]  GetQuestTitle__8VIClientiPUs  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCF020  [CODE]  Send007D__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCF0F8  [CODE]  Msg00B4__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCF2D0  [CODE]  Msg00FF__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCF3A0  [CODE]  Msg00B3__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
@@ -585,18 +585,18 @@
 0x00BCF5A8  [CODE]  Msg00B5__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCF730  [CODE]  Msg00B6__8VIClientii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BCF8B0  [CODE]  Msg00FD__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BCF988  [CODE]  func_00BCF988  # VIClient.cpp~
-0x00BCF9C0  [CODE]  func_00BCF9C0  # VIClient.cpp~
-0x00BCFA80  [CODE]  func_00BCFA80  # VIClient.cpp~
-0x00BCFA88  [CODE]  func_00BCFA88  # VIClient.cpp~
-0x00BCFC38  [CODE]  func_00BCFC38  # VIClient.cpp~
-0x00BCFDC8  [CODE]  func_00BCFDC8  # VIClient.cpp~
+0x00BCF988  [CODE]  strlen16__FPCUs  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCF9C0  [CODE]  SetKey__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCFA80  [CODE]  Pointer__8VIClientii  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCFA88  [CODE]  PadKeys__8VIClientPC17VIClientPart07190  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCFC38  [CODE]  PlayEmote__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
+0x00BCFDC8  [CODE]  PlayAction__8VIClienti  # name provisional (phase 62)  # VIClient.cpp~
 0x00BCFE78  [CODE]  func_00BCFE78  # VIClient.cpp~
 0x00BD0508  [CODE]  SetTime__8VIClientll  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BD0560  [CODE]  func_00BD0560  # VIClient.cpp~
+0x00BD0560  [CODE]  ResetWorld__8VIClient  # name provisional (phase 62)  # VIClient.cpp~
 0x00BD0630  [CODE]  Msg000D__8VIClientiR11VIMemStream  # VIClient.cpp:9800; name provisional (phase 62 dispatcher)
-0x00BD0D00  [CODE]  func_00BD0D00  # VIClient.cpp~
-0x00BD0D60  [CODE]  func_00BD0D60  # VIClient.cpp~
+0x00BD0D00  [CODE]  ProcessMessageF8__8VIClientlR11VIMemStream  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD0D60  [CODE]  ProcessMessageF9__8VIClientPCvi  # name provisional (phase 62)  # VIClient.cpp~
 0x00BD0DC8  [CODE]  ProcessMessage__8VIClientlPCvi  # VIClient.cpp:10306; name provisional (phase 62 dispatcher)
 0x00BD2E80  [CODE]  CharacterList__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BD30E8  [CODE]  CharSelectMsg__8VIClienti  # VIClient.cpp~; name provisional (phase 62 dispatcher)
@@ -607,59 +607,59 @@
 0x00BD3548  [CODE]  Msg0774__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BD3600  [CODE]  Msg0A7B__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BD36D0  [CODE]  Msg0A7A__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
-0x00BD3738  [CODE]  CastingCombat__8VIClientiiiPiii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
+0x00BD3738  [CODE]  CastingCombat__8VIClientUiUiUcPiii  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BD38C8  [CODE]  Msg00B2__8VIClientR11VIMemStream  # VIClient.cpp~; name provisional (phase 62 dispatcher)
 0x00BD3A60  [CODE]  Reset__8VIClient  # name provisional: Disconnect's last call
-0x00BD3AF8  [CODE]  func_00BD3AF8  # VIClient.cpp~
-0x00BD3C18  [CODE]  func_00BD3C18  # VIClient.cpp~
-0x00BD3CB0  [CODE]  func_00BD3CB0  # VIClient.cpp~
-0x00BD3D18  [CODE]  func_00BD3D18  # VIClient.cpp~
-0x00BD3E40  [CODE]  func_00BD3E40  # VIClient.cpp~
-0x00BD3FA0  [CODE]  func_00BD3FA0  # VIClient.cpp~
-0x00BD4138  [CODE]  func_00BD4138  # VIClient.cpp~
-0x00BD41B8  [CODE]  func_00BD41B8  # VIClient.cpp~
-0x00BD4630  [CODE]  func_00BD4630  # VIClient.cpp:11682
-0x00BD4B88  [CODE]  func_00BD4B88
-0x00BD4B90  [CODE]  func_00BD4B90
-0x00BD4C10  [CODE]  func_00BD4C10
-0x00BD4E60  [CODE]  func_00BD4E60
-0x00BD4FA0  [CODE]  func_00BD4FA0
-0x00BD5018  [CODE]  func_00BD5018
-0x00BD5068  [CODE]  func_00BD5068
-0x00BD50C8  [CODE]  func_00BD50C8
-0x00BD50E8  [CODE]  func_00BD50E8
-0x00BD51C0  [CODE]  func_00BD51C0
-0x00BD53A0  [CODE]  func_00BD53A0
-0x00BD5628  [CODE]  func_00BD5628
-0x00BD58C8  [CODE]  func_00BD58C8
-0x00BD5940  [CODE]  func_00BD5940
-0x00BD5978  [CODE]  func_00BD5978
-0x00BD59E8  [CODE]  func_00BD59E8
-0x00BD5B30  [CODE]  func_00BD5B30
+0x00BD3AF8  [CODE]  ProcessMessageFC__8VIClientPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD3C18  [CODE]  ProcessStateChannel__8VIClientiPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD3CB0  [CODE]  Channel42__8VIClientPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD3D18  [CODE]  Channel43__8VIClientPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD3E40  [CODE]  Channel44__8VIClientiPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD3FA0  [CODE]  Channel40__8VIClientPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD4138  [CODE]  UpdateGroupMember__8VIClientUiUcUciRC7VIVect3  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD41B8  [CODE]  ChannelEntity__8VIClientiPCvi  # name provisional (phase 62)  # VIClient.cpp~
+0x00BD4630  [CODE]  Tick__8VIClienti  # name provisional (phase 62)  # VIClient.cpp:11682
+0x00BD4B88  [CODE]  TickHookB__8VIClient  # name provisional (phase 62)
+0x00BD4B90  [CODE]  ShowNetStats__8VIClient  # name provisional (phase 62)
+0x00BD4C10  [CODE]  PumpMessages__8VIClient  # name provisional (phase 62)
+0x00BD4E60  [CODE]  OpenResources__8VIClient  # name provisional (phase 62)
+0x00BD4FA0  [CODE]  LoadInvIcons__8VIClient  # name provisional (phase 62)
+0x00BD5018  [CODE]  MoveToOrigin__8VIClient  # name provisional (phase 62)
+0x00BD5068  [CODE]  MoveToGrid__8VIClientiii  # name provisional (phase 62)
+0x00BD50C8  [CODE]  SetP50308__8VIClientiii  # name provisional (phase 62)
+0x00BD50E8  [CODE]  LoadWorld__8VIClienti  # name provisional (phase 62)
+0x00BD51C0  [CODE]  EnterWorld__8VIClientiRC7VIVect3  # name provisional (phase 62)
+0x00BD53A0  [CODE]  MoveTo__8VIClientiRC7VIVect3  # name provisional (phase 62)
+0x00BD5628  [CODE]  Respawn__8VIClientiR7VIVect3T2  # name provisional (phase 62)
+0x00BD58C8  [CODE]  ToggleCameraStyle__8VIClient  # name provisional (phase 62)
+0x00BD5940  [CODE]  SaveCameraPreset__8VIClientR14VICameraPreset  # name provisional (phase 62)
+0x00BD5978  [CODE]  ApplyCameraPreset__8VIClientRC14VICameraPreset  # name provisional (phase 62)
+0x00BD59E8  [CODE]  ToggleAutoAttack__8VIClient  # name provisional (phase 62)
+0x00BD5B30  [CODE]  MaybeStopAutoAttack__8VIClient  # name provisional (phase 62)
 0x00BD5B60  [CODE]  StopAutoAttack__8VIClient  # name provisional (FrontiersForge player.lua: auto-attack off)
-0x00BD5B68  [CODE]  func_00BD5B68
-0x00BD5C70  [CODE]  func_00BD5C70
-0x00BD5D70  [CODE]  func_00BD5D70
-0x00BD5E38  [CODE]  func_00BD5E38
-0x00BD5EE8  [CODE]  func_00BD5EE8
-0x00BD5F00  [CODE]  func_00BD5F00
-0x00BD5F18  [CODE]  func_00BD5F18
-0x00BD5F38  [CODE]  func_00BD5F38
-0x00BD5F60  [CODE]  func_00BD5F60
-0x00BD6088  [CODE]  func_00BD6088
-0x00BD60B0  [CODE]  func_00BD60B0
-0x00BD60C0  [CODE]  func_00BD60C0
-0x00BD6100  [CODE]  func_00BD6100
-0x00BD6208  [CODE]  func_00BD6208
-0x00BD6218  [CODE]  func_00BD6218
-0x00BD6228  [CODE]  func_00BD6228
+0x00BD5B68  [CODE]  InteractWithTarget__8VIClient  # name provisional (phase 62)
+0x00BD5C70  [CODE]  ToggleP74__8VIClient  # name provisional (phase 62)
+0x00BD5D70  [CODE]  ToggleFollow__8VIClient  # name provisional (phase 62)
+0x00BD5E38  [CODE]  InitCameraStyle__8VIClient  # name provisional (phase 62)
+0x00BD5EE8  [CODE]  GetConn__8VIClienti  # name provisional: VIClient vtable slot (phase 62)
+0x00BD5F00  [CODE]  GetDrdpRef__8VIClientl  # name provisional (phase 62)
+0x00BD5F18  [CODE]  SendRaw__8VIClientPCvi  # name provisional (phase 62)
+0x00BD5F38  [CODE]  ClearTarget__8VIClient  # name provisional (phase 62)
+0x00BD5F60  [CODE]  PrintPosition__8VIClient  # name provisional (phase 62)
+0x00BD6088  [CODE]  SendOp0035__8VIClientiUc  # name provisional (phase 62)
+0x00BD60B0  [CODE]  GetPlayerP40__8VIClient  # name provisional (phase 62)
+0x00BD60C0  [CODE]  GetP44Total__8VIClient  # name provisional (phase 62)
+0x00BD6100  [CODE]  TrainStats__8VIClientPi  # name provisional (phase 62)
+0x00BD6208  [CODE]  GetPlayerStats__8VIClient  # name provisional (phase 62)
+0x00BD6218  [CODE]  GetPlayerPD8__8VIClient  # name provisional (phase 62)
+0x00BD6228  [CODE]  ClosePanel6BC__8VIClient  # name provisional (phase 62)
 0x00BD6250  [CODE]  func_00BD6250
-0x00BD7430  [CODE]  func_00BD7430
+0x00BD7430  [CODE]  PetCommand__8VIClienti  # name provisional (phase 62)
 0x00BD7618  [CODE]  SetActiveWindow__8VIClientP5VIWnd  # name provisional (FrontiersForge window.lua:484-487)
 0x00BD7708  [CODE]  SetP06DC0__8VIClientii  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD7718  [CODE]  SetP06DC0__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD7720  [CODE]  SetP06DC4__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
-0x00BD7728  [CODE]  func_00BD7728
+0x00BD7728  [CODE]  GetPlayerName__8VIClientPci  # name provisional (phase 62)
 0x00BD7798  [CODE]  GetClass__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD77A8  [CODE]  GetRace__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD77B8  [CODE]  GetLevel__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
@@ -676,75 +676,75 @@
 0x00BD78B0  [CODE]  GetGroupMemberActive__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD78D0  [CODE]  GetGroupMemberName__8VIClienti  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD78F0  [CODE]  GetTargetP19__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
-0x00BD7920  [CODE]  func_00BD7920
-0x00BD79B0  [CODE]  func_00BD79B0
+0x00BD7920  [CODE]  GetTargetName__8VIClientPc  # name provisional (phase 62)
+0x00BD79B0  [CODE]  GetTargetPlayerName__8VIClientPc  # name provisional (phase 62)
 0x00BD7A50  [CODE]  IsGroupLeader__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BD7A68  [CODE]  InGroup__8VIClient  # name provisional (phase 62 dispatcher)
-0x00BD7A80  [CODE]  func_00BD7A80
-0x00BD7AD0  [CODE]  func_00BD7AD0
-0x00BD7B10  [CODE]  func_00BD7B10
-0x00BD7B30  [CODE]  func_00BD7B30
-0x00BD7BD8  [CODE]  func_00BD7BD8
-0x00BD7BE8  [CODE]  func_00BD7BE8
-0x00BD7D00  [CODE]  func_00BD7D00
-0x00BD7E00  [CODE]  func_00BD7E00
-0x00BD7E78  [CODE]  func_00BD7E78
-0x00BD8128  [CODE]  func_00BD8128
-0x00BD8348  [CODE]  func_00BD8348
-0x00BD8368  [CODE]  func_00BD8368
-0x00BD83E0  [CODE]  func_00BD83E0
-0x00BD83F0  [CODE]  func_00BD83F0
-0x00BD8408  [CODE]  func_00BD8408
-0x00BD8428  [CODE]  func_00BD8428
-0x00BD8630  [CODE]  func_00BD8630
-0x00BD8770  [CODE]  func_00BD8770
-0x00BD8990  [CODE]  func_00BD8990
+0x00BD7A80  [CODE]  IsGroupFull__8VIClient  # name provisional (phase 62)
+0x00BD7AD0  [CODE]  GetP2BE4C__8VIClient  # name provisional (phase 62)
+0x00BD7B10  [CODE]  GetGroupMember__8VIClienti  # name provisional (phase 62)
+0x00BD7B30  [CODE]  DropInvites__8VIClienti  # name provisional (phase 62)
+0x00BD7BD8  [CODE]  GetP2EFC8__8VIClient  # name provisional: VIClient vtable slot (phase 62)
+0x00BD7BE8  [CODE]  AcceptInvite__8VIClient  # name provisional (phase 62)
+0x00BD7D00  [CODE]  DeclineInvite__8VIClient  # name provisional (phase 62)
+0x00BD7E00  [CODE]  LeaveGroup__8VIClient  # name provisional (phase 62)
+0x00BD7E78  [CODE]  InviteEntity__8VIClienti  # name provisional (phase 62)
+0x00BD8128  [CODE]  InviteToGroup__8VIClientP11VIInviteRec  # name provisional (phase 62)
+0x00BD8348  [CODE]  SendOp0626__8VIClienti  # name provisional (phase 62)
+0x00BD8368  [CODE]  DisbandGroup__8VIClient  # name provisional (phase 62)
+0x00BD83E0  [CODE]  IsConnected__8VIClient  # name provisional (phase 62)
+0x00BD83F0  [CODE]  GetCharCount__8VIClient  # name provisional (phase 62)
+0x00BD8408  [CODE]  GetChar__8VIClienti  # name provisional (phase 62)
+0x00BD8428  [CODE]  SelectCharacter__8VIClienti  # name provisional (phase 62)
+0x00BD8630  [CODE]  DeleteCharacter__8VIClienti  # name provisional (phase 62)
+0x00BD8770  [CODE]  CreateCharacter__8VIClientP9VINewChar  # name provisional (phase 62)
+0x00BD8990  [CODE]  BackToLogin__8VIClient  # name provisional (phase 62)
 0x00BD89F0  [CODE]  Msg0777__8VIClient  # name provisional (phase 62 dispatcher)
-0x00BD8A60  [CODE]  func_00BD8A60
-0x00BD8A90  [CODE]  func_00BD8A90
-0x00BD8B40  [CODE]  func_00BD8B40
+0x00BD8A60  [CODE]  Send0012__8VIClientii  # name provisional (phase 62)
+0x00BD8A90  [CODE]  SetCharLook__8VIClientiiiii  # name provisional (phase 62)
+0x00BD8B40  [CODE]  SetCameraStyle__8VIClienti  # name provisional (phase 62)
 0x00BD8E78  [CODE]  PlaySound__8VIClienti  # name provisional (phase 62 dispatcher)
-0x00BD8E98  [CODE]  func_00BD8E98
+0x00BD8E98  [CODE]  PlayCue__8VIClientPCcf  # name provisional (phase 62)
 0x00BD8EB8  [CODE]  func_00BD8EB8
-0x00BD8FB8  [CODE]  func_00BD8FB8
-0x00BD8FF0  [CODE]  func_00BD8FF0
-0x00BD9010  [CODE]  func_00BD9010
+0x00BD8FB8  [CODE]  SetMusic__8VIClientPCc  # name provisional (phase 62)
+0x00BD8FF0  [CODE]  ClearMusic__8VIClient  # name provisional (phase 62)
+0x00BD9010  [CODE]  UpdateMusic__8VIClient  # name provisional (phase 62)
 0x00BD90C8  [CODE]  StopMusic__8VIClient  # name provisional: Disconnect calls it unless VIGetFeatureFlags() & 0x100
-0x00BD90E8  [CODE]  func_00BD90E8
+0x00BD90E8  [CODE]  IsNotP0662C__8VIClient  # name provisional (phase 62)
 0x00BD90F8  [CODE]  ShowMsg__8VIClientUs  # VIClient.cpp
 0x00BD9138  [CODE]  ShowText__8VIClientPCUs  # VIClient.cpp
-0x00BD9160  [CODE]  func_00BD9160
-0x00BD91B0  [CODE]  func_00BD91B0
-0x00BD91D8  [CODE]  func_00BD91D8
-0x00BD9208  [CODE]  func_00BD9208
-0x00BD92A8  [CODE]  func_00BD92A8
-0x00BD9348  [CODE]  func_00BD9348
-0x00BD9350  [CODE]  func_00BD9350
-0x00BD93F0  [CODE]  func_00BD93F0
-0x00BD9410  [CODE]  func_00BD9410
-0x00BD9490  [CODE]  func_00BD9490
-0x00BD9510  [CODE]  func_00BD9510
-0x00BD9520  [CODE]  func_00BD9520
-0x00BD95C8  [CODE]  func_00BD95C8
-0x00BD9638  [CODE]  func_00BD9638
-0x00BD9658  [CODE]  func_00BD9658
-0x00BD9700  [CODE]  func_00BD9700
-0x00BD97B0  [CODE]  func_00BD97B0
-0x00BD9860  [CODE]  func_00BD9860
-0x00BD9888  [CODE]  func_00BD9888
+0x00BD9160  [CODE]  AddText__8VIClientPCUsG10VIColor32F  # name provisional (phase 62)
+0x00BD91B0  [CODE]  ShowText__8VIClientPCc  # name provisional (phase 62)
+0x00BD91D8  [CODE]  PromptText__8VIClientPCUsi  # name provisional (phase 62)
+0x00BD9208  [CODE]  GroupMemberFlag4__8VIClienti  # name provisional (phase 62)
+0x00BD92A8  [CODE]  GroupMemberFlag8__8VIClienti  # name provisional (phase 62)
+0x00BD9348  [CODE]  ReturnZero__8VIClient  # name provisional (phase 62)
+0x00BD9350  [CODE]  LeaderByte263__8VIClient  # name provisional (phase 62)
+0x00BD93F0  [CODE]  HasPet__8VIClient  # name provisional (phase 62)
+0x00BD9410  [CODE]  PetFlag4__8VIClient  # name provisional (phase 62)
+0x00BD9490  [CODE]  PetFlag8__8VIClient  # name provisional (phase 62)
+0x00BD9510  [CODE]  GetPetName__8VIClient  # name provisional (phase 62)
+0x00BD9520  [CODE]  GetPetHealth__8VIClientPf  # name provisional (phase 62)
+0x00BD95C8  [CODE]  PetIsCreature__8VIClient  # name provisional (phase 62)
+0x00BD9638  [CODE]  Send0041__8VIClient  # name provisional (phase 62)
+0x00BD9658  [CODE]  SendD4Off__8VIClient  # name provisional (phase 62)
+0x00BD9700  [CODE]  SendD4On__8VIClient  # name provisional (phase 62)
+0x00BD97B0  [CODE]  PromptWithName__8VIClientPCUs  # name provisional (phase 62)
+0x00BD9860  [CODE]  Send0701a__8VIClient  # name provisional (phase 62)
+0x00BD9888  [CODE]  Send0701b__8VIClient  # name provisional (phase 62)
 0x00BD98B0  [CODE]  Msg001A__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BD99A0  [CODE]  Msg0019__8VIClientii  # name provisional (phase 62 dispatcher)
 0x00BD9A48  [CODE]  MerchantOpen__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BD9AA8  [CODE]  QuestStage__8VIClientUci  # name provisional (phase 62 dispatcher): masks its first argument to a byte
-0x00BD9B48  [CODE]  GroupChanged__8VIClienti  # name provisional (phase 62 dispatcher)
-0x00BD9C18  [CODE]  Msg000A__8VIClientii  # name provisional (phase 62 dispatcher)
+0x00BD9B48  [CODE]  GroupChanged__8VIClientUc  # name provisional (phase 62 dispatcher)
+0x00BD9C18  [CODE]  Msg000A__8VIClientUcUc  # name provisional (phase 62 dispatcher)
 0x00BD9D60  [CODE]  Msg0010__8VIClientR11VIMemStream  # name provisional (phase 62 dispatcher)
 0x00BD9E50  [CODE]  Msg0776__8VIClientiii  # name provisional (phase 62 dispatcher)
-0x00BD9F00  [CODE]  SetWeather__8VIClientii  # name provisional (phase 62 dispatcher)
+0x00BD9F00  [CODE]  SetWeather__8VIClientUcb  # name provisional (phase 62 dispatcher)
 0x00BD9FD8  [CODE]  Msg00D7__8VIClient  # name provisional (phase 62 dispatcher)
-0x00BDA028  [CODE]  func_00BDA028
+0x00BDA028  [CODE]  RequestTrade__8VIClient  # name provisional (phase 62)
 0x00BDA168  [CODE]  TradeReset__8VIClient  # name provisional: Trade16 calls it after the window (phase 62)
-0x00BDA1A8  [CODE]  Msg0057__8VIClientii  # name provisional (phase 62 dispatcher)
+0x00BDA1A8  [CODE]  Msg0057__8VIClientiUi  # name provisional (phase 62 dispatcher)
 0x00BDA2C0  [CODE]  Trade02__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BDA300  [CODE]  Trade01__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BDA320  [CODE]  Trade20__8VIClient  # name provisional (phase 62 dispatcher)
@@ -753,60 +753,60 @@
 0x00BDA478  [CODE]  Trade22__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BDA4D8  [CODE]  Trade07__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BDA500  [CODE]  Trade06__8VIClient  # name provisional (phase 62 dispatcher)
-0x00BDA528  [CODE]  TradeA__8VIClientiR11VIMemStream  # name provisional (phase 62 dispatcher)
-0x00BDA688  [CODE]  TradeB__8VIClientiR11VIMemStream  # name provisional (phase 62 dispatcher)
-0x00BDA7E8  [CODE]  func_00BDA7E8
-0x00BDAA10  [CODE]  func_00BDAA10
-0x00BDAB68  [CODE]  func_00BDAB68
-0x00BDAD08  [CODE]  func_00BDAD08
-0x00BDAE78  [CODE]  func_00BDAE78
-0x00BDAEA0  [CODE]  func_00BDAEA0
+0x00BDA528  [CODE]  TradeA__8VIClientUcR11VIMemStream  # name provisional (phase 62 dispatcher)
+0x00BDA688  [CODE]  TradeB__8VIClientUcR11VIMemStream  # name provisional (phase 62 dispatcher)
+0x00BDA7E8  [CODE]  TradeAddSlot__8VIClientii  # name provisional (phase 62)
+0x00BDAA10  [CODE]  TradeAddItem__8VIClientR9VINetItem  # name provisional (phase 62)
+0x00BDAB68  [CODE]  TradeRemoveSlot__8VIClienti  # name provisional (phase 62)
+0x00BDAD08  [CODE]  TradeRemoveItem__8VIClienti  # name provisional (phase 62)
+0x00BDAE78  [CODE]  TradeSetMoney__8VIClienti  # name provisional (phase 62)
+0x00BDAEA0  [CODE]  SetP2BAF4__8VIClienti  # name provisional (phase 62)
 0x00BDAEB8  [CODE]  Msg005E__8VIClient  # name provisional (phase 62 dispatcher)
 0x00BDB048  [CODE]  Msg0061__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BDB0A8  [CODE]  Msg0063__8VIClient  # name provisional (phase 62 dispatcher)
-0x00BDB0E8  [CODE]  Msg00D3__8VIClientPCci  # name provisional (phase 62 dispatcher)
-0x00BDB1D0  [CODE]  func_00BDB1D0
+0x00BDB0E8  [CODE]  Msg00D3__8VIClientPCcUc  # name provisional (phase 62 dispatcher)
+0x00BDB1D0  [CODE]  AddBuddy__8VIClientPCc  # name provisional (phase 62)
 0x00BDB3E8  [CODE]  Msg076F__8VIClientR11VIMemStream  # name provisional (phase 62 dispatcher)
 0x00BDB650  [CODE]  Msg0770__8VIClientPCc  # name provisional (phase 62 dispatcher)
-0x00BDB6B8  [CODE]  Msg0771__8VIClientiPCc  # name provisional (phase 62 dispatcher)
-0x00BDB788  [CODE]  func_00BDB788
+0x00BDB6B8  [CODE]  Msg0771__8VIClientUcPCc  # name provisional (phase 62 dispatcher)
+0x00BDB788  [CODE]  GetBuddy__8VIClienti  # name provisional (phase 62)
 0x00BDB820  [CODE]  Msg0045__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BDB8F0  [CODE]  Msg006E__8VIClient  # name provisional (phase 62 dispatcher)
-0x00BDB8F8  [CODE]  func_00BDB8F8
+0x00BDB8F8  [CODE]  LoadTextSets__8VIClientRt7VIArray1Z7VIRec6A  # name provisional (phase 62)
 0x00BDBAC8  [CODE]  Msg007B__8VIClientUi  # name provisional (phase 62 dispatcher)
 0x00BDBB30  [CODE]  Msg007C__8VIClientPCUs  # name provisional (phase 62 dispatcher)
 0x00BDBB98  [CODE]  Msg007D__8VIClienti  # name provisional (phase 62 dispatcher)
 0x00BDBC70  [CODE]  ShowDialog__8VIClientiPCUsii  # name provisional (phase 62 dispatcher)
 0x00BDBD58  [CODE]  Msg0034__8VIClientR11VIMemStream  # name provisional (phase 62 dispatcher)
 0x00BDC080  [CODE]  Msg0790__8VIClientR11VIMemStream  # name provisional (phase 62 dispatcher)
-0x00BDC120  [CODE]  func_00BDC120
+0x00BDC120  [CODE]  Msg0993__8VIClientR11VIMemStream  # name provisional (phase 62)
 0x00BDC220  [CODE]  DamageFromSelf__8VIClientii  # name provisional (phase 62 dispatcher)
 0x00BDC288  [CODE]  DamageFromOther__8VIClientii  # name provisional (phase 62 dispatcher)
 0x00BDC308  [CODE]  Msg07E0__8VIClientR11VIMemStream  # name provisional (phase 62 dispatcher)
-0x00BDC438  [CODE]  func_00BDC438
-0x00BDC470  [CODE]  func_00BDC470
-0x00BDC4B8  [CODE]  func_00BDC4B8
-0x00BDC850  [CODE]  func_00BDC850
-0x00BDC8F8  [CODE]  func_00BDC8F8
+0x00BDC438  [CODE]  TradeItem__8VIClientii  # name provisional: a UI getter (phase 62)
+0x00BDC470  [CODE]  FitsSlot3__8VIClientP9VINetItem  # name provisional (phase 62)
+0x00BDC4B8  [CODE]  TargetInRange__8VIClienti  # name provisional (phase 62)
+0x00BDC850  [CODE]  CheckPower__8VIClient  # name provisional (phase 62)
+0x00BDC8F8  [CODE]  HasAmmoFor__8VIClientP9VINetItem  # name provisional (phase 62)
 0x00BDCAF0  [CODE]  Msg001D__8VIClienti  # name provisional (phase 62 dispatcher)
-0x00BDCB30  [CODE]  func_00BDCB30
-0x00BDCBE0  [CODE]  func_00BDCBE0
-0x00BDCDC0  [CODE]  func_00BDCDC0
-0x00BDCEA0  [CODE]  func_00BDCEA0
-0x00BDD0B0  [CODE]  func_00BDD0B0
-0x00BDD140  [CODE]  func_00BDD140
+0x00BDCB30  [CODE]  ReadStats__8VIClientR11VIMemStreamR8VIPlayer  # name provisional (phase 62)
+0x00BDCBE0  [CODE]  Read__9VIAbilityR11VIMemStream  # name provisional (phase 62)
+0x00BDCDC0  [CODE]  ReadAbilities__8VIClientR11VIMemStreamRt5VIMap2ZiZ9VIAbility  # name provisional (phase 62)
+0x00BDCEA0  [CODE]  EquipSlotFor__8VIClientP10VIItemListP9VINetItem  # name provisional (phase 62)
+0x00BDD0B0  [CODE]  FindEquipped__8VIClientP10VIItemListiPi  # name provisional (phase 62)
+0x00BDD140  [CODE]  AllocNames__8VIClienti  # name provisional (phase 62)
 0x00BDD1E8  [CODE]  FreeBuffer__8VIClient  # another TU; name provisional: frees +0x4F0B0, zeroes +0x4F0B4 (Shutdown's call)
-0x00BDD230  [CODE]  func_00BDD230
-0x00BDD2B8  [CODE]  func_00BDD2B8
-0x00BDD3D8  [CODE]  func_00BDD3D8
-0x00BDD408  [CODE]  func_00BDD408
-0x00BDD488  [CODE]  func_00BDD488
-0x00BDD4E8  [CODE]  func_00BDD4E8
-0x00BDD520  [CODE]  func_00BDD520
+0x00BDD230  [CODE]  SetNameEntry__8VIClientiPCcUs  # name provisional (phase 62)
+0x00BDD2B8  [CODE]  GetShardServer__8VIClientPcPUs  # name provisional (phase 62)
+0x00BDD3D8  [CODE]  ShowNameClear__8VIClientii  # name provisional (phase 62)
+0x00BDD408  [CODE]  ShowTargetPlayerName__8VIClientii  # name provisional (phase 62)
+0x00BDD488  [CODE]  IsTimedOut__8VIClient  # name provisional (phase 62)
+0x00BDD4E8  [CODE]  ExpansionFlags__8VIClient  # name provisional (phase 62)
+0x00BDD520  [CODE]  GetFrameRate__8VIClient  # name provisional (phase 62)
 0x00BDD540  [CODE]  SetSpeed__8VIClientf  # name provisional (phase 62 dispatcher)
 0x00BDD5B0  [CODE]  func_00BDD5B0
-0x00BDDCF0  [CODE]  func_00BDDCF0
-0x00BDDFF0  [CODE]  func_00BDDFF0
+0x00BDDCF0  [CODE]  SetTextSet__8VIClientiPCcN72  # name provisional (phase 62)
+0x00BDDFF0  [CODE]  NewWide__8VIClientPCc  # name provisional (phase 62)
 0x00BDE050  [CODE]  Msg0790Done__8VIClient  # name provisional: Msg0790's last call (phase 62)
 0x00BDE1A0  [CODE]  func_00BDE1A0
 0x00BDE210  [CODE]  func_00BDE210
@@ -828,17 +828,17 @@
 0x00BDECA8  [CODE]  func_00BDECA8
 0x00BDED08  [CODE]  func_00BDED08
 0x00BDED80  [CODE]  func_00BDED80
-0x00BDEDD0  [CODE]  func_00BDEDD0
+0x00BDEDD0  [CODE]  func_00BDEDD0  # dead TU copy of Item__10VIItemListi (0 refs)
 0x00BDEDE8  [CODE]  func_00BDEDE8
 0x00BDEDF8  [CODE]  func_00BDEDF8
-0x00BDEE48  [CODE]  _$_t7VIArray1Z13VIRec8_BBC340  # name provisional: placeholder element type (phase 62, template copy)
+0x00BDEE48  [CODE]  func_00BDEE48  # dead TU copy of _$_t7VIArray1Z10VIItemStat (VIClient.cpp's; 0 refs)
 0x00BDEEB0  [CODE]  func_00BDEEB0
 0x00BDEED0  [CODE]  Begin__Ct5VIMap2ZiZ9VIAbility  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BDEF28  [CODE]  End__Ct5VIMap2ZiZ9VIAbility  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BDEF30  [CODE]  Next__Ct5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BDEFE8  [CODE]  DestroyPool__t5VIMap2ZiZ9VIAbility  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
 0x00BDF070  [CODE]  func_00BDF070
-0x00BDF0D8  [CODE]  func_00BDF0D8
+0x00BDF0D8  [CODE]  __t6VIPool1Z14VIRec32_BE2DE8  # name provisional (phase 62)
 0x00BDF100  [CODE]  End__Ct6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDF110  [CODE]  Begin__Ct6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDF140  [CODE]  Next__Ct6VIPool1Z14VIRec32_BE2DE8i  # name provisional: placeholder element type (phase 62, template copy)
@@ -862,63 +862,63 @@
 0x00BDF750  [CODE]  Init__t7VIArray1Z15VIRec436_BDF6D8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDF7A0  [CODE]  DestroyPool__t7VIArray1Z13VIElem_BDF7A0  # name provisional: placeholder element type (phase 62, template copy)
 0x00BDF7F0  [CODE]  _$_t7VIArray1Z13VIElem_BDF7A0  # name provisional: placeholder element type (phase 62, template copy)
-0x00BDF858  [CODE]  func_00BDF858
-0x00BDF868  [CODE]  func_00BDF868
-0x00BDF870  [CODE]  func_00BDF870
+0x00BDF858  [CODE]  __t7VIArray1Z13VIElem_BDF7A0  # VIArray's ctor (phase 62, template copy)
+0x00BDF868  [CODE]  Size__Ct6VIPool1Z14VIRec32_BE2DE8  # name provisional (phase 62, template copy)
+0x00BDF870  [CODE]  CopyFrom__10VIItemListR10VIItemList  # VIClient.cpp~; name provisional: TradeSetup's inventory copy (phase 62)
 0x00BDF938  [CODE]  func_00BDF938
-0x00BDF9D0  [CODE]  func_00BDF9D0
+0x00BDF9D0  [CODE]  Merge__10VIItemListR9VINetItemii  # name provisional (phase 62)
 0x00BDFBC0  [CODE]  func_00BDFBC0
 0x00BDFC20  [CODE]  func_00BDFC20
 0x00BDFC98  [CODE]  func_00BDFC98
-0x00BDFD40  [CODE]  func_00BDFD40
-0x00BDFFA8  [CODE]  Find__9VIInvListi  # name provisional (phase 62 dispatcher)
-0x00BDFFE0  [CODE]  func_00BDFFE0  # VIItemList.h:315
+0x00BDFD40  [CODE]  func_00BDFD40  # dead VIClient.cpp copy of AddItem__10VIItemListR9VINetItemii
+0x00BDFFA8  [CODE]  Find__10VIItemListi  # name provisional (phase 62 dispatcher)
+0x00BDFFE0  [CODE]  func_00BDFFE0  # dead TU copy of GetSlotId__10VIItemListi (VIClient.cpp's; VIItemList.h:315)
 0x00BE0048  [CODE]  func_00BE0048  # VIItemList.h:326
-0x00BE0178  [CODE]  func_00BE0178
-0x00BE01A8  [CODE]  func_00BE01A8
-0x00BE02F0  [CODE]  Op003D__9VIInvListii  # name provisional: opcode 0x003D's work on m_inventory (phase 62)
-0x00BE0478  [CODE]  func_00BE0478
-0x00BE04C0  [CODE]  func_00BE04C0
-0x00BE04E0  [CODE]  func_00BE04E0
-0x00BE0530  [CODE]  func_00BE0530
-0x00BE0568  [CODE]  func_00BE0568
-0x00BE05B8  [CODE]  func_00BE05B8
-0x00BE05D0  [CODE]  Op0060__9VIInvListP9VIInvItemi  # name provisional: opcode 0x0060's work on m_inventory (phase 62)
-0x00BE05F8  [CODE]  func_00BE05F8
+0x00BE0178  [CODE]  __t7VIArray1Z10VIItemStatRCt7VIArray1Z10VIItemStat  # name provisional (phase 62)
+0x00BE01A8  [CODE]  func_00BE01A8  # dead VIClient.cpp copy of __6VIItemRC6VIItem (synthesized, out of line)
+0x00BE02F0  [CODE]  Op003D__10VIItemListii  # name provisional: opcode 0x003D's work on m_inventory (phase 62)
+0x00BE0478  [CODE]  UseCharge__10VIItemListi  # name provisional (phase 62)
+0x00BE04C0  [CODE]  Remove__10VIItemListi  # name provisional (phase 62)
+0x00BE04E0  [CODE]  IsEquipped__10VIItemListi  # name provisional (phase 62)
+0x00BE0530  [CODE]  ReplaceEquipped__10VIItemListii  # name provisional (phase 62)
+0x00BE0568  [CODE]  Unequip__10VIItemListi  # name provisional (phase 62)
+0x00BE05B8  [CODE]  SetEquipSlot__10VIItemListii  # name provisional (phase 62)
+0x00BE05D0  [CODE]  Op0060__10VIItemListii  # name provisional: opcode 0x0060's work on m_inventory (phase 62)
+0x00BE05F8  [CODE]  Size__Ct5VIMap2ZiZ9VIAbility  # name provisional (phase 62, template copy)
 0x00BE0610  [CODE]  func_00BE0610
 0x00BE0660  [CODE]  func_00BE0660
 0x00BE06C0  [CODE]  func_00BE06C0
 0x00BE0738  [CODE]  func_00BE0738
-0x00BE0788  [CODE]  func_00BE0788
+0x00BE0788  [CODE]  Size__Ct5VIMap2ZiZ7VIBuddy  # name provisional (phase 62, template copy)
 0x00BE07A0  [CODE]  DestroyPool__t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE07F0  [CODE]  _$_t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE0858  [CODE]  func_00BE0858
+0x00BE0858  [CODE]  __t7VIArray1Z15VIRec144_BE08C8  # VIArray's ctor (phase 62, template copy)
 0x00BE0868  [CODE]  Clear__t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE08C8  [CODE]  Allocate__t7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE0940  [CODE]  Init__t7VIArray1Z15VIRec144_BE08C8RCt7VIArray1Z15VIRec144_BE08C8  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE0A88  [CODE]  func_00BE0A88
-0x00BE0AB8  [CODE]  func_00BE0AB8
+0x00BE0A88  [CODE]  __t7VIArray1Z15VIRec144_BE08C8RCt7VIArray1Z15VIRec144_BE08C8  # VIArray's copy ctor (phase 62, template copy)
+0x00BE0AB8  [CODE]  __Q2t5VIMap2ZiZ9VIAbility4NodeRCQ2t5VIMap2ZiZ9VIAbility4Node  # the synthesized Node copy ctor, out of line (phase 62)
 0x00BE0C00  [CODE]  LinkFreeChain__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE0CA8  [CODE]  Allocate__t5VIMap2ZiZ9VIAbility  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
-0x00BE0DF0  [CODE]  func_00BE0DF0
+0x00BE0DF0  [CODE]  AddNode__t5VIMap2ZiZ9VIAbilityii  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE0EE8  [CODE]  LeftRotate__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE0FA0  [CODE]  RightRotate__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
-0x00BE1058  [CODE]  func_00BE1058
+0x00BE1058  [CODE]  Insert__t5VIMap2ZiZ9VIAbilityRCiRC9VIAbility  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE1408  [CODE]  EraseFixup__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE17C0  [CODE]  FreeNode__t5VIMap2ZiZ9VIAbilityi  # name provisional: placeholder element type (phase 62, template copy; named off its caller)
 0x00BE1848  [CODE]  Erase__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE1A20  [CODE]  Find__Ct5VIMap2ZiZ9VIAbilityRCi  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE1A88  [CODE]  Clear__t5VIMap2ZiZ7VIBuddy  # VIMap<int, VIBuddy> (phase 62, template copy)
-0x00BE1AF8  [CODE]  DestroyPool__t7VIArray1Z13VIElem_BE1D10  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
+0x00BE1AF8  [CODE]  DestroyPool__t7VIArray1Z7VIRec6A  # VIArray<VIRec6A> (phase 62, template copy; was VIElem_BE1D10)
 0x00BE1BA0  [CODE]  func_00BE1BA0
 0x00BE1C08  [CODE]  func_00BE1C08
-0x00BE1C18  [CODE]  Clear__t7VIArray1Z13VIElem_BE1D10  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE1C78  [CODE]  Allocate__t7VIArray1Z13VIElem_BE1D10  # name provisional: its element type has a constructor or destructor, which the placeholder does not reproduce (phase 62, template copy)
-0x00BE1D10  [CODE]  Init__t7VIArray1Z13VIElem_BE1D10i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE1D60  [CODE]  DestroyPool__t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE1DB0  [CODE]  Clear__t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE1E10  [CODE]  Allocate__t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE1E88  [CODE]  Init__t7VIArray1Z15VIRec388_BE1E10i  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1C18  [CODE]  Clear__t7VIArray1Z7VIRec6A  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1C78  [CODE]  Allocate__t7VIArray1Z7VIRec6A  # VIArray<VIRec6A> (phase 62, template copy; was VIElem_BE1D10)
+0x00BE1D10  [CODE]  Init__t7VIArray1Z7VIRec6Ai  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1D60  [CODE]  DestroyPool__t7VIArray1Z8VIRec388  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1DB0  [CODE]  Clear__t7VIArray1Z8VIRec388  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1E10  [CODE]  Allocate__t7VIArray1Z8VIRec388  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE1E88  [CODE]  Init__t7VIArray1Z8VIRec388i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE1ED8  [CODE]  func_00BE1ED8
 0x00BE1F68  [CODE]  Find__Ct5VIMap2ZiZ7VIBuddyRCi  # VIClient.cpp's VIMap<int, VIBuddy> copy (0x03D5/0x03D6)
 0x00BE1FD0  [CODE]  LinkFreeChain__t5VIMap2ZiZ7VIBuddyi  # VIMap<int, VIBuddy> (phase 62, template copy)
@@ -934,31 +934,31 @@
 0x00BE2E90  [CODE]  Allocate__t6VIPool1Z14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE2FD0  [CODE]  Add__t6VIPool1Z14VIRec32_BE2DE8RC14VIRec32_BE2DE8  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE3110  [CODE]  Erase__t6VIPool1Z14VIRec32_BE2DE8i  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE31F0  [CODE]  func_00BE31F0
+0x00BE31F0  [CODE]  SetQuickSlot__10VIItemListii  # name provisional (phase 62)
 0x00BE3208  [CODE]  Init__t7VIArray1Z15VIRec144_BE08C8i  # name provisional: placeholder element type (phase 62, template copy)
 0x00BE3258  [CODE]  Clear__t5VIMap2ZiZ9VIAbility  # VIMap<int, VIAbility> (phase 62, template copy)
 0x00BE32C8  [CODE]  Init__t5VIMap2ZiZ9VIAbilityi  # VIMap<int, VIAbility> (phase 62, template copy)
-0x00BE3320  [CODE]  _$_t7VIArray1Z15VIRec388_BE1E10  # name provisional: placeholder element type (phase 62, template copy)
-0x00BE3388  [CODE]  func_00BE3388
+0x00BE3320  [CODE]  _$_t7VIArray1Z8VIRec388  # name provisional: placeholder element type (phase 62, template copy)
+0x00BE3388  [CODE]  __t7VIArray1Z8VIRec388  # VIArray's ctor (phase 62, template copy)
 0x00BE3398  [CODE]  func_00BE3398
-0x00BE3528  [CODE]  func_00BE3528
-0x00BE3660  [CODE]  func_00BE3660
-0x00BE3668  [CODE]  func_00BE3668
-0x00BE3678  [CODE]  func_00BE3678
+0x00BE3528  [CODE]  __as__13VIWalkPhysicsRC13VIWalkPhysics  # name provisional (phase 62)
+0x00BE3660  [CODE]  GetPos__11VIMemStream  # name provisional (phase 62)
+0x00BE3668  [CODE]  Remaining__11VIMemStream  # name provisional (phase 62)
+0x00BE3678  [CODE]  GetBuffer__11VIMemStream  # name provisional (phase 62)
 0x00BE3680  [CODE]  func_00BE3680
-0x00BE36A0  [CODE]  func_00BE36A0
+0x00BE36A0  [CODE]  func_00BE36A0  # dead VIClient.cpp copy of __as__6VIItemRC6VIItem (synthesized, out of line)
 0x00BE37E8  [CODE]  func_00BE37E8
-0x00BE3838  [CODE]  func_00BE3838
-0x00BE3850  [CODE]  func_00BE3850
-0x00BE3868  [CODE]  func_00BE3868
-0x00BE3880  [CODE]  func_00BE3880
-0x00BE3888  [CODE]  func_00BE3888
-0x00BE3898  [CODE]  func_00BE3898
-0x00BE38A8  [CODE]  func_00BE38A8
-0x00BE38B8  [CODE]  func_00BE38B8
-0x00BE38C8  [CODE]  func_00BE38C8
-0x00BE38D8  [CODE]  func_00BE38D8
-0x00BE38F0  [CODE]  func_00BE38F0
+0x00BE3838  [CODE]  GetExitCode__8VIClient  # name provisional (phase 62)
+0x00BE3850  [CODE]  GetDisconnectReason__8VIClient  # name provisional (phase 62)
+0x00BE3868  [CODE]  SetP4F0EC__8VIClienti  # name provisional (phase 62)
+0x00BE3880  [CODE]  GetP07190__8VIClient  # name provisional (phase 62)
+0x00BE3888  [CODE]  GetP13B90__8VIClient  # name provisional (phase 62)
+0x00BE3898  [CODE]  SetP13B90__8VIClienti  # name provisional (phase 62)
+0x00BE38A8  [CODE]  GetInventory__8VIClient  # name provisional (phase 62)
+0x00BE38B8  [CODE]  GetInventory2__8VIClient  # name provisional (phase 62)
+0x00BE38C8  [CODE]  GetPlayerP34__8VIClient  # name provisional (phase 62)
+0x00BE38D8  [CODE]  GetP1B304__8VIClient  # name provisional (phase 62)
+0x00BE38F0  [CODE]  GetMerchantName__8VIClient  # name provisional (phase 62)
 0x00BE3900  [CODE]  GetP2BAEC__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BE3918  [CODE]  GetP4F098__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BE3928  [CODE]  GetWorldId__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
@@ -984,17 +984,17 @@
 0x00BE3A40  [CODE]  GetTargetInfoValid__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BE3A58  [CODE]  GetTargetDisposition__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
 0x00BE3A70  [CODE]  GetP2BB70__8VIClient  # name provisional (phase 62 accessors; FrontiersForge)
-0x00BE3A88  [CODE]  func_00BE3A88
-0x00BE3AA0  [CODE]  func_00BE3AA0
-0x00BE3AB0  [CODE]  func_00BE3AB0
-0x00BE3AC0  [CODE]  func_00BE3AC0
-0x00BE3AE8  [CODE]  func_00BE3AE8
-0x00BE3B10  [CODE]  func_00BE3B10
-0x00BE3B28  [CODE]  func_00BE3B28
+0x00BE3A88  [CODE]  GetP2BB74__8VIClient  # name provisional (phase 62)
+0x00BE3AA0  [CODE]  GetP4FC28__8VIClient  # name provisional (phase 62)
+0x00BE3AB0  [CODE]  GetP4FCA8__8VIClient  # name provisional (phase 62)
+0x00BE3AC0  [CODE]  ExpandText__8VIClientPUsUsPCUsi  # name provisional (phase 62)
+0x00BE3AE8  [CODE]  IsTargetPet__8VIClient  # name provisional (phase 62)
+0x00BE3B10  [CODE]  GetP382E4__8VIClient  # name provisional (phase 62)
+0x00BE3B28  [CODE]  GetP50304__8VIClient  # name provisional (phase 62)
 0x00BE3B38  [CODE]  func_00BE3B38
-0x00BE3B58  [CODE]  func_00BE3B58
-0x00BE3B80  [CODE]  func_00BE3B80
-0x00BE3BA8  [CODE]  func_00BE3BA8
+0x00BE3B58  [CODE]  GetLootItem__8VIClienti  # name provisional (phase 62)
+0x00BE3B80  [CODE]  GetMerchantItem__8VIClienti  # name provisional (phase 62)
+0x00BE3BA8  [CODE]  GetTradeInvItem__8VIClienti  # name provisional (phase 62)
 0x00BE3BD0  [CODE]  func_00BE3BD0
 0x00BE3C10  [CODE]  func_00BE3C10
 0x00BE3C20  [CODE]  func_00BE3C20
@@ -1021,33 +1021,33 @@
 0x00BE4A98  [CODE]  func_00BE4A98
 0x00BE4B10  [CODE]  func_00BE4B10
 0x00BE4B60  [CODE]  func_00BE4B60
-0x00BE4B78  [CODE]  Msg077A__8VIClienti  # name provisional (phase 62 dispatcher)
-0x00BE4C28  [CODE]  func_00BE4C28
-0x00BE4CF0  [CODE]  SendMsg__8VIClientiii  # name provisional: Reset sends (1572, record word 0, 2) (phase 62)
-0x00BE4DE0  [CODE]  func_00BE4DE0
-0x00BE4ED0  [CODE]  func_00BE4ED0
-0x00BE4FC0  [CODE]  TargetInfo__8VIClientiiUi  # name provisional: Msg007B's call (phase 62)
-0x00BE50B0  [CODE]  func_00BE50B0
-0x00BE51C0  [CODE]  func_00BE51C0
-0x00BE52C8  [CODE]  func_00BE52C8
-0x00BE5390  [CODE]  func_00BE5390
-0x00BE5478  [CODE]  func_00BE5478
-0x00BE5578  [CODE]  func_00BE5578
-0x00BE5660  [CODE]  func_00BE5660
-0x00BE5748  [CODE]  func_00BE5748
-0x00BE5810  [CODE]  func_00BE5810
+0x00BE4B78  [CODE]  SendOpcode__8VIClienti  # name provisional (phase 62 dispatcher)
+0x00BE4C28  [CODE]  SendOpInt__8VIClientii  # name provisional (phase 62)
+0x00BE4CF0  [CODE]  SendMsg__8VIClientiiUc  # name provisional: Reset sends (1572, record word 0, 2) (phase 62)
+0x00BE4DE0  [CODE]  SendItemPair__8VIClientiii  # name provisional (phase 62)
+0x00BE4ED0  [CODE]  SendLoot__8VIClientiii  # name provisional (phase 62)
+0x00BE4FC0  [CODE]  SendOpIntInt__8VIClientiiUi  # name provisional: opcode and two ints (phase 62)
+0x00BE50B0  [CODE]  SendOpIntIntByte__8VIClientiiUiUc  # name provisional (phase 62)
+0x00BE51C0  [CODE]  SendOpIntSignedInt__8VIClientiiiUi  # name provisional (phase 62)
+0x00BE52C8  [CODE]  SendOpSigned__8VIClientii  # name provisional (phase 62)
+0x00BE5390  [CODE]  SendOpSignedSigned__8VIClientiii  # name provisional (phase 62)
+0x00BE5478  [CODE]  SendOpSigned2Int__8VIClientiiiUi  # name provisional (phase 62)
+0x00BE5578  [CODE]  SendOpSignedByte__8VIClientiiUc  # name provisional (phase 62)
+0x00BE5660  [CODE]  SendOpSignedRaw__8VIClientiii  # name provisional (phase 62)
+0x00BE5748  [CODE]  SendOpcodeByte__8VIClientiUc  # name provisional (phase 62)
+0x00BE5810  [CODE]  SendOpByteByte__8VIClientiUcUc  # name provisional (phase 62)
 0x00BE5900  [CODE]  func_00BE5900
 0x00BE5A10  [CODE]  func_00BE5A10
-0x00BE5B20  [CODE]  func_00BE5B20
-0x00BE5C28  [CODE]  func_00BE5C28
-0x00BE5D18  [CODE]  func_00BE5D18
+0x00BE5B20  [CODE]  SendOpByteIntSigned__8VIClientiUcii  # name provisional (phase 62)
+0x00BE5C28  [CODE]  SendOpByteInt__8VIClientiUci  # name provisional (phase 62)
+0x00BE5D18  [CODE]  SendOpByteSigned__8VIClientiUci  # name provisional (phase 62)
 0x00BE5E00  [CODE]  func_00BE5E00
-0x00BE5F10  [CODE]  func_00BE5F10
+0x00BE5F10  [CODE]  SendOpByteRaw__8VIClientiUci  # name provisional (phase 62)
 0x00BE6000  [CODE]  func_00BE6000
 0x00BE60C8  [CODE]  func_00BE60C8
 0x00BE6188  [CODE]  func_00BE6188
-0x00BE6268  [CODE]  func_00BE6268
-0x00BE63A8  [CODE]  func_00BE63A8
+0x00BE6268  [CODE]  SendNewChar__8VIClientiPC9VINewChar  # name provisional (phase 62)
+0x00BE63A8  [CODE]  SendOpU32__8VIClientiUi  # name provisional (phase 62)
 0x00BE6470  [CODE]  func_00BE6470
 0x00BE6548  [CODE]  func_00BE6548
 0x00BE65A0  [CODE]  func_00BE65A0
@@ -1072,7 +1072,7 @@
 0x00BE7120  [CODE]  func_00BE7120
 0x00BE7160  [CODE]  func_00BE7160
 0x00BE71B0  [CODE]  Recv07B0__17VIClientPart33950R11VIMemStream  # name provisional (phase 62 dispatcher)
-0x00BE7298  [CODE]  func_00BE7298
+0x00BE7298  [CODE]  OnConnect__17VIClientPart33950  # name provisional (phase 62)
 0x00BE7318  [CODE]  func_00BE7318
 0x00BE7328  [CODE]  func_00BE7328
 0x00BE7400  [CODE]  func_00BE7400
@@ -1127,8 +1127,8 @@
 0x00BE8D38  [CODE]  func_00BE8D38  # VIMemStreamVector.h:71
 0x00BE8DF0  [CODE]  func_00BE8DF0
 0x00BE8E88  [CODE]  func_00BE8E88
-0x00BE8EE0  [CODE]  func_00BE8EE0
-0x00BE9068  [CODE]  func_00BE9068
+0x00BE8EE0  [CODE]  Init__17VIClientPart4FD28R7VIScenePP8VIEntityi  # name provisional (phase 62)
+0x00BE9068  [CODE]  Release__17VIClientPart4FD28  # name provisional (phase 62)
 0x00BE90B8  [CODE]  AddDamage__17VIClientPart4FD28iii  # name provisional: DamageFromSelf's call (phase 62)
 0x00BE9198  [CODE]  func_00BE9198
 0x00BE96A8  [CODE]  func_00BE96A8
@@ -1200,7 +1200,7 @@
 0x00BEBC90  [CODE]  func_00BEBC90
 0x00BEBD30  [CODE]  func_00BEBD30
 0x00BEBD60  [CODE]  func_00BEBD60
-0x00BEBF18  [CODE]  func_00BEBF18
+0x00BEBF18  [CODE]  Cancel__17VIClientPart3FC10  # name provisional (phase 62)
 0x00BEBFE8  [CODE]  func_00BEBFE8
 0x00BEC0B8  [CODE]  func_00BEC0B8
 0x00BEC188  [CODE]  func_00BEC188
@@ -1265,7 +1265,7 @@
 0x00BEE5A8  [CODE]  func_00BEE5A8
 0x00BEE5C8  [CODE]  func_00BEE5C8
 0x00BEE5F0  [CODE]  func_00BEE5F0
-0x00BEE5F8  [CODE]  func_00BEE5F8
+0x00BEE5F8  [CODE]  Reset__17VIClientPart2EF24  # name provisional (phase 62)
 0x00BEE610  [CODE]  func_00BEE610
 0x00BEE618  [CODE]  func_00BEE618
 0x00BEE620  [CODE]  func_00BEE620
@@ -1340,7 +1340,7 @@
 0x00BF0D18  [CODE]  func_00BF0D18
 0x00BF0D38  [CODE]  Recv0468__13VIClientGuildR11VIMemStream  # name provisional (phase 62 dispatcher)
 0x00BF0EC8  [CODE]  func_00BF0EC8
-0x00BF0F20  [CODE]  func_00BF0F20
+0x00BF0F20  [CODE]  Reset__13VIClientGuild  # name provisional (phase 62)
 0x00BF0F50  [CODE]  UpdateMember__13VIClientGuildR11VIMemStream  # name provisional: inserts or updates one guild member (phase 62)
 0x00BF1040  [CODE]  func_00BF1040
 0x00BF1088  [CODE]  func_00BF1088
@@ -1388,10 +1388,10 @@
 0x00BF2ED8  [CODE]  func_00BF2ED8
 0x00BF2EF0  [CODE]  func_00BF2EF0
 0x00BF2F38  [CODE]  func_00BF2F38
-0x00BF2F98  [CODE]  func_00BF2F98
-0x00BF3038  [CODE]  func_00BF3038
+0x00BF2F98  [CODE]  Init__17VIClientPart06D50iR7VISceneR8VILoader  # name provisional (phase 62)
+0x00BF3038  [CODE]  Clear__17VIClientPart06D50  # name provisional (phase 62)
 0x00BF3108  [CODE]  func_00BF3108
-0x00BF31B8  [CODE]  func_00BF31B8
+0x00BF31B8  [CODE]  Preload__17VIClientPart06D50i  # name provisional (phase 62)
 0x00BF31D8  [CODE]  func_00BF31D8
 0x00BF32E8  [CODE]  func_00BF32E8
 0x00BF3400  [CODE]  func_00BF3400
@@ -1444,7 +1444,7 @@
 0x00BF5628  [CODE]  func_00BF5628
 0x00BF5648  [CODE]  func_00BF5648
 0x00BF5670  [CODE]  Recv0D41__17VIClientPart2EFD0R11VIMemStream  # name provisional (phase 62 dispatcher)
-0x00BF5738  [CODE]  func_00BF5738
+0x00BF5738  [CODE]  OnConnect__17VIClientPart2EFD0  # name provisional (phase 62)
 0x00BF57A0  [CODE]  Reset__17VIClientPart2EFD0  # name provisional: VIClient+0x2EFD0's method, Disconnect's call
 0x00BF57B0  [CODE]  func_00BF57B0
 0x00BF5920  [CODE]  func_00BF5920
@@ -1502,11 +1502,11 @@
 0x00BF7958  [CODE]  func_00BF7958
 0x00BF7A90  [CODE]  func_00BF7A90
 0x00BF7BA8  [CODE]  func_00BF7BA8
-0x00BF7CC0  [CODE]  func_00BF7CC0
+0x00BF7CC0  [CODE]  Open__17VIClientPart4EC58  # name provisional (phase 62)
 0x00BF7DC8  [CODE]  func_00BF7DC8
-0x00BF7EE8  [CODE]  func_00BF7EE8
+0x00BF7EE8  [CODE]  Close__17VIClientPart4EC58  # name provisional (phase 62)
 0x00BF7F18  [CODE]  func_00BF7F18
-0x00BF7F80  [CODE]  func_00BF7F80
+0x00BF7F80  [CODE]  Count__17VIClientPart4EC58  # name provisional (phase 62)
 0x00BF7FA8  [CODE]  func_00BF7FA8
 0x00BF80A0  [CODE]  func_00BF80A0
 0x00BF8150  [CODE]  func_00BF8150
@@ -1577,7 +1577,7 @@
 0x00BFA348  [CODE]  Add__t6VIPool1ZP12VIPtr_BFA1F0RCP12VIPtr_BFA1F0  # name provisional: placeholder element type (phase 62, template copy)
 0x00BFA450  [CODE]  func_00BFA450
 0x00BFA4A8  [CODE]  func_00BFA4A8
-0x00BFA4F8  [CODE]  func_00BFA4F8
+0x00BFA4F8  [CODE]  Reset__17VIClientPart38300  # name provisional (phase 62)
 0x00BFA518  [CODE]  func_00BFA518
 0x00BFA540  [CODE]  func_00BFA540
 0x00BFA568  [CODE]  func_00BFA568
@@ -1591,7 +1591,7 @@
 0x00BFAB90  [CODE]  func_00BFAB90
 0x00BFAC30  [CODE]  func_00BFAC30
 0x00BFAC60  [CODE]  func_00BFAC60
-0x00BFAC80  [CODE]  func_00BFAC80
+0x00BFAC80  [CODE]  Find__17VIClientPart38300PCc  # name provisional (phase 62)
 0x00BFAD18  [CODE]  func_00BFAD18
 0x00BFAD70  [CODE]  func_00BFAD70
 0x00BFAD78  [CODE]  func_00BFAD78
@@ -1629,17 +1629,17 @@
 0x00BFBF20  [CODE]  func_00BFBF20
 0x00BFBF80  [CODE]  func_00BFBF80
 0x00BFBFF8  [CODE]  func_00BFBFF8
-0x00BFC048  [CODE]  func_00BFC048
+0x00BFC048  [CODE]  GetRaceCamera__Fii  # name provisional (phase 62)
 0x00BFC0A8  [CODE]  func_00BFC0A8
-0x00BFC0F0  [CODE]  func_00BFC0F0
-0x00BFC128  [CODE]  func_00BFC128
-0x00BFC130  [CODE]  func_00BFC130
+0x00BFC0F0  [CODE]  __11VIShardInfo  # name provisional (phase 62)
+0x00BFC128  [CODE]  GetCount__11VIShardInfo  # name provisional (phase 62)
+0x00BFC130  [CODE]  IsValid__11VIShardInfoi  # name provisional (phase 62)
 0x00BFC150  [CODE]  func_00BFC150
 0x00BFC168  [CODE]  func_00BFC168
-0x00BFC1F0  [CODE]  func_00BFC1F0
-0x00BFC208  [CODE]  func_00BFC208
-0x00BFC240  [CODE]  func_00BFC240
-0x00BFC270  [CODE]  func_00BFC270
+0x00BFC1F0  [CODE]  GetId__11VIShardInfoi  # name provisional (phase 62)
+0x00BFC208  [CODE]  Read__11VIShardInfoR11VIMemStream  # name provisional (phase 62)
+0x00BFC240  [CODE]  Clear__11VIShardInfo  # name provisional (phase 62)
+0x00BFC270  [CODE]  SetRegion__11VIShardInfoi  # name provisional (phase 62)
 0x00BFC290  [CODE]  func_00BFC290  # VIShardInfo.cpp:166
 0x00BFC3E8  [CODE]  func_00BFC3E8
 0x00BFC3F8  [CODE]  func_00BFC3F8
@@ -1795,15 +1795,15 @@
 0x00C02B70  [CODE]  Clear__t7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
 0x00C02BD0  [CODE]  Allocate__t7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
 0x00C02C48  [CODE]  Init__t7VIArray1Z18VIRec130_C02BD0_A2RCt7VIArray1Z18VIRec130_C02BD0_A2  # name provisional: placeholder element type (phase 62, template copy)
-0x00C02D78  [CODE]  Init__t7VIArray1Z13VIRec8_BBC340i  # name provisional: placeholder element type (phase 62, template copy)
+0x00C02D78  [CODE]  Init__t7VIArray1Z10VIItemStati  # VIArray<VIItemStat>, the item stat array (phase 62, template copy)
 0x00C02DC8  [CODE]  Init__t7VIArray1Z18VIRec130_C029C8_A2i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C02E18  [CODE]  Init__t7VIArray1Z18VIRec130_C02BD0_A2i  # name provisional: placeholder element type (phase 62, template copy)
 0x00C02E68  [CODE]  func_00C02E68
 0x00C02FB0  [CODE]  func_00C02FB0
 0x00C02FE8  [CODE]  func_00C02FE8
-0x00C03038  [CODE]  func_00C03038
+0x00C03038  [CODE]  Open__17VIClientPart38334  # name provisional (phase 62)
 0x00C03128  [CODE]  func_00C03128
-0x00C03130  [CODE]  func_00C03130
+0x00C03130  [CODE]  Close__17VIClientPart38334  # name provisional (phase 62)
 0x00C03168  [CODE]  Recv0E02__17VIClientPart38334R11VIMemStream  # name provisional (phase 62 dispatcher)
 0x00C031C8  [CODE]  func_00C031C8
 0x00C03288  [CODE]  func_00C03288
@@ -1865,15 +1865,15 @@
 0x00C04D10  [CODE]  func_00C04D10
 0x00C04D48  [CODE]  func_00C04D48
 0x00C04DD8  [CODE]  func_00C04DD8
-0x00C04DE8  [CODE]  func_00C04DE8
-0x00C04E98  [CODE]  func_00C04E98
+0x00C04DE8  [CODE]  DrawString__6VIFontP8VIRasterP12VIDictionaryPCUsii  # name provisional: CLIENT's own copy (phase 62)
+0x00C04E98  [CODE]  DrawString__6VIFontP8VIRasterP12VIDictionaryPCcii  # name provisional: CLIENT's own copy (phase 62)
 0x00C04F48  [CODE]  func_00C04F48
 0x00C05008  [CODE]  func_00C05008
-0x00C050C8  [CODE]  func_00C050C8
+0x00C050C8  [CODE]  GetHeight__6VIFontP8VIRasterP12VIDictionary  # name provisional: CLIENT's own copy (phase 62)
 0x00C05148  [CODE]  func_00C05148
 0x00C051D8  [CODE]  func_00C051D8
 0x00C05268  [CODE]  func_00C05268
-0x00C05288  [CODE]  func_00C05288
+0x00C05288  [CODE]  SetTextColor__6VIFontRC10VIColor32F  # name provisional: CLIENT's own copy (phase 62)
 0x00C052B0  [CODE]  func_00C052B0
 0x00C05320  [CODE]  func_00C05320
 0x00C053B0  [CODE]  func_00C053B0
@@ -1959,18 +1959,18 @@
 0x00C0B1B8  [CODE]  func_00C0B1B8
 0x00C0B240  [CODE]  func_00C0B240
 0x00C0B330  [CODE]  func_00C0B330
-0x00C0B350  [CODE]  func_00C0B350
+0x00C0B350  [CODE]  Reset__9VITextSet  # name provisional (phase 62)
 0x00C0B388  [CODE]  func_00C0B388
 0x00C0B460  [CODE]  func_00C0B460
 0x00C0B470  [CODE]  func_00C0B470
 0x00C0B480  [CODE]  func_00C0B480
 0x00C0B4D0  [CODE]  func_00C0B4D0
 0x00C0B528  [CODE]  func_00C0B528
-0x00C0B550  [CODE]  func_00C0B550
+0x00C0B550  [CODE]  Get__9VITextSeti  # name provisional (phase 62)
 0x00C0B628  [CODE]  func_00C0B628
 0x00C0B708  [CODE]  func_00C0B708
 0x00C0B7C8  [CODE]  func_00C0B7C8
-0x00C0B870  [CODE]  func_00C0B870
+0x00C0B870  [CODE]  __10VITextPair  # name provisional (phase 62)
 0x00C0B880  [CODE]  func_00C0B880
 0x00C0B8B8  [CODE]  func_00C0B8B8
 0x00C0B8D0  [CODE]  func_00C0B8D0
@@ -2346,9 +2346,9 @@
 0x00C21588  [CODE]  func_00C21588
 0x00C215F8  [CODE]  ShowText__10VIWndLoginPCUs  # name provisional (phase 62 dispatcher)
 0x00C21668  [CODE]  ShowWord__10VIWndLoginUs  # name provisional (phase 62 dispatcher): takes an unsigned short
-0x00C216A8  [CODE]  func_00C216A8
+0x00C216A8  [CODE]  ShowCharacter__10VIWndLoginUiiiiiiiiiiiiii  # name provisional (phase 62)
 0x00C21B08  [CODE]  func_00C21B08
-0x00C21C28  [CODE]  func_00C21C28
+0x00C21C28  [CODE]  Option__10VIWndLogini  # name provisional (phase 62)
 0x00C21E68  [CODE]  func_00C21E68
 0x00C21F10  [CODE]  func_00C21F10
 0x00C21FB8  [CODE]  func_00C21FB8
@@ -2382,8 +2382,8 @@
 0x00C23040  [CODE]  func_00C23040
 0x00C23080  [CODE]  func_00C23080
 0x00C230A0  [CODE]  func_00C230A0
-0x00C23360  [CODE]  func_00C23360
-0x00C23398  [CODE]  func_00C23398
+0x00C23360  [CODE]  Focus__10VIWnd2BB88  # name provisional (phase 62)
+0x00C23398  [CODE]  ShowList__10VIWnd2BB88  # name provisional (phase 62)
 0x00C23460  [CODE]  SetName__10VIWnd2BB88PCc  # name provisional (phase 62 dispatcher)
 0x00C23480  [CODE]  func_00C23480
 0x00C234D8  [CODE]  func_00C234D8
@@ -3188,8 +3188,8 @@
 0x00C4D258  [CODE]  func_00C4D258
 0x00C4D2B0  [CODE]  func_00C4D2B0
 0x00C4D300  [CODE]  func_00C4D300
-0x00C4D350  [CODE]  func_00C4D350
-0x00C4D610  [CODE]  func_00C4D610
+0x00C4D350  [CODE]  LoadTargetEffect__FR7VIScene  # name provisional (phase 62)
+0x00C4D610  [CODE]  ReleaseTargetEffect__FR7VIScene  # name provisional (phase 62)
 0x00C4D688  [CODE]  func_00C4D688
 0x00C4D8E0  [CODE]  func_00C4D8E0
 0x00C4D920  [CODE]  func_00C4D920
@@ -3222,8 +3222,8 @@
 0x00C4E760  [CODE]  func_00C4E760
 0x00C4E7D8  [CODE]  func_00C4E7D8
 0x00C4F648  [CODE]  func_00C4F648
-0x00C4FF00  [CODE]  func_00C4FF00
-0x00C4FF80  [CODE]  func_00C4FF80
+0x00C4FF00  [CODE]  WorldUnloaded__9VIWndGame  # name provisional (phase 62)
+0x00C4FF80  [CODE]  SetMode__9VIWndGamei  # name provisional (phase 62)
 0x00C50200  [CODE]  func_00C50200
 0x00C50220  [CODE]  func_00C50220
 0x00C50B58  [CODE]  func_00C50B58
@@ -3254,88 +3254,88 @@
 0x00C556D8  [CODE]  LootOpen__9VIWndGame  # name provisional (phase 62 dispatcher)
 0x00C55710  [CODE]  LootClose__9VIWndGame  # name provisional (phase 62 dispatcher)
 0x00C55740  [CODE]  MerchantOpen__9VIWndGame  # name provisional: called through m_wndGame by VIClient::MerchantOpen (phase 62)
-0x00C557A0  [CODE]  func_00C557A0
-0x00C557C8  [CODE]  func_00C557C8
-0x00C55820  [CODE]  func_00C55820
+0x00C557A0  [CODE]  MerchantClose__9VIWndGame  # name provisional (phase 62)
+0x00C557C8  [CODE]  ShowDialogBox__9VIWndGameP11VIDialogBox  # name provisional (phase 62)
+0x00C55820  [CODE]  OpenDialog__9VIWndGamePCUsi  # name provisional (phase 62)
 0x00C55888  [CODE]  BankClose__9VIWndGame  # name provisional (phase 62 dispatcher)
-0x00C558F0  [CODE]  func_00C558F0
+0x00C558F0  [CODE]  ClosePanel6AC__9VIWndGame  # name provisional (phase 62)
 0x00C55918  [CODE]  func_00C55918
-0x00C55950  [CODE]  func_00C55950
+0x00C55950  [CODE]  ClosePanel6BC__9VIWndGame  # name provisional (phase 62)
 0x00C55990  [CODE]  Msg001D__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
-0x00C559B0  [CODE]  func_00C559B0
-0x00C559F8  [CODE]  func_00C559F8
+0x00C559B0  [CODE]  OpenPanel40__9VIWndGame  # name provisional (phase 62)
+0x00C559F8  [CODE]  ClosePanel6C0__9VIWndGame  # name provisional (phase 62)
 0x00C55A20  [CODE]  func_00C55A20
 0x00C55BC8  [CODE]  func_00C55BC8
 0x00C55C30  [CODE]  func_00C55C30
 0x00C55CE8  [CODE]  func_00C55CE8
-0x00C55D88  [CODE]  func_00C55D88
+0x00C55D88  [CODE]  Prompt__9VIWndGamePCUsiii  # name provisional (phase 62)
 0x00C55E28  [CODE]  Trade02__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
 0x00C55E60  [CODE]  Trade16__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
-0x00C55EC0  [CODE]  func_00C55EC0
+0x00C55EC0  [CODE]  TradeOffer__9VIWndGameUi  # name provisional (phase 62)
 0x00C55EF8  [CODE]  func_00C55EF8
 0x00C55F38  [CODE]  Trade07__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
 0x00C55F58  [CODE]  Trade06__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
 0x00C55F78  [CODE]  Msg0061__9VIWndGame  # name provisional: called through m_wndGame by VIClient::Msg0061 (phase 62)
 0x00C55FB8  [CODE]  Msg0063__9VIWndGame  # name provisional: called through m_wndGame by the VIClient method of that name (phase 62)
 0x00C55FF8  [CODE]  Msg0060__9VIWndGame  # name provisional: called through m_wndGame by VIClient::Msg0060 (phase 62)
-0x00C56018  [CODE]  func_00C56018
-0x00C56050  [CODE]  func_00C56050
-0x00C56078  [CODE]  func_00C56078
-0x00C560B0  [CODE]  func_00C560B0
+0x00C56018  [CODE]  ShowBuddyRequest__9VIWndGame  # name provisional (phase 62)
+0x00C56050  [CODE]  HideBuddyRequest__9VIWndGame  # name provisional (phase 62)
+0x00C56078  [CODE]  OpenPanel18__9VIWndGame  # name provisional (phase 62)
+0x00C560B0  [CODE]  ClosePanel6D0__9VIWndGame  # name provisional (phase 62)
 0x00C560F0  [CODE]  func_00C560F0
 0x00C56128  [CODE]  func_00C56128
 0x00C56150  [CODE]  func_00C56150
 0x00C56188  [CODE]  func_00C56188
-0x00C561C8  [CODE]  func_00C561C8
-0x00C56200  [CODE]  func_00C56200
-0x00C56240  [CODE]  func_00C56240
-0x00C56278  [CODE]  func_00C56278
-0x00C562B8  [CODE]  func_00C562B8
-0x00C562F0  [CODE]  func_00C562F0
+0x00C561C8  [CODE]  OpenPanel22__9VIWndGame  # name provisional (phase 62)
+0x00C56200  [CODE]  ClosePanel6DC__9VIWndGame  # name provisional (phase 62)
+0x00C56240  [CODE]  OpenPanel24__9VIWndGame  # name provisional (phase 62)
+0x00C56278  [CODE]  ClosePanel6E4__9VIWndGame  # name provisional (phase 62)
+0x00C562B8  [CODE]  OpenPanel23__9VIWndGame  # name provisional (phase 62)
+0x00C562F0  [CODE]  ClosePanel6E0__9VIWndGame  # name provisional (phase 62)
 0x00C56330  [CODE]  func_00C56330
 0x00C56368  [CODE]  func_00C56368
-0x00C563A8  [CODE]  func_00C563A8
-0x00C56418  [CODE]  func_00C56418
-0x00C56450  [CODE]  func_00C56450
-0x00C56478  [CODE]  func_00C56478
-0x00C564B0  [CODE]  func_00C564B0
-0x00C564D8  [CODE]  func_00C564D8
-0x00C564E8  [CODE]  func_00C564E8
-0x00C56520  [CODE]  func_00C56520
-0x00C56560  [CODE]  func_00C56560
-0x00C56598  [CODE]  func_00C56598
+0x00C563A8  [CODE]  ShowInvite__9VIWndGamePCc  # name provisional (phase 62)
+0x00C56418  [CODE]  OpenPanel27__9VIWndGame  # name provisional (phase 62)
+0x00C56450  [CODE]  ClosePanel6EC__9VIWndGame  # name provisional (phase 62)
+0x00C56478  [CODE]  OpenPanel34__9VIWndGame  # name provisional (phase 62)
+0x00C564B0  [CODE]  HidePanel6F0__9VIWndGame  # name provisional (phase 62)
+0x00C564D8  [CODE]  IsPanel6F0Open__9VIWndGame  # name provisional (phase 62)
+0x00C564E8  [CODE]  OpenPanel28__9VIWndGame  # name provisional (phase 62)
+0x00C56520  [CODE]  ClosePanel6F4__9VIWndGame  # name provisional (phase 62)
+0x00C56560  [CODE]  OpenPanel29__9VIWndGame  # name provisional (phase 62)
+0x00C56598  [CODE]  ClosePanel6F8__9VIWndGame  # name provisional (phase 62)
 0x00C565D8  [CODE]  func_00C565D8
-0x00C565F8  [CODE]  func_00C565F8
+0x00C565F8  [CODE]  ClosePanel6FC__9VIWndGame  # name provisional (phase 62)
 0x00C56638  [CODE]  func_00C56638
-0x00C56658  [CODE]  func_00C56658
-0x00C56698  [CODE]  func_00C56698
-0x00C566B8  [CODE]  func_00C566B8
+0x00C56658  [CODE]  ClosePanel700__9VIWndGame  # name provisional (phase 62)
+0x00C56698  [CODE]  SetPanel35__9VIWndGame  # name provisional (phase 62)
+0x00C566B8  [CODE]  ClosePanel704__9VIWndGame  # name provisional (phase 62)
 0x00C566E0  [CODE]  func_00C566E0
-0x00C56718  [CODE]  func_00C56718
+0x00C56718  [CODE]  ClosePanel708__9VIWndGame  # name provisional (phase 62)
 0x00C56740  [CODE]  func_00C56740
-0x00C56760  [CODE]  func_00C56760
+0x00C56760  [CODE]  ClosePanel70C__9VIWndGame  # name provisional (phase 62)
 0x00C56788  [CODE]  func_00C56788
-0x00C56848  [CODE]  func_00C56848
+0x00C56848  [CODE]  ClosePanel718__9VIWndGame  # name provisional (phase 62)
 0x00C568B0  [CODE]  func_00C568B0
 0x00C56918  [CODE]  func_00C56918
 0x00C56970  [CODE]  func_00C56970
 0x00C569E0  [CODE]  func_00C569E0
-0x00C56A18  [CODE]  func_00C56A18
+0x00C56A18  [CODE]  ManualCameraBegun__9VIWndGame  # name provisional (phase 62)
 0x00C56A38  [CODE]  IsModal__9VIWndGame  # name provisional: DamageFromOther shows nothing and QuestStage calls a hook while it is set (phase 62)
-0x00C56A48  [CODE]  func_00C56A48
+0x00C56A48  [CODE]  Refresh__9VIWndGame  # name provisional (phase 62)
 0x00C56A68  [CODE]  func_00C56A68
 0x00C56A88  [CODE]  func_00C56A88
 0x00C56AA8  [CODE]  func_00C56AA8
 0x00C56AC8  [CODE]  func_00C56AC8
-0x00C56AE8  [CODE]  func_00C56AE8
+0x00C56AE8  [CODE]  ShowName__9VIWndGameiiiPCUs  # name provisional (phase 62)
 0x00C56BA0  [CODE]  AddText__9VIWndGamePCc  # name provisional (phase 62 dispatcher)
 0x00C56BC0  [CODE]  AddText__9VIWndGamePCUs  # name provisional: the game window's text call (ShowText)
 0x00C56BE0  [CODE]  AddText__9VIWndGamePCUsRC10VIColor32F  # name provisional (phase 62 dispatcher)
 0x00C56C20  [CODE]  LootOption__9VIWndGamei  # name provisional (phase 62 dispatcher)
 0x00C56C40  [CODE]  AddWord__9VIWndGameiRC10VIColor32F  # name provisional (phase 62 dispatcher)
-0x00C56C88  [CODE]  func_00C56C88
+0x00C56C88  [CODE]  ShowNetStats__9VIWndGamelUllUsi  # name provisional (phase 62)
 0x00C56CA8  [CODE]  IsLootable__9VIWndGame  # name provisional (phase 62 dispatcher)
-0x00C56CB8  [CODE]  func_00C56CB8
+0x00C56CB8  [CODE]  DialogAllowed__9VIWndGame  # name provisional (phase 62)
 0x00C56CE0  [CODE]  func_00C56CE0
 0x00C56D18  [CODE]  func_00C56D18
 0x00C56D28  [CODE]  func_00C56D28
@@ -5582,39 +5582,39 @@
 0x00CB7AB0  [CODE]  func_00CB7AB0
 0x00CB7B00  [CODE]  func_00CB7B00
 0x00CB7B98  [CODE]  func_00CB7B98
-0x00CB7C30  [CODE]  func_00CB7C30
+0x00CB7C30  [CODE]  Open__9VIJournaliPCci  # name provisional (phase 62)
 0x00CB7CE8  [CODE]  func_00CB7CE8
 0x00CB7D48  [CODE]  func_00CB7D48
-0x00CB7DB0  [CODE]  func_00CB7DB0  # VIJournal.cpp:99
+0x00CB7DB0  [CODE]  Write__9VIJournalPCvii  # name provisional (phase 62)  # VIJournal.cpp:99
 0x00CB7E88  [CODE]  func_00CB7E88  # VIJournal.cpp~
-0x00CB7F38  [CODE]  func_00CB7F38  # VIJournal.cpp:158
+0x00CB7F38  [CODE]  WriteString__9VIJournalPCc  # name provisional (phase 62)  # VIJournal.cpp:158
 0x00CB7FD8  [CODE]  func_00CB7FD8
 0x00CB8068  [CODE]  func_00CB8068
-0x00CB80B0  [CODE]  func_00CB80B0
+0x00CB80B0  [CODE]  FreeName__9VIJournalPcPCc  # name provisional (phase 62)
 0x00CB8140  [CODE]  func_00CB8140
 0x00CB81D8  [CODE]  func_00CB81D8
-0x00CB8260  [CODE]  func_00CB8260
-0x00CB82F8  [CODE]  func_00CB82F8
-0x00CB8370  [CODE]  func_00CB8370
-0x00CB83E8  [CODE]  func_00CB83E8
-0x00CB8460  [CODE]  func_00CB8460
+0x00CB8260  [CODE]  __11VIMemStreamRC11VIMemStream  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB82F8  [CODE]  SetBuffer__11VIMemStreamPvi  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB8370  [CODE]  SetData__11VIMemStreamPCvi  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB83E8  [CODE]  Grow__11VIMemStreami  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB8460  [CODE]  Write__11VIMemStreamPCvii  # VIMemStream.cpp; name provisional (phase 62)
 0x00CB8520  [CODE]  Read__11VIMemStreamPvii  # VIMemStream.cpp
 0x00CB85A8  [CODE]  Skip__11VIMemStreami  # VIMemStream.cpp
-0x00CB85E0  [CODE]  func_00CB85E0
+0x00CB85E0  [CODE]  WriteSigned__11VIMemStreami  # VIMemStream.cpp; name provisional (phase 62)
 0x00CB8610  [CODE]  ReadSigned__11VIMemStreamRi  # VIMemStream.cpp
-0x00CB8658  [CODE]  func_00CB8658
+0x00CB8658  [CODE]  WriteUnsigned__11VIMemStreamUi  # VIMemStream.cpp; name provisional (phase 62)
 0x00CB86B8  [CODE]  ReadUnsigned__11VIMemStreamRUi  # VIMemStream.cpp
 0x00CB8740  [CODE]  ReadString__11VIMemStreamPcUi  # VIMemStream.cpp:399
 0x00CB87E8  [CODE]  ReadString__11VIMemStreamPUsUi  # VIMemStream.cpp:422
-0x00CB88A0  [CODE]  func_00CB88A0
-0x00CB8918  [CODE]  func_00CB8918
-0x00CB8990  [CODE]  func_00CB8990
-0x00CB8998  [CODE]  func_00CB8998
-0x00CB89A0  [CODE]  func_00CB89A0
-0x00CB8A38  [CODE]  func_00CB8A38
-0x00CB8A98  [CODE]  func_00CB8A98
-0x00CB8AA0  [CODE]  func_00CB8AA0
-0x00CB8AB0  [CODE]  func_00CB8AB0
+0x00CB88A0  [CODE]  WriteString__11VIMemStreamPCc  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB8918  [CODE]  WriteString__11VIMemStreamPCUs  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB8990  [CODE]  SetDryRun__11VIMemStreami  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB8998  [CODE]  GetDryRun__11VIMemStream  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB89A0  [CODE]  __ls__11VIMemStreamRC15VIMemStreamBlob  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB8A38  [CODE]  __rs__11VIMemStreamRC15VIMemStreamBlob  # VIMemStream.cpp; name provisional (phase 62)
+0x00CB8A98  [CODE]  func_00CB8A98  # dead TU copy of GetPos__11VIMemStream (VIMemStream.cpp's; 0 refs)
+0x00CB8AA0  [CODE]  func_00CB8AA0  # dead TU copy of Remaining__11VIMemStream (VIMemStream.cpp's; 0 refs)
+0x00CB8AB0  [CODE]  func_00CB8AB0  # dead TU copy of GetBuffer__11VIMemStream (VIMemStream.cpp's; 0 refs)
 0x00CB8AB8  [CODE]  func_00CB8AB8
 0x00CB8B40  [CODE]  func_00CB8B40  # VIMemStreamArray.cpp:66
 0x00CB8BF0  [CODE]  func_00CB8BF0
@@ -5622,13 +5622,13 @@
 0x00CB8CA0  [CODE]  func_00CB8CA0
 0x00CB8D18  [CODE]  func_00CB8D18
 0x00CB8D68  [CODE]  func_00CB8D68
-0x00CB8D98  [CODE]  func_00CB8D98
+0x00CB8D98  [CODE]  __rs__FR11VIMemStreamR7VIVect3  # name provisional (phase 62)
 0x00CB8DC8  [CODE]  func_00CB8DC8
 0x00CB8E08  [CODE]  func_00CB8E08
 0x00CB8E48  [CODE]  func_00CB8E48
 0x00CB8E98  [CODE]  func_00CB8E98
 0x00CB8EE0  [CODE]  func_00CB8EE0
-0x00CB8F60  [CODE]  func_00CB8F60
+0x00CB8F60  [CODE]  __rs__FR11VIMemStreamR5VIRGB  # name provisional (phase 62)
 0x00CB8FC8  [CODE]  func_00CB8FC8
 0x00CB9070  [CODE]  func_00CB9070
 0x00CB9110  [CODE]  func_00CB9110
@@ -5661,13 +5661,13 @@
 0x00CBA1C8  [CODE]  Init__t8VIVector1Z13VIRec4_BBBF08i  # name provisional: placeholder element type (phase 62, template copy)
 0x00CBA218  [CODE]  Add__t8VIVector1Z13VIRec4_BBBF08  # name provisional: placeholder element type (phase 62, template copy)
 0x00CBA278  [CODE]  func_00CBA278
-0x00CBA2D0  [CODE]  func_00CBA2D0
+0x00CBA2D0  [CODE]  VINetSend__FR11VIMemStreamRC12VIClientConn  # name provisional (phase 62)
 0x00CBA330  [CODE]  func_00CBA330
-0x00CBA3D8  [CODE]  func_00CBA3D8
+0x00CBA3D8  [CODE]  VINetSendTo__FR11VIMemStreamRC15VIClientDrdpRef  # name provisional (phase 62)
 0x00CBA450  [CODE]  func_00CBA450
 0x00CBA4E0  [CODE]  func_00CBA4E0
 0x00CBA550  [CODE]  func_00CBA550
-0x00CBA5A8  [CODE]  func_00CBA5A8
+0x00CBA5A8  [CODE]  VINetStats__FPUsiP12connection_t  # name provisional (phase 62)
 0x00CBA660  [CODE]  func_00CBA660
 0x00CBA670  [CODE]  func_00CBA670
 0x00CBA6C0  [CODE]  func_00CBA6C0
@@ -5698,13 +5698,13 @@
 0x00CBB540  [CODE]  func_00CBB540
 0x00CBB590  [CODE]  func_00CBB590  # VIMemStreamArray.h:71
 0x00CBB630  [CODE]  func_00CBB630
-0x00CBB6A8  [CODE]  func_00CBB6A8
-0x00CBB6B8  [CODE]  func_00CBB6B8
+0x00CBB6A8  [CODE]  __8VIRandom  # name provisional (phase 62)
+0x00CBB6B8  [CODE]  Seed__8VIRandomUi  # name provisional (phase 62)
 0x00CBB700  [CODE]  func_00CBB700
-0x00CBB8B0  [CODE]  func_00CBB8B0
+0x00CBB8B0  [CODE]  Next__8VIRandom  # name provisional (phase 62)
 0x00CBB928  [CODE]  func_00CBB928
 0x00CBB988  [CODE]  func_00CBB988
-0x00CBBA48  [CODE]  func_00CBBA48
+0x00CBBA48  [CODE]  Range__8VIRandomii  # name provisional (phase 62)
 0x00CBBA98  [CODE]  func_00CBBA98
 0x00CBBAB8  [CODE]  func_00CBBAB8
 0x00CBBB40  [CODE]  func_00CBBB40
@@ -5740,8 +5740,8 @@
 0x00CBC890  [CODE]  func_00CBC890
 0x00CBCB58  [CODE]  func_00CBCB58
 0x00CBCBC0  [CODE]  func_00CBCBC0
-0x00CBCBD8  [CODE]  Set__13VIClientClockll  # name provisional: SetTime's two calls (phase 62)
-0x00CBCC80  [CODE]  func_00CBCC80  # VISyncTime.cpp:95
+0x00CBCBD8  [CODE]  Set__10VISyncTimell  # name provisional: SetTime's two calls (phase 62)
+0x00CBCC80  [CODE]  GetTime__10VISyncTimel  # name provisional (phase 62)  # VISyncTime.cpp:95
 0x00CBCD08  [CODE]  func_00CBCD08
 0x00CBCD10  [CODE]  func_00CBCD10
 0x00CBCE40  [CODE]  func_00CBCE40
@@ -5760,9 +5760,9 @@
 0x00CBDE08  [CODE]  func_00CBDE08
 0x00CBDE70  [CODE]  func_00CBDE70
 0x00CBDEC0  [CODE]  func_00CBDEC0
-0x00CBDEF8  [CODE]  func_00CBDEF8
-0x00CBE0A8  [CODE]  func_00CBE0A8
-0x00CBE190  [CODE]  func_00CBE190
+0x00CBDEF8  [CODE]  GetSwing__Fiiiiiiiii  # name provisional (phase 62)
+0x00CBE0A8  [CODE]  Effect__7VISwing  # name provisional (phase 62)
+0x00CBE190  [CODE]  Delay__7VISwing  # name provisional (phase 62)
 0x00CBE1E8  [CODE]  func_00CBE1E8
 0x00CBE240  [CODE]  func_00CBE240
 0x00CBE260  [CODE]  func_00CBE260
@@ -5771,8 +5771,8 @@
 0x00CBE390  [CODE]  func_00CBE390
 0x00CBE3D8  [CODE]  func_00CBE3D8
 0x00CBE458  [CODE]  func_00CBE458
-0x00CBE4B8  [CODE]  func_00CBE4B8
-0x00CBE520  [CODE]  func_00CBE520
+0x00CBE4B8  [CODE]  Init__17VIClientPart06D00R7VISceneR8VILoader  # name provisional (phase 62)
+0x00CBE520  [CODE]  Clear__17VIClientPart06D00  # name provisional (phase 62)
 0x00CBE640  [CODE]  func_00CBE640
 0x00CBE728  [CODE]  func_00CBE728
 0x00CBE790  [CODE]  func_00CBE790
@@ -5849,12 +5849,12 @@
 0x00CC3850  [CODE]  func_00CC3850
 0x00CC38A0  [CODE]  func_00CC38A0
 0x00CC38B0  [CODE]  func_00CC38B0
-0x00CC38C0  [CODE]  func_00CC38C0
-0x00CC38D0  [CODE]  func_00CC38D0
+0x00CC38C0  [CODE]  Flag4__16VICreatureEntity  # name provisional (phase 62)
+0x00CC38D0  [CODE]  Flag8__16VICreatureEntity  # name provisional (phase 62)
 0x00CC38E0  [CODE]  func_00CC38E0
-0x00CC38F0  [CODE]  func_00CC38F0
+0x00CC38F0  [CODE]  Byte263__16VICreatureEntity  # name provisional (phase 62)
 0x00CC38F8  [CODE]  func_00CC38F8
-0x00CC3938  [CODE]  func_00CC3938
+0x00CC3938  [CODE]  Walk__16VICreatureEntity  # name provisional (phase 62)
 0x00CC3AB8  [CODE]  func_00CC3AB8
 0x00CC3B30  [CODE]  func_00CC3B30
 0x00CC3BC8  [CODE]  func_00CC3BC8
@@ -5879,18 +5879,18 @@
 0x00CC4728  [CODE]  func_00CC4728
 0x00CC47A0  [CODE]  func_00CC47A0
 0x00CC47F0  [CODE]  func_00CC47F0
-0x00CC47F8  [CODE]  func_00CC47F8
-0x00CC4818  [CODE]  func_00CC4818
-0x00CC4848  [CODE]  func_00CC4848
-0x00CC4868  [CODE]  func_00CC4868
+0x00CC47F8  [CODE]  GetActorPos__8VIEntity  # name provisional (phase 62)
+0x00CC4818  [CODE]  SetActorPos__8VIEntityRC7VIVect3  # name provisional (phase 62)
+0x00CC4848  [CODE]  GetActorHpr__8VIEntity  # name provisional (phase 62)
+0x00CC4868  [CODE]  SetActorHpr__8VIEntityRC7VIVect3  # name provisional (phase 62)
 0x00CC4898  [CODE]  func_00CC4898
-0x00CC48A0  [CODE]  func_00CC48A0
+0x00CC48A0  [CODE]  GetPos__8VIEntity  # name provisional (phase 62)
 0x00CC48A8  [CODE]  func_00CC48A8
-0x00CC48C8  [CODE]  func_00CC48C8
+0x00CC48C8  [CODE]  GetHpr__8VIEntity  # name provisional (phase 62)
 0x00CC48D0  [CODE]  func_00CC48D0
 0x00CC48F0  [CODE]  func_00CC48F0
-0x00CC4918  [CODE]  func_00CC4918
-0x00CC4958  [CODE]  func_00CC4958
+0x00CC4918  [CODE]  SetPos__8VIEntityRC7VIVect3  # name provisional (phase 62)
+0x00CC4958  [CODE]  SetHpr__8VIEntityRC7VIVect3  # name provisional (phase 62)
 0x00CC4998  [CODE]  func_00CC4998
 0x00CC49B0  [CODE]  func_00CC49B0
 0x00CC49B8  [CODE]  func_00CC49B8
@@ -5904,12 +5904,12 @@
 0x00CC4EE0  [CODE]  func_00CC4EE0  # VIEntity.cpp~
 0x00CC4FA0  [CODE]  func_00CC4FA0  # VIEntity.cpp~
 0x00CC5000  [CODE]  func_00CC5000  # VIEntity.cpp~
-0x00CC5098  [CODE]  func_00CC5098  # VIEntity.cpp:476
+0x00CC5098  [CODE]  CreateEntity__FiUiR7VISceneR17VIClientPart06D00  # name provisional (phase 62)  # VIEntity.cpp:476
 0x00CC5180  [CODE]  func_00CC5180  # VIEntity.cpp~
-0x00CC5190  [CODE]  func_00CC5190  # VIEntity.cpp~
+0x00CC5190  [CODE]  AttackAnim__Fii  # name provisional (phase 62)  # VIEntity.cpp~
 0x00CC5238  [CODE]  func_00CC5238  # VIEntity.cpp~
 0x00CC5338  [CODE]  func_00CC5338  # VIEntity.cpp~
-0x00CC53C0  [CODE]  func_00CC53C0  # VIEntity.cpp~
+0x00CC53C0  [CODE]  OnWorldLoaded__8VIEntity  # name provisional (phase 62)  # VIEntity.cpp~
 0x00CC5438  [CODE]  func_00CC5438  # VIEntity.cpp:681
 0x00CC5580  [CODE]  func_00CC5580
 0x00CC5590  [CODE]  func_00CC5590
@@ -5935,18 +5935,18 @@
 0x00CC6190  [CODE]  func_00CC6190
 0x00CC6198  [CODE]  func_00CC6198
 0x00CC61A0  [CODE]  func_00CC61A0
-0x00CC61A8  [CODE]  func_00CC61A8
-0x00CC62A8  [CODE]  func_00CC62A8
+0x00CC61A8  [CODE]  CanWearIn__Fii  # name provisional (phase 62)
+0x00CC62A8  [CODE]  UIImageId__FPCc  # name provisional (phase 62)
 0x00CC6350  [CODE]  func_00CC6350
 0x00CC6408  [CODE]  func_00CC6408
 0x00CC64C0  [CODE]  func_00CC64C0
-0x00CC6500  [CODE]  func_00CC6500
-0x00CC6528  [CODE]  func_00CC6528
+0x00CC6500  [CODE]  Last__10VIPingRing  # name provisional (phase 62)
+0x00CC6528  [CODE]  Max__10VIPingRing  # name provisional (phase 62)
 0x00CC6558  [CODE]  func_00CC6558
 0x00CC68B8  [CODE]  func_00CC68B8
 0x00CC68D8  [CODE]  func_00CC68D8
 0x00CC6920  [CODE]  func_00CC6920
-0x00CC69C8  [CODE]  func_00CC69C8
+0x00CC69C8  [CODE]  WrapAngles__FR7VIVect3  # name provisional (phase 62)
 0x00CC6A10  [CODE]  func_00CC6A10
 0x00CC6A70  [CODE]  func_00CC6A70
 0x00CC6BF0  [CODE]  func_00CC6BF0
@@ -5988,7 +5988,7 @@
 0x00CC7ED0  [LIB]  __divdi3
 0x00CC85C0  [LIB]  exit
 0x00CC85F0  [LIB]  __floatdisf
-0x00CC86D0  [LIB]  func_00CC86D0
+0x00CC86D0  [LIB]  __moddi3  # libgcc; the time-of-day modulo (phase 62)
 0x00CC8D38  [LIB]  __muldi3
 0x00CC8D98  [LIB]  __pack_d
 0x00CC8EC8  [LIB]  __unpack_d
@@ -6326,7 +6326,7 @@
 0x00CD7AA0  [DATA]  data_00CD7AA0
 0x00CD7AB8  [DATA]  data_00CD7AB8
 0x00CD7AD0  [DATA]  data_00CD7AD0
-0x00CD7AE8  [DATA]  data_00CD7AE8
+0x00CD7AE8  [DATA]  gEntityUpdateRate  # name provisional (phase 62)
 0x00CD7AEC  [DATA]  data_00CD7AEC
 0x00CD7AF0  [DATA]  data_00CD7AF0
 0x00CD7B38  [DATA]  data_00CD7B38
@@ -7399,7 +7399,7 @@
 0x00CF3700  [DATA]  data_00CF3700
 0x00CF3718  [DATA]  data_00CF3718
 0x00CF3720  [DATA]  data_00CF3720
-0x00CF3738  [DATA]  data_00CF3738
+0x00CF3738  [DATA]  gWorldInfo  # the world table, 32-byte entries (phase 62)
 0x00CF3800  [DATA]  data_00CF3800
 0x00CF3820  [DATA]  data_00CF3820
 0x00CF39C0  [DATA]  data_00CF39C0
@@ -7487,7 +7487,7 @@
 0x00CF4D08  [DATA]  data_00CF4D08
 0x00CF4D10  [DATA]  data_00CF4D10
 0x00CF4D18  [DATA]  data_00CF4D18
-0x00CF4D80  [DATA]  data_00CF4D80
+0x00CF4D80  [DATA]  sConnectStatus  # name provisional (phase 62)
 0x00CF4F80  [DATA]  data_00CF4F80
 0x00CF4F98  [DATA]  data_00CF4F98
 0x00CF4FB0  [DATA]  data_00CF4FB0

@@ -34,6 +34,7 @@ image, and says so by name when they do not.
 from __future__ import annotations
 
 import argparse
+import bisect
 import struct
 import sys
 from pathlib import Path
@@ -173,6 +174,22 @@ def calls(st, img, d: bytes, sym) -> list[tuple[int, str, str]]:
     return out
 
 
+def refs(st, img, va: int) -> list[tuple[int, str, str]]:
+    """The reverse of `calls`: (site, kind, containing function) for every relocation
+    in the module whose target is `va` -- read off the module's own relocation table,
+    so it needs no dump and sees data references (`word`, `hi`/`lo`) as well as calls."""
+    own = sorted((s.addr, s.name) for s in st.symbols if s.span > 0)
+    starts = [a for a, _ in own]
+
+    def owner(x):
+        i = bisect.bisect_right(starts, x) - 1
+        return own[i][1] if i >= 0 else "?"
+    kinds = {E.R_WORD: "word", E.R_JAL: "jal", E.R_HI16: "hi", E.R_LO16: "lo"}
+    return sorted((img.base + site, kinds.get(kind, str(kind)), owner(img.base + site))
+                  for site, kind, imp, target in E.module_relocations(img.data)
+                  if not imp and img.base + target == va)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -184,7 +201,20 @@ def main(argv=None):
     a = sub.add_parser("at", help="resolve one address")
     a.add_argument("addr")
     sub.add_parser("verify", help="prove the dump is this image's own link map")
+    r = sub.add_parser("refs", help="every site that references a function or address")
+    r.add_argument("target", nargs="+", help="symbol name or 0x address")
     args = p.parse_args(argv)
+
+    if args.cmd == "refs":
+        _, st, img = E.load()
+        for t in args.target:
+            va = int(t, 0) if t.startswith("0x") else st.get(t).addr
+            hits = refs(st, img, va)
+            sym = st.at(va)
+            print(f"{va:#010x}  {sym.name if sym else '?'}: {len(hits)} refs")
+            for site, kind, nm in hits:
+                print(f"  {site:#010x}  {kind:5} in {nm}")
+        return 0
 
     _, st, img = E.load()
     d = load_dump(args.dump) if args.dump else relocated(img)

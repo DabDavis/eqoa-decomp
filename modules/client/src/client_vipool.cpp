@@ -35,6 +35,8 @@ template int VIPool<VIRec32_BE2DE8>::Begin() const;  // 0x00bdf110
 template int VIPool<VIRec32_BE2DE8>::Next(int) const;  // 0x00bdf140
 template int VIPool<VIRec32_BE2DE8>::DestroyPool();  // 0x00bdf188
 template VIPool<VIRec32_BE2DE8>::~VIPool();  // 0x00bdf1e0
+template int VIPool<VIRec32_BE2DE8>::Size() const;  // 0x00bdf868
+template VIPool<VIRec32_BE2DE8>::VIPool();  // 0x00bdf0d8
 template int VIPool<VIRec32_BE2DE8>::LinkFreeChain(int);  // 0x00be2de8
 template int VIPool<VIRec32_BE2DE8>::Allocate();  // 0x00be2e90
 template int VIPool<VIRec32_BE2DE8>::Add(VIRec32_BE2DE8 const &);  // 0x00be2fd0
