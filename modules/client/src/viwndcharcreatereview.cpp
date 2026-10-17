@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndCharCreateReview.cpp"
 // VIWndCharCreateReview -- CLIENT 0x00C2D8D8 .. 0x00C2F5E8: the last page of character
-// creation (cl_wc.h).  Lane cl-wc.
+// creation (cl_wc.h).
 #include "game.h"
 
 // One WORDS.TXT entry in the current language.

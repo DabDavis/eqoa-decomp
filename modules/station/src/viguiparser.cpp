@@ -1,6 +1,6 @@
 // viguiparser.cpp (name ours) -- STATION 0x002C45F8 .. 0x002C73D0.  The
 // PS2GUIPage parser: STATION.PAK's page files are XML, and each element type
-// pushes a handler on lane misc's XML reader (VIXMLParser) that reads that
+// pushes a handler on the XML reader (VIXMLParser, stwnd.h) that reads that
 // element's children and pops itself at the element's close.
 //
 //   <PS2GUIPage gridWidth gridHeight>      PageHandler
@@ -543,7 +543,7 @@ static void ToggleHandler(VIXMLEvent e)
 // 0x002C5D08.  "|<n>" in a page's text becomes WORDS.TXT entry n.  The
 // character after the number is copied twice (once as `c`, once by the loop).
 // OPEN, 27 of 92 words: the target's number loop is not rotated and its first
-// digit is peeled (see NOTES of lane st-page); everything else is exact.
+// digit is peeled (decomp-station-20261016.md); everything else is exact.
 static const char *ExpandText(VIUI *ui, const char *s)
 {
     static char sBuf[512];

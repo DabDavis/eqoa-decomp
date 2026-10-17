@@ -157,7 +157,7 @@ template <class T> int VIArray<T>::Init(const VIArray<T> &a)
     {
         T *p = (T *)(i * sizeof(T) + (unsigned int)m_data);
         if (p)
-            new (p) T(a.m_data[i]);     // [lane cl-pre]: copy-CONSTRUCTED (CLIENT's VIAuctionItem calls VIItem's copy ctor)
+            new (p) T(a.m_data[i]);     // copy-CONSTRUCTED (CLIENT's VIAuctionItem calls VIItem's copy ctor)
     }
     return 0;
 }

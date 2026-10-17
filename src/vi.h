@@ -5308,7 +5308,7 @@ public:
     int Add();
     int Add(const T &v);
 
-    // [lane cswnd] STATION's CS request: an inline subscript, as VIArray's.
+    // STATION's CS request: an inline subscript, as VIArray's.
     // PickSubcategory is byte-exact only through it: the inline's `this` is an
     // address pseudo (`addiu t1,c,136; lw a0,8(t1)`), and `data + i*size`
     // keeps the data pointer as the first operand.  No vtable, so nothing

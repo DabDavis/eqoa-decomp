@@ -52,7 +52,7 @@ class VIClientPart4F078;
 class VIClient;
 
 // Every window class CLIENT's RTTI names (vtables 0x00CE0D58 .. 0x00CF1BE0), so any header
-// can name any other by pointer.  Each is defined in the header of the lane that owns its TU
+// can name any other by pointer.  Each is defined in its TU's header
 // (cl_w*.h, included at the end of this file), except VIWndDisconnect, which VIClient
 // embeds by value and so is defined here.
 class VIWndAuction; class VIWndAuctionSearch; class VIWndBank; class VIWndBankItem;
@@ -359,8 +359,8 @@ public:
     long m_remote;                                              // +0x18: the synced time then
 };
 
-// VIWndDisconnect (RTTI "15VIWndDisconnect"; OWNER: lane cl-we, which edits it HERE because
-// VIClient embeds it by value -- its ctor 0x00C434B8 is in VIClient's roll-call).
+// VIWndDisconnect (RTTI "15VIWndDisconnect", viwnddisconnect.cpp) is declared HERE because
+// VIClient embeds it by value: its ctor 0x00C434B8 is in VIClient's roll-call.
 // The window embedded at VIClient+0x2BB98, 0x1A8 bytes: Notify sets its app pointer and
 // makes it the active window, and Disconnect compares the active window against it.
 class VIWndDisconnect : public VIWnd
@@ -392,7 +392,7 @@ struct VIDamageNumber : public VILNode
 };
 
 // The floating damage numbers ("damage_font.tga", a 4 x 4 grid of digits) at VIClient+0x4FD28,
-// 0x5AC bytes to +0x502D4 (its own TU, 0x00BE8DF0 .. 0x00BE9CA0, lane cl-parts1).  Name
+// 0x5AC bytes to +0x502D4 (its own TU, 0x00BE8DF0 .. 0x00BE9CA0).  Name
 // provisional; DamageFromSelf / DamageFromOther report through AddDamage.
 class VIClientPart4FD28
 {
@@ -556,7 +556,7 @@ extern VIRaceCamera gRaceCamerasEx[21];                         // 0x00CDDD38
 struct VIRaceInfo
 {
     int m_p00;
-    int m_male[4];       // +0x04 face, hair style, length, colour (cl-wc's names)
+    int m_male[4];       // +0x04 face, hair style, length, colour (names ours)
     int m_female[4];     // +0x14
 };
 extern VIRaceInfo gRaceInfo[21];                                // 0x00CDE428
@@ -810,8 +810,8 @@ struct VIIconSlot
     int          m_load;                                        // +0x08: the loader slot, -1 when idle
 };
 
-// The icon cache at VIClient+0x6D50, 0x40 bytes to +0x6D90 (its own TU, 0x00BF2ED8 .. 0x00BF3644,
-// lane cl-parts1): up to m_n icons (OpenResources: 48) loaded through the loader, the oldest
+// The icon cache at VIClient+0x6D50, 0x40 bytes to +0x6D90 (its own TU, 0x00BF2ED8 .. 0x00BF3644):
+// up to m_n icons (OpenResources: 48) loaded through the loader, the oldest
 // dropped when full, a hit moved to the back.  m_index maps an icon id to its slot.  Names
 // provisional.
 class VIClientPart06D50
@@ -962,7 +962,7 @@ public:
     unsigned int GetWalkFlags() { return m_walkFlags; }  // 0x00CC4600 (inline)
 
     char m_name[24];                                  // +0x58: TradeName copies it (FrontiersForge: name)
-    unsigned char m_level;                            // +0x70: DrawTargetInfo prints it (cl-wg's name)
+    unsigned char m_level;                            // +0x70: DrawTargetInfo prints it (name ours)
     unsigned int  m_p74;                              // +0x74: 0xFFFFFFFF
     VIWalkControl m_walk;                             // +0x78: UpdateCreatures drives the sprite from it while m_p255
     VIVect3 m_p218;                                   // +0x218: the velocity; ChannelEntity: none when it did not move
@@ -976,8 +976,8 @@ public:
     unsigned char m_p255;                             // +0x255: Extrapolate keeps pitch and roll at 0 while set; walking
     unsigned char m_p256;                             // +0x256: GetTargetPlayerName wants 2 (2 or 3: a player)
     unsigned char m_p257;
-    unsigned char m_race;                             // +0x258: DrawTargetInfo, GetRace (cl-wg's name)
-    unsigned char m_class;                            // +0x259: DrawTargetInfo, GetClass (cl-wg's name)
+    unsigned char m_race;                             // +0x258: DrawTargetInfo, GetRace (name ours)
+    unsigned char m_class;                            // +0x259: DrawTargetInfo, GetClass (name ours)
     unsigned short m_npcFlags;                        // +0x25A: InteractWithTarget: 1 op 0x4C, 2 op 0x124D, 8 op 0x61; 0x200 invisible
     int  m_p25C;                                      // +0x25C: -1
     unsigned char m_p260;
@@ -1004,7 +1004,7 @@ public:
 };
 
 // The guild at VIClient+0x2EC84, 0x2A0 bytes (vtable slot 4; viclientguild.cpp, 0x00BF0B18 ..
-// 0x00BF124C, lane cl-parts1).  0x0468 is the server's side, sub-ops 1..16.  Names provisional.
+// 0x00BF124C).  0x0468 is the server's side, sub-ops 1..16.  Names provisional.
 class VIClient;
 class VIClientGuild
 {
@@ -1042,7 +1042,7 @@ public:
 };
 
 // The guild commands at VIClient+0x2EF24, 0xA4 bytes (vtable slot 5; its own TU, 0x00BEE5A8 ..
-// 0x00BEFECC, lane cl-parts1): the Can* checks VIWndGame's chat commands and VIWndGuild ask
+// 0x00BEFECC): the Can* checks VIWndGame's chat commands and VIWndGuild ask
 // first (0 = allowed, else the reason: 3 not in a guild, 4 already in one, 5 rank, 6 tunar, 7
 // group, 11 full, 12 lowest rank), the 0x0578 senders (the byte is the sub-op), a pending
 // invitation, and the 0x057A / 0x0579 replies.  Names provisional.
@@ -1218,19 +1218,19 @@ public:
 
 // One shard, 88 bytes: its name, a flag, the 64-bit id (-1 none) and its
 // region.  The placeholder name is kept (client_viarray.cpp's VIArray members carry it).
-// Lane cl-tail's range holds its constructor (0x00CBBA98) and stream operators
+// vishardentry.cpp holds its constructor (0x00CBBA98) and stream operators
 // (<< 0x00CBBAB8, >> 0x00CBBB40); it is declared here because VIShardInfo indexes it.
 struct VIElem_BFC798
 {
     VIElem_BFC798();                                // 0x00CBBA98: name "", flag 0, id -1, region -1
-    const char *Address();                          // 0x00CBBBC8: drdp_format_endpoint1 (unreferenced; cl-tail)
+    const char *Address();                          // 0x00CBBBC8: drdp_format_endpoint1 (unreferenced)
     unsigned short m_name[32];                      // +0x00
     bool           m_x40;                           // +0x40: one byte on the wire
     long           m_id;                            // +0x48
     int            m_region;                        // +0x50: a signed byte on the wire
 };
-VIMemStream &operator>>(VIMemStream &s, VIElem_BFC798 &e);       // 0x00CBBB40 (lane cl-tail)
-VIMemStream &operator<<(VIMemStream &s, const VIElem_BFC798 &e); // 0x00CBBAB8 (lane cl-tail)
+VIMemStream &operator>>(VIMemStream &s, VIElem_BFC798 &e);       // 0x00CBBB40
+VIMemStream &operator<<(VIMemStream &s, const VIElem_BFC798 &e); // 0x00CBBAB8
 
 // VIShardInfo.cpp: the server-select (shard) list, VIClient+0x38320.  Its asserts name
 // `m_ServerSelectList` (`!m_ServerSelectList.Init( Match )`): the shards of the current
@@ -1295,10 +1295,10 @@ struct VIRec144_C017C0
     int            m_x00;                           // +0x00
     int            m_order;                         // +0x04: qsort's key
     int            m_id;                            // +0x08
-    unsigned char  m_level;                         // +0x0C: drawn as %d (cl-wq's name)
+    unsigned char  m_level;                         // +0x0C: drawn as %d (name ours)
     unsigned char  m_x0D;                           // +0x0D
     unsigned char  m_x0E;                           // +0x0E
-    unsigned char  m_difficulty;                    // +0x0F: 0..3, words 1648..1651 (cl-wq's name)
+    unsigned char  m_difficulty;                    // +0x0F: 0..3, words 1648..1651 (name ours)
     unsigned short m_name[64];                      // +0x10
     int Read(VIMemStream &s);                       // 0x00C001D8: returns 0
 };
@@ -1414,8 +1414,8 @@ public:
     void SetGameWindow(VIWndGame *w) { m_wnd = w; }             // inline: InitBody stores through the part's own address
 };
 
-// FISHING, at VIClient+0x3FC10, 0x7774 bytes (its own TU, 0x00BEB7E0 .. 0x00BEC3E0, lane
-// cl-parts1): the catch list and the state; 0x0F02 is the server's side (sub-ops 1..10),
+// FISHING, at VIClient+0x3FC10, 0x7774 bytes (its own TU, 0x00BEB7E0 .. 0x00BEC3E0):
+// the catch list and the state; 0x0F02 is the server's side (sub-ops 1..10),
 // 0x0F01 ours (the byte is the sub-op).  The words are 1431.. ("Let's go fishing!").
 // VIWndFishing (0x00C4BAD8 ..) drives it through the game window.  Names provisional.
 class VIClient;
@@ -1472,7 +1472,7 @@ VIMemStream &operator<<(VIMemStream &s, const VIAuctionQuery &q);   // 0x00BB4A8
 VIMemStream &operator>>(VIMemStream &s, VIAuctionQuery &q);         // 0x00BB4B80
 
 // One auction listing, 792 bytes: an item and the lot around it.  NOT a
-// VINetItem: its reader (0x00CBB150, cl-tail's VINetItem.cpp) reads seven zigzag words at
+// VINetItem: its reader (0x00CBB150, VINetItem.cpp) reads seven zigzag words at
 // +0x2E4.. and the seller, then the item (0x00CBACE8), where ReadNetItem reads VINetItem's.
 // The synthesized copy (VIItem's out-of-line copy, then the words, then a byte loop for the
 // name) is what every VIArray/VIPool of these inlines.  Field names provisional.
@@ -1491,7 +1491,7 @@ public:
 VIMemStream &operator>>(VIMemStream &s, VIAuctionItem &a);       // 0x00CBB150 (VINetItem.cpp)
 VIMemStream &operator<<(VIMemStream &s, const VIAuctionItem &a); // 0x00CBB1F0 (VINetItem.cpp)
 
-// The bank's two other record types are lane cl-char's database rows (cl_char.h, included
+// The bank's two other record types are VICharacter.cpp's database rows (cl_char.h, included
 // at the end of this file): a pool member and an array member need only the name here.
 struct VIDbCharBid;                                // CHARACTER_BIDS' row, 24 bytes (0x00CA6848 reads one)
 struct VIDbRemoteCharacterRow;                     // 44 bytes (0x00CA9820 reads one)
@@ -1500,7 +1500,7 @@ class VIWndGame;
 // VIBankControl.cpp: the bank and the auction (VIClient+0x47388, 0x78D0 bytes to +0x4EC58).
 // Requests go out as message 0x1205 with a sub-op byte (5 sell .. 9), 0x1254/0x1255 move
 // items and money; replies come back as 0x1250/0x1251/0x1253 (Recv) and 0x1206 (Recv1206,
-// sub-ops 128..137).  OWNER: lane cl-pre.  Method names are ours unless marked.
+// sub-ops 128..137).  Method names are ours unless marked.
 class VIBankControl
 {
 public:
@@ -1703,8 +1703,8 @@ public:
 
 // The game alarm at VIClient+0x4F098 (24 bytes, its own TU: 0x00BE3C10 .. 0x00BE3F98, then
 // that TU's template copies).  The chat command sets it ("Alarm set for %d hour(s), %d
-// minute(s)." word 1200); Tick prompts word 1201 once the time passes.  VIClient still
-// declares the bytes as m_p4F098 (owner cl-vic: make it `VIAlarm m_alarm;`).  Name ours.
+// minute(s)." word 1200); Tick prompts word 1201 once the time passes.  VIClient
+// embeds it as m_alarm.  Name ours.
 class VIClient;
 class VIAlarm
 {
@@ -1721,18 +1721,17 @@ public:
 };
 
 // One faction standing as 0x07E2 carries it, 132 bytes: a wide name and a value (VIWndFaction
-// lists them).  Placeholder name kept: client_viarray.cpp's VIArray copies carry it (owner of
-// the rename: the coordinator).  Its reader is 0x00CBA990 (cl-tail's range): ReadString(128)
-// then a zigzag int.  Field names ours.
+// lists them).  Placeholder name kept: client_viarray.cpp's VIArray copies carry it.
+// Its reader is 0x00CBA990: ReadString(128) then a zigzag int.  Field names ours.
 struct VIRec132_BEB670
 {
     unsigned short m_name[64];                                  // +0x00
     int            m_value;                                     // +0x80
 };
-VIMemStream &operator>>(VIMemStream &s, VIRec132_BEB670 &r);    // 0x00CBA990 (cl-tail's)
+VIMemStream &operator>>(VIMemStream &s, VIRec132_BEB670 &r);    // 0x00CBA990
 
-// The faction standings at VIClient+0x4F078, 32 bytes (its own TU, 0x00BEA670 .. 0x00BEB7DC,
-// lane cl-parts1).  Request sends 0x0AC4; 0x07E2 (byte 119) answers with m_seq, two ints and the
+// The faction standings at VIClient+0x4F078, 32 bytes (its own TU, 0x00BEA670 .. 0x00BEB7DC).
+// Request sends 0x0AC4; 0x07E2 (byte 119) answers with m_seq, two ints and the
 // list.  VIWndFaction (0x00C49D40 ..) is its user.  Names provisional.
 class VIClientPart4F078
 {
@@ -1760,7 +1759,7 @@ public:
 };
 
 class VIClient;
-// The gram (in-game mail) records, 0x00CA9380.. (lane cl-char writes their
+// The gram (in-game mail) records, 0x00CA9380.. (VICharacter.cpp writes their
 // operators: >> 0x00CA9380, << 0x00CA9428, the message's 0x00CA94E8/0x00CA9528 and its
 // operator= 0x00CA9568).  Defined here because VIClientPart2EFD0 embeds 101 of them and
 // VIClient embeds that by value.  An inbox row, 176 bytes; field names provisional except
@@ -1781,8 +1780,8 @@ struct VIGramMessage : public VIGramHeader
     VIGramMessage &operator=(const VIGramHeader &h);  // 0x00CA9568: the row, an empty text
     unsigned short m_text[512];     // +0xB0
 };
-VIMemStream &operator>>(VIMemStream &s, VIGramHeader &h);           // 0x00CA9380 (lane cl-char)
-VIMemStream &operator<<(VIMemStream &s, const VIGramHeader &h);     // 0x00CA9428 (lane cl-char)
+VIMemStream &operator>>(VIMemStream &s, VIGramHeader &h);           // 0x00CA9380
+VIMemStream &operator<<(VIMemStream &s, const VIGramHeader &h);     // 0x00CA9428
 
 // The gram client, VIClient+0x2EFD0, vtable slot 7: VICSClient's twin (vicsclient.h) on
 // message 0x0D41, each request wrapped in a 0x0D01 envelope (a blob) with the same sub-op
@@ -1862,7 +1861,7 @@ public:
     unsigned int *m_next;         // +0x9C4
     int           m_left;         // +0x9C8
 };
-typedef VIRandomMT VIRandom;      // cl-vic's spelling (VIClient::m_random, slot 16)
+typedef VIRandomMT VIRandom;      // VIClient::m_random's type (slot 16)
 // One character-select entry, 0x60 bytes (CharacterList reads up to eight into
 // VIClient+0x2BE70).  The zigzag fields follow the reference server's order
 // (claude-notes/character-data-formats.md); the raw tail is the client's own reads.
@@ -1923,7 +1922,7 @@ struct VIRec20_2C5A0
     VIVect3 m_pos;                                  // +0x08
 };
 
-// VIClient+0x4F098 is cl-parts1's VIAlarm.
+// VIClient+0x4F098 is a VIAlarm.
 
 // VIClient's base, RTTI "9VIClientI".  It has no data, so the vptr is at +0.  The
 // vtable (0x00CDB4C0, 160 bytes) is entry 0 __tf8VIClient, these 18 virtuals in this
@@ -2865,7 +2864,7 @@ public:
     char          m_g_m_p4F078[0x4F078 - (0x4EC58 + sizeof(VIClientPart4EC58))];
     VIClientPart4F078 m_p4F078;                         // +0x4F078: slot 15
     char          m_g_m_p4F098[0x4F098 - (0x4F078 + sizeof(VIClientPart4F078))];
-    VIAlarm       m_alarm;                              // +0x4F098: GetP4F098 returns its address; ctor 0x00BE3C10 (cl-parts1's class)
+    VIAlarm       m_alarm;                              // +0x4F098: GetP4F098 returns its address; ctor 0x00BE3C10
     VINameEntry * m_p4F0B0;                             // +0x4F0B0: FreeBuffer frees it
     int           m_p4F0B4;                             // +0x4F0B4: FreeBuffer zeroes it
     unsigned short m_p4F0B8[24];                        // +0x4F0B8: 0x07A3 (str8to16)
@@ -2904,9 +2903,8 @@ public:
     long          m_p50320;                             // +0x50320: SetKey ignores keys until VITimer::GetTime reaches it
     char          m_g50328[0x50330 - (0x50328)];
 
-    // ---- Lane declarations.  A lane that needs a VIClient method or field it does not own
-    // ---- adds it ONLY between its own two marker lines (so the merges never collide), with
-    // ---- its address.  The owner (cl-vic) moves them into place after the merge.
+    // The senders' TU (0x00BE4B78 .. 0x00BE6540) also holds these; only 0x00BE6188 has a
+    // caller in the image.
     void SendOpByteByteInt(int op, unsigned char a, unsigned char b, int c);   // 0x00BE5900: no caller in the image
     void SendOpByteU16U16(int op, unsigned char a, unsigned short b, unsigned short c);  // 0x00BE5A10: no caller
     void SendOpByteIntInt(int op, unsigned char a, int b, int c);       // 0x00BE5E00: no caller
@@ -2916,8 +2914,8 @@ public:
     void SendOpStrStr(int op, const char *a, const char *b);            // 0x00BE6470: no caller
 };
 
-// ONE HEADER PER LANE (phase 62, the CLIENT lanes of 2026-10-16), each owned by the lane
-// that writes those TUs.  Order = what embeds what BY VALUE: uitext's helpers before every
+// One header per group of TUs (cl_*.h), each declaring what those TUs define.
+// Order = what embeds what BY VALUE: uitext's helpers before every
 // window; wl (VIWndList, the base of Menu/MiniMenu/TradeList) and wm (VIWndMessage, embedded
 // by ClassMasteryInspect/ComposeGram/ReadCS/ReadGram/Tell) before the other windows; wb
 // (VIWndCharCreateBlank) before wc (VIWndCharCreateRace derives from it).

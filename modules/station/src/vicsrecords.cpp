@@ -1,6 +1,6 @@
 // vicsrecords.cpp (name ours) -- STATION 0x002EA680 .. 0x002EADA0, CLIENT
 // 0x00BFC890 .. 0x00BFCFB0 (byte-identical): the customer-service records on the
-// wire.  An inbox header's words go raw and its date through lane net's
+// wire.  An inbox header's words go raw and its date through VIDate's
 // operators; a ticket or a line leads with a zigzag id.  The TU ends with
 // VIVector<VICSSubcategory>'s copies and VIMemStreamVector.h's writer and reader for it.
 #include "viclienti.h"

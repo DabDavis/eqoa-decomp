@@ -1,6 +1,6 @@
 // vimemstreamarray.h -- VIMemStreamArray.h: a VIArray<T> written and read as a zigzag
-// count and then its elements, for any T with its own stream operators (lane cl-char,
-// 2026-10-16).  The reader asserts from line 71 (CLIENT 0x00CA9D18, 0x00CB3FF0 .. 0x00CB6020
+// count and then its elements, for any T with its own stream operators.
+// The reader asserts from line 71 (CLIENT 0x00CA9D18, 0x00CB3FF0 .. 0x00CB6020
 // in VICharacter.cpp; 0x00BBD9E8, 0x00BBDA90, 0x00BEB738, 0x00BFC7E8, 0x00CBB590 in other TUs),
 // so the #line below puts it there.  VIMemStreamArray.cpp has the same two bodies for int
 // (vimemstreamarray.cpp).  The template mirrors vimemstreamvector.h.

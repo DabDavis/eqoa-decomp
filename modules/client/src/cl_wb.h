@@ -17,7 +17,6 @@
 extern "C" double pow(double, double);
 extern VIMenuDef gBuddyMenu;            // 0x00CD03B0: the buddy mini menu (VIWndBuddy::ShowMenu), .data
 
-// Moved here from game.h at the start of the lanes (names fixed off InitBody's news).
 // VIWndCharacterSelect.cpp (0x00C1FBB8 ..): the character select screen behind
 // VIClient+0x2BB84, 1,528 bytes (`new` in InitBody).  Up/down walk the eight slots and
 // the delete slot (8), the highlighted character stands in the scene as a preview,
@@ -83,7 +82,7 @@ CHK(c_VIWndCharacterSelect, sizeof(VIWndCharacterSelect) == 1528)
 // pages that fill it in turn, each a child window: race -> class -> name -> misc (the
 // appearance) -> review.  OnMessage moves between them: 260 a page went back, 262 the
 // race (and sex and city) was picked, 263 the class, 265 the stats, 266 the name, 264
-// the appearance, 267 create.  VIWndCharCreateRace DERIVES from it (cl-wc), so the
+// the appearance, 267 create.  VIWndCharCreateRace DERIVES from it (cl_wc.h), so the
 // layout below is fixed.  Method names provisional.
 class VIWndCharCreateBlank : public VIWnd
 {
@@ -123,7 +122,6 @@ public:
 };
 CHK(c_VIWndCharCreateBlank, sizeof(VIWndCharCreateBlank) == 156)
 
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndBlacksmith: ctor 0x00C1A510, 2328 bytes (`new`), vtable 0x00CE23F0;
 //   slots [0]0x00C1C090 [1]0x00C1A590 [2]OnDraw__5VIWnd [3]0x00C1A720 [4]0x00C1AEF8 [5]0x00C1ADF0 [6]0x00C1AF60
 // One line of the blacksmith's stat comparison: the wide text and its colour.

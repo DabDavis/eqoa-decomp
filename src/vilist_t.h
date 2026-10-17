@@ -152,7 +152,7 @@ template <class T> int VIList<T>::Insert(const T &v, int i)
     return 0;
 }
 
-// [lane cl-wd] The node before i (the tail for End()), -1 at the head.  No SUPPORT TU
+// The node before i (the tail for End()), -1 at the head.  No SUPPORT TU
 // emits it; CLIENT's class-mastery window does (0x00C35E10, VIList<VICMSkill *>).
 template <class T> int VIList<T>::Prev(int i) const
 {

@@ -1,12 +1,12 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndGame.cpp"
-// viwndgame.cpp (lane cl-wg) -- VIWndGame, the game window: CLIENT 0x00C4E640 .. 0x00C58BD8.
+// viwndgame.cpp -- VIWndGame, the game window: CLIENT 0x00C4E640 .. 0x00C58BD8.
 // The HUD (status bars, group, pet, target, the three HUD menus) and every in-game panel,
 // one at a time through m_mode.  OnMessage's assert must stay on VIWndGame.cpp:4007.
 #include "game.h"
 #include "viarray_t.h"
 #include "vimap_t.h"
 
-// The panels' sizes Init `new`s them with (other lanes' classes; this lane padded its copies).
+// The panels' sizes Init `new`s them with, checked against their classes.
 CHK(c_wg_VIWndSpellBook, sizeof(VIWndSpellBook) == 2016)
 CHK(c_wg_VIWndLoot, sizeof(VIWndLoot) == 1464)
 CHK(c_wg_VIWndMerchant, sizeof(VIWndMerchant) == 2480)

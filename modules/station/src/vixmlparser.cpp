@@ -156,9 +156,9 @@ void *VIXMLParser::GetData()
     return m_data;
 }
 
-// VIList::Insert is declared in vi.h and defined nowhere else in the tree: v
+// VIList<T>::Insert is declared in vi.h and defined in src/vilist_t.h: v
 // goes in front of node i, or at the end when i is End().
-// (VIList<T>::Insert is in src/vilist_t.h.)
+
 
 
 

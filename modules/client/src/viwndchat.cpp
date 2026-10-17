@@ -1,5 +1,5 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndChat.cpp"
-// VIWndChat -- CLIENT 0x00C31F00 .. 0x00C33928: the chat box (cl_wc.h).  Lane cl-wc.
+// VIWndChat -- CLIENT 0x00C31F00 .. 0x00C33928: the chat box (cl_wc.h).
 #include "game.h"
 
 // 0x00CF5458: the colour plain text is added in (the static initialiser 0x00C33870).

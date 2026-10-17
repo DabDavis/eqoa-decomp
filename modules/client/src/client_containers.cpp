@@ -38,7 +38,7 @@ template int VIMap<int, VIRec40_BBDD10>::DestroyPool();  // 0x00bbde28
 template VIMap<int, VIRec40_BBDD10>::~VIMap();  // 0x00bbde80
 
 // 0x00bf41a8..0x00bf5360: was VIMap<unsigned int, VIRec4_BF41A8>; the value is the icon cache's
-// slot index, an int: VIMap<unsigned int, int>, instantiated in viclientpart06d50.cpp (cl-parts1).
+// slot index, an int: VIMap<unsigned int, int>, instantiated in viclientpart06d50.cpp.
 
 // 0x00cc0c68..0x00cc1cd8: VIMap<VICharResKey, int> (the KEY is the 8-byte record: Insert
-// compares it) -- in viswing.cpp, the TU that uses it (lane cl-tail).
+// compares it) -- in viswing.cpp, the TU that uses it.

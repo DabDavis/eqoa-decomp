@@ -40,7 +40,7 @@ template int VIArray<int>::Init(int);  // 0x00bbc290
 template int VIArray<int>::Init(const VIArray<int> &);  // 0x00bbc708
 
 // 0x00bbbd18..0x00bbc880: 5 members; element size measured.
-// VIDbRemoteCharacterRow is lane cl-char's (cl_char.h); VIBankControl holds a VIArray of them.
+// VIDbRemoteCharacterRow is declared in cl_char.h; VIBankControl holds a VIArray of them.
 template int VIArray<VIDbRemoteCharacterRow>::DestroyPool();  // 0x00bbbd18
 template VIArray<VIDbRemoteCharacterRow>::~VIArray();  // 0x00bbbd68
 template int VIArray<VIDbRemoteCharacterRow>::Clear();  // 0x00bbc7a8
@@ -69,14 +69,14 @@ template int VIArray<VIRec436_BDF6D8>::Allocate();  // 0x00bdf6d8
 template int VIArray<VIRec436_BDF6D8>::Init(int);  // 0x00bdf750
 
 // 0x00bdf508..0x00bfc798: 4 members; element size not measurable from these members.
-// (element type declared in game.h with VIShardInfo, lane cl-parts2)
+// (element type declared in game.h with VIShardInfo)
 template int VIArray<VIElem_BFC798>::DestroyPool();  // 0x00bdf508
 template VIArray<VIElem_BFC798>::~VIArray();  // 0x00bdf558
 template int VIArray<VIElem_BFC798>::Clear();  // 0x00bfc6a0
 template int VIArray<VIElem_BFC798>::Init(int);  // 0x00bfc798
 
 // 0x00bdf5c0..0x00beb6e8: 5 members; element size measured.
-// VIRec132_BEB670 is declared in game.h (VIClientPart4F078's faction list, lane cl-parts1).
+// VIRec132_BEB670 is declared in game.h (VIClientPart4F078's faction list).
 template int VIArray<VIRec132_BEB670>::DestroyPool();  // 0x00bdf5c0
 template VIArray<VIRec132_BEB670>::~VIArray();  // 0x00bdf610
 template int VIArray<VIRec132_BEB670>::Clear();  // 0x00beb610
@@ -121,7 +121,7 @@ template int VIArray<VIRec388>::Init(int);  // 0x00be1e88
 template VIArray<VIRec388>::~VIArray();  // 0x00be3320
 
 // 0x00bf90c8..0x00bf9a08: 5 members; element size measured.
-// (element type declared in game.h with VICMNode, lane cl-parts2)
+// (element type declared in game.h with VICMNode)
 template int VIArray<VIRec8_BF9990>::DestroyPool();  // 0x00bf90c8
 template VIArray<VIRec8_BF9990>::~VIArray();  // 0x00bf9118
 template int VIArray<VIRec8_BF9990>::Clear();  // 0x00bf9930
@@ -129,7 +129,7 @@ template int VIArray<VIRec8_BF9990>::Allocate();  // 0x00bf9990
 template int VIArray<VIRec8_BF9990>::Init(int);  // 0x00bf9a08
 
 // 0x00bf9190..0x00bf9b30: 5 members; element size measured.
-// (element type declared in game.h with VICMNode, lane cl-parts2)
+// (element type declared in game.h with VICMNode)
 template int VIArray<VIRec130_BF9AB8_A2>::DestroyPool();  // 0x00bf9190
 template VIArray<VIRec130_BF9AB8_A2>::~VIArray();  // 0x00bf91e0
 template int VIArray<VIRec130_BF9AB8_A2>::Clear();  // 0x00bf9a58
@@ -137,7 +137,7 @@ template int VIArray<VIRec130_BF9AB8_A2>::Allocate();  // 0x00bf9ab8
 template int VIArray<VIRec130_BF9AB8_A2>::Init(int);  // 0x00bf9b30
 
 // 0x00bf9258..0x00bf9c58: 5 members; element size measured.
-// (element type declared in game.h with VICMNode, lane cl-parts2)
+// (element type declared in game.h with VICMNode)
 template int VIArray<VIRec128_BF9BE0>::DestroyPool();  // 0x00bf9258
 template VIArray<VIRec128_BF9BE0>::~VIArray();  // 0x00bf92a8
 template int VIArray<VIRec128_BF9BE0>::Clear();  // 0x00bf9b80
@@ -145,7 +145,7 @@ template int VIArray<VIRec128_BF9BE0>::Allocate();  // 0x00bf9be0
 template int VIArray<VIRec128_BF9BE0>::Init(int);  // 0x00bf9c58
 
 // 0x00c01710..0x00c8e248: 5 members; element size measured.
-// (element type declared in game.h with VIClientPart3834C, lane cl-parts2)
+// (element type declared in game.h with VIClientPart3834C)
 template int VIArray<VIRec144_C017C0>::DestroyPool();  // 0x00c01710
 template int VIArray<VIRec144_C017C0>::Clear();  // 0x00c01760
 template int VIArray<VIRec144_C017C0>::Allocate();  // 0x00c017c0
@@ -153,7 +153,7 @@ template int VIArray<VIRec144_C017C0>::Init(int);  // 0x00c01838
 template VIArray<VIRec144_C017C0>::~VIArray();  // 0x00c8e248
 
 // 0x00c027e8..0x00c02dc8: 6 members; element size measured.
-// (element type declared in game.h with VIClientPart3834C, lane cl-parts2)
+// (element type declared in game.h with VIClientPart3834C)
 template int VIArray<VIRecipeIngredient>::DestroyPool();  // 0x00c027e8
 template VIArray<VIRecipeIngredient>::~VIArray();  // 0x00c02838
 template int VIArray<VIRecipeIngredient>::Clear();  // 0x00c02968
@@ -162,7 +162,7 @@ template int VIArray<VIRecipeIngredient>::Init(const VIArray<VIRecipeIngredient>
 template int VIArray<VIRecipeIngredient>::Init(int);  // 0x00c02dc8
 
 // 0x00c028b0..0x00c02e18: 6 members; element size measured.
-// (element type declared in game.h with VIClientPart3834C, lane cl-parts2)
+// (element type declared in game.h with VIClientPart3834C)
 template int VIArray<VIRecipeTool>::DestroyPool();  // 0x00c028b0
 template VIArray<VIRecipeTool>::~VIArray();  // 0x00c02900
 template int VIArray<VIRecipeTool>::Clear();  // 0x00c02b70

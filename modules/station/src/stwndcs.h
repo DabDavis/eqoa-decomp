@@ -1,4 +1,4 @@
-// stwndcs.h -- OWNER: lane cswnd.  The customer-service windows: VIWndCSInbox
+// stwndcs.h -- the customer-service windows: VIWndCSInbox
 // (0x002EADA0 .. 0x002ECF00), VIWndCSRequest (0x002ECF00 .. 0x002F0128),
 // VIWndReadCS (0x002F2C38 .. 0x002F4EB8).  VICSInterface embeds a request and an
 // inbox (+0x4AC0, +0x54C0); the inbox news a VIWndReadCS, which embeds a
@@ -16,7 +16,7 @@
 #define STWNDCS_H
 
 #include "stwnd.h"         // VIWndMBox, VIWndMessage, VIWndOptionList
-#include "vidatetime.h"    // VIDate (lane net)
+#include "vidatetime.h"    // VIDate
 
 // The customer-service inbox: the message list (one row per header, newest
 // first, eleven visible) over a status window that says what the CS client is
@@ -137,7 +137,7 @@ struct VIReadCSLine
     short           m_len;     // +0x04
     short           m_break;   // +0x06  1 when a line break or a wrap ends the row
 };
-CHK(c_VIWndCSRequest, sizeof(VIWndCSRequest) == 0xA00)   // [lane cs]
+CHK(c_VIWndCSRequest, sizeof(VIWndCSRequest) == 0xA00)
 
 // One message read from the inbox: its category, subcategory and date over the
 // text, wrapped and scrolled eight rows at a time; Enter offers Reply and

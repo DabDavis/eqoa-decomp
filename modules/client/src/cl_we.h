@@ -19,12 +19,11 @@
 
 #define CL_WE_CHK(n, c)  typedef char n[(c) ? 1 : -1];
 
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndDeposit: ctor 0x00C41A60, 528 bytes (`new`), vtable 0x00CE6C38;
 //   slots [0]0x00C43448 [1]0x00C41AC0 [2]OnDraw__5VIWnd [3]0x00C41B60 [4]0x00C42310 [5]0x00C42070 [6]0x00C42388
 // The money-amount entry (Bank deposit/withdraw, Trade): nine digits picked with the pad,
-// the cursor moving over the last m_width of them.  0x210 bytes.  VIWndBankMoney (wa) and
-// VIWndTrade (ws) set m_cursor/m_carried/m_banked directly, then call Setup(mode).
+// the cursor moving over the last m_width of them.  0x210 bytes.  VIWndBankMoney (cl_wa.h) and
+// VIWndTrade (cl_ws.h) set m_cursor/m_carried/m_banked directly, then call Setup(mode).
 // Mode 1 deposits (limit m_carried), 2 withdraws (limit m_banked), 3 offers in a trade
 // (limit m_carried); Done sends the parent 294 (amount) in mode 3, deposits/withdraws
 // through the bank otherwise.  Names provisional.

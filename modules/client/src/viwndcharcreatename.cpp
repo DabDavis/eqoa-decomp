@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndCharCreateName.cpp"
 // VIWndCharCreateName -- CLIENT 0x00C29968 .. 0x00C2B058: the name step of character
-// creation (cl_wc.h).  Lane cl-wc.
+// creation (cl_wc.h).
 #include "game.h"
 
 // One WORDS.TXT entry in the current language.

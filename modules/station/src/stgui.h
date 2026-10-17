@@ -1,4 +1,4 @@
-// stgui.h -- OWNER: lane gui.  The GUI object classes STATION.PAK's pages are
+// stgui.h -- the GUI object classes STATION.PAK's pages are
 // built from.  TUs, in link order: the three data models (0x002BD010 ..
 // 0x002BD5C0: viguidatamodel, viguistringdatamodel, viguitoggledatamodel),
 // viguibutton (.. 0x002BE3E8), viguicombobox (.. 0x002BFD18), viguiobject
@@ -6,20 +6,20 @@
 // viguitogglebutton (.. 0x002C98B8).  Sizes are the page parser's `new`s
 // (0x002C5E78), each followed by its constructor; the attribute names in the
 // comments are the PS2GUIPage XML ones that parser maps onto each setter.
-// Method names are ours unless a string names them; where lane page's parser
-// calls one, the name is the one page chose (mostly the XML attribute's).
+// Method names are ours unless a string names them; where the page parser
+// calls one, the name is the one it uses (mostly the XML attribute's).
 #ifndef STGUI_H
 #define STGUI_H
 
-// Lane misc's XML reader (stwnd.h): the page parser builds every object with it,
+// The XML reader (stwnd.h): the page parser builds every object with it,
 // and the object keeps it at +0x2C.
 class VIXMLParser;
 
 // What the GUI objects reach through their renderer window.  The window's app
-// pointer is the VIStation (lane core owns its layout), and the renderer's
-// first field is its VIWndEdit (wave 2 owns the renderer, lane core VIWndEdit).
+// pointer is the VIStation (stcore.h), and the renderer's
+// first field is its VIWndEdit (strenderer.h, stedit.h).
 // Until those layouts are written these are offsets: each is the same RTL as
-// the member access it stands for.  [lane gui]
+// the member access it stands for.
 #define ST_RASTER(app)      ((VIRaster *)((char *)(app) + 0x200))
 #define ST_UI(app)          ((VIUI *)((char *)(app) + 0xAFE0))
 #define ST_WM(app)          ((VIWnd *)((char *)(app) + 0xB388))   // its window manager
@@ -29,7 +29,7 @@ class VIXMLParser;
 #define EDIT_TEXT(e)        (*(unsigned short **)((char *)(e) + 0x1A8))
 // VIStation's focus switch: the window is loaded ONCE for the store and the
 // call, so it is an inline taking it as a parameter (a VIStation member in the
-// original; lane core owns that class).  [lane gui]
+// original; stcore.h declares that class).
 inline void ST_SetActiveWindow(void *app, VIWnd *w)
 {
     ST_FOCUSWND(app) = w;

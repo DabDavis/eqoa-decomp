@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndInfluence.cpp"
 // viwndinfluence.cpp -- CLIENT 0x00C62310 .. 0x00C63200: VIWndInfluence, the active-effect
-// icons (lane cl-wh).
+// icons.
 #include "game.h"
 
 // 0x00C62310.

@@ -19,7 +19,6 @@
 #define CHK(n, c)  typedef char n[(c) ? 1 : -1];
 #endif
 
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // A menu VIWndMenu shows: a static table of 32-byte entries (the window reads through the
 // pointer it is given, SetMenu).  Names ours.
 class VIMenuDef;

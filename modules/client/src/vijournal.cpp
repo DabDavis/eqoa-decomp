@@ -3,7 +3,7 @@
 // packets (VIClient+0x90).  Mode 0 keeps it in memory, 1 also records it to a file, 2
 // plays a file back.  Write and Read return NOTHING: with an `int` return, JournalTick,
 // JournalNetwork, JournalConsole and Init (VIClient.cpp) each mis-scheduled the value
-// they spill for the inline Write(T) (lane cl-tail, 2026-10-16: all four exact as void).
+// they spill for the inline Write(T) (2026-10-16: all four exact as void).
 //
 // Asserts on lines 99, 104 (Write) and 158 (WriteString).
 #include "game.h"

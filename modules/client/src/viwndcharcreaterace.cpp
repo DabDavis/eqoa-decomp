@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndCharCreateRace.cpp"
 // VIWndCharCreateRace -- CLIENT 0x00C2B058 .. 0x00C2D8D8: the race page of character creation
-// (cl_wc.h).  Lane cl-wc.
+// (cl_wc.h).
 #include "game.h"
 
 // 0x00CE3E98: the races in display order, with the humans split by city.

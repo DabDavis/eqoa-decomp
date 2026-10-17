@@ -1,4 +1,4 @@
-// stedit.h -- OWNER: lane core.  VIWndEdit, the on-screen text editor
+// stedit.h -- VIWndEdit, the on-screen text editor
 // (0x002B98D0 .. 0x002BC6A8).  CLIENT links the same source (0x00C44448 ..):
 // 28 of its 31 functions are byte-identical there, OnDrawSelf (5,688 bytes vs
 // 5,680) and OnMessage (232 vs 164) are not, and CLIENT's TU also carries the

@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndGuild.cpp"
-// viwndguild.cpp -- CLIENT 0x00C5B958 .. 0x00C5DDF8: VIWndGuild, the guild roster
-// (lane cl-wh).  OnMessage asserts on lines 447, 477 and 503, so the file is padded to
+// viwndguild.cpp -- CLIENT 0x00C5B958 .. 0x00C5DDF8: VIWndGuild, the guild roster.
+// OnMessage asserts on lines 447, 477 and 503, so the file is padded to
 // keep them there.
 #include "game.h"
 
@@ -12,7 +12,7 @@ static inline const unsigned short *Word(VIUI *ui, int id)
 
 // The member menu's flag at +0x254, through an int: the constant 1 is then an SImode
 // register the stores after AddChild share (s0 across the call).  Stands for an inline
-// setter of VIWndMiniMenu's (lane cl-wm's class), which has no address of its own.
+// setter of VIWndMiniMenu's, which has no address of its own.
 static inline void SetFlag(VIWndMiniMenu *m, int v) { m->m_kind = v; }
 // One roster cell, centred on (x, y).  The column's x goes through a parameter, so it is
 // read before a word is looked up (s0 across GetString) and before the font's raster.

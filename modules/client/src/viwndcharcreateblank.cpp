@@ -1,7 +1,7 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndCharCreateBlank.cpp"
 // viwndcharcreateblank.cpp -- CLIENT 0x00C22C18 .. 0x00C240F0: the character-creation
-// form (VIClient+0x2BB88) and the five pages it walks through.  The pages are cl-wc's
-// (race, misc, name, review) and this lane's (class); see cl_wb.h.
+// form (VIClient+0x2BB88) and the five pages it walks through.  The pages are
+// cl_wc.h's (race, misc, name, review) and cl_wb.h's (class).
 #include "game.h"
 
 // 0x00C22C18.

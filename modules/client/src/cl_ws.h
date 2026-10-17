@@ -11,9 +11,6 @@
 #ifndef CL_WS_H
 #define CL_WS_H
 
-// Foreign free functions (by-address convention; the owner names them).
-
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndSpellBook: ctor 0x00C93680, 2016 bytes (`new`), vtable 0x00CEFF60;
 //   slots [0]0x00C97D30 [1]0x00C93738 [2]OnDraw__5VIWnd [3]0x00C93970 [4]0x00C94660 [5]0x00C943E0 [6]0x00C94B18
 // The spellbook's rows (placeholder names kept: client_viarray.cpp's VIArray members carry

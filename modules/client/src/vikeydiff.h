@@ -1,4 +1,4 @@
-// vikeydiff.h -- VIKeyDiff.h (lane cl-char, 2026-10-16): the difference between two
+// vikeydiff.h -- VIKeyDiff.h: the difference between two
 // sorted VIArrays of database rows -- the rows of New that are new or changed, and the
 // keys of Old that New no longer has -- and its stream writer.  VICharacter.cpp alone
 // uses it (17 instantiations, CLIENT 0x00CAA1C8 .. 0x00CB3600), so only that TU includes

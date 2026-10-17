@@ -1,4 +1,4 @@
-// stapi.h -- OWNER: lane api.  The account server client, 0x002E53F0 ..
+// stapi.h -- the account server client, 0x002E53F0 ..
 // 0x002EA680, in six TUs (names ours; no assert names them):
 //   vinetbuffer.cpp     0x002E53F0  the send and receive buffers of a connection
 //   vinetstatus.cpp     0x002E5AC8  "is any interface up": libnet's state, polled

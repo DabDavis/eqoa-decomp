@@ -12,7 +12,7 @@
 //   flat-file reader, the station API and its TCP connection, the CS windows,
 //   libxml2 2.3.6 (SETUP's build minus testXPath.c), and VIWndCombo.
 //
-// ONE HEADER PER AREA, each owned by the lane that writes that area's TUs (see
+// ONE HEADER PER AREA, each declaring what that area's TUs define (see
 // the comment at the top of each).  Included below in dependency order: a class
 // that embeds another by value needs the complete type first.
 #ifndef STATION_H
@@ -76,16 +76,16 @@ class VIWndMessage;
 class VIWndOptionList;
 class VIWndCombo;
 
-#include "stcrypto.h"        // lane crypto:  libdes, rijndael, MPI (C)
-#include "stnet.h"           // lane net:     VIMemStream containers, VIFlatFile, time, vinet
-#include "stapi.h"           // lane api:     VINetBuffer, VITCPConnection, VIStationAPI, listeners
-#include "stcs.h"            // lane cs:      the CS client, VIClientI, VICSInterface, CS records
-#include "stedit.h"          // lane core:    VIWndEdit (CLIENT has it too)
-#include "stgui.h"           // lane gui:     VIGUIDataModel*, VIGUIObject, Text, Button, Toggle, ComboBox
-#include "stpage.h"          // lane page:    VIGUIPage, VIGUIDialog, VIGUISelectionGrid, the page parser
-#include "stwndcs.h"         // lane cswnd:   VIWndCSInbox, VIWndCSRequest, VIWndReadCS
-#include "stwnd.h"           // lane misc:    VIWndMBox, VIWndMessage, VIWndOptionList, VIWndCombo, XML helpers
-#include "strenderer.h"      // lane renderer (wave 2): VIWndGenericRenderer
-#include "stcore.h"          // lane core:    VIStation, VIWindowManager, VIWndStationLogin
+#include "stcrypto.h"        // libdes, rijndael, MPI (C)
+#include "stnet.h"           // VIMemStream containers, VIFlatFile, time, vinet
+#include "stapi.h"           // VINetBuffer, VITCPConnection, VIStationAPI, listeners
+#include "stcs.h"            // the CS client, VIClientI, VICSInterface, CS records
+#include "stedit.h"          // VIWndEdit (CLIENT has it too)
+#include "stgui.h"           // VIGUIDataModel*, VIGUIObject, Text, Button, Toggle, ComboBox
+#include "stpage.h"          // VIGUIPage, VIGUIDialog, VIGUISelectionGrid, the page parser
+#include "stwndcs.h"         // VIWndCSInbox, VIWndCSRequest, VIWndReadCS
+#include "stwnd.h"           // VIWndMBox, VIWndMessage, VIWndOptionList, VIWndCombo, XML helpers
+#include "strenderer.h"      // VIWndGenericRenderer
+#include "stcore.h"          // VIStation, VIWindowManager, VIWndStationLogin
 
 #endif

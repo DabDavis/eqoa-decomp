@@ -1,4 +1,4 @@
-// stcs.h -- OWNER: lane cs.  Customer service: the CS client (vicsclient.cpp,
+// stcs.h -- customer service: the CS client (vicsclient.cpp,
 // 0x002DDC48 .. 0x002DF918; CLIENT has the same TU at 0x00BE7120 .. 0x00BE8DF0,
 // its map calls the class VIClientPart33950, a placeholder), VICSInterface.cpp
 // (0x002DF918 .. 0x002E1FF8; its asserts name
@@ -15,7 +15,7 @@
 
 // VICSInterface embeds a VIWndCSRequest and a VIWndCSInbox by value, so their
 // classes must be complete here; stwndcs.h's own declarations need only the
-// records above.  [lane cs] (station.h includes stwndcs.h after this header.)
+// records above.  (station.h includes stwndcs.h after this header.)
 #include "stwndcs.h"
 
 // ------------------------------------------------------- the interface --

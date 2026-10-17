@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndHUDMenu.cpp"
 // viwndhudmenu.cpp -- CLIENT 0x00C5DE08 .. 0x00C5FA00: VIWndHUDMenu, VIWndGame's quick
-// menus (lane cl-wh).
+// menus.
 #include "game.h"
 
 // The slot icons of the stacked menu (0x00CE9960), as VIWndItemMenu's.

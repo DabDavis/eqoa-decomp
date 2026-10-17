@@ -1,7 +1,7 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndInitFromMc.cpp"
-// viwndinitfrommc.cpp -- CLIENT 0x00C63218 .. 0x00C644C8: VIWndInitFromMc, the start-up
-// window that loads the words, the options and the shard list off the memory card
-// (lane cl-wh).
+// viwndinitfrommc.cpp -- CLIENT 0x00C63218 .. 0x00C644C8:
+// VIWndInitFromMc, the start-up window that loads the words, the options and the shard
+// list off the memory card.
 #include "game.h"
 
 extern "C" char *strstr(const char *s, const char *find);

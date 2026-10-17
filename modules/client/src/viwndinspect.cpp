@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndInspect.cpp"
 // viwndinspect.cpp -- CLIENT 0x00C644C8 .. 0x00C658C8: VIWndInspect, the scrolling
-// description viewer the item, auction, experiment and recipe windows open (lane cl-wh).
+// description viewer the item, auction, experiment and recipe windows open.
 #include "game.h"
 
 // 0x00C644C8.

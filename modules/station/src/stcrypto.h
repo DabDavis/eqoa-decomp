@@ -1,4 +1,4 @@
-// stcrypto.h -- OWNER: lane crypto.  What STATION's C++ calls in the C libraries it
+// stcrypto.h -- what STATION's C++ calls in the C libraries it
 // links (0x002D1F68 .. 0x002DC7F0, all in src/crypto/: libdes and LibTomCrypt are
 // fetched and patched by modules/station/crypto/fetch.py; des_soe.c and aes_soe.c are
 // ours):

@@ -138,7 +138,7 @@ public:
 
 // The 132-byte element of the VIArray func_00BEB738 reads (VIClientPart3FC10's Recv0F02):
 // a wide string and an int.  Placeholder name kept (client_viarray.cpp's copies carry it).
-// VIRec132_BEB670 is cl-parts1's (game.h).
+// VIRec132_BEB670 is declared in game.h.
 VIMemStream &operator<<(VIMemStream &s, const VIRec132_BEB670 &r);    // 0x00CBA950
 VIMemStream &operator>>(VIMemStream &s, VIRec132_BEB670 &r);          // 0x00CBA990
 
@@ -151,9 +151,9 @@ VIMemStream &WriteNetItem(VIMemStream &s, const VINetItem &item);     // 0x00CBB
 
 // ---- vishardentry.cpp (0x00CBBA98 .. 0x00CBBDD8; name ours): one server-select entry,
 // 88 bytes, the element of VIShardInfo's m_ServerSelectList (its 64-bit address is -1 for
-// none).  Placeholder name kept (client_viarray.cpp's copies and lane cl-parts2's
+// none).  Placeholder name kept (client_viarray.cpp's copies and
 // VIShardInfo.cpp use it).
-// VIElem_BFC798 is cl-parts2's (game.h); Address() is declared there.
+// VIElem_BFC798 is declared in game.h, Address() with it.
 VIMemStream &operator<<(VIMemStream &s, const VIElem_BFC798 &e);     // 0x00CBBAB8 (unreferenced)
 VIMemStream &operator>>(VIMemStream &s, VIElem_BFC798 &e);           // 0x00CBBB40
 

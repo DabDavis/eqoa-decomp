@@ -63,6 +63,11 @@ Half the gap between "written" and "exact" was not code at all.
     their roles: `gStartMenu`, `gEquipMenu`, `gHudMenu0..2`, `gInvMenu`, the start-menu
     item tables and so on.
   - 70 lane marker lines and 169 lane tags are gone, verified neutral.
+  - That first sweep scanned only CLIENT's source and `vi.h`. A second one, after 8b97c6a
+    was published, took out what it missed: 167 comment edits in 72 files across SUPPORT's
+    shared templates (`vipool_t.h`, `viarray_t.h`, `vilist_t.h`), CLIENT, STATION and SETUP.
+    It removed `[lane X]` tags, `OWNER: lane X` headers, instructions addressed to lanes and
+    stale "until the merge" notes. All 428 objects of the five modules rebuilt byte-identical.
 - **`visort.h` was rewritten.** cl-char had transcribed it from Dinkumware's `<algorithm>`
   (VC++ 5/6, all rights reserved). It is now our own text with the same template shape: a
   quicksort loop that recurses into the smaller half down to 16 elements, a median of three
@@ -298,7 +303,8 @@ closed. The 86-open state was 4,856.
   order), `viwndclassmastery.cpp` (`sSkills[2][200]`) and `vichattext.cpp` (AddText). In
   `viwndmenu4.cpp` it fixed one line's indentation only.
 - The polish scripts lived outside the tree and are described here rather than kept:
-  `fold.py` (the fold and re-padder), `tidy_markers.py`, `apply_data_names.py`, a
-  per-function lane-vs-main comparison, and the residue scan. The scan compares the
+  `fold.py` (the fold and re-padder), `tidy_markers.py`, `strip_lanes.py` (the second
+  sweep: exact edits, line counts kept wherever an assert could see them),
+  `apply_data_names.py`, a per-function lane-vs-main comparison, and the residue scan. The scan compares the
   instruction's residue with our object's LO16 addend at every relocation against a named
   symbol, using `E.module_relocations` for the target side.

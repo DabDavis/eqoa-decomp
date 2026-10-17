@@ -12,7 +12,6 @@
 
 extern "C" int atoi(const char *s);
 
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndAuction: ctor 0x00C0D038, 848 bytes (`new`), vtable 0x00CE0D58;
 //   slots [0]0x00C0F9A0 [1]0x00C0D098 [2]OnDraw__5VIWnd [3]0x00C0D3C8 [4]0x00C0E2C8 [5]0x00C0E0C0 [6]0x00C0E370
 // The auction window (opened from the bank): the bank's items in a list, and for the one

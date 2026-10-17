@@ -4,7 +4,7 @@
 #include "station.h"
 #include "vilist_t.h"
 
-// VIStation embeds its VIUI at +0xAFE0 (lane core owns VIStation's layout).
+// VIStation embeds its VIUI at +0xAFE0 (VIStation's layout is stcore.h's).
 static inline VIUI *StationUI(void *app)
 {
     return (VIUI *)((char *)app + 0xAFE0);

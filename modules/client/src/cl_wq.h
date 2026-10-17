@@ -18,7 +18,6 @@
 #define CHK(n, c)  typedef char n[(c) ? 1 : -1];
 #endif
 
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndQuestLog: ctor 0x00C860D0, 496 bytes (`new`), vtable 0x00CEE500;
 //   slots [0]0x00C877C0 [1]0x00C86130 [2]OnDraw__5VIWnd [3]0x00C862C0 [4]0x00C866F8 [5]0x00C865E8 [6]0x00C86770
 // The quest journal: the quest titles, one TextBox each, scrolled so the selection shows;
@@ -187,7 +186,7 @@ CHK(c_VIWndReadGram, sizeof(VIWndReadGram) == 8672)
 // A recipe row, 144 bytes: VIClientPart3834C fills VIWndRecipe's list with them (it was
 // client_viarray.cpp's placeholder; the name is kept, the VIArray copies carry it).
 // Field names ours.
-// VIRec144_C017C0 is cl-parts2's (game.h).
+// VIRec144_C017C0 is declared in game.h.
 
 // The tradeskill window: the recipes of a skill for a component (VIClientPart3834C,
 // VIClient's vtable slot 12, supplies them), sortable by three columns, and a pop-up menu

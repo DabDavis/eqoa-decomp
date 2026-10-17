@@ -27,7 +27,7 @@ template int VIPool<VIAuctionItem>::Add(VIAuctionItem const &);  // 0x00bbd560
 template int VIPool<VIAuctionItem>::Erase(int);  // 0x00bbd6e0
 
 // 0x00bbb9e8..0x00bbd918: 11 members; size measured.
-// VIDbCharBid is lane cl-char's (cl_char.h); VIBankControl holds a VIPool of them.
+// VIDbCharBid is declared in cl_char.h; VIBankControl holds a VIPool of them.
 template VIPool<VIDbCharBid>::VIPool();  // 0x00bbb9c0
 template int VIPool<VIDbCharBid>::End() const;  // 0x00bbb9e8
 template int VIPool<VIDbCharBid>::Begin() const;  // 0x00bbb9f8
@@ -55,10 +55,10 @@ template int VIPool<VIRec32_BE2DE8>::Add(VIRec32_BE2DE8 const &);  // 0x00be2fd0
 template int VIPool<VIRec32_BE2DE8>::Erase(int);  // 0x00be3110
 
 // 0x00bf4040..0x00bf5150: was VIPool<VIPtr_BF45A8 *>; the element is VIIconSlot (12 bytes),
-// instantiated in viclientpart06d50.cpp (lane cl-parts1).
+// instantiated in viclientpart06d50.cpp.
 
 // 0x00bf9338..0x00bf9930: VIPool<VICMSkill> (was VIPool<VIPtr_BF9718 *>: the node is
-// 160 bytes), instantiated in viclientpart4ec58.cpp, the TU that emitted it (lane cl-parts2).
+// 160 bytes), instantiated in viclientpart4ec58.cpp, the TU that emitted it.
 
 // 0x00bf9f98..0x00bfa348: 10 members; pointer argument.
 struct VIPtr_BFA1F0;
@@ -74,7 +74,7 @@ template int VIPool<VIPtr_BFA1F0 *>::Init(int);  // 0x00bfa2f8
 template int VIPool<VIPtr_BFA1F0 *>::Add(VIPtr_BFA1F0 * const &);  // 0x00bfa348
 
 // 0x00bfb918..0x00bfbde8: 11 members; size measured.
-// (element type declared in game.h with VIClientPart38300, lane cl-parts2)
+// (element type declared in game.h with VIClientPart38300)
 template int VIPool<VIRec36_BFBCB8>::End() const;  // 0x00bfb918
 template int VIPool<VIRec36_BFBCB8>::Begin() const;  // 0x00bfb928
 template int VIPool<VIRec36_BFBCB8>::Next(int) const;  // 0x00bfb958
@@ -91,8 +91,8 @@ template int VIPool<VIRec36_BFBCB8>::Size() const;  // 0x00bfbec8
 
 // 0x00c00f58..0x00c02770: VIPool<VINetItem> (was VIPool<VIPtr_C00F58 *>: a 772-byte node) and
 // 0x00c010f8..0x00c01b48: VIPool<VIRec144_C017C0> (was VIPool<VIPtr_C01508 *>: 152), both
-// instantiated in viclientpart3834c.cpp, the TU that emitted them (lane cl-parts2).
+// instantiated in viclientpart3834c.cpp, the TU that emitted them.
 
 // 0x00cb9110..0x00cb9410: VIPool<int>, VIMemStream ops' own copies -- in vimemstreamops.cpp (shared with STATION).
 
-// 0x00cc0af8..0x00cc2018: VIPool<VICharRes> -- in viswing.cpp, the TU that uses it (lane cl-tail).
+// 0x00cc0af8..0x00cc2018: VIPool<VICharRes> -- in viswing.cpp, the TU that uses it.

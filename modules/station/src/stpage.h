@@ -1,4 +1,4 @@
-// stpage.h -- OWNER: lane page.  A page of GUI objects and the PS2GUIPage XML
+// stpage.h -- a page of GUI objects and the PS2GUIPage XML
 // parser that builds one.  TUs: VIGUIDialog (0x002BFD18 .. 0x002C10B8),
 // VIGUIPage + VIGUISelectionGrid (0x002C2610 .. 0x002C45F8), the parser
 // (0x002C45F8 .. 0x002C73D0).  The method names are ours unless a string

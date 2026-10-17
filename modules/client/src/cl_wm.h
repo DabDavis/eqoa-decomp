@@ -20,15 +20,10 @@
 extern "C" double pow(double x, double y);
 extern "C" int sprintf(char *s, const char *fmt, ...);
 
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndMerchant: ctor 0x00C77750, 2480 bytes (`new`), vtable 0x00CECB40;
 //   slots [0]0x00C79F90 [1]0x00C777F0 [2]OnDraw__5VIWnd [3]0x00C77B78 [4]0x00C77FF0 [5]0x00C77EB8 [6]0x00C78058
-// A stat's name entry in cl-uitext's table (0x00CE0188, 19 entries of {word, stat}): 0 if
-// the stat has none. by address.
-
-// VIVect2I has no operator- in vi.h (SUPPORT never subtracts one); MiniMenu's pointer offset
-// is `pos - VIVect2I(25, h / 2)`: the operand's temp at sp+80 next to the argument copy.
-// [merge] now vi.h's member VIVect2I::operator- (lane cl-wh); this free inline was dropped.
+// MiniMenu's pointer offset is `pos - VIVect2I(25, h / 2)`, vi.h's VIVect2I::operator-:
+// the operand's temp at sp+80 next to the argument copy.
 
 
 // One line of the merchant's stat comparison: the text, coloured by whether wearing the
@@ -117,7 +112,7 @@ CHK(c_VIWndMercMenu, sizeof(VIWndMercMenu) == 0x3B0)
 
 // VIWndMessage: ctor 0x00C7B320, 1152 bytes (`new`), vtable 0x00CECEB0;
 //   slots [0]0x00C7BAF0 [1]0x00C7B368 [2]OnDraw__5VIWnd [3]0x00C7B3D0 [4]0x00C7B840 [5]0x00C7B6F0 [6]0x00C7B848
-// STATION's declaration (stwnd.h), copied by the coordinator because wd/wq/ws EMBED it by
+// STATION's declaration (stwnd.h), copied because cl_wd.h/cl_wq.h/cl_ws.h's windows EMBED it by
 // value; CLIENT's `new` says 1152 = 0x480 too.  Addresses in the comments are STATION's.
 enum VIMESSAGEPROMPT
 {

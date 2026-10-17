@@ -24,7 +24,7 @@ template int VIVector<int>::Add(const int &);  // 0x00bbbfe0
 // vicsrecords.cpp's own copies, in those files (shared with STATION).
 
 // 0x00c03478..0x00c03818: VIVector<VIRec32_C035B0>, emitted by viclientpart38334.cpp (its
-// stream reader instantiates them; lane cl-parts2).
+// stream reader instantiates them).
 
 // 0x00c0cca0..0x00c0cf30: 6 members; size measured.
 // VITextLine is declared in cl_uitext.h (VITextList's line; was VIRec36_C0CDC0).

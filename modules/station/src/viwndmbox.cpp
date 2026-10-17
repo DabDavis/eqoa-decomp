@@ -6,8 +6,8 @@
 #include "station.h"
 
 // The app's VIUI: VIStation::m_ui, +0xAFE0 of the window's app pointer.  This
-// box draws with it rather than with VIWnd::UI().  (VIStation's layout is the
-// core lane's; the offset is measured here.)
+// box draws with it rather than with VIWnd::UI().  (VIStation's layout is in
+// stcore.h; the offset is measured here.)
 static inline VIUI *AppUI(VIWnd *w)
 {
     return (VIUI *)((char *)w->GetAppPtr() + 0xAFE0);

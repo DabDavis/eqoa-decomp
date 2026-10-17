@@ -14,10 +14,6 @@
 #endif
 #define CL_WD_H
 
-// Foreign functions this lane calls, by address (the coordinator renames them to the
-// owner's names after the merge).
-
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndClassMastery: ctor 0x00C33928, 584 bytes (`new`), vtable 0x00CE4ED8;
 //   slots [0]0x00C35F38 [1]0x00C33988 [2]OnDraw__5VIWnd [3]0x00C33B20 [4]0x00C34548 [5]0x00C34340 [6]0x00C345C0
 // The Class Mastery window (claude-notes/cm-wire-format.md): five categories, the skills
@@ -155,7 +151,7 @@ CHK(c_VIWndClassMasteryRequire, sizeof(VIWndClassMasteryRequire) == 0x230)
 //   slots [0]0x00C3C658 [1]0x00C3A5D8 [2]OnDraw__5VIWnd [3]0x00C3A808 [4]OnKeyUp__5VIWndi [5]0x00C3B0C8 [6]0x00C3B238
 // A tell-gram (the in-game mail) being written: To, Subject and the body, each typed in a
 // VIWndEdit in turn, then Send.  The same shape as VIWndCSRequest (Init/Free/Next/Prev/
-// Select/TakeText/Cancel/ShowMessage).  0xC68 bytes; VIWndReadGram (lane cl-wq) embeds one
+// Select/TakeText/Cancel/ShowMessage).  0xC68 bytes; VIWndReadGram (cl_wq.h) embeds one
 // for its reply.  Method names ours (provisional).
 class VIWndComposeGram : public VIWnd
 {
@@ -247,7 +243,7 @@ CHK(c_VIWndCSInbox, sizeof(VIWndCSInbox) == 0x358)
 
 // VIWndCSRequest: ctor 0x00C3E860, 2560 bytes (`new`), vtable 0x00CE6920;
 //   slots [0]0x00C419F8 [1]0x00C3E8E0 [2]OnDraw__5VIWnd [3]0x00C3EB50 [4]OnKeyUp__5VIWndi [5]0x00C3FA10 [6]0x00C3FDE8
-// STATION's declaration (stwndcs.h), copied by the coordinator because VIWndReadCS (wq)
+// STATION's declaration (stwndcs.h), copied because VIWndReadCS (cl_wq.h)
 // EMBEDS it by value; CLIENT's `new` says 2560 = 0xA00 too.  Addresses are STATION's.
 class VIWndCSRequest : public VIWnd
 {

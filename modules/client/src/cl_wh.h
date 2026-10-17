@@ -14,7 +14,6 @@
 #ifndef CL_WH_H
 #define CL_WH_H
 
-// Skeletons (lanes of 2026-10-16): fill each in as its TU is written.
 // VIWndGoto: ctor 0x00C58BD8, 60 bytes (`new`), vtable 0x00CE8E30;
 //   slots [0]0x00C59D30 [1]0x00C58C40 [2]OnDraw__5VIWnd [3]0x00C58CB0 [4]0x00C59038 [5]0x00C58F08 [6]0x00C590F0
 // A debug teleporter: the world (0..5), and a grid square inside the world's bounds
@@ -45,13 +44,13 @@ public:
     int      m_world;                                            // +0x38: -1 until 295
 };
 
-// cl-tail's (VIEntity.cpp's neighbour, 0x00CC4608): the WORDS.TXT id naming grid square
+// 0x00CC4608 (VIEntity.cpp's neighbour): the WORDS.TXT id naming grid square
 // (y, x) of a world, 641 outside its bounds.
 
 // VIWndGramInbox: ctor 0x00C59D98, 880 bytes (`new`), vtable 0x00CE9168;
 //   slots [0]0x00C5B908 [1]0x00C59DE8 [2]OnDraw__5VIWnd [3]0x00C59F28 [4]0x00C5A8C0 [5]0x00C5A730 [6]0x00C5A938
 // The in-game mail (gram) inbox: the grams the gram client (VIClientPart2EFD0, VIClient
-// vtable slot 7; cl-parts2's) lists, eleven rows of sender, subject and date, over a status window
+// vtable slot 7) lists, eleven rows of sender, subject and date, over a status window
 // that says what the client is doing; Enter fetches a gram and opens it in a
 // VIWndReadGram.  CLIENT's twin of STATION's VIWndCSInbox, with the same method order.
 // 880 bytes.  Names ours.
@@ -354,7 +353,7 @@ public:
 };
 
 // The quick-slot menu, VIWndGame.cpp's (0x00CD02D0): a VIMenuDef whose count is the slots.
-// gHudMenu2 is cl-wg's (VIHudMenu, cl_wg.h).
+// gHudMenu2 is declared in cl_wg.h (VIHudMenu).
 extern VIMenuDef gIgnoreMemberMenu;                                    // VIWndGame.cpp's .data: the ignore list's member menu
 
 #endif

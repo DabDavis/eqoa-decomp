@@ -80,7 +80,7 @@ template <class T> int VIPool<T>::Clear()
 
 // Each live element is destroyed, its successor fetched first: a no-op for every SUPPORT
 // instantiation (pointers and PODs), and CLIENT's VIPool<VIAuctionItem> (a VIItem, with
-// its VIArray<VIItemStat>) shows the call [lane cl-pre].
+// its VIArray<VIItemStat>) shows the call.
 template <class T> int VIPool<T>::DestroyPool()
 {
     for (int i = Begin(); i != End(); )
@@ -167,7 +167,7 @@ template <class T> int VIPool<T>::Add(const T &v)
     }
 
     // Copy-CONSTRUCTED: CLIENT's VIPool<VIAuctionItem> calls VIItem's copy constructor
-    // here, not its assignment; for SUPPORT's PODs the two are the same [lane cl-pre].
+    // here, not its assignment; for SUPPORT's PODs the two are the same.
     Node *n = (Node *)(m_free * sizeof(Node) + (unsigned int)m_nodes);
     if (n)
         new (&n->m_data) T(v);
@@ -260,7 +260,7 @@ template <class T> int VIPool<T>::Insert(const T &v, int i)
     }
 
     // Copy-CONSTRUCTED: CLIENT's VIPool<VIAuctionItem> calls VIItem's copy constructor
-    // here, not its assignment; for SUPPORT's PODs the two are the same [lane cl-pre].
+    // here, not its assignment; for SUPPORT's PODs the two are the same.
     Node *n = (Node *)(m_free * sizeof(Node) + (unsigned int)m_nodes);
     if (n)
         new (&n->m_data) T(v);
@@ -321,7 +321,7 @@ template <class T> int VIPool<T>::Erase(int i)
     else
         m_first = m_nodes[i].m_next;
 
-    m_nodes[i].m_data.~T();          // [lane cl-pre]: a no-op but for CLIENT's VIAuctionItem
+    m_nodes[i].m_data.~T();          // a no-op but for CLIENT's VIAuctionItem
     m_nodes[i].m_next = m_free;
     m_nodes[i].m_prev = -2;
     m_free = i;

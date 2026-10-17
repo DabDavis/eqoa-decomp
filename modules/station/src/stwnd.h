@@ -1,4 +1,4 @@
-// stwnd.h -- OWNER: lane misc.  VIWndMBox (0x002F0128 .. 0x002F1DB8),
+// stwnd.h -- VIWndMBox (0x002F0128 .. 0x002F1DB8),
 // VIWndMessage (0x002F1DB8 .. 0x002F25E0; most of it is SETUP's
 // viwndmessage.cpp, byte for byte), VIWndOptionList (0x002F25E0 ..
 // 0x002F2C38), the XML attribute helpers in front of libxml (0x002F4EB8 ..
@@ -22,7 +22,7 @@ class VIXMLEvent;
 class VIXMLParser;
 // BY VALUE: under the EE's EABI a 20-byte argument travels as a pointer and the
 // CALLEE copies it (every handler's prologue copies five words off a0), so Walk
-// passes &ev with no copy of its own (lanes misc and page, reconciled).
+// passes &ev with no copy of its own.
 typedef void (*VIXMLCallback)(VIXMLEvent e);
 
 // 0x14 bytes, on Walk's stack.

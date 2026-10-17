@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndCharCustFrontiers.cpp"
 // VIWndCharCustFrontiers -- CLIENT 0x00C2F5E8 .. 0x00C31F00: re-styling an existing character
-// from character select (cl_wc.h).  Lane cl-wc.
+// from character select (cl_wc.h).
 #include "game.h"
 
 // One WORDS.TXT entry in the current language.

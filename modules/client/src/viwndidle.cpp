@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndIdle.cpp"
 // viwndidle.cpp -- CLIENT 0x00C5FA00 .. 0x00C60780: VIWndIdle, the window that holds the
-// focus while a world loads (lane cl-wh).  Every handler is VIWnd's.
+// focus while a world loads.  Every handler is VIWnd's.
 #include "game.h"
 
 // 0x00C5FA00.

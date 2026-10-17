@@ -2484,10 +2484,10 @@ unsigned short *VIWndGenericRenderer::EndEdit()
     return text;
 }
 
-// VIList::Insert is declared in vi.h and defined nowhere else in the tree (lane
-// misc's vixmlparser.cpp carries the same text): v goes in front of node i, or
+// VIList<T>::Insert is declared in vi.h and defined in src/vilist_t.h (vixmlparser.cpp
+// carries the same text): v goes in front of node i, or
 // at the end when i is End().
-// (VIList<T>::Insert is in src/vilist_t.h.)
+
 
 
 

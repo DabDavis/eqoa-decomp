@@ -8,7 +8,7 @@
 //   VIWndCharCreateReview      0x00C2D8D8..0x00C2F5E8
 //   VIWndCharCustFrontiers     0x00C2F5E8..0x00C31F00
 //   VIWndChat                  0x00C31F00..0x00C33928
-// The four character-creation pages are children of VIWndCharCreateBlank (cl-wb), which
+// The four character-creation pages are children of VIWndCharCreateBlank (cl_wb.h), which
 // news them, hands each the VINewChar form (+0x24), and moves between them on 260 (back)
 // and 262/263/264/265/266/267.  Method names are ours.
 #ifndef CL_WC_H
@@ -27,19 +27,16 @@ static inline void SetSceneCameraLimits(VIWalkCamera *cam, float minDist, float 
     cam->m_minCollisionDist = collide;
 }
 
-// ---- Foreign functions and classes cl-wc uses (by-address convention; the owner names them).
+// ---- From other TUs.
 
-void CapitalizeName(char *name);
-int *GetSexWord(int sex);   // cl-uitext's (0x00C053F8, vifont.cpp): 163 Male / 164 Female   // cl-char's range: strupr the name, strlwr all but its first letter
+void CapitalizeName(char *name);   // vicharacter.cpp: strupr the name, strlwr all but its first letter
+int *GetSexWord(int sex);   // 0x00C053F8 (vifont.cpp): 163 Male / 164 Female
 
-// cl-parts2's range (0x00BFC0A8): the default appearance of a race, 36 bytes
+// A race's default appearance is game.h's VIRaceInfo (GetRaceInfo, 0x00BFC0A8), 36 bytes:
 // a row in one of two tables (expansion bit 2 picks): +0x04 the male face, hair style, hair
-// length, hair colour, +0x14 the female's.  Placeholder name: the owner's wins.
-// (the race default record is game.h's VIRaceInfo)
+// length, hair colour, +0x14 the female's.
 
-// cl-parts2's range (0x00C03AB8..): the chat text VIWndChat embeds at +0x1A8,
-// 5,136 bytes: a ring of 32 lines.  Placeholder name and M_ methods: the owner's win.
-// (the chat ring is cl-parts2's VIChatText)
+// The chat text VIWndChat embeds at +0x1A8 is VIChatText (cl_parts2.h).
 
 // One row of the race page's list (the static table sRaces, 0x00CE3E98, eleven rows in display
 // order): a race, its city (1 and 2 split the humans), and two WORDS.TXT ids.  The name stays the

@@ -14572,7 +14572,7 @@ void VIClient::SendOpByteRaw(int op, unsigned char a, int b)
 }
 
 // The senders' TU (0x00BE4B78 .. 0x00BE6540) also holds these, none of which anything in
-// the image calls but 0x00BE6188 (lane cl-parts1).
+// the image calls but 0x00BE6188.
 
 // 0x00BE5900
 void VIClient::SendOpByteByteInt(int op, unsigned char a, unsigned char b, int c)

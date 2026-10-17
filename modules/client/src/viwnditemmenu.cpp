@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndItemMenu.cpp"
 // viwnditemmenu.cpp -- CLIENT 0x00C658C8 .. 0x00C685F8: VIWndItemMenu, the inventory
-// menu (lane cl-wh).  Four category tabs (VIWndMenu), the selected entry's description,
+// menu.  Four category tabs (VIWndMenu), the selected entry's description,
 // and a quick-slot mode.
 #include "game.h"
 

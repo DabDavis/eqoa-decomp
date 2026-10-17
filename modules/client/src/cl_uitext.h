@@ -9,11 +9,11 @@
 VIWordId *FindStatWord(int stat);       // 0x00C0B010: the stat's abbreviation ("Str" ...)
 VIWordId *FindWearSlotWord(int slot);   // 0x00C04D10: the wear slot's name ("HEAD" ...)
 int      *GetSexWord(int sex);          // 0x00C053F8 (vifont.cpp): 163 "Male" / 164 "Female", out of range Male
-VIWordId *FindAttackWord(int type);         // 0x00C03A48 (lane cl-parts2): an attack type's name (ATT)
+VIWordId *FindAttackWord(int type);         // 0x00C03A48: an attack type's name (ATT)
 VIWordId *FindTargetWord(int type);     // 0x00C0B880: a spell target's name (SELF/TARGET/GROUP/PET/CORPSE)
 
 // vimenudefs.cpp: two menu definitions VIWndGame reads (0x00CD02A0 .. in .data); the types
-// are lane cl-wl's (cl_wl.h): VIMenuDef {m_x00, m_x04, VIMenuEntry *m_entries, m_count}.
+// are cl_wl.h's: VIMenuDef {m_x00, m_x04, VIMenuEntry *m_entries, m_count}.
 class VIMenuDef;
 struct VIMenuEntry;
 extern VIMenuDef   gStartMenu;        // 0x00CD02A0
@@ -23,9 +23,8 @@ extern int         gStartCountBank;          // 0x00CD0298: = 11, their count
 extern VIMenuEntry gEquipItems[];        // 0x00CD2E90: the backpack's 40 (zero; filled at run time)
 
 
-// ---- Pre-declared by the coordinator before the lanes started (2026-10-16), because the
-// ---- window lanes EMBED these by value (11, 20 and 4 windows).  cl-uitext writes their
-// ---- code; keep the class and method names (every window lane calls them), fill in fields.
+// ---- Declared before the window headers: the windows EMBED these by value (11, 20
+// ---- and 4 windows).
 
 // 0x00C05418..: a window's item-description builder, 4 bytes: the client.  Its methods
 // (0x00C05460 ..) read m_client->GetInvCount()/GetInvItemName()/... and snprintf16 the

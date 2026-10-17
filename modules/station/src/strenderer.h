@@ -1,4 +1,4 @@
-// strenderer.h -- OWNER: lane renderer (wave 2).  VIWndGenericRenderer
+// strenderer.h -- VIWndGenericRenderer
 // (0x002C98B8 .. 0x002D1F68): the window that loads STATION.PAK, runs the
 // pages and answers the account server.  Bases VIWnd (+0, vptr +0x20) and
 // VIStationListener (+0x24, its secondary vtable at 0x00357800, every entry's
@@ -38,7 +38,7 @@ public:
     void ReadConfig(VIFlatFile *f);                              // 0x002CA3B8
     void ReadConfig(const char *text);                           // 0x002CA420: "NewsURL:..."
     void LoadServers();                                          // 0x002CA520
-    void PageBack();                                             // 0x002CA5F0 (lane page's name)
+    void PageBack();                                             // 0x002CA5F0 (name ours)
     void PushPage(VIGUIPage *page);                              // 0x002CA970
     void LoadPage(const char *name);                             // 0x002CB4D0
 
@@ -97,7 +97,7 @@ public:
     int  Editing();                                              // 0x002D0CC8
     unsigned short *EndEdit();                                   // 0x002D0CE0
 
-    // [lane core] Inline: emitted after __tf20VIWndGenericRenderer in exactly this
+    // Inline: emitted after __tf20VIWndGenericRenderer in exactly this
     // order (0x002D1EE8 .. 0x002D1F20), which is why all seven are declared here
     // although VIStation uses four (names ours).
     VIWndEdit     *X28() { return m_editor; }                   // 0x002D1EE8
@@ -154,8 +154,8 @@ public:
     VIWndEdit            m_edit;            // +0x1A2C0
     long                 m_spinStart;       // +0x1A480
     int                  m_saveDelay;       // +0x1A488
-    VICSInterface        m_cs;              // +0x1A490  lane cs's, 8-aligned, 0x5890 bytes
+    VICSInterface        m_cs;              // +0x1A490  stcs.h's, 8-aligned, 0x5890 bytes
 };
-CHK(c_VIWndGenericRenderer, sizeof(VIWndGenericRenderer) == 0x1FD20)   // [lane core]
+CHK(c_VIWndGenericRenderer, sizeof(VIWndGenericRenderer) == 0x1FD20)
 
 #endif

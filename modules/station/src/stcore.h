@@ -1,4 +1,4 @@
-// stcore.h -- OWNER: lane core.  The program and its two windows of its own:
+// stcore.h -- the program and its two windows of its own:
 // vistation.cpp (0x002B7978 .. 0x002B9240; its tail holds the out-of-line
 // VICamera ctor gcc synthesizes, as SETUP's visetup.cpp does), viwindowmanager.cpp
 // (0x002B9240 .. 0x002B95B8, an older VIWindowManager than SETUP's: no GetRoot,
@@ -46,7 +46,7 @@ public:
     int  IsPlaying(int handle);                       // 0x002B8420
     void Message(const char *text);                   // 0x002B8440
     void Message(const unsigned short *text);         // 0x002B8498
-    // [lane cswnd] Inline: the window that has the focus, recorded and given it.
+    // Inline: the window that has the focus, recorded and given it.
     void SetActive(VIWnd *w) { m_xB40C = (int)w; m_wm.SetFocus(w, true); }
 
     char                 m_login[256];      // +0x00000

@@ -3,7 +3,7 @@
 #ifndef CL_CHAR_H
 #define CL_CHAR_H
 
-// VICharacter.cpp's database rows (lane cl-char).  One key struct and one row struct per
+// VICharacter.cpp's database rows.  One key struct and one row struct per
 // table of the server's schema; the row derives from its key (every row operator hands
 // the row itself to the key's), and each key carries its column names (KeyNames, the
 // tables at 0x00CD79B8 ..).  The class names are ours, the table and key column names
@@ -552,7 +552,7 @@ struct VIDbGuildRow                                         // 16 bytes
 VIMemStream &operator>>(VIMemStream &s, VIDbGuildRow &r);                       // 0x00CA9270
 VIMemStream &operator<<(VIMemStream &s, const VIDbGuildRow &r);                 // 0x00CA92F8
 
-// MAIL: VIGramHeader / VIGramMessage are lane cl-parts2's (game.h); their operators are here.
+// MAIL: VIGramHeader / VIGramMessage are declared in game.h; their operators are here.
 VIMemStream &operator>>(VIMemStream &s, VIGramMessage &m);                      // 0x00CA94E8
 VIMemStream &operator<<(VIMemStream &s, const VIGramMessage &m);                // 0x00CA9528
 
@@ -568,7 +568,7 @@ VIMemStream &operator<<(VIMemStream &s, const VIDbClusterRow &r);               
 VIMemStream &operator>>(VIMemStream &s, VIDbClusterRow &r);                     // 0x00CA96A8
 bool operator==(const VIDbClusterRow &a, const VIDbClusterRow &b);              // 0x00CA9728
 
-// 44 bytes; lane cl-pre's VIMemStreamArray.h reader at 0x00BBDA90 reads an array of them.
+// 44 bytes; the VIMemStreamArray.h reader at 0x00BBDA90 reads an array of them.
 struct VIDbRemoteCharacterRow
 {
     int  m_x00;                                 // +0x00

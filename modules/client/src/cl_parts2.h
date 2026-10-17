@@ -29,7 +29,7 @@ public:
 };
 
 // 0x00C03A10 .. 0x00C03AB0: three word lookups over {WORDS.TXT id, game id} tables (the
-// same record as cl-uitext's VIWordId; this placeholder until the merge).  The last match
+// same record as FindStatWord's and FindWearSlotWord's in cl_uitext.h).  The last match
 // wins.  Names provisional.
 struct VIWordId
 {
@@ -40,10 +40,10 @@ extern VIWordId gWords_CDF428[4];              // 0x00CDF428: words 302, 498..50
 extern VIWordId gAttackWords[11];              // 0x00CDF6A0: the attack types (ATT)
 extern VIWordId gEquipSlotWords[23];           // 0x00CDF6F8: the equip slots, -1 first
 VIWordId *FindWord_CDF428(int id);             // 0x00C03A10 (no caller)
-VIWordId *FindAttackWord(int id);              // 0x00C03A48 (cl-uitext: FindAttackWord)
-VIWordId *FindEquipSlotWord(int id);           // 0x00C03A80 (cl-ws: FindEquipSlotWord)
+VIWordId *FindAttackWord(int id);              // 0x00C03A48
+VIWordId *FindEquipSlotWord(int id);           // 0x00C03A80
 
-// The chat text VIWndChat embeds at +0x1A8 (cl-wc: C_00C03AB8), 5,136 bytes: a ring of 32
+// The chat text VIWndChat embeds at +0x1A8, 5,136 bytes: a ring of 32
 // lines, each kept on screen for 20 s of VIClient's clock (+0x7568).  AddText word-wraps
 // into the ring at m_width pixels.  Names provisional.
 struct VIChatLine

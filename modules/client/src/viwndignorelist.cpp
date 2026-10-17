@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndIgnoreList.cpp"
-// viwndignorelist.cpp -- CLIENT 0x00C60780 .. 0x00C62310: VIWndIgnoreList, the ignore list
-// (lane cl-wh).
+// viwndignorelist.cpp -- CLIENT 0x00C60780 .. 0x00C62310:
+// VIWndIgnoreList, the ignore list.
 #include "game.h"
 
 // One WORDS.TXT entry in the current language.

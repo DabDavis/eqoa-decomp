@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndCharCreateMisc.cpp"
 // VIWndCharCreateMisc -- CLIENT 0x00C26E50 .. 0x00C29968: the appearance page of character
-// creation (cl_wc.h).  Lane cl-wc.
+// creation (cl_wc.h).
 #include "game.h"
 
 // One WORDS.TXT entry in the current language.

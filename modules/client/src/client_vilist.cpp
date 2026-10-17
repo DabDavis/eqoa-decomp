@@ -12,4 +12,4 @@
 
 // 0x00c35c38..0x00c35eb0: VIList<VICMSkill *> (was VIList<VIPtr_C35C38 *> and
 // VIList<VIPtr_C35E00 *>: one instantiation, split by a size-blind scan), instantiated in
-// viwndclassmastery.cpp, the TU that emitted it (lane cl-wd).
+// viwndclassmastery.cpp, the TU that emitted it.

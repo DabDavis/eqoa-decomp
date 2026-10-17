@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndGoto.cpp"
-// viwndgoto.cpp -- CLIENT 0x00C58BD8 .. 0x00C59D98: VIWndGoto, the debug teleporter
-// (lane cl-wh).  The window is new'd by VIWndGame.
+// viwndgoto.cpp -- CLIENT 0x00C58BD8 .. 0x00C59D98: VIWndGoto, the debug teleporter.
+// The window is new'd by VIWndGame.
 #include "game.h"
 
 // 0x00C58BD8.

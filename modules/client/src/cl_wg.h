@@ -6,10 +6,9 @@
 #define CL_WG_H
 
 // The HUD / start-menu records VIWndGame fills (0x00CD02A0.. 0x00CD0310, their
-// per-slot sub-menus and item tables).  They are another lane's data (the TU whose static
-// initialiser 0x00C0B240 builds 0x00CD02A0 and 0x00CD02F0): provisional types and names,
-// the owner's win at merge.
-extern VIMenuDef     gHudMenu0, gHudMenu1, gHudMenu2;   // 0x00CD02A0 is cl-uitext's gStartMenu
+// per-slot sub-menus and item tables).  They are another TU's data (the one whose static
+// initialiser 0x00C0B240 builds 0x00CD02A0 and 0x00CD02F0): provisional types and names.
+extern VIMenuDef     gHudMenu0, gHudMenu1, gHudMenu2;   // 0x00CD02A0 is gStartMenu (cl_uitext.h)
 extern VIMenuDef     gInvMenu, gItemMenu3, gItemMenu4;   // 0x00CD02F0 is gEquipMenu
 extern VIMenuEntry gInvSubItems[][3];       // the inventory menu's per-slot sub-menu items
 extern VIMenuDef     gInvSubMenus[];          // ... and the sub-menus
@@ -235,9 +234,7 @@ public:
     int               m_p714;              // +0x714
     VIWndAuctionSearch *m_auctionSearch;   // +0x718
     VIWndFaction     *m_faction;           // +0x71C
-    // ---- Other lanes add VIWndGame declarations ONLY between their own marker lines.
     void OpenRecipe(int skill);    // 0x00C566E0: the recipe panel, mode 6; `skill` goes on to VIWndRecipe 0x00C8D430 in a1
-    // cl-wg's inlines (0x00C58B80/90/A0, their names); m_hud[3] is cl-wg's member at +0x6B0.
 };
 
 CHK(c_VIWndGame, sizeof(VIWndGame) == 0x720)

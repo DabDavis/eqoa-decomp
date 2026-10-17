@@ -1,8 +1,8 @@
 // vicsclient.h -- the customer-service client and its records.  Two source files,
 // linked into two modules, byte-identical in both: vicsclient.cpp (STATION
 // 0x002DDC48 .. 0x002DF918, CLIENT 0x00BE7120 .. 0x00BE8DF0) and vicsrecords.cpp
-// (STATION 0x002EA680 .. 0x002EADA0, CLIENT 0x00BFC890 .. 0x00BFCFB0).  Written by
-// STATION's lane cs; CLIENT's src/vicsclient.{h,cpp} and vicsrecords.cpp are
+// (STATION 0x002EA680 .. 0x002EADA0, CLIENT 0x00BFC890 .. 0x00BFCFB0).  Written for
+// STATION; CLIENT's src/vicsclient.{h,cpp} and vicsrecords.cpp are
 // symlinks to STATION's.  CLIENT's VIClient embeds one VICSClient at +0x33950
 // (its old placeholder VIClientPart33950); STATION's VICSInterface embeds one.
 //
@@ -86,7 +86,7 @@ inline VIMemStream &operator<<(VIMemStream &s, const VIMemStreamU16 &v)
 }
 
 // ----------------------------------------------------------- the records --
-// The names are lane cswnd's, from how the CS windows use them: an inbox row
+// The names are ours, from how the CS windows use them: an inbox row
 // and the message it opens, and the request form's categories, each with its
 // subcategories.
 

@@ -1,5 +1,5 @@
 #line 1 "C:/code-frontiers-gm/game/VICharacter.cpp"
-// VICharacter.cpp -- CLIENT 0x00CA4658 .. 0x00CB6358 (lane cl-char): the character
+// VICharacter.cpp -- CLIENT 0x00CA4658 .. 0x00CB6358: the character
 // record, its database rows and their stream, compare and diff operators.
 #include "game.h"
 #include "vikeydiff.h"
@@ -2450,7 +2450,7 @@ VIMemStream &operator<<(VIMemStream &s, const VIDbGuildRow &r)
     return s;
 }
 
-// ---- MAIL: lane cl-parts2's gram records ----
+// ---- MAIL: the gram records (game.h) ----
 VIMemStream &operator>>(VIMemStream &s, VIGramHeader &h)
 {
     s.Read(&h.m_id, 4, 1);

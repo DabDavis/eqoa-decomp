@@ -51,8 +51,8 @@ inline VIMemStream &operator<<(VIMemStream &s, const VIMemStreamU8 &v)
 // VIVector<int> writer) is expanded -- and GetConn's result takes it.  VIBankControl's
 // paged requests need the full-expression lifetime (0x00BB8F10 ..).  Switching
 // vimemstream.h's operator<<(VIMemStreamInt) to a const reference instead is neutral on
-// all of CLIENT (measured, lanes of 2026-10-16); STATION shares that header, so this
-// stand-in stays until the coordinator checks it there.  Name ours.
+// all of CLIENT (measured 2026-10-16); STATION shares that header, so this
+// stand-in stays until it is measured there too.  Name ours.
 struct VIMemStreamIntC
 {
     int       *m_in;

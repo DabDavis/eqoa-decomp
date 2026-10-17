@@ -89,7 +89,7 @@ public:
 // button is 128 + its VIConsolePad float index after m_a (144 = START).
 // Sizes are fixed by where VISetup and the other windows embed them.
 //
-// LANE RULE: each class below belongs to one TU; edit only your own block.
+// Each class below belongs to one TU, named with its range above its block.
 // ===========================================================================
 
 // ---- viwndmessage.cpp -- 0x005755D8 .. 0x00575DD8 -------------------------

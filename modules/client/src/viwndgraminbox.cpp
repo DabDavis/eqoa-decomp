@@ -1,6 +1,6 @@
 #line 1 "C:/code-frontiers-gm/game/VIWndGramInbox.cpp"
 // viwndgraminbox.cpp -- CLIENT 0x00C59D98 .. 0x00C5B958: VIWndGramInbox, the in-game
-// mail inbox (lane cl-wh).  CLIENT's twin of STATION's VIWndCSInbox: the same
+// mail inbox.  CLIENT's twin of STATION's VIWndCSInbox: the same
 // methods in the same order, reading the gram client (VIClient vtable slot 7) where
 // STATION reads its customer-service client.
 #include "game.h"

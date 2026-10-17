@@ -1,4 +1,4 @@
-// stnet.h -- OWNER: lane net.  CLIENT's VIMemStream containers as STATION
+// stnet.h -- CLIENT's VIMemStream containers as STATION
 // links them (VIMemStreamArray.cpp, VIMemStreamSet.cpp, VIMemStreamVector.cpp,
 // VIMemStreamVector.h: 0x002E36E0 .. 0x002E4E18), the flat-file reader
 // (0x002E2258 .. 0x002E2E00), the time formatters (0x002E1FF8 .. 0x002E2258) and
