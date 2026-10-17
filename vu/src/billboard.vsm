@@ -55,7 +55,7 @@ VIBbInit:
     nop[e]                               nop                                 ;   19
 VIBbRender:
     nop                                  nop                                 ;   20
-L0021:
+bb_batch:
     nop                                  xtop vi03                           ;   21
     nop                                  iaddiu vi02, vi00, 435              ;   22
     nop                                  iaddiu vi05, vi00, 17               ;   23
@@ -71,7 +71,7 @@ L0021:
     nop                                  iaddiu vi06, vi00, 0                ;   33
     nop                                  sq.xyzw vf15, 0(vi04)               ;   34
     nop                                  iaddiu vi07, vi00, 255              ;   35
-L0036:
+bb_packet:
     nop                                  lq.xyz vf20, 0(vi03)                ;   36
     nop                                  lq.xyzw vf17, 2(vi03)               ;   37
     mulax.xyzw acc, vf01, vf20x          iaddiu vi05, vi05, 11               ;   38
@@ -100,16 +100,16 @@ L0036:
     mulax.xyzw acc, vf05, vf17x          fcand vi01, 0x00003f                ;   61
     madday.xyzw acc, vf06, vf17y         sq.xyzw vf16, -3(vi05)              ;   62
     mulq.xy vf20, vf19, q                sq.xyzw vf20, -11(vi05)             ;   63
-    maddaz.xyzw acc, vf07, vf17z         ibgez vi08, L0159                   ;   64
+    maddaz.xyzw acc, vf07, vf17z         ibgez vi08, bb_flush_one                   ;   64
     maddw.xyzw vf17, vf08, vf17w         isw.x vi01, 0(vi00)                 ;   65
     nop                                  lq.xyz vf18, 0(vi03)                ;   66
     sub.zw vf16, vf00, vf00              lq.xyzw vf19, 2(vi03)               ;   67
     sub.xy vf16, vf20, vf14              nop                                 ;   68
     mulax.xyzw acc, vf01, vf18x          nop                                 ;   69
-    madday.xyzw acc, vf02, vf18y         ibeq vi01, vi00, L0073              ;   70
+    madday.xyzw acc, vf02, vf18y         ibeq vi01, vi00, bb0_size_kept              ;   70
     mulz.xyz vf19, vf19, vf14z           nop                                 ;   71
     sub.xy vf16, vf00, vf00              nop                                 ;   72
-L0073:
+bb0_size_kept:
     maddaz.xyzw acc, vf03, vf18z         ilw.w vi08, 0(vi03)                 ;   73
     mulw.w vf19, vf19, vf14w             lq.xy vf13, 1(vi03)                 ;   74
     maddw.xyzw vf23, vf04, vf13w         iaddiu vi06, vi06, 1                ;   75
@@ -133,17 +133,17 @@ L0073:
     add.xzw vf18, vf21, vf16             sq.xyzw vf18, -11(vi05)             ;   93
     add.xyzw vf19, vf21, vf16            sq.xyzw vf19, -3(vi05)              ;   94
     mulq.xy vf20, vf24, q                fcand vi01, 0x00003f                ;   95
-    sub.xyzw vf24, vf21, vf16            ibgez vi08, L0134                   ;   96
+    sub.xyzw vf24, vf21, vf16            ibgez vi08, bb_flush_two                   ;   96
     sub.y vf18, vf21, vf16               isw.x vi01, 0(vi00)                 ;   97
-L0098:
+bb_loop:
     ftoi4.xyzw vf21, vf23                lq.xyz vf22, 0(vi03)                ;   98
     sub.xy vf16, vf20, vf14              lq.xyzw vf23, 2(vi03)               ;   99
     ftoi4.xyzw vf20, vf19                ilw.w vi08, 0(vi03)                 ;  100
     ftoi4.xyzw vf25, vf24                lq.xy vf13, 1(vi03)                 ;  101
-    nop                                  ibeq vi01, vi00, L0105              ;  102
+    nop                                  ibeq vi01, vi00, bb_size_kept              ;  102
     mulax.xyzw acc, vf01, vf22x          iaddiu vi06, vi06, 1                ;  103
     sub.xy vf16, vf00, vf00              nop                                 ;  104
-L0105:
+bb_size_kept:
     madday.xyzw acc, vf02, vf22y         iaddi vi09, vi06, -16               ;  105
     mulz.xyz vf23, vf23, vf14z           iand vi01, vi08, vi07               ;  106
     maddaz.xyzw acc, vf03, vf22z         isub vi08, vi08, vi01               ;  107
@@ -171,17 +171,17 @@ L0105:
     sub.xzw vf23, vf21, vf16             iaddiu vi05, vi05, 11               ;  129
     add.xyzw vf19, vf21, vf16            iaddi vi02, vi02, -1                ;  130
     mulq.xy vf20, vf20, q                iaddiu vi03, vi03, 3                ;  131
-    sub.xyzw vf24, vf21, vf16            ibltz vi08, L0098                   ;  132
+    sub.xyzw vf24, vf21, vf16            ibltz vi08, bb_loop                   ;  132
     sub.y vf18, vf21, vf16               nop                                 ;  133
-L0134:
+bb_flush_two:
     ftoi4.xyzw vf19, vf19                div q, vf00w, vf17w                 ;  134
     sub.xy vf20, vf20, vf14              nop                                 ;  135
     sub.zw vf20, vf00, vf00              nop                                 ;  136
     mulq.xyzw vf17, vf17, q              waitq                               ;  137
-    ftoi4.xyzw vf18, vf18                ibeq vi01, vi00, L0141              ;  138
+    ftoi4.xyzw vf18, vf18                ibeq vi01, vi00, bb_flush_two_size_kept              ;  138
     nop                                  nop                                 ;  139
     sub.xy vf20, vf00, vf00              nop                                 ;  140
-L0141:
+bb_flush_two_size_kept:
     ftoi4.xyzw vf16, vf23                nop                                 ;  141
     ftoi4.xyzw vf24, vf24                sq.xyzw vf19, -13(vi05)             ;  142
     add.y vf19, vf17, vf20               sq.xyzw vf19, -12(vi05)             ;  143
@@ -198,15 +198,15 @@ L0141:
     ftoi4.xyzw vf18, vf18                sq.xyzw vf19, -9(vi05)              ;  154
     nop                                  sq.xyzw vf19, -8(vi05)              ;  155
     nop                                  sq.xyzw vf17, -1(vi05)              ;  156
-    nop                                  b L0179                             ;  157
+    nop                                  b bb_kick                             ;  157
     nop                                  sq.xyzw vf18, -4(vi05)              ;  158
-L0159:
+bb_flush_one:
     sub.xy vf20, vf20, vf14              div q, vf00w, vf17w                 ;  159
     mulq.xyzw vf16, vf17, q              waitq                               ;  160
-    sub.zw vf20, vf00, vf00              ibeq vi01, vi00, L0164              ;  161
+    sub.zw vf20, vf00, vf00              ibeq vi01, vi00, bb_flush_one_size_kept              ;  161
     nop                                  nop                                 ;  162
     sub.xy vf20, vf00, vf00              nop                                 ;  163
-L0164:
+bb_flush_one_size_kept:
     add.y vf18, vf16, vf20               nop                                 ;  164
     add.xzw vf17, vf16, vf20             nop                                 ;  165
     sub.xzw vf18, vf16, vf20             nop                                 ;  166
@@ -222,15 +222,15 @@ L0164:
     nop                                  sq.xyzw vf18, -8(vi05)              ;  176
     nop                                  sq.xyzw vf20, -1(vi05)              ;  177
     nop                                  sq.xyzw vf17, -4(vi05)              ;  178
-L0179:
-    nop                                  iblez vi02, L0196                   ;  179
+bb_kick:
+    nop                                  iblez vi02, bb_last_kick                   ;  179
     nop                                  nop                                 ;  180
     nop                                  iaddiu vi01, vi00, 48               ;  181
     nop                                  nop                                 ;  182
-    nop                                  ibne vi04, vi01, L0186              ;  183
+    nop                                  ibne vi04, vi01, bb_kick_and_flip              ;  183
     nop                                  nop                                 ;  184
     nop                                  iaddiu vi01, vi00, 240              ;  185
-L0186:
+bb_kick_and_flip:
     nop                                  iaddiu vi05, vi00, 32767            ;  186
     nop                                  iaddiu vi05, vi05, 1                ;  187
     nop                                  ior vi06, vi06, vi05                ;  188
@@ -239,9 +239,9 @@ L0186:
     nop                                  iaddiu vi04, vi01, 0                ;  191
     nop                                  iaddiu vi06, vi00, 0                ;  192
     nop                                  iaddiu vi05, vi01, 1                ;  193
-    nop                                  b L0036                             ;  194
+    nop                                  b bb_packet                             ;  194
     nop                                  sq.xyzw vf15, 0(vi04)               ;  195
-L0196:
+bb_last_kick:
     nop                                  iaddiu vi01, vi00, 32767            ;  196
     nop                                  iaddiu vi01, vi01, 1                ;  197
     nop                                  ior vi06, vi06, vi01                ;  198
@@ -249,5 +249,6 @@ L0196:
     nop                                  xgkick vi04                         ;  200
     nop[e]                               nop                                 ;  201
     nop                                  nop                                 ;  202
-    nop                                  b L0021                             ;  203
+dead_restart:
+    nop                                  b bb_batch                             ;  203
     nop                                  nop                                 ;  204

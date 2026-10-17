@@ -12,8 +12,8 @@ pipeline and differ in how a vertex is decoded and lit:
              stays put (vf18/vf15/vi04 are never shifted), so triangle n is
              (0, n-1, n), the winding parity vi09 stays 32 instead of
              alternating, and vertex 0 is emitted by the prologue with no
-             cull test (path 'first').  The clip path BALs L0187, which
-             assembles the fan triangle for the clipper, instead of L1085.
+             cull test (path 'first').  The clip path BALs clip_fan, which
+             assembles the fan triangle for the clipper, instead of clip_strip.
 
   'strip2lit' VIRStrip2 435  PackVUNC with vf11.x == 1 (the point light's
              sphere meets the buffer's box): 'strip2' plus the point term,
@@ -52,7 +52,7 @@ colour.  The vertex count is the first word at TOP.
 Each output vertex is three qwords at VU1 142:
   XYZF2  ftoi4 of (x/w, y/w, z/w, fog) -- bit 15 of w is ADC (do not draw)
   STQ    (s, t, q * 1/w, fog)    s and t are NOT divided here; the layer
-         routines behind L1037 apply each layer's UV transform and the 1/w
+         routines behind layer_emitter apply each layer's UV transform and the 1/w
   RGBA   floats, clamped to 1:  colour + ambient + sun * max(-N.S, 0)
          + point * (1 - min(|L|/range, 1)) * max(L.N / |L|, 0), alpha = colour.w
 """

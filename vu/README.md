@@ -34,8 +34,8 @@ round trip, and every decision left is about *understanding* the code.
 
 Comments are free (`check` ignores everything after `;`), so **the files are
 hand-maintained source from now on**: annotate them in place, and run `check`.
-Labels are free too. The `L####` names are auto-generated from branch targets
-and can be renamed once a routine is understood.
+Labels are free too. `extract` generates `L####` names from branch targets; every one of
+them has since been renamed for what the code does (see "Labels" below).
 
 ## How the disassembler is held to the hardware
 
@@ -147,6 +147,32 @@ pairs of `VIRFan`'s clip tail (183–186), four at 1346/1351–1353 and two of t
 follows a `jr vi14`. It is a register dump to VU1 100+ ending in `[e]`, followed by a row of
 `lq vf30, N(vi01)` whose offsets are the data map's boundaries: 21, 314, 435, 612, 932 and 964.
 
+## Labels
+
+The `L####` names `vudis.py extract` generated are replaced by names for what the code does
+(2026-10-17). Where code is entered without a branch, a label was added: the layer jump table
+(`layer_jumptable`, 1075), the clipper's axis routines that `jr vi01` reaches (`clip_axis_x/y/z`,
+1761, 1784, 1807) and the unreachable tail (`dead_regdump` 1968, `dead_map_offsets` 2023).
+Labels are free in `check`, so this changed no byte. Each strip program has the same six:
+`<prog>_loop`, `_exit` (pop and emit layers), `_end` (`[e]`), `_reject`, `_backface` and `_clip`.
+
+| raster | pair | | raster | pair | | raster | pair |
+|---|---|---|---|---|---|---|---|
+| `fan_*` (`VIRFan`) | 101.. | | `layer_emitter` | 1037 | | `clip_polygon` | 1266 |
+| `clip_fan` / `_return` | 187 / 281 | | `layer_next` / `_dispatch` / `_done` | 1043 / 1066 / 1083 | | `clip_plane_zneg` … `yneg` | 1282–1330 |
+| `strip_*` (`VIRStrip`) | 343.. | | `layer_wire_tag` | 1058 | | `clip_to_screen_call` / `clip_polygon_return` | 1342 / 1347 |
+| `strip2_*` (lit) | 458.. | | `layer_tex_wrap` (+`_loop`) | 1451 / 1478 | | `clip_swap` | 1684 |
+| `strip2_unlit`, `strip2u_*` | 1354, 1376.. | | `layer_tex_clamp` (+`_loop`) | 1494 / 1508 | | `clip_plane_pass`, `clip_edge_*`, `clip_pass_return` | 1691–1749 |
+| `strip3_*` | 577.. | | `layer_solid` (+`_loop`) | 1523 / 1525 | | `clip_intersect`, `clip_axis_x/y/z` | 1754, 1761/1784/1807 |
+| `skin_loop` (`VIRStrip4`) | 733 | | `layer_wire`, `wire_strip_*` | 1545, 1573–1612 | | `clip_?_from_cur`, `clip_lerp_from_prev/cur`, `clip_emit_made` | 1777–1854 |
+| `strip5_*` | 820.. | | `layer_wire_fan`, `wire_fan_*` | 1616, 1639–1680 | | `clip_to_screen`, `clip_first_out`, `clip_vertex_*` | 1876–1961 |
+| `strip6_*` | 954.. | | `clip_strip` (+`_reversed`/`_run`/`_return`) | 1085 / 1172 / 1222 / 1232 | | `dead_regdump`, `dead_map_offsets` | 1968, 2023 |
+
+Billboard: `bb_batch` 21, `bb_packet` 36 (a packet's first billboard), `bb0_size_kept` 73,
+`bb_loop` 98, `bb_size_kept` 105, `bb_flush_one` / `bb_flush_two` 159 / 134 (the corners still
+owed at a flush; `_size_kept` 164 / 141 skip the clip zeroing), `bb_kick` 179,
+`bb_kick_and_flip` 186, `bb_last_kick` 196, `dead_restart` 203.
+
 ## What is read so far
 
 **`VIRStrip` is read and verified.** `spec_strip.py` is the loop written as a per-vertex
@@ -193,7 +219,7 @@ difference):
 over five captures, all four paths). `vf18`/`vf15`/`vi04`, vertex 0's screen position, clip
 position and clip code, are never shifted, so triangle n is (0, n−1, n). The winding parity
 `vi09` stays 32 instead of alternating. The prologue emits vertex 0 with no cull test, and the
-clip path BALs `L0187`, which assembles the fan triangle for the clipper. Lighting, fog and
+clip path BALs `clip_fan`, which assembles the fan triangle for the clipper. Lighting, fog and
 outputs are `VIRStrip`'s, alpha included. Its layer packets use the fan template (+11).
 
 **`VIRStrip5`** (the tessellator's output) takes float vertices like `VIRStrip` and lights them
@@ -204,7 +230,7 @@ min(amb + sun colour·k + point colour·(1 − min(|L|/range, 1))·k, 1) with k 
 alpha is `vf11.w`: qword 14, SPR+0x22C and SPR+0x228, 0.15 and 1.0 in the capture. It uses
 `ELENG`, the distance itself (`strip6`: 21 runs, 126 vertices, all four paths).
 
-**`L1037` is the layer emitter, and its routines are read and verified** (`spec_layer.py`:
+**The layer emitter, `layer_emitter` (1037), and its routines are read and verified** (`spec_layer.py`:
 **3,635 captured packets, 88,004 qwords, bit for bit**; `test_spec_layer.py`). It walks the
 list `VIMaterial::ConstructDMAPacket` unpacks to VU1 435: a count, then 17 qwords per layer
 (+0 the pass type; +1…9 an A+D packet with `TEST_1`, `ALPHA_1`, `CLAMP_1`, four texture
@@ -273,13 +299,13 @@ returns bit for bit**, and 31 clips that leave nothing. A vertex whose triangle 
 plane gets ADC in the strip, and the triangle is clipped on its own and drawn as a **fan**
 through the layer emitter:
 
-- **`L1085`** (strips) and **`L0187`** (fans' copy, which jumps back into the loop instead of
+- **`clip_strip`** (strips) and **`clip_fan`** (fans' copy, which jumps back into the loop instead of
   returning) build a CLOSED polygon at 214, five qwords a vertex: a header (clip code, 0 =
   original / 1 = made), the clip-space position, STQ, RGBA and the screen position. The order is
   n−2, n−1, n, n−2, **reversed when the winding parity says so**, so every polygon winds the
   same way. A fan's is hub, n−1, n, hub.
-- **`L1266`** is Sutherland–Hodgman against z+, z−, x+, x−, y+, y− (bits 16, 32, 1, 2, 4, 8),
-  each only if the running union of codes has its bit. **`L1691`** is one plane pass (copy an
+- **`clip_polygon`** is Sutherland–Hodgman against z+, z−, x+, x−, y+, y− (bits 16, 32, 1, 2, 4, 8),
+  each only if the running union of codes has its bit. **`clip_plane_pass`** is one plane pass (copy an
   inside vertex, add a crossing edge's intersection, close the result). The buffers ping-pong
   between 214 and 264.
 - **The intersection** (1761 x, 1784 y, 1807 z) takes d = c ± w at both ends and **always
@@ -287,7 +313,7 @@ through the layer emitter:
   flag of a `sub` four cycles back. So an edge clips to the same point whichever way round it is
   walked. t = d / (d − d′) by `DIV`, applied to the clip position, STQ and RGBA. The screen
   qword is left stale, and the new vertex's code joins the union.
-- **`L1876`** writes the result in the 142 layout. A made vertex is projected through qwords
+- **`clip_to_screen`** writes the result in the 142 layout. A made vertex is projected through qwords
   8–11 (clip→screen, which only the clipper loads), and **its STQ.z becomes 1/w, discarding the
   interpolated q** (`mr32` puts 1.0 in z first). Its fog is the interpolated STQ.w. Each vertex
   from the second on is backface-culled as the fan triangle (first, previous, this). For the

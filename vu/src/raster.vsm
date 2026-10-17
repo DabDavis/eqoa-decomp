@@ -45,10 +45,10 @@
 ;   VIRMaterial 22  UploadPerMaterial -- reloads vf14 only
 ;   VIRFan      26  EndTriFan, BlitEnd (immediate mode and 2D) -- READ AND VERIFIED
 ;                   (spec_strip.py 'fan'): the strip loop with vertex 0 pinned
-;                   (vf18/vf15/vi04), parity vi09 fixed at 32, clip via L0187
+;                   (vf18/vf15/vi04), parity vi09 fixed at 32, clip via clip_fan
 ;   VIRStrip   317  EndTriStrip; VIPrimBufferTypeVUNC (unpacked V4-32)
 ;   VIRStrip2  429  VIPrimBufferTypePackVUNC; VIColorBuffer's baked colours
-;                   (vf11.x == 0, point light out of reach: L1354)
+;                   (vf11.x == 0, point light out of reach: strip2_unlit)
 ;   VIRStrip3  549  VIPrimBufferTypePackVUNCG (positions + a pre-translation)
 ;   VIRStrip4  668  VIPrimBufferTypePackVUNBW -- the SKINNING pre-pass: unpacks,
 ;                   blends four palette matrices per vertex, rewrites the
@@ -58,41 +58,41 @@
 ;   VIRStrip6  924  VIPrimBufferTypePackVU -- READ ('strip6'): position + (s,t,q)
 ;                   only; colour amb + sunC*k + ptC*falloff*k, k = vf11.y, a = vf11.w
 ;   1037..2028      shared code, reached by BAL (link vi12 or vi14):
-;     L1037  the LAYER EMITTER: walks the list at 435 (count, then one
+;     layer_emitter  the LAYER EMITTER: walks the list at 435 (count, then one
 ;            entry per material layer), XGKICKs each layer's A+D GS-state
 ;            packet (437 on), builds its GIF packet at 539 (PRIM 0x3C:
 ;            fogged, textured, gouraud strip; REGS ST, RGBAQ, XYZF2; NLOOP N)
 ;            and converts the 142+ buffer into it through the jump table at
-;            1075 (jr vi10), one routine per pass type: 0 solid L1523,
-;            1 textured/wrap L1451, 2 wire L1545 (lines, NLOOP (N-2)*4+1,
-;            template +12; the special case at 1051), 3 textured/clamp L1494
+;            1075 (jr vi10), one routine per pass type: 0 solid layer_solid,
+;            1 textured/wrap layer_tex_wrap, 2 wire layer_wire (lines, NLOOP (N-2)*4+1,
+;            template +12; the special case at 1051), 3 textured/clamp layer_tex_clamp
 ;            (all four routines READ AND VERIFIED: spec_layer.py; 0 solid and
 ;            2 wire from the forced captures solid.bin / wire.bin)
 ;     THE CLIPPER -- READ AND VERIFIED (spec_clip.py, test_spec_clip.py):
-;     L1085  (strips; L0187 is the fans' copy) spills vf15-vf28/vi01-vi14, puts
+;     clip_strip  (strips; clip_fan is the fans' copy) spills vf15-vf28/vi01-vi14, puts
 ;            the triangle at 214 as a CLOSED polygon, 5 qwords a vertex: header
 ;            (x clip code, y 0 = original / 1 = made), clip pos, STQ, RGBA,
 ;            screen; order n-2,n-1,n,n-2, reversed when parity vi09 != vi10
-;            (fans: hub,n-1,n,hub); BAL L1266 with vi09 = 3; draws the result
-;            through L1037 as a FAN (vi03 = 1); restores and returns
-;     L1266  Sutherland-Hodgman, planes z+ z- x+ x- y+ y- (bits 16 32 1 2 4 8)
+;            (fans: hub,n-1,n,hub); BAL clip_polygon with vi09 = 3; draws the result
+;            through layer_emitter as a FAN (vi03 = 1); restores and returns
+;     clip_polygon  Sutherland-Hodgman, planes z+ z- x+ x- y+ y- (bits 16 32 1 2 4 8)
 ;            where vi07 (the union of codes, grown by made vertices) has the
 ;            bit; vf23.x = -1 / +1 is the side, vi01 the axis routine (1761 x,
-;            1784 y, 1807 z); buffers 214 / 264 ping-pong (L1684 swaps and
-;            takes the new count); an empty pass returns vi11 = 0; L1876 last
-;     L1691  one plane: per edge (prev, cur), copy an inside prev, add the
-;            intersection of a crossing edge (L1754 -> jr vi01), close the
+;            1784 y, 1807 z); buffers 214 / 264 ping-pong (clip_swap swaps and
+;            takes the new count); an empty pass returns vi11 = 0; clip_to_screen last
+;     clip_plane_pass  one plane: per edge (prev, cur), copy an inside prev, add the
+;            intersection of a crossing edge (clip_intersect -> jr vi01), close the
 ;            output with a copy of its first vertex
 ;     1761.. the intersection: d = c + s*w at both ends; interpolate FROM the
 ;            end the sign of (prev.c - cur.c) picks (the sub's MAC flag, four
 ;            cycles before fmand); t by DIV; lerp clip pos, STQ, RGBA; the
 ;            screen qword is left stale; new code, y = 1, ORed into vi07
-;     L1876  the result in the 142 layout at the other buffer: made vertices
+;     clip_to_screen  the result in the 142 layout at the other buffer: made vertices
 ;            projected through qwords 8-11, STQ.z = 1/w (the lerped q is
 ;            dropped), fog = lerped STQ.w; fan-triangle backface cull from the
 ;            second vertex (the second tests against a STALE vf27)
 ;     1346, 1351-1353 and 183-186 (VIRFan) are unreachable: after a b / jr, and
-;            L0187 jumps back into the fan loop instead of returning
+;            clip_fan jumps back into the fan loop instead of returning
 ;     1968..2028  UNREACHABLE: no branch or entry reaches it (after jr vi14).
 ;            A register dump to 100+ ending [e], then lq vf30, N(vi01) for N =
 ;            21 314 435 612 932 964 -- the data map's boundaries, as code
@@ -207,7 +207,7 @@ VIRFan:
     opmula.xyz acc, vf23, vf09           nop                                 ;   98
     madda.x acc, vf23, vf09              nop                                 ;   99
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  100
-L0101:
+fan_loop:
     mulaz.w acc, vf00, vf28z             div q, vf00w, vf31w                 ;  101
     madday.w acc, vf00, vf28y            nop                                 ;  102
     maddx.w vf25, vf00, vf28x            nop                                 ;  103
@@ -247,59 +247,59 @@ L0101:
     nop                                  nop                                 ;  137
     nop                                  mtir vi01, vf28w                    ;  138
     sub.xyz vf26, vf10, vf21             ior vi07, vi07, vi06                ;  139
-    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, L0159              ;  140
+    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, fan_reject              ;  140
     mulax.xyzw acc, vf01, vf21x          nop                                 ;  141
-    madday.xyzw acc, vf02, vf21y         ibne vi07, vi00, L0175              ;  142
+    madday.xyzw acc, vf02, vf21y         ibne vi07, vi00, fan_clip              ;  142
     maddaz.xyzw acc, vf03, vf21z         erleng.xyz p, vf26                  ;  143
-    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, L0169              ;  144
+    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, fan_backface              ;  144
     maddw.xyzw vf31, vf04, vf00w         nop                                 ;  145
     mul.xyz vf28, vf26, vf26             nop                                 ;  146
     opmula.xyz acc, vf23, vf09           isw.y vi10, 0(vi15)                 ;  147
-    madda.x acc, vf23, vf09              ibgtz vi02, L0101                   ;  148
+    madda.x acc, vf23, vf09              ibgtz vi02, fan_loop                   ;  148
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  149
-L0150:
+fan_exit:
     nop                                  ilwr.y vi02, (vi15)                 ;  150
     nop                                  ilw.x vi01, 0(vi15)                 ;  151
     nop                                  iaddiu vi15, vi15, 1                ;  152
-    nop                                  ibeq vi02, vi00, L0157              ;  153
+    nop                                  ibeq vi02, vi00, fan_end              ;  153
     nop                                  iaddiu vi02, vi00, 142              ;  154
-    nop                                  bal vi12, L1037                     ;  155
+    nop                                  bal vi12, layer_emitter                     ;  155
     nop                                  iaddiu vi03, vi00, 1                ;  156
-L0157:
+fan_end:
     nop[e]                               nop                                 ;  157
     nop                                  nop                                 ;  158
-L0159:
+fan_reject:
     madday.xyzw acc, vf02, vf21y         nop                                 ;  159
     maddaz.xyzw acc, vf03, vf21z         erleng.xyz p, vf26                  ;  160
     miniw.xyz vf27, vf27, vf00w          nop                                 ;  161
     maddw.xyzw vf31, vf04, vf00w         nop                                 ;  162
     mul.xyz vf28, vf26, vf26             ior vi01, vi12, vi01                ;  163
     opmula.xyz acc, vf23, vf09           isw.w vi01, -2(vi03)                ;  164
-    madda.x acc, vf23, vf09              ibgtz vi02, L0101                   ;  165
+    madda.x acc, vf23, vf09              ibgtz vi02, fan_loop                   ;  165
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  166
-    nop                                  b L0150                             ;  167
+    nop                                  b fan_exit                             ;  167
     nop                                  nop                                 ;  168
-L0169:
+fan_backface:
     mul.xyz vf28, vf26, vf26             ior vi01, vi12, vi01                ;  169
     opmula.xyz acc, vf23, vf09           isw.w vi01, -2(vi03)                ;  170
-    madda.x acc, vf23, vf09              ibgtz vi02, L0101                   ;  171
+    madda.x acc, vf23, vf09              ibgtz vi02, fan_loop                   ;  171
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  172
-    nop                                  b L0150                             ;  173
+    nop                                  b fan_exit                             ;  173
     nop                                  nop                                 ;  174
-L0175:
+fan_clip:
     miniw.xyz vf27, vf27, vf00w          ior vi01, vi12, vi01                ;  175
     maddw.xyzw vf31, vf04, vf00w         isw.w vi01, -2(vi03)                ;  176
     mul.xyz vf28, vf26, vf26             nop                                 ;  177
     opmula.xyz acc, vf23, vf09           nop                                 ;  178
-    madda.x acc, vf23, vf09              ibgez vi13, L0101                   ;  179
+    madda.x acc, vf23, vf09              ibgez vi13, fan_loop                   ;  179
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  180
-    nop                                  bal vi14, L0187                     ;  181
+    nop                                  bal vi14, clip_fan                     ;  181
     nop                                  nop                                 ;  182
-    nop                                  ibgtz vi02, L0101                   ;  183
+    nop                                  ibgtz vi02, fan_loop                   ;  183
     nop                                  nop                                 ;  184
-    nop                                  b L0150                             ;  185
+    nop                                  b fan_exit                             ;  185
     nop                                  nop                                 ;  186
-L0187:
+clip_fan:
     nop                                  sqd.xyzw vf15, (--vi15)             ;  187
     nop                                  sqd.xyzw vf16, (--vi15)             ;  188
     nop                                  sqd.xyzw vf17, (--vi15)             ;  189
@@ -387,16 +387,16 @@ L0187:
     nop                                  sqi.xyzw vf21, (vi11++)             ;  269
     nop                                  sqi.xyzw vf18, (vi11++)             ;  270
     nop                                  iaddiu vi09, vi00, 3                ;  271
-    nop                                  bal vi14, L1266                     ;  272
+    nop                                  bal vi14, clip_polygon                     ;  272
     nop                                  nop                                 ;  273
-    nop                                  ibeq vi11, vi00, L0281              ;  274
+    nop                                  ibeq vi11, vi00, clip_fan_return              ;  274
     nop                                  nop                                 ;  275
     nop                                  iadd vi01, vi00, vi11               ;  276
     nop                                  iadd vi02, vi00, vi12               ;  277
     nop                                  iaddiu vi03, vi00, 1                ;  278
-    nop                                  bal vi12, L1037                     ;  279
+    nop                                  bal vi12, layer_emitter                     ;  279
     nop                                  nop                                 ;  280
-L0281:
+clip_fan_return:
     nop                                  ilwr.x vi11, (vi15)                 ;  281
     nop                                  ilwr.y vi12, (vi15)                 ;  282
     nop                                  ilwr.z vi13, (vi15)                 ;  283
@@ -429,9 +429,9 @@ L0281:
     nop                                  lqi.xyzw vf17, (vi15++)             ;  310
     nop                                  lqi.xyzw vf16, (vi15++)             ;  311
     nop                                  lqi.xyzw vf15, (vi15++)             ;  312
-    nop                                  ibgtz vi02, L0101                   ;  313
+    nop                                  ibgtz vi02, fan_loop                   ;  313
     nop                                  nop                                 ;  314
-    nop                                  b L0150                             ;  315
+    nop                                  b fan_exit                             ;  315
     nop                                  nop                                 ;  316
 ; ===========================================================================
 ; VIRStrip -- transform, light, cull and pack one triangle strip (VUNC layout).
@@ -441,10 +441,10 @@ L0281:
 ;
 ; in   TOP: vertex count N, then N x (P.xyz, (s,t,q), N.xyz, rgba) floats
 ; out  142 + 3n: XYZF2 (ftoi4 x/w, y/w, z/w, fog; bit 15 of w = ADC),
-;      (s, t, q/w, fog), rgba floats -- an INTERMEDIATE buffer: L1037 turns it
+;      (s, t, q/w, fog), rgba floats -- an INTERMEDIATE buffer: layer_emitter turns it
 ;      into one GIF packet per material layer (UV transform, 1/w, int colour)
 ;
-; It is software-pipelined: one pass of L0343 finishes vertex n (lighting,
+; It is software-pipelined: one pass of strip_loop finishes vertex n (lighting,
 ; culling, the three stores) while it loads and transforms vertex n+1, so read
 ; a pass as two vertices interleaved.  Registers, for vertex n:
 ;   vf21 P  vf22 (s,t,q) then STQ out  vf23 N  vf24 colour
@@ -460,9 +460,9 @@ L0281:
 ;          * max(L.N/|L|, 0), 1), alpha = c.w
 ; fog    = clamp(w*scale + offset, near, far)
 ; per triangle (n-2, n-1, n), first match wins:
-;   AND of the three clip codes != 0  -> L0401 reject   (ADC)
-;   OR != 0                           -> L0417 clip     (ADC; L1085 if n >= 2)
-;   sign of the screen cross == parity-> L0411 backface (ADC)
+;   AND of the three clip codes != 0  -> strip_reject reject   (ADC)
+;   OR != 0                           -> strip_clip clip     (ADC; clip_strip if n >= 2)
+;   sign of the screen cross == parity-> strip_backface backface (ADC)
 ;   else drawn, and the stack's drawn flag is set (389)
 ; ===========================================================================
 VIRStrip:
@@ -493,7 +493,7 @@ VIRStrip:
     madda.x acc, vf23, vf09              nop                                 ;  341
     opmsub.xyz vf25, vf09, vf23          nop                                 ;  342
     ; -- loop: finish vertex n, start n+1
-L0343:
+strip_loop:
     mulaz.w acc, vf00, vf28z             div q, vf00w, vf31w                 ;  343
     madday.w acc, vf00, vf28y            nop                                 ;  344
     maddx.w vf25, vf00, vf28x            move.xyzw vf18, vf19                ;  345
@@ -533,61 +533,61 @@ L0343:
     nop                                  nop                                 ;  379
     nop                                  mtir vi01, vf28w                    ;  380
     sub.xyz vf26, vf10, vf21             ior vi07, vi07, vi06                ;  381
-    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, L0401              ;  382
+    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, strip_reject              ;  382
     mulax.xyzw acc, vf01, vf21x          nop                                 ;  383
-    madday.xyzw acc, vf02, vf21y         ibne vi07, vi00, L0417              ;  384
+    madday.xyzw acc, vf02, vf21y         ibne vi07, vi00, strip_clip              ;  384
     maddaz.xyzw acc, vf03, vf21z         erleng.xyz p, vf26                  ;  385
-    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, L0411              ;  386
+    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, strip_backface              ;  386
     maddw.xyzw vf31, vf04, vf00w         nop                                 ;  387
     mul.xyz vf28, vf26, vf26             nop                                 ;  388
     opmula.xyz acc, vf23, vf09           isw.y vi10, 0(vi15)                 ;  389
-    madda.x acc, vf23, vf09              ibgtz vi02, L0343                   ;  390
+    madda.x acc, vf23, vf09              ibgtz vi02, strip_loop                   ;  390
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  391
-    ; -- exit: pop [N, drawn]; if anything was drawn, BAL L1037 to emit the layers
-L0392:
+    ; -- exit: pop [N, drawn]; if anything was drawn, BAL layer_emitter to emit the layers
+strip_exit:
     nop                                  ilwr.y vi02, (vi15)                 ;  392
     nop                                  ilw.x vi01, 0(vi15)                 ;  393
     nop                                  iaddiu vi15, vi15, 1                ;  394
-    nop                                  ibeq vi02, vi00, L0399              ;  395
+    nop                                  ibeq vi02, vi00, strip_end              ;  395
     nop                                  iaddiu vi02, vi00, 142              ;  396
-    nop                                  bal vi12, L1037                     ;  397
+    nop                                  bal vi12, layer_emitter                     ;  397
     nop                                  iaddiu vi03, vi00, 0                ;  398
-L0399:
+strip_end:
     nop[e]                               nop                                 ;  399
     nop                                  nop                                 ;  400
     ; -- reject: ADC on this vertex, then the rest of the pass
-L0401:
+strip_reject:
     madday.xyzw acc, vf02, vf21y         nop                                 ;  401
     maddaz.xyzw acc, vf03, vf21z         erleng.xyz p, vf26                  ;  402
     miniw.xyz vf27, vf27, vf00w          nop                                 ;  403
     maddw.xyzw vf31, vf04, vf00w         nop                                 ;  404
     mul.xyz vf28, vf26, vf26             ior vi01, vi12, vi01                ;  405
     opmula.xyz acc, vf23, vf09           isw.w vi01, -2(vi03)                ;  406
-    madda.x acc, vf23, vf09              ibgtz vi02, L0343                   ;  407
+    madda.x acc, vf23, vf09              ibgtz vi02, strip_loop                   ;  407
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  408
-    nop                                  b L0392                             ;  409
+    nop                                  b strip_exit                             ;  409
     nop                                  nop                                 ;  410
     ; -- backface: ADC on this vertex, then the rest of the pass
-L0411:
+strip_backface:
     mul.xyz vf28, vf26, vf26             ior vi01, vi12, vi01                ;  411
     opmula.xyz acc, vf23, vf09           isw.w vi01, -2(vi03)                ;  412
-    madda.x acc, vf23, vf09              ibgtz vi02, L0343                   ;  413
+    madda.x acc, vf23, vf09              ibgtz vi02, strip_loop                   ;  413
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  414
-    nop                                  b L0392                             ;  415
+    nop                                  b strip_exit                             ;  415
     nop                                  nop                                 ;  416
-    ; -- clip: ADC; from the third vertex on, BAL L1085 (the clipper, not exercised by the capture)
-L0417:
+    ; -- clip: ADC; from the third vertex on, BAL clip_strip (the clipper, not exercised by the capture)
+strip_clip:
     miniw.xyz vf27, vf27, vf00w          ior vi01, vi12, vi01                ;  417
     maddw.xyzw vf31, vf04, vf00w         isw.w vi01, -2(vi03)                ;  418
     mul.xyz vf28, vf26, vf26             nop                                 ;  419
     opmula.xyz acc, vf23, vf09           nop                                 ;  420
-    madda.x acc, vf23, vf09              ibgez vi13, L0343                   ;  421
+    madda.x acc, vf23, vf09              ibgez vi13, strip_loop                   ;  421
     opmsub.xyz vf25, vf09, vf23          sqi.xyzw vf27, (vi03++)             ;  422
-    nop                                  bal vi14, L1085                     ;  423
+    nop                                  bal vi14, clip_strip                     ;  423
     nop                                  nop                                 ;  424
-    nop                                  ibgtz vi02, L0343                   ;  425
+    nop                                  ibgtz vi02, strip_loop                   ;  425
     nop                                  nop                                 ;  426
-    nop                                  b L0392                             ;  427
+    nop                                  b strip_exit                             ;  427
     nop                                  nop                                 ;  428
 ; ===========================================================================
 ; VIRStrip2 -- PackVUNC (and VIColorBuffer's baked colours).  Integer vertices,
@@ -595,13 +595,13 @@ L0417:
 ; w colour).  433 picks the path on vf11.x = VIRaster::m_p45C8, which
 ; DrawPrimBufferPackVUNC sets only when the point light is on AND its sphere,
 ; taken into object space, meets the buffer's box:
-;   0 -> L1354, no point light (READ AND VERIFIED: spec_strip.py 'strip2',
+;   0 -> strip2_unlit, no point light (READ AND VERIFIED: spec_strip.py 'strip2',
 ;        1,550 captured runs, 8,077 vertices, bit for bit with their paths)
 ;   1 -> 435.., lit with the point light -- READ AND VERIFIED ('strip2lit':
 ;        430 runs, 2,715 vertices): the point term added LAST, after static.rgb,
 ;        and the sun factor x c.w BEFORE x static.w (the unlit path's reverse;
 ;        neither order is visible in any capture: vf31 = (0,0,0,1) in all 1,129)
-; L1354's colour = min(c + amb + sun*max(-(N.S)*static.w*c.w, 0) + static.rgb, 1),
+; strip2_unlit's colour = min(c + amb + sun*max(-(N.S)*static.w*c.w, 0) + static.rgb, 1),
 ; alpha 1: on packed terrain c.w is a per-vertex SUN-VISIBILITY factor, not an
 ; alpha, and vf31 (qword 20) is the static lighting.  Culling, fog, outputs and
 ; the 142+ buffer are VIRStrip's.
@@ -610,7 +610,7 @@ L0417:
     nop                                  xtop vi11                           ;  430
     nop                                  ilwr.x vi02, (vi11)                 ;  431
     nop                                  iaddiu vi11, vi11, 1                ;  432
-    nop                                  ibeq vi03, vi00, L1354              ;  433
+    nop                                  ibeq vi03, vi00, strip2_unlit              ;  433
     nop                                  nop                                 ;  434
     nop                                  iaddiu vi12, vi00, 32767            ;  435
     nop                                  iaddiu vi12, vi12, 1                ;  436
@@ -635,7 +635,7 @@ L0417:
     mulz.xyz vf23, vf23, vf29z           nop                                 ;  455
     mulw.xyzw vf24, vf24, vf29w          nop                                 ;  456
     sub.xyz vf26, vf10, vf21             nop                                 ;  457
-L0458:
+strip2_loop:
     mulax.xyzw acc, vf01, vf21x          move.xyzw vf18, vf19                ;  458
     madday.xyzw acc, vf02, vf21y         move.xyzw vf19, vf20                ;  459
     maddaz.xyzw acc, vf03, vf21z         nop                                 ;  460
@@ -683,56 +683,56 @@ L0458:
     maddaw.xyz acc, vf31, vf00w          fmand vi08, vi10                    ;  502
     itof0.xyz vf21, vf21                 mtir vi01, vf28w                    ;  503
     itof0.xyz vf22, vf22                 ior vi07, vi07, vi06                ;  504
-    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, L0523              ;  505
+    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, strip2_reject              ;  505
     itof0.xyz vf23, vf23                 nop                                 ;  506
-    itof0.xyzw vf24, vf24                ibne vi07, vi00, L0538              ;  507
+    itof0.xyzw vf24, vf24                ibne vi07, vi00, strip2_clip              ;  507
     mulx.xyz vf21, vf21, vf29x           nop                                 ;  508
-    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, L0532              ;  509
+    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, strip2_backface              ;  509
     muly.xyz vf22, vf22, vf29y           nop                                 ;  510
     mulz.xyz vf23, vf23, vf29z           isw.y vi10, 0(vi15)                 ;  511
 .vif 0x00000000
 .mpg 512
-    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, L0458                   ;  512
+    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, strip2_loop                   ;  512
     sub.xyz vf26, vf10, vf21             sqi.xyzw vf27, (vi03++)             ;  513
-L0514:
+strip2_exit:
     nop                                  ilwr.y vi02, (vi15)                 ;  514
     nop                                  ilw.x vi01, 0(vi15)                 ;  515
     nop                                  iaddiu vi15, vi15, 1                ;  516
-    nop                                  ibeq vi02, vi00, L0521              ;  517
+    nop                                  ibeq vi02, vi00, strip2_end              ;  517
     nop                                  iaddiu vi02, vi00, 142              ;  518
-    nop                                  bal vi12, L1037                     ;  519
+    nop                                  bal vi12, layer_emitter                     ;  519
     nop                                  iaddiu vi03, vi00, 0                ;  520
-L0521:
+strip2_end:
     nop[e]                               nop                                 ;  521
     nop                                  nop                                 ;  522
-L0523:
+strip2_reject:
     itof0.xyzw vf24, vf24                nop                                 ;  523
     mulx.xyz vf21, vf21, vf29x           nop                                 ;  524
     miniw.xyz vf27, vf27, vf00w          nop                                 ;  525
     muly.xyz vf22, vf22, vf29y           ior vi01, vi12, vi01                ;  526
     mulz.xyz vf23, vf23, vf29z           isw.w vi01, -2(vi03)                ;  527
-    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, L0458                   ;  528
+    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, strip2_loop                   ;  528
     sub.xyz vf26, vf10, vf21             sqi.xyzw vf27, (vi03++)             ;  529
-    nop                                  b L0514                             ;  530
+    nop                                  b strip2_exit                             ;  530
     nop                                  nop                                 ;  531
-L0532:
+strip2_backface:
     mulz.xyz vf23, vf23, vf29z           ior vi01, vi12, vi01                ;  532
     mulw.xyzw vf24, vf24, vf29w          isw.w vi01, -2(vi03)                ;  533
-    sub.xyz vf26, vf10, vf21             ibgtz vi02, L0458                   ;  534
+    sub.xyz vf26, vf10, vf21             ibgtz vi02, strip2_loop                   ;  534
     nop                                  sqi.xyzw vf27, (vi03++)             ;  535
-    nop                                  b L0514                             ;  536
+    nop                                  b strip2_exit                             ;  536
     nop                                  nop                                 ;  537
-L0538:
+strip2_clip:
     miniw.xyz vf27, vf27, vf00w          ior vi01, vi12, vi01                ;  538
     muly.xyz vf22, vf22, vf29y           isw.w vi01, -2(vi03)                ;  539
     mulz.xyz vf23, vf23, vf29z           nop                                 ;  540
-    mulw.xyzw vf24, vf24, vf29w          ibgez vi13, L0458                   ;  541
+    mulw.xyzw vf24, vf24, vf29w          ibgez vi13, strip2_loop                   ;  541
     sub.xyz vf26, vf10, vf21             sqi.xyzw vf27, (vi03++)             ;  542
-    nop                                  bal vi14, L1085                     ;  543
+    nop                                  bal vi14, clip_strip                     ;  543
     nop                                  nop                                 ;  544
-    nop                                  ibgtz vi02, L0458                   ;  545
+    nop                                  ibgtz vi02, strip2_loop                   ;  545
     nop                                  nop                                 ;  546
-    nop                                  b L0514                             ;  547
+    nop                                  b strip2_exit                             ;  547
     nop                                  nop                                 ;  548
 ; ===========================================================================
 ; VIRStrip3 -- PackVUNCG, READ AND VERIFIED (spec_strip.py 'strip3': 669 runs,
@@ -770,7 +770,7 @@ L0538:
     mulz.xyz vf23, vf23, vf29z           nop                                 ;  574
     mulw.xyzw vf24, vf24, vf29w          nop                                 ;  575
     sub.xyz vf26, vf10, vf21             nop                                 ;  576
-L0577:
+strip3_loop:
     mulax.xyzw acc, vf01, vf21x          move.xyzw vf18, vf19                ;  577
     madday.xyzw acc, vf02, vf21y         move.xyzw vf19, vf20                ;  578
     maddaz.xyzw acc, vf03, vf21z         nop                                 ;  579
@@ -818,54 +818,54 @@ L0577:
     itof0.xyz vf22, vf22                 nop                                 ;  621
     itof0.xyz vf23, vf23                 mtir vi01, vf28w                    ;  622
     nop                                  ior vi07, vi07, vi06                ;  623
-    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, L0642              ;  624
+    maddw.xyz vf27, vf13, vf25w          ibne vi14, vi00, strip3_reject              ;  624
     itof0.xyzw vf24, vf24                nop                                 ;  625
-    mulax.xyz acc, vf21, vf29x           ibne vi07, vi00, L0657              ;  626
+    mulax.xyz acc, vf21, vf29x           ibne vi07, vi00, strip3_clip              ;  626
     maddw.xyz vf21, vf28, vf00w          nop                                 ;  627
-    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, L0651              ;  628
+    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, strip3_backface              ;  628
     muly.xyz vf22, vf22, vf29y           nop                                 ;  629
     mulz.xyz vf23, vf23, vf29z           isw.y vi10, 0(vi15)                 ;  630
-    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, L0577                   ;  631
+    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, strip3_loop                   ;  631
     sub.xyz vf26, vf10, vf21             sqi.xyzw vf27, (vi03++)             ;  632
-L0633:
+strip3_exit:
     nop                                  ilwr.y vi02, (vi15)                 ;  633
     nop                                  ilw.x vi01, 0(vi15)                 ;  634
     nop                                  iaddiu vi15, vi15, 1                ;  635
-    nop                                  ibeq vi02, vi00, L0640              ;  636
+    nop                                  ibeq vi02, vi00, strip3_end              ;  636
     nop                                  iaddiu vi02, vi00, 142              ;  637
-    nop                                  bal vi12, L1037                     ;  638
+    nop                                  bal vi12, layer_emitter                     ;  638
     nop                                  iaddiu vi03, vi00, 0                ;  639
-L0640:
+strip3_end:
     nop[e]                               nop                                 ;  640
     nop                                  nop                                 ;  641
-L0642:
+strip3_reject:
     mulax.xyz acc, vf21, vf29x           nop                                 ;  642
     maddw.xyz vf21, vf28, vf00w          nop                                 ;  643
     miniw.xyz vf27, vf27, vf00w          nop                                 ;  644
     muly.xyz vf22, vf22, vf29y           ior vi01, vi12, vi01                ;  645
     mulz.xyz vf23, vf23, vf29z           isw.w vi01, -2(vi03)                ;  646
-    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, L0577                   ;  647
+    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, strip3_loop                   ;  647
     sub.xyz vf26, vf10, vf21             sqi.xyzw vf27, (vi03++)             ;  648
-    nop                                  b L0633                             ;  649
+    nop                                  b strip3_exit                             ;  649
     nop                                  nop                                 ;  650
-L0651:
+strip3_backface:
     mulz.xyz vf23, vf23, vf29z           ior vi01, vi12, vi01                ;  651
     mulw.xyzw vf24, vf24, vf29w          isw.w vi01, -2(vi03)                ;  652
-    nop                                  ibgtz vi02, L0577                   ;  653
+    nop                                  ibgtz vi02, strip3_loop                   ;  653
     sub.xyz vf26, vf10, vf21             sqi.xyzw vf27, (vi03++)             ;  654
-    nop                                  b L0633                             ;  655
+    nop                                  b strip3_exit                             ;  655
     nop                                  nop                                 ;  656
-L0657:
+strip3_clip:
     miniw.xyz vf27, vf27, vf00w          ior vi01, vi12, vi01                ;  657
     muly.xyz vf22, vf22, vf29y           isw.w vi01, -2(vi03)                ;  658
     mulz.xyz vf23, vf23, vf29z           nop                                 ;  659
-    mulw.xyzw vf24, vf24, vf29w          ibgez vi13, L0577                   ;  660
+    mulw.xyzw vf24, vf24, vf29w          ibgez vi13, strip3_loop                   ;  660
     sub.xyz vf26, vf10, vf21             sqi.xyzw vf27, (vi03++)             ;  661
-    nop                                  bal vi14, L1085                     ;  662
+    nop                                  bal vi14, clip_strip                     ;  662
     nop                                  nop                                 ;  663
-    nop                                  ibgtz vi02, L0577                   ;  664
+    nop                                  ibgtz vi02, strip3_loop                   ;  664
     nop                                  nop                                 ;  665
-    nop                                  b L0633                             ;  666
+    nop                                  b strip3_exit                             ;  666
     nop                                  nop                                 ;  667
 VIRStrip4:
     nop                                  xtop vi11                           ;  668
@@ -933,7 +933,7 @@ VIRStrip4:
     maddx.w vf23, vf00, vf25x            iaddiu vi11, vi11, 1                ;  730
     nop                                  sqi.xyzw vf21, (vi12++)             ;  731
     nop                                  move.xyzw vf31, vf23                ;  732
-L0733:
+skin_loop:
     nop                                  lqi.xyz vf21, (vi11++)              ;  733
     nop                                  lqi.xyzw vf22, (vi11++)             ;  734
     nop                                  lqi.xyz vf23, (vi11++)              ;  735
@@ -997,7 +997,7 @@ L0733:
     maddx.w vf23, vf00, vf25x            sqi.xyzw vf00, (vi12++)             ;  791
     nop                                  sqi.xyzw vf21, (vi12++)             ;  792
     nop                                  move.xyzw vf28, vf22                ;  793
-    nop                                  ibgtz vi02, L0733                   ;  794
+    nop                                  ibgtz vi02, skin_loop                   ;  794
     nop                                  move.xyzw vf31, vf23                ;  795
     nop                                  rsqrt q, vf00w, vf23w               ;  796
     nop                                  waitq                               ;  797
@@ -1024,7 +1024,7 @@ VIRStrip5:
     nop                                  isubiu vi15, vi15, 1                ;  817
     nop                                  isw.x vi02, 0(vi15)                 ;  818
     nop                                  isw.y vi00, 0(vi15)                 ;  819
-L0820:
+strip5_loop:
     nop                                  lqi.xyz vf21, (vi11++)              ;  820
     nop                                  lqi.xyz vf22, (vi11++)              ;  821
     nop                                  lqi.xyz vf23, (vi11++)              ;  822
@@ -1069,7 +1069,7 @@ L0820:
     maxx.w vf26, vf26, vf00x             move.w vf27, vf00                   ;  861
     ftoi4.xyzw vf28, vf20                iand vi08, vi08, vi06               ;  862
     miniw.w vf22, vf22, vf30w            ior vi07, vi07, vi06                ;  863
-    subw.w vf25, vf00, vf25w             ibne vi08, vi00, L0890              ;  864
+    subw.w vf25, vf00, vf25w             ibne vi08, vi00, strip5_reject              ;  864
     opmula.xyz acc, vf26, vf27           nop                                 ;  865
     opmsub.xyz vf00, vf27, vf26          sqi.xyzw vf28, (vi03++)             ;  866
     adda.xyz acc, vf24, vf14             sqi.xyzw vf22, (vi03++)             ;  867
@@ -1079,25 +1079,25 @@ L0820:
     nop                                  nop                                 ;  871
     maddw.xyz vf27, vf13, vf25w          mtir vi01, vf28w                    ;  872
     nop                                  nop                                 ;  873
-    nop                                  ibne vi07, vi00, L0913              ;  874
+    nop                                  ibne vi07, vi00, strip5_clip              ;  874
     nop                                  nop                                 ;  875
-    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, L0907              ;  876
+    miniw.xyz vf27, vf27, vf00w          ibeq vi08, vi09, strip5_backface              ;  876
     nop                                  nop                                 ;  877
     nop                                  isw.y vi10, 0(vi15)                 ;  878
-    nop                                  ibgtz vi02, L0820                   ;  879
+    nop                                  ibgtz vi02, strip5_loop                   ;  879
     nop                                  sqi.xyzw vf27, (vi03++)             ;  880
-L0881:
+strip5_exit:
     nop                                  ilwr.y vi02, (vi15)                 ;  881
     nop                                  ilw.x vi01, 0(vi15)                 ;  882
     nop                                  iaddiu vi15, vi15, 1                ;  883
-    nop                                  ibeq vi02, vi00, L0888              ;  884
+    nop                                  ibeq vi02, vi00, strip5_end              ;  884
     nop                                  iaddiu vi02, vi00, 142              ;  885
-    nop                                  bal vi12, L1037                     ;  886
+    nop                                  bal vi12, layer_emitter                     ;  886
     nop                                  iaddiu vi03, vi00, 0                ;  887
-L0888:
+strip5_end:
     nop[e]                               nop                                 ;  888
     nop                                  nop                                 ;  889
-L0890:
+strip5_reject:
     opmsub.xyz vf00, vf27, vf26          sqi.xyzw vf28, (vi03++)             ;  890
     adda.xyz acc, vf24, vf14             sqi.xyzw vf22, (vi03++)             ;  891
     mulw.w vf25, vf25, vf26w             nop                                 ;  892
@@ -1111,28 +1111,28 @@ L0890:
     miniw.xyz vf27, vf27, vf00w          nop                                 ;  900
     nop                                  ior vi01, vi12, vi01                ;  901
     nop                                  isw.w vi01, -2(vi03)                ;  902
-    nop                                  ibgtz vi02, L0820                   ;  903
+    nop                                  ibgtz vi02, strip5_loop                   ;  903
     nop                                  sqi.xyzw vf27, (vi03++)             ;  904
-    nop                                  b L0881                             ;  905
+    nop                                  b strip5_exit                             ;  905
     nop                                  nop                                 ;  906
-L0907:
+strip5_backface:
     nop                                  ior vi01, vi12, vi01                ;  907
     nop                                  isw.w vi01, -2(vi03)                ;  908
-    nop                                  ibgtz vi02, L0820                   ;  909
+    nop                                  ibgtz vi02, strip5_loop                   ;  909
     nop                                  sqi.xyzw vf27, (vi03++)             ;  910
-    nop                                  b L0881                             ;  911
+    nop                                  b strip5_exit                             ;  911
     nop                                  nop                                 ;  912
-L0913:
+strip5_clip:
     miniw.xyz vf27, vf27, vf00w          ior vi01, vi12, vi01                ;  913
     nop                                  isw.w vi01, -2(vi03)                ;  914
     nop                                  nop                                 ;  915
-    nop                                  ibgez vi13, L0820                   ;  916
+    nop                                  ibgez vi13, strip5_loop                   ;  916
     nop                                  sqi.xyzw vf27, (vi03++)             ;  917
-    nop                                  bal vi14, L1085                     ;  918
+    nop                                  bal vi14, clip_strip                     ;  918
     nop                                  nop                                 ;  919
-    nop                                  ibgtz vi02, L0820                   ;  920
+    nop                                  ibgtz vi02, strip5_loop                   ;  920
     nop                                  nop                                 ;  921
-    nop                                  b L0881                             ;  922
+    nop                                  b strip5_exit                             ;  922
     nop                                  nop                                 ;  923
 VIRStrip6:
     nop                                  xtop vi11                           ;  924
@@ -1165,7 +1165,7 @@ VIRStrip6:
     madday.xyzw acc, vf02, vf21y         nop                                 ;  951
     maddaz.xyzw acc, vf03, vf21z         nop                                 ;  952
     maddw.xyzw vf27, vf04, vf00w         eleng.xyz p, vf26                   ;  953
-L0954:
+strip6_loop:
     mulax.xyzw acc, vf05, vf21x          move.xyzw vf15, vf16                ;  954
     madday.xyzw acc, vf06, vf21y         move.xyzw vf16, vf17                ;  955
     maddaz.xyzw acc, vf07, vf21z         move.xyzw vf18, vf19                ;  956
@@ -1202,69 +1202,69 @@ L0954:
     muly.w vf25, vf25, vf11y             nop                                 ;  987
     nop                                  nop                                 ;  988
     adda.xyz acc, vf00, vf14             nop                                 ;  989
-    madday.xyz acc, vf12, vf11y          ibne vi14, vi00, L1009              ;  990
+    madday.xyz acc, vf12, vf11y          ibne vi14, vi00, strip6_reject              ;  990
     maddw.xyz vf23, vf13, vf25w          nop                                 ;  991
-    sub.xyz vf26, vf10, vf21             ibne vi07, vi00, L1026              ;  992
+    sub.xyz vf26, vf10, vf21             ibne vi07, vi00, strip6_clip              ;  992
     mulax.xyzw acc, vf01, vf21x          nop                                 ;  993
-    madday.xyzw acc, vf02, vf21y         ibeq vi08, vi09, L1019              ;  994
+    madday.xyzw acc, vf02, vf21y         ibeq vi08, vi09, strip6_backface              ;  994
     miniw.xyz vf23, vf23, vf00w          nop                                 ;  995
     maddaz.xyzw acc, vf03, vf21z         isw.y vi10, 0(vi15)                 ;  996
     maddw.xyzw vf27, vf04, vf00w         eleng.xyz p, vf26                   ;  997
-    nop                                  ibgtz vi02, L0954                   ;  998
+    nop                                  ibgtz vi02, strip6_loop                   ;  998
     nop                                  sqi.xyzw vf23, (vi03++)             ;  999
-L1000:
+strip6_exit:
     nop                                  ilwr.y vi02, (vi15)                 ; 1000
     nop                                  ilw.x vi01, 0(vi15)                 ; 1001
     nop                                  iaddiu vi15, vi15, 1                ; 1002
-    nop                                  ibeq vi02, vi00, L1007              ; 1003
+    nop                                  ibeq vi02, vi00, strip6_end              ; 1003
     nop                                  iaddiu vi02, vi00, 142              ; 1004
-    nop                                  bal vi12, L1037                     ; 1005
+    nop                                  bal vi12, layer_emitter                     ; 1005
     nop                                  iaddiu vi03, vi00, 0                ; 1006
-L1007:
+strip6_end:
     nop[e]                               nop                                 ; 1007
     nop                                  nop                                 ; 1008
-L1009:
+strip6_reject:
     sub.xyz vf26, vf10, vf21             nop                                 ; 1009
     mulax.xyzw acc, vf01, vf21x          nop                                 ; 1010
     madday.xyzw acc, vf02, vf21y         nop                                 ; 1011
     miniw.xyz vf23, vf23, vf00w          ior vi01, vi12, vi01                ; 1012
     maddaz.xyzw acc, vf03, vf21z         isw.w vi01, -2(vi03)                ; 1013
     maddw.xyzw vf27, vf04, vf00w         eleng.xyz p, vf26                   ; 1014
-    nop                                  ibgtz vi02, L0954                   ; 1015
+    nop                                  ibgtz vi02, strip6_loop                   ; 1015
     nop                                  sqi.xyzw vf23, (vi03++)             ; 1016
-    nop                                  b L1000                             ; 1017
+    nop                                  b strip6_exit                             ; 1017
     nop                                  nop                                 ; 1018
-L1019:
+strip6_backface:
     maddaz.xyzw acc, vf03, vf21z         ior vi01, vi12, vi01                ; 1019
     maddw.xyzw vf27, vf04, vf00w         eleng.xyz p, vf26                   ; 1020
     nop                                  isw.w vi01, -2(vi03)                ; 1021
-    nop                                  ibgtz vi02, L0954                   ; 1022
+    nop                                  ibgtz vi02, strip6_loop                   ; 1022
     nop                                  sqi.xyzw vf23, (vi03++)             ; 1023
 .vif 0x00000000
 .mpg 1024
-    nop                                  b L1000                             ; 1024
+    nop                                  b strip6_exit                             ; 1024
     nop                                  nop                                 ; 1025
-L1026:
+strip6_clip:
     madday.xyzw acc, vf02, vf21y         nop                                 ; 1026
     miniw.xyz vf23, vf23, vf00w          ior vi01, vi12, vi01                ; 1027
     maddaz.xyzw acc, vf03, vf21z         isw.w vi01, -2(vi03)                ; 1028
     maddw.xyzw vf27, vf04, vf00w         eleng.xyz p, vf26                   ; 1029
-    nop                                  ibgez vi13, L0954                   ; 1030
+    nop                                  ibgez vi13, strip6_loop                   ; 1030
     nop                                  sqi.xyzw vf23, (vi03++)             ; 1031
-    nop                                  bal vi14, L1085                     ; 1032
+    nop                                  bal vi14, clip_strip                     ; 1032
     nop                                  nop                                 ; 1033
-    nop                                  ibgtz vi02, L0954                   ; 1034
+    nop                                  ibgtz vi02, strip6_loop                   ; 1034
     nop                                  nop                                 ; 1035
-    nop                                  b L1000                             ; 1036
-L1037:
+    nop                                  b strip6_exit                             ; 1036
+layer_emitter:
     nop                                  iaddiu vi05, vi00, 435              ; 1037
     nop                                  iaddiu vi07, vi05, 0                ; 1038
     nop                                  ilwr.x vi04, (vi07)                 ; 1039
     nop                                  iaddiu vi05, vi05, 1                ; 1040
     nop                                  iaddiu vi08, vi00, 32767            ; 1041
     nop                                  iaddiu vi08, vi08, 1                ; 1042
-L1043:
-    nop                                  ibeq vi04, vi00, L1083              ; 1043
+layer_next:
+    nop                                  ibeq vi04, vi00, layer_done              ; 1043
     nop                                  isubiu vi04, vi04, 1                ; 1044
     nop                                  iaddiu vi07, vi05, 1                ; 1045
     nop                                  xgkick vi07                         ; 1046
@@ -1272,14 +1272,14 @@ L1043:
     nop                                  ilwr.x vi10, (vi07)                 ; 1048
     nop                                  iaddiu vi07, vi05, 10               ; 1049
     nop                                  iaddiu vi06, vi00, 2                ; 1050
-    nop                                  ibeq vi10, vi06, L1058              ; 1051
+    nop                                  ibeq vi10, vi06, layer_wire_tag              ; 1051
     nop                                  iaddiu vi09, vi00, 539              ; 1052
     nop                                  iadd vi07, vi07, vi03               ; 1053
     nop                                  lq.xyzw vf15, 0(vi07)               ; 1054
     nop                                  ior vi07, vi08, vi01                ; 1055
-    nop                                  b L1066                             ; 1056
+    nop                                  b layer_dispatch                             ; 1056
     nop                                  nop                                 ; 1057
-L1058:
+layer_wire_tag:
     nop                                  iadd vi07, vi07, vi06               ; 1058
     nop                                  lq.xyzw vf15, 0(vi07)               ; 1059
     nop                                  iadd vi07, vi00, vi01               ; 1060
@@ -1288,7 +1288,7 @@ L1058:
     nop                                  iadd vi06, vi06, vi06               ; 1063
     nop                                  iaddiu vi07, vi06, 1                ; 1064
     nop                                  ior vi07, vi08, vi07                ; 1065
-L1066:
+layer_dispatch:
     nop                                  iadd vi06, vi00, vi01               ; 1066
     nop                                  sq.xyzw vf15, 0(vi09)               ; 1067
     nop                                  iswr.x vi07, (vi09)                 ; 1068
@@ -1298,18 +1298,19 @@ L1066:
     nop                                  iadd vi11, vi00, vi02               ; 1072
     nop                                  jr vi10                             ; 1073
     nop                                  nop                                 ; 1074
-    nop                                  b L1523                             ; 1075
+layer_jumptable:
+    nop                                  b layer_solid                             ; 1075
     nop                                  nop                                 ; 1076
-    nop                                  b L1451                             ; 1077
+    nop                                  b layer_tex_wrap                             ; 1077
     nop                                  nop                                 ; 1078
-    nop                                  b L1545                             ; 1079
+    nop                                  b layer_wire                             ; 1079
     nop                                  nop                                 ; 1080
-    nop                                  b L1494                             ; 1081
+    nop                                  b layer_tex_clamp                             ; 1081
     nop                                  nop                                 ; 1082
-L1083:
+layer_done:
     nop                                  jr vi12                             ; 1083
     nop                                  nop                                 ; 1084
-L1085:
+clip_strip:
     nop                                  sqd.xyzw vf15, (--vi15)             ; 1085
     nop                                  sqd.xyzw vf16, (--vi15)             ; 1086
     nop                                  sqd.xyzw vf17, (--vi15)             ; 1087
@@ -1343,7 +1344,7 @@ L1085:
     nop                                  iswr.z vi13, (vi15)                 ; 1115
     nop                                  iswr.w vi14, (vi15)                 ; 1116
     nop                                  iaddiu vi11, vi00, 214              ; 1117
-    nop                                  ibne vi09, vi10, L1172              ; 1118
+    nop                                  ibne vi09, vi10, clip_strip_reversed              ; 1118
     nop                                  nop                                 ; 1119
     nop                                  isubiu vi12, vi03, 9                ; 1120
     nop                                  lq.xyzw vf22, 1(vi12)               ; 1121
@@ -1395,9 +1396,9 @@ L1085:
     nop                                  sqi.xyzw vf22, (vi11++)             ; 1167
     nop                                  sqi.xyzw vf21, (vi11++)             ; 1168
     nop                                  sqi.xyzw vf18, (vi11++)             ; 1169
-    nop                                  b L1222                             ; 1170
+    nop                                  b clip_strip_run                             ; 1170
     nop                                  nop                                 ; 1171
-L1172:
+clip_strip_reversed:
     nop                                  isubiu vi12, vi03, 3                ; 1172
     nop                                  lq.xyzw vf22, 1(vi12)               ; 1173
     nop                                  lq.xyzw vf21, 2(vi12)               ; 1174
@@ -1448,18 +1449,18 @@ L1172:
     nop                                  sqi.xyzw vf22, (vi11++)             ; 1219
     nop                                  sqi.xyzw vf21, (vi11++)             ; 1220
     nop                                  sqi.xyzw vf20, (vi11++)             ; 1221
-L1222:
+clip_strip_run:
     nop                                  iaddiu vi09, vi00, 3                ; 1222
-    nop                                  bal vi14, L1266                     ; 1223
+    nop                                  bal vi14, clip_polygon                     ; 1223
     nop                                  nop                                 ; 1224
-    nop                                  ibeq vi11, vi00, L1232              ; 1225
+    nop                                  ibeq vi11, vi00, clip_strip_return              ; 1225
     nop                                  nop                                 ; 1226
     nop                                  iadd vi01, vi00, vi11               ; 1227
     nop                                  iadd vi02, vi00, vi12               ; 1228
     nop                                  iaddiu vi03, vi00, 1                ; 1229
-    nop                                  bal vi12, L1037                     ; 1230
+    nop                                  bal vi12, layer_emitter                     ; 1230
     nop                                  nop                                 ; 1231
-L1232:
+clip_strip_return:
     nop                                  ilwr.x vi11, (vi15)                 ; 1232
     nop                                  ilwr.y vi12, (vi15)                 ; 1233
     nop                                  ilwr.z vi13, (vi15)                 ; 1234
@@ -1494,8 +1495,8 @@ L1232:
     nop                                  lqi.xyzw vf15, (vi15++)             ; 1263
     nop                                  jr vi14                             ; 1264
     nop                                  nop                                 ; 1265
-L1266:
-    ; -- the clipper proper: one L1691 pass per plane the union vi07 crosses
+clip_polygon:
+    ; -- the clipper proper: one clip_plane_pass pass per plane the union vi07 crosses
     nop                                  isubiu vi15, vi15, 1                ; 1266
     nop                                  iswr.x vi14, (vi15)                 ; 1267
     nop                                  iaddiu vi10, vi00, 214              ; 1268
@@ -1504,88 +1505,88 @@ L1266:
     subw.x vf23, vf00, vf00w             iadd vi11, vi00, vi00               ; 1271
     nop                                  iand vi04, vi07, vi08               ; 1272
     nop                                  iadd vi02, vi00, vi10               ; 1273
-    nop                                  ibeq vi04, vi00, L1282              ; 1274
+    nop                                  ibeq vi04, vi00, clip_plane_zneg              ; 1274
     nop                                  iadd vi03, vi00, vi12               ; 1275
-    nop                                  bal vi14, L1691                     ; 1276
-    nop                                  iaddiu vi01, vi00, 1807             ; 1277
-    nop                                  bal vi14, L1684                     ; 1278
+    nop                                  bal vi14, clip_plane_pass                     ; 1276
+    nop                                  iaddiu vi01, vi00, 1807             ; 1277  -> clip_axis_z
+    nop                                  bal vi14, clip_swap                     ; 1278
     nop                                  nop                                 ; 1279
 .vif 0x00000000
 .mpg 1280
-    nop                                  iblez vi09, L1347                   ; 1280
+    nop                                  iblez vi09, clip_polygon_return                   ; 1280
     nop                                  nop                                 ; 1281
-L1282:
+clip_plane_zneg:
     nop                                  iaddiu vi08, vi00, 32               ; 1282
     addw.x vf23, vf00, vf00w             iadd vi11, vi00, vi00               ; 1283
     nop                                  iand vi04, vi07, vi08               ; 1284
     nop                                  iadd vi02, vi00, vi10               ; 1285
-    nop                                  ibeq vi04, vi00, L1294              ; 1286
+    nop                                  ibeq vi04, vi00, clip_plane_xpos              ; 1286
     nop                                  iadd vi03, vi00, vi12               ; 1287
-    nop                                  bal vi14, L1691                     ; 1288
-    nop                                  iaddiu vi01, vi00, 1807             ; 1289
-    nop                                  bal vi14, L1684                     ; 1290
+    nop                                  bal vi14, clip_plane_pass                     ; 1288
+    nop                                  iaddiu vi01, vi00, 1807             ; 1289  -> clip_axis_z
+    nop                                  bal vi14, clip_swap                     ; 1290
     nop                                  nop                                 ; 1291
-    nop                                  iblez vi09, L1347                   ; 1292
+    nop                                  iblez vi09, clip_polygon_return                   ; 1292
     nop                                  nop                                 ; 1293
-L1294:
+clip_plane_xpos:
     nop                                  iaddiu vi08, vi00, 1                ; 1294
     subw.x vf23, vf00, vf00w             iadd vi11, vi00, vi00               ; 1295
     nop                                  iand vi04, vi07, vi08               ; 1296
     nop                                  iadd vi02, vi00, vi10               ; 1297
-    nop                                  ibeq vi04, vi00, L1306              ; 1298
+    nop                                  ibeq vi04, vi00, clip_plane_xneg              ; 1298
     nop                                  iadd vi03, vi00, vi12               ; 1299
-    nop                                  bal vi14, L1691                     ; 1300
-    nop                                  iaddiu vi01, vi00, 1761             ; 1301
-    nop                                  bal vi14, L1684                     ; 1302
+    nop                                  bal vi14, clip_plane_pass                     ; 1300
+    nop                                  iaddiu vi01, vi00, 1761             ; 1301  -> clip_axis_x
+    nop                                  bal vi14, clip_swap                     ; 1302
     nop                                  nop                                 ; 1303
-    nop                                  iblez vi09, L1347                   ; 1304
+    nop                                  iblez vi09, clip_polygon_return                   ; 1304
     nop                                  nop                                 ; 1305
-L1306:
+clip_plane_xneg:
     nop                                  iaddiu vi08, vi00, 2                ; 1306
     addw.x vf23, vf00, vf00w             iadd vi11, vi00, vi00               ; 1307
     nop                                  iand vi04, vi07, vi08               ; 1308
     nop                                  iadd vi02, vi00, vi10               ; 1309
-    nop                                  ibeq vi04, vi00, L1318              ; 1310
+    nop                                  ibeq vi04, vi00, clip_plane_ypos              ; 1310
     nop                                  iadd vi03, vi00, vi12               ; 1311
-    nop                                  bal vi14, L1691                     ; 1312
-    nop                                  iaddiu vi01, vi00, 1761             ; 1313
-    nop                                  bal vi14, L1684                     ; 1314
+    nop                                  bal vi14, clip_plane_pass                     ; 1312
+    nop                                  iaddiu vi01, vi00, 1761             ; 1313  -> clip_axis_x
+    nop                                  bal vi14, clip_swap                     ; 1314
     nop                                  nop                                 ; 1315
-    nop                                  iblez vi09, L1347                   ; 1316
+    nop                                  iblez vi09, clip_polygon_return                   ; 1316
     nop                                  nop                                 ; 1317
-L1318:
+clip_plane_ypos:
     nop                                  iaddiu vi08, vi00, 4                ; 1318
     subw.x vf23, vf00, vf00w             iadd vi11, vi00, vi00               ; 1319
     nop                                  iand vi04, vi07, vi08               ; 1320
     nop                                  iadd vi02, vi00, vi10               ; 1321
-    nop                                  ibeq vi04, vi00, L1330              ; 1322
+    nop                                  ibeq vi04, vi00, clip_plane_yneg              ; 1322
     nop                                  iadd vi03, vi00, vi12               ; 1323
-    nop                                  bal vi14, L1691                     ; 1324
-    nop                                  iaddiu vi01, vi00, 1784             ; 1325
-    nop                                  bal vi14, L1684                     ; 1326
+    nop                                  bal vi14, clip_plane_pass                     ; 1324
+    nop                                  iaddiu vi01, vi00, 1784             ; 1325  -> clip_axis_y
+    nop                                  bal vi14, clip_swap                     ; 1326
     nop                                  nop                                 ; 1327
-    nop                                  iblez vi09, L1347                   ; 1328
+    nop                                  iblez vi09, clip_polygon_return                   ; 1328
     nop                                  nop                                 ; 1329
-L1330:
+clip_plane_yneg:
     nop                                  iaddiu vi08, vi00, 8                ; 1330
     addw.x vf23, vf00, vf00w             iadd vi11, vi00, vi00               ; 1331
     nop                                  iand vi04, vi07, vi08               ; 1332
     nop                                  iadd vi02, vi00, vi10               ; 1333
-    nop                                  ibeq vi04, vi00, L1342              ; 1334
+    nop                                  ibeq vi04, vi00, clip_to_screen_call              ; 1334
     nop                                  iadd vi03, vi00, vi12               ; 1335
-    nop                                  bal vi14, L1691                     ; 1336
-    nop                                  iaddiu vi01, vi00, 1784             ; 1337
-    nop                                  bal vi14, L1684                     ; 1338
+    nop                                  bal vi14, clip_plane_pass                     ; 1336
+    nop                                  iaddiu vi01, vi00, 1784             ; 1337  -> clip_axis_y
+    nop                                  bal vi14, clip_swap                     ; 1338
     nop                                  nop                                 ; 1339
-    nop                                  iblez vi09, L1347                   ; 1340
+    nop                                  iblez vi09, clip_polygon_return                   ; 1340
     nop                                  nop                                 ; 1341
-L1342:
-    nop                                  bal vi14, L1876                     ; 1342
+clip_to_screen_call:
+    nop                                  bal vi14, clip_to_screen                     ; 1342
     nop                                  nop                                 ; 1343
-    nop                                  b L1347                             ; 1344
+    nop                                  b clip_polygon_return                             ; 1344
     nop                                  nop                                 ; 1345
     nop                                  iadd vi11, vi00, vi00               ; 1346
-L1347:
+clip_polygon_return:
     nop                                  ilwr.x vi14, (vi15)                 ; 1347
     nop                                  iaddiu vi15, vi15, 1                ; 1348
     nop                                  jr vi14                             ; 1349
@@ -1594,7 +1595,7 @@ L1347:
     nop                                  ilwr.x vi02, (vi11)                 ; 1352
     nop                                  iaddiu vi11, vi11, 1                ; 1353
     ; -- VIRStrip2 without the point light (vf11.x == 0): see VIRStrip2's header
-L1354:
+strip2_unlit:
     nop                                  iaddiu vi12, vi00, 32767            ; 1354
     nop                                  iaddiu vi12, vi12, 1                ; 1355
     nop                                  iaddiu vi15, vi00, 1024             ; 1356
@@ -1617,7 +1618,7 @@ L1354:
     muly.xyz vf22, vf22, vf29y           nop                                 ; 1373
     mulz.xyz vf23, vf23, vf29z           nop                                 ; 1374
     mulw.xyzw vf24, vf24, vf29w          nop                                 ; 1375
-L1376:
+strip2u_loop:
     mulax.xyzw acc, vf01, vf21x          move.xyzw vf18, vf19                ; 1376
     madday.xyzw acc, vf02, vf21y         move.xyzw vf19, vf20                ; 1377
     maddaz.xyzw acc, vf03, vf21z         nop                                 ; 1378
@@ -1649,57 +1650,57 @@ L1376:
     opmsub.xyz vf00, vf27, vf26          mtir vi01, vf28w                    ; 1404
     adda.xyz acc, vf24, vf14             lqi.xyz vf23, (vi11++)              ; 1405
     msubax.xyz acc, vf12, vf25x          lqi.xyzw vf24, (vi11++)             ; 1406
-    maddw.xyz vf25, vf31, vf00w          ibne vi14, vi00, L1425              ; 1407
+    maddw.xyz vf25, vf31, vf00w          ibne vi14, vi00, strip2u_reject              ; 1407
     itof0.xyz vf22, vf22                 fmand vi08, vi10                    ; 1408
-    itof0.xyz vf23, vf23                 ibne vi07, vi00, L1440              ; 1409
+    itof0.xyz vf23, vf23                 ibne vi07, vi00, strip2u_clip              ; 1409
     itof0.xyzw vf24, vf24                nop                                 ; 1410
-    miniw.xyz vf25, vf25, vf00w          ibeq vi08, vi09, L1434              ; 1411
+    miniw.xyz vf25, vf25, vf00w          ibeq vi08, vi09, strip2u_backface              ; 1411
     mulx.xyz vf21, vf21, vf29x           nop                                 ; 1412
     muly.xyz vf22, vf22, vf29y           isw.y vi10, 0(vi15)                 ; 1413
-    mulz.xyz vf23, vf23, vf29z           ibgtz vi02, L1376                   ; 1414
+    mulz.xyz vf23, vf23, vf29z           ibgtz vi02, strip2u_loop                   ; 1414
     mulw.xyzw vf24, vf24, vf29w          sqi.xyzw vf25, (vi03++)             ; 1415
-L1416:
+strip2u_exit:
     nop                                  ilwr.y vi02, (vi15)                 ; 1416
     nop                                  ilw.x vi01, 0(vi15)                 ; 1417
     nop                                  iaddiu vi15, vi15, 1                ; 1418
-    nop                                  ibeq vi02, vi00, L1423              ; 1419
+    nop                                  ibeq vi02, vi00, strip2u_end              ; 1419
     nop                                  iaddiu vi02, vi00, 142              ; 1420
-    nop                                  bal vi12, L1037                     ; 1421
+    nop                                  bal vi12, layer_emitter                     ; 1421
     nop                                  iaddiu vi03, vi00, 0                ; 1422
-L1423:
+strip2u_end:
     nop[e]                               nop                                 ; 1423
     nop                                  nop                                 ; 1424
-L1425:
+strip2u_reject:
     itof0.xyz vf23, vf23                 nop                                 ; 1425
     itof0.xyzw vf24, vf24                nop                                 ; 1426
     miniw.xyz vf25, vf25, vf00w          nop                                 ; 1427
     mulx.xyz vf21, vf21, vf29x           ior vi01, vi12, vi01                ; 1428
     muly.xyz vf22, vf22, vf29y           isw.w vi01, -2(vi03)                ; 1429
-    mulz.xyz vf23, vf23, vf29z           ibgtz vi02, L1376                   ; 1430
+    mulz.xyz vf23, vf23, vf29z           ibgtz vi02, strip2u_loop                   ; 1430
     mulw.xyzw vf24, vf24, vf29w          sqi.xyzw vf25, (vi03++)             ; 1431
-    nop                                  b L1416                             ; 1432
+    nop                                  b strip2u_exit                             ; 1432
     nop                                  nop                                 ; 1433
-L1434:
+strip2u_backface:
     muly.xyz vf22, vf22, vf29y           ior vi01, vi12, vi01                ; 1434
     mulz.xyz vf23, vf23, vf29z           isw.w vi01, -2(vi03)                ; 1435
-    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, L1376                   ; 1436
+    mulw.xyzw vf24, vf24, vf29w          ibgtz vi02, strip2u_loop                   ; 1436
     nop                                  sqi.xyzw vf25, (vi03++)             ; 1437
-    nop                                  b L1416                             ; 1438
+    nop                                  b strip2u_exit                             ; 1438
     nop                                  nop                                 ; 1439
-L1440:
+strip2u_clip:
     miniw.xyz vf25, vf25, vf00w          nop                                 ; 1440
     mulx.xyz vf21, vf21, vf29x           ior vi01, vi12, vi01                ; 1441
     muly.xyz vf22, vf22, vf29y           isw.w vi01, -2(vi03)                ; 1442
-    mulz.xyz vf23, vf23, vf29z           ibgez vi13, L1376                   ; 1443
+    mulz.xyz vf23, vf23, vf29z           ibgez vi13, strip2u_loop                   ; 1443
     mulw.xyzw vf24, vf24, vf29w          sqi.xyzw vf25, (vi03++)             ; 1444
-    nop                                  bal vi14, L1085                     ; 1445
+    nop                                  bal vi14, clip_strip                     ; 1445
     nop                                  nop                                 ; 1446
-    nop                                  ibgtz vi02, L1376                   ; 1447
+    nop                                  ibgtz vi02, strip2u_loop                   ; 1447
     nop                                  nop                                 ; 1448
-    nop                                  b L1416                             ; 1449
+    nop                                  b strip2u_exit                             ; 1449
     nop                                  nop                                 ; 1450
 ; ===========================================================================
-; The layer routines, reached from L1037's jump table at 1075 on the layer's
+; The layer routines, reached from layer_emitter's jump table at 1075 on the layer's
 ; pass type (VIMaterial::ConstructDMAPacket's list at 435, 17 qwords a layer:
 ; +0 type, +1..9 A+D GS state, +10/+11/+12 GIF tag templates strip/fan/line,
 ; +13 layer colour x 128, +14..16 the UV transform, scroll in row 2).  Each
@@ -1707,12 +1708,12 @@ L1440:
 ; (u'q, v'q, q), ftoi0(colour * layer colour), XYZF2 -- and kicks it from its
 ; branch's delay slot.  READ AND VERIFIED: spec_layer.py, 3,635 captured
 ; packets (88,004 qwords) bit for bit.
-;   type 0 solid fill L1523 (not in the capture)   type 2 wire L1545 (not in it)
-;   type 1 textured, wrap both axes (L1451): first subtracts k = the integer
+;   type 0 solid fill layer_solid (not in the capture)   type 2 wire layer_wire (not in it)
+;   type 1 textured, wrap both axes (layer_tex_wrap): first subtracts k = the integer
 ;          part of (u', v') - 2047/4096 at vertex 0, invisible under wrapping
-;   type 3 textured, clamp on S or T (L1494): the same with no offset
+;   type 3 textured, clamp on S or T (layer_tex_clamp): the same with no offset
 ; ===========================================================================
-L1451:
+layer_tex_wrap:
     nop                                  iaddiu vi07, vi05, 14               ; 1451
     nop                                  lq.xyzw vf20, 1(vi11)               ; 1452
     nop                                  lqi.xyzw vf16, (vi07++)             ; 1453
@@ -1740,7 +1741,7 @@ L1451:
     msubaw.xy acc, vf25, vf00w           nop                                 ; 1475
     maddw.xy vf22, vf18, vf00w           nop                                 ; 1476
     mul.xyzw vf28, vf21, vf26            nop                                 ; 1477
-L1478:
+layer_tex_wrap_loop:
     nop                                  move.z vf22, vf20                   ; 1478
     nop                                  move.xyzw vf27, vf19                ; 1479
     mulz.xy vf22, vf22, vf20z            isubiu vi06, vi06, 1                ; 1480
@@ -1751,13 +1752,13 @@ L1478:
     mulax.xy acc, vf16, vf20x            sqi.xyzw vf23, (vi09++)             ; 1485
     madday.xy acc, vf17, vf20y           sqi.xyzw vf27, (vi09++)             ; 1486
     msubaw.xy acc, vf25, vf00w           nop                                 ; 1487
-    maddw.xy vf22, vf18, vf00w           ibne vi06, vi00, L1478              ; 1488
+    maddw.xy vf22, vf18, vf00w           ibne vi06, vi00, layer_tex_wrap_loop              ; 1488
     mul.xyzw vf28, vf21, vf26            iaddiu vi11, vi11, 3                ; 1489
     nop                                  iaddiu vi09, vi00, 539              ; 1490
     nop                                  iaddiu vi05, vi05, 17               ; 1491
-    nop                                  b L1043                             ; 1492
+    nop                                  b layer_next                             ; 1492
     nop                                  xgkick vi09                         ; 1493
-L1494:
+layer_tex_clamp:
     nop                                  iaddiu vi07, vi05, 14               ; 1494
     nop                                  lqi.xyzw vf16, (vi07++)             ; 1495
     nop                                  lqi.xyzw vf17, (vi07++)             ; 1496
@@ -1772,7 +1773,7 @@ L1494:
     madday.xy acc, vf17, vf20y           nop                                 ; 1505
     maddw.xy vf22, vf18, vf00w           nop                                 ; 1506
     mul.xyzw vf28, vf21, vf26            nop                                 ; 1507
-L1508:
+layer_tex_clamp_loop:
     nop                                  move.z vf22, vf20                   ; 1508
     nop                                  move.xyzw vf27, vf19                ; 1509
     mulz.xy vf22, vf22, vf20z            isubiu vi06, vi06, 1                ; 1510
@@ -1782,16 +1783,16 @@ L1508:
     nop                                  sqi.xyzw vf22, (vi09++)             ; 1514
     mulax.xy acc, vf16, vf20x            sqi.xyzw vf23, (vi09++)             ; 1515
     madday.xy acc, vf17, vf20y           sqi.xyzw vf27, (vi09++)             ; 1516
-    maddw.xy vf22, vf18, vf00w           ibne vi06, vi00, L1508              ; 1517
+    maddw.xy vf22, vf18, vf00w           ibne vi06, vi00, layer_tex_clamp_loop              ; 1517
     mul.xyzw vf28, vf21, vf26            iaddiu vi11, vi11, 3                ; 1518
     nop                                  iaddiu vi09, vi00, 539              ; 1519
     nop                                  iaddiu vi05, vi05, 17               ; 1520
-    nop                                  b L1043                             ; 1521
+    nop                                  b layer_next                             ; 1521
     nop                                  xgkick vi09                         ; 1522
-L1523:
+layer_solid:
     nop                                  iaddiu vi07, vi05, 13               ; 1523
     nop                                  lqi.xyzw vf26, (vi07++)             ; 1524
-L1525:
+layer_solid_loop:
     nop                                  lq.xyzw vf21, 2(vi11)               ; 1525
     nop                                  lq.xyzw vf19, 0(vi11)               ; 1526
     nop                                  lq.xyzw vf20, 1(vi11)               ; 1527
@@ -1808,17 +1809,17 @@ L1525:
     nop                                  nop                                 ; 1536
     nop                                  sqi.xyzw vf23, (vi09++)             ; 1537
     nop                                  sqi.xyzw vf19, (vi09++)             ; 1538
-    nop                                  ibne vi06, vi00, L1525              ; 1539
+    nop                                  ibne vi06, vi00, layer_solid_loop              ; 1539
     nop                                  iaddiu vi11, vi11, 3                ; 1540
     nop                                  iaddiu vi09, vi00, 539              ; 1541
     nop                                  iaddiu vi05, vi05, 17               ; 1542
-    nop                                  b L1043                             ; 1543
+    nop                                  b layer_next                             ; 1543
     nop                                  xgkick vi09                         ; 1544
-L1545:
+layer_wire:
     nop                                  iaddiu vi07, vi00, 255              ; 1545
     nop                                  mfir.xyzw vf23, vi07                ; 1546
     nop                                  iaddiu vi07, vi00, 32767            ; 1547
-    nop                                  ibne vi03, vi00, L1616              ; 1548
+    nop                                  ibne vi03, vi00, layer_wire_fan              ; 1548
     nop                                  nop                                 ; 1549
     nop                                  ilwr.w vi10, (vi11)                 ; 1550
     nop                                  lqi.xyzw vf19, (vi11++)             ; 1551
@@ -1843,14 +1844,14 @@ L1545:
     nop                                  sqi.xyzw vf19, (vi09++)             ; 1570
     nop                                  move.xyzw vf24, vf22                ; 1571
     nop                                  move.xyzw vf22, vf19                ; 1572
-L1573:
+wire_strip_loop:
     nop                                  ilwr.w vi10, (vi11)                 ; 1573
     nop                                  lqi.xyzw vf19, (vi11++)             ; 1574
     nop                                  lqi.xyzw vf20, (vi11++)             ; 1575
     nop                                  lqi.xyzw vf21, (vi11++)             ; 1576
     nop                                  isub vi10, vi10, vi07               ; 1577
     nop                                  isubiu vi06, vi06, 1                ; 1578
-    nop                                  iblez vi10, L1600                   ; 1579
+    nop                                  iblez vi10, wire_strip_drawn                   ; 1579
     nop                                  isubiu vi10, vi10, 1                ; 1580
     nop                                  iaddiu vi10, vi10, 16               ; 1581
     nop                                  sqi.xyzw vf23, (vi09++)             ; 1582
@@ -1867,11 +1868,11 @@ L1573:
     nop                                  move.xyzw vf24, vf22                ; 1593
     nop                                  nop                                 ; 1594
     nop                                  move.xyzw vf22, vf19                ; 1595
-    nop                                  ibne vi06, vi00, L1573              ; 1596
+    nop                                  ibne vi06, vi00, wire_strip_loop              ; 1596
     nop                                  nop                                 ; 1597
-    nop                                  b L1612                             ; 1598
+    nop                                  b wire_strip_kick                             ; 1598
     nop                                  nop                                 ; 1599
-L1600:
+wire_strip_drawn:
     nop                                  sqi.xyzw vf23, (vi09++)             ; 1600
     nop                                  sqi.xyzw vf19, (vi09++)             ; 1601
     nop                                  sqi.xyzw vf23, (vi09++)             ; 1602
@@ -1882,14 +1883,14 @@ L1600:
     nop                                  sqi.xyzw vf19, (vi09++)             ; 1607
     nop                                  move.xyzw vf24, vf22                ; 1608
     nop                                  move.xyzw vf22, vf19                ; 1609
-    nop                                  ibne vi06, vi00, L1573              ; 1610
+    nop                                  ibne vi06, vi00, wire_strip_loop              ; 1610
     nop                                  nop                                 ; 1611
-L1612:
+wire_strip_kick:
     nop                                  iaddiu vi09, vi00, 539              ; 1612
     nop                                  iaddiu vi05, vi05, 17               ; 1613
-    nop                                  b L1043                             ; 1614
+    nop                                  b layer_next                             ; 1614
     nop                                  xgkick vi09                         ; 1615
-L1616:
+layer_wire_fan:
     nop                                  ilwr.w vi10, (vi11)                 ; 1616
     nop                                  lqi.xyzw vf19, (vi11++)             ; 1617
     nop                                  lqi.xyzw vf20, (vi11++)             ; 1618
@@ -1913,14 +1914,14 @@ L1616:
     nop                                  sqi.xyzw vf19, (vi09++)             ; 1636
     nop                                  move.xyzw vf24, vf22                ; 1637
     nop                                  move.xyzw vf22, vf19                ; 1638
-L1639:
+wire_fan_loop:
     nop                                  ilwr.w vi10, (vi11)                 ; 1639
     nop                                  lqi.xyzw vf19, (vi11++)             ; 1640
     nop                                  lqi.xyzw vf20, (vi11++)             ; 1641
     nop                                  lqi.xyzw vf21, (vi11++)             ; 1642
     nop                                  isub vi10, vi10, vi07               ; 1643
     nop                                  isubiu vi06, vi06, 1                ; 1644
-    nop                                  iblez vi10, L1667                   ; 1645
+    nop                                  iblez vi10, wire_fan_drawn                   ; 1645
     nop                                  isubiu vi10, vi10, 1                ; 1646
     nop                                  iaddiu vi10, vi10, 16               ; 1647
     nop                                  sqi.xyzw vf23, (vi09++)             ; 1648
@@ -1938,11 +1939,11 @@ L1639:
     nop                                  nop                                 ; 1660
     nop                                  nop                                 ; 1661
     nop                                  move.xyzw vf22, vf19                ; 1662
-    nop                                  ibne vi06, vi00, L1639              ; 1663
+    nop                                  ibne vi06, vi00, wire_fan_loop              ; 1663
     nop                                  nop                                 ; 1664
-    nop                                  b L1680                             ; 1665
+    nop                                  b wire_fan_kick                             ; 1665
     nop                                  nop                                 ; 1666
-L1667:
+wire_fan_drawn:
     nop                                  sqi.xyzw vf23, (vi09++)             ; 1667
     nop                                  sqi.xyzw vf19, (vi09++)             ; 1668
     nop                                  sqi.xyzw vf23, (vi09++)             ; 1669
@@ -1954,14 +1955,14 @@ L1667:
     nop                                  nop                                 ; 1675
     nop                                  nop                                 ; 1676
     nop                                  move.xyzw vf22, vf19                ; 1677
-    nop                                  ibne vi06, vi00, L1639              ; 1678
+    nop                                  ibne vi06, vi00, wire_fan_loop              ; 1678
     nop                                  nop                                 ; 1679
-L1680:
+wire_fan_kick:
     nop                                  iaddiu vi09, vi00, 539              ; 1680
     nop                                  iaddiu vi05, vi05, 17               ; 1681
-    nop                                  b L1043                             ; 1682
+    nop                                  b layer_next                             ; 1682
     nop                                  xgkick vi09                         ; 1683
-L1684:
+clip_swap:
     nop                                  iadd vi04, vi00, vi10               ; 1684
     nop                                  iadd vi10, vi00, vi12               ; 1685
     nop                                  iadd vi12, vi00, vi04               ; 1686
@@ -1969,7 +1970,7 @@ L1684:
     nop                                  iadd vi11, vi00, vi00               ; 1688
     nop                                  jr vi14                             ; 1689
     nop                                  nop                                 ; 1690
-L1691:
+clip_plane_pass:
     ; -- one plane pass: vi02 in, vi03 out, vi09 edges, vi08 the plane bit
     nop                                  isubiu vi15, vi15, 1                ; 1691
     nop                                  iswr.x vi14, (vi15)                 ; 1692
@@ -1981,7 +1982,7 @@ L1691:
     nop                                  lqi.xyzw vf20, (vi02++)             ; 1698
     nop                                  lqi.xyzw vf21, (vi02++)             ; 1699
     nop                                  lqi.xyzw vf22, (vi02++)             ; 1700
-L1701:
+clip_edge_loop:
     nop                                  iadd vi05, vi06, vi00               ; 1701
     nop                                  iadd vi10, vi13, vi00               ; 1702
     nop                                  ilwr.x vi06, (vi02)                 ; 1703
@@ -1993,7 +1994,7 @@ L1701:
     addx.xyzw vf18, vf22, vf00x          lqi.xyzw vf22, (vi02++)             ; 1709
     nop                                  iand vi04, vi05, vi08               ; 1710
     nop                                  isubiu vi09, vi09, 1                ; 1711
-    nop                                  ibeq vi04, vi08, L1728              ; 1712
+    nop                                  ibeq vi04, vi08, clip_edge_prev_out              ; 1712
     nop                                  iand vi04, vi06, vi08               ; 1713
     nop                                  iswr.x vi05, (vi03)                 ; 1714
     nop                                  iswr.y vi10, (vi03)                 ; 1715
@@ -2003,22 +2004,22 @@ L1701:
     nop                                  sqi.xyzw vf17, (vi03++)             ; 1719
     nop                                  sqi.xyzw vf18, (vi03++)             ; 1720
     nop                                  iaddiu vi11, vi11, 1                ; 1721
-    nop                                  ibne vi04, vi08, L1733              ; 1722
+    nop                                  ibne vi04, vi08, clip_edge_next              ; 1722
     nop                                  nop                                 ; 1723
-    nop                                  bal vi14, L1754                     ; 1724
+    nop                                  bal vi14, clip_intersect                     ; 1724
     nop                                  nop                                 ; 1725
-    nop                                  b L1733                             ; 1726
+    nop                                  b clip_edge_next                             ; 1726
     nop                                  nop                                 ; 1727
-L1728:
+clip_edge_prev_out:
     nop                                  nop                                 ; 1728
-    nop                                  ibeq vi04, vi08, L1733              ; 1729
+    nop                                  ibeq vi04, vi08, clip_edge_next              ; 1729
     nop                                  nop                                 ; 1730
-    nop                                  bal vi14, L1754                     ; 1731
+    nop                                  bal vi14, clip_intersect                     ; 1731
     nop                                  nop                                 ; 1732
-L1733:
-    nop                                  ibgtz vi09, L1701                   ; 1733
+clip_edge_next:
+    nop                                  ibgtz vi09, clip_edge_loop                   ; 1733
     nop                                  nop                                 ; 1734
-    nop                                  ibeq vi11, vi00, L1749              ; 1735
+    nop                                  ibeq vi11, vi00, clip_pass_return              ; 1735
     nop                                  nop                                 ; 1736
     nop                                  ilwr.x vi06, (vi12)                 ; 1737
     nop                                  ilwr.y vi13, (vi12)                 ; 1738
@@ -2032,13 +2033,13 @@ L1733:
     nop                                  sq.xyzw vf20, 2(vi03)               ; 1746
     nop                                  sq.xyzw vf21, 3(vi03)               ; 1747
     nop                                  sq.xyzw vf22, 4(vi03)               ; 1748
-L1749:
+clip_pass_return:
     nop                                  ilwr.x vi14, (vi15)                 ; 1749
     nop                                  ilwr.y vi10, (vi15)                 ; 1750
     nop                                  iaddiu vi15, vi15, 1                ; 1751
     nop                                  jr vi14                             ; 1752
     nop                                  nop                                 ; 1753
-L1754:
+clip_intersect:
     nop                                  isubiu vi15, vi15, 1                ; 1754
     nop                                  iswr.x vi14, (vi15)                 ; 1755
     nop                                  iswr.y vi06, (vi15)                 ; 1756
@@ -2046,6 +2047,7 @@ L1754:
     nop                                  iswr.w vi08, (vi15)                 ; 1758
     nop                                  jr vi01                             ; 1759
     nop                                  nop                                 ; 1760
+clip_axis_x:
     mulx.w vf24, vf15, vf23x             iaddiu vi08, vi00, 128              ; 1761
     mulx.w vf25, vf19, vf23x             nop                                 ; 1762
     sub.x vf27, vf15, vf19               nop                                 ; 1763
@@ -2053,23 +2055,24 @@ L1754:
     addw.x vf24, vf15, vf24w             nop                                 ; 1765
     addw.x vf25, vf19, vf25w             nop                                 ; 1766
     nop                                  fmand vi07, vi08                    ; 1767
-    nop                                  ibeq vi07, vi08, L1777              ; 1768
+    nop                                  ibeq vi07, vi08, clip_x_from_cur              ; 1768
     nop                                  nop                                 ; 1769
     sub.x vf26, vf24, vf25               nop                                 ; 1770
     nop                                  nop                                 ; 1771
     nop                                  nop                                 ; 1772
     nop                                  nop                                 ; 1773
     nop                                  div q, vf24x, vf26x                 ; 1774
-    nop                                  b L1830                             ; 1775
+    nop                                  b clip_lerp_from_prev                             ; 1775
     nop                                  nop                                 ; 1776
-L1777:
+clip_x_from_cur:
     sub.x vf26, vf25, vf24               nop                                 ; 1777
     nop                                  nop                                 ; 1778
     nop                                  nop                                 ; 1779
     nop                                  nop                                 ; 1780
     nop                                  div q, vf25x, vf26x                 ; 1781
-    nop                                  b L1842                             ; 1782
+    nop                                  b clip_lerp_from_cur                             ; 1782
     nop                                  nop                                 ; 1783
+clip_axis_y:
     mulx.w vf24, vf15, vf23x             iaddiu vi08, vi00, 64               ; 1784
     mulx.w vf25, vf19, vf23x             nop                                 ; 1785
     sub.y vf27, vf15, vf19               nop                                 ; 1786
@@ -2077,7 +2080,7 @@ L1777:
     addw.y vf24, vf15, vf24w             nop                                 ; 1788
     addw.y vf25, vf19, vf25w             nop                                 ; 1789
     nop                                  fmand vi07, vi08                    ; 1790
-    nop                                  ibeq vi07, vi08, L1800              ; 1791
+    nop                                  ibeq vi07, vi08, clip_y_from_cur              ; 1791
 .vif 0x00000000
 .mpg 1792
     nop                                  nop                                 ; 1792
@@ -2086,16 +2089,17 @@ L1777:
     nop                                  nop                                 ; 1795
     nop                                  nop                                 ; 1796
     nop                                  div q, vf24y, vf26y                 ; 1797
-    nop                                  b L1830                             ; 1798
+    nop                                  b clip_lerp_from_prev                             ; 1798
     nop                                  nop                                 ; 1799
-L1800:
+clip_y_from_cur:
     sub.y vf26, vf25, vf24               nop                                 ; 1800
     nop                                  nop                                 ; 1801
     nop                                  nop                                 ; 1802
     nop                                  nop                                 ; 1803
     nop                                  div q, vf25y, vf26y                 ; 1804
-    nop                                  b L1842                             ; 1805
+    nop                                  b clip_lerp_from_cur                             ; 1805
     nop                                  nop                                 ; 1806
+clip_axis_z:
     mulx.w vf24, vf15, vf23x             iaddiu vi08, vi00, 32               ; 1807
     mulx.w vf25, vf19, vf23x             nop                                 ; 1808
     sub.z vf27, vf15, vf19               nop                                 ; 1809
@@ -2103,24 +2107,24 @@ L1800:
     addw.z vf24, vf15, vf24w             nop                                 ; 1811
     addw.z vf25, vf19, vf25w             nop                                 ; 1812
     nop                                  fmand vi07, vi08                    ; 1813
-    nop                                  ibeq vi07, vi08, L1823              ; 1814
+    nop                                  ibeq vi07, vi08, clip_z_from_cur              ; 1814
     nop                                  nop                                 ; 1815
     sub.z vf26, vf24, vf25               nop                                 ; 1816
     nop                                  nop                                 ; 1817
     nop                                  nop                                 ; 1818
     nop                                  nop                                 ; 1819
     nop                                  div q, vf24z, vf26z                 ; 1820
-    nop                                  b L1830                             ; 1821
+    nop                                  b clip_lerp_from_prev                             ; 1821
     nop                                  nop                                 ; 1822
-L1823:
+clip_z_from_cur:
     sub.z vf26, vf25, vf24               nop                                 ; 1823
     nop                                  nop                                 ; 1824
     nop                                  nop                                 ; 1825
     nop                                  nop                                 ; 1826
     nop                                  div q, vf25z, vf26z                 ; 1827
-    nop                                  b L1842                             ; 1828
+    nop                                  b clip_lerp_from_cur                             ; 1828
     nop                                  nop                                 ; 1829
-L1830:
+clip_lerp_from_prev:
     sub.xyzw vf24, vf19, vf15            nop                                 ; 1830
     sub.xyzw vf25, vf20, vf16            nop                                 ; 1831
     sub.xyzw vf26, vf21, vf17            nop                                 ; 1832
@@ -2131,9 +2135,9 @@ L1830:
     nop                                  nop                                 ; 1837
     add.xyzw vf24, vf24, vf15            nop                                 ; 1838
     add.xyzw vf25, vf25, vf16            nop                                 ; 1839
-    add.xyzw vf26, vf26, vf17            b L1854                             ; 1840
+    add.xyzw vf26, vf26, vf17            b clip_emit_made                             ; 1840
     nop                                  nop                                 ; 1841
-L1842:
+clip_lerp_from_cur:
     sub.xyzw vf24, vf15, vf19            nop                                 ; 1842
     sub.xyzw vf25, vf16, vf20            nop                                 ; 1843
     sub.xyzw vf26, vf17, vf21            nop                                 ; 1844
@@ -2146,7 +2150,7 @@ L1842:
     add.xyzw vf25, vf25, vf20            nop                                 ; 1851
     add.xyzw vf26, vf26, vf21            nop                                 ; 1852
     nop                                  nop                                 ; 1853
-L1854:
+clip_emit_made:
     clipw.xyz vf24, vf24w                nop                                 ; 1854
     nop                                  nop                                 ; 1855
     nop                                  nop                                 ; 1856
@@ -2169,7 +2173,7 @@ L1854:
     nop                                  ior vi07, vi07, vi05                ; 1873
     nop                                  jr vi14                             ; 1874
     nop                                  iaddiu vi15, vi15, 1                ; 1875
-L1876:
+clip_to_screen:
     ; -- the clipped polygon to the 142 layout, projected and fan-culled
     nop                                  iaddiu vi04, vi00, 8                ; 1876
     nop                                  lqi.xyzw vf18, (vi04++)             ; 1877
@@ -2187,7 +2191,7 @@ L1876:
     nop                                  lq.xyzw vf15, 1(vi02)               ; 1889
     nop                                  lq.xyzw vf16, 2(vi02)               ; 1890
     nop                                  lq.xyzw vf17, 3(vi02)               ; 1891
-    nop                                  ibeq vi07, vi00, L1911              ; 1892
+    nop                                  ibeq vi07, vi00, clip_first_out              ; 1892
     nop                                  iaddiu vi02, vi02, 5                ; 1893
     mulax.xyzw acc, vf18, vf15x          mr32.z vf16, vf00                   ; 1894
     madday.xyzw acc, vf19, vf15y         nop                                 ; 1895
@@ -2206,7 +2210,7 @@ L1876:
     mulq.xyz vf26, vf22, q               nop                                 ; 1908
     mulq.z vf16, vf16, q                 nop                                 ; 1909
     nop                                  nop                                 ; 1910
-L1911:
+clip_first_out:
     nop                                  iaddiu vi11, vi11, 1                ; 1911
     ftoi4.xyzw vf22, vf26                isubiu vi09, vi09, 1                ; 1912
     nop                                  nop                                 ; 1913
@@ -2215,13 +2219,13 @@ L1911:
     nop                                  sqi.xyzw vf22, (vi03++)             ; 1916
     nop                                  sqi.xyzw vf16, (vi03++)             ; 1917
     nop                                  sqi.xyzw vf17, (vi03++)             ; 1918
-L1919:
+clip_vertex_loop:
     nop                                  ilwr.y vi07, (vi02)                 ; 1919
     nop                                  lq.xyzw vf23, 4(vi02)               ; 1920
     nop                                  lq.xyzw vf15, 1(vi02)               ; 1921
     nop                                  lq.xyzw vf16, 2(vi02)               ; 1922
     nop                                  lq.xyzw vf17, 3(vi02)               ; 1923
-    nop                                  ibeq vi07, vi00, L1943              ; 1924
+    nop                                  ibeq vi07, vi00, clip_vertex_out              ; 1924
     nop                                  iaddiu vi02, vi02, 5                ; 1925
     mulax.xyzw acc, vf18, vf15x          mr32.z vf16, vf00                   ; 1926
     madday.xyzw acc, vf19, vf15y         nop                                 ; 1927
@@ -2240,7 +2244,7 @@ L1919:
     mulq.xyz vf23, vf22, q               nop                                 ; 1940
     mulq.z vf16, vf16, q                 nop                                 ; 1941
     nop                                  nop                                 ; 1942
-L1943:
+clip_vertex_out:
     sub.xyzw vf24, vf27, vf26            iaddiu vi11, vi11, 1                ; 1943
     ftoi4.xyzw vf22, vf23                isubiu vi09, vi09, 1                ; 1944
     sub.xyzw vf25, vf23, vf27            nop                                 ; 1945
@@ -2253,20 +2257,21 @@ L1943:
     nop                                  move.xyzw vf27, vf23                ; 1952
     nop                                  nop                                 ; 1953
     nop                                  fmand vi01, vi05                    ; 1954
-    nop                                  ibeq vi01, vi05, L1961              ; 1955
+    nop                                  ibeq vi01, vi05, clip_vertex_backface              ; 1955
     nop                                  nop                                 ; 1956
-    nop                                  ibgtz vi09, L1919                   ; 1957
+    nop                                  ibgtz vi09, clip_vertex_loop                   ; 1957
     nop                                  nop                                 ; 1958
     nop                                  jr vi14                             ; 1959
     nop                                  nop                                 ; 1960
-L1961:
+clip_vertex_backface:
     nop                                  ior vi06, vi04, vi06                ; 1961
     nop                                  isw.w vi06, -3(vi03)                ; 1962
     nop                                  nop                                 ; 1963
-    nop                                  ibgtz vi09, L1919                   ; 1964
+    nop                                  ibgtz vi09, clip_vertex_loop                   ; 1964
     nop                                  nop                                 ; 1965
     nop                                  jr vi14                             ; 1966
     nop                                  nop                                 ; 1967
+dead_regdump:
     nop                                  iaddiu vi15, vi00, 100              ; 1968
     nop                                  sqi.xyzw vf01, (vi15++)             ; 1969
     nop                                  sqi.xyzw vf02, (vi15++)             ; 1970
@@ -2322,6 +2327,7 @@ L1961:
     nop                                  nop                                 ; 2020
     nop[e]                               nop                                 ; 2021
     nop                                  nop                                 ; 2022
+dead_map_offsets:
     nop                                  lq.xyzw vf30, 21(vi01)              ; 2023
     nop                                  lq.xyzw vf30, 314(vi01)             ; 2024
     nop                                  lq.xyzw vf30, 435(vi01)             ; 2025

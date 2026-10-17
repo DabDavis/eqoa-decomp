@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""The clipper (raster.vsm L0187, L1085, L1266, L1684..1967), as functions:
+"""The clipper (raster.vsm clip_fan, clip_strip, clip_polygon, clip_swap..1967), as functions:
 the reading of the microcode, as code that can be checked against the
 simulator (test_spec_clip.py).
 
 A strip or fan vertex whose triangle straddles a frustum plane takes the clip
 path: the vertex gets ADC, and the triangle is handed here, clipped against
 the planes it crosses, and drawn on its own as a FAN through the layer
-emitter (L1037 with vi03 = 1, the fan template).
+emitter (layer_emitter with vi03 = 1, the fan template).
 
-polygon()   L1085 (strips) / L0187 (fans): the triangle as a CLOSED polygon
+polygon()   clip_strip (strips) / clip_fan (fans): the triangle as a CLOSED polygon
             at VU1 214, five qwords a vertex --
               +0  header: x = clip code, y = 0 (an original vertex)
               +1  clip-space position          +2  (s, t, q, fog)
@@ -17,12 +17,12 @@ polygon()   L1085 (strips) / L0187 (fans): the triangle as a CLOSED polygon
             parity vi09 != vi10, so every polygon goes round the same way;
             fans: (hub, n-1, n, hub).
 
-clip()      L1266: Sutherland-Hodgman against the planes in the order
+clip()      clip_polygon: Sutherland-Hodgman against the planes in the order
             z+ z- x+ x- y+ y- (clip bits 16 32 1 2 4 8), skipping a plane no
             code in the running union vi07 crosses; a vertex the clipper
             makes ORs its own code into that union.  The buffers ping-pong
-            between 214 and 264 (L1684).  An empty pass returns nothing.
-  L1691     one plane: walking edges (prev, cur), an inside prev is copied
+            between 214 and 264 (clip_swap).  An empty pass returns nothing.
+  clip_plane_pass     one plane: walking edges (prev, cur), an inside prev is copied
             (header and all four qwords); a crossing edge adds the
             intersection; the output is closed by a copy of its first vertex.
   1761/1784/1807  the intersection on axis x/y/z, with s = -1 for the +
@@ -33,8 +33,8 @@ clip()      L1266: Sutherland-Hodgman against the planes in the order
             v = (to - from) * t + from on the clip position, STQ and RGBA.
             The screen qword is NOT written (left stale), the header is the
             new clip code with y = 1 (a made vertex).  The `sub` also leaves
-            prev.c - cur.c in that lane of vf27, which L1876 reads.
-  L1876     to the 142 layout (xyzf, stq, rgba) at the other buffer: an
+            prev.c - cur.c in that lane of vf27, which clip_to_screen reads.
+  clip_to_screen     to the 142 layout (xyzf, stq, rgba) at the other buffer: an
             original vertex keeps its screen qword; a made one is projected
             through qwords 8-11 (clip -> screen), with STQ.z = 1/w (mr32 puts
             vf00.w = 1 in z first: the interpolated q is DROPPED) and fog =
@@ -49,7 +49,7 @@ import vusim as S
 ONE = 0x3F800000
 f_add, f_sub, f_mul, ftoi = S.f_add, S.f_sub, S.f_mul, S.ftoi
 
-# (clip bit, axis lane, vf23.x) in L1266's order
+# (clip bit, axis lane, vf23.x) in clip_polygon's order
 PLANES = ((16, 2, 0xBF800000), (32, 2, ONE), (1, 0, 0xBF800000),
           (2, 0, ONE), (4, 1, 0xBF800000), (8, 1, ONE))
 
@@ -69,7 +69,7 @@ class V:
 
 
 def polygon(fan, vf, vi, mem):
-    """The closed polygon L1085 / L0187 builds, from the registers at its
+    """The closed polygon clip_strip / clip_fan builds, from the registers at its
     entry (vf15-20 clip and screen of the three vertices, vi04-06 their
     codes, vi03 the 142 buffer's write pointer, vi09/vi10 the parity)."""
     q = lambda a: mem[a * 4: a * 4 + 4]
@@ -94,7 +94,7 @@ def intersect(prev, cur, axis, s, vf27):
     d0 = f_add(prev.clip[axis], pw)
     d1 = f_add(cur.clip[axis], cw)
     if vf27[axis] >> 31:
-        frm, to, t = cur, prev, div(d1, f_sub(d1, d0))   # L1777..: from cur
+        frm, to, t = cur, prev, div(d1, f_sub(d1, d0))   # clip_x_from_cur..: from cur
     else:
         frm, to, t = prev, cur, div(d0, f_sub(d0, d1))   # 1770..: from prev
     lerp = lambda a, b: [f_add(f_mul(f_sub(b[k], a[k]), t), a[k]) for k in range(4)]
@@ -131,8 +131,8 @@ def transform4(rows, p):
 
 
 def clip(poly, union, vf27, mem):
-    """poly: polygon() (closed).  union: vi07 at L1266.  vf27: the register
-    at L1266 (only its stale lanes matter).  -> the vertex list at the output
+    """poly: polygon() (closed).  union: vi07 at clip_polygon.  vf27: the register
+    at clip_polygon (only its stale lanes matter).  -> the vertex list at the output
     buffer as [(xyzf, stq, rgba)], or [] when nothing survives."""
     u = [union]
     vf27 = list(vf27)

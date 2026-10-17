@@ -152,7 +152,7 @@ def render(vf, mem, bbs):
             mem[base * 4] = 0x8000 | len(recs)          # iswr.x vi06|0x8000
             packets.append([rd(base + k) for k in range(1 + 11 * len(recs))])
             base, recs, written = (240 if base == 48 else 48), [], 0
-            if k < len(bbs) - 1:                         # L0179: more to come
+            if k < len(bbs) - 1:                         # bb_kick: more to come
                 wr(base, rd(16))
     # nothing in the microcode stops at the count: without the end mark it
     # runs on into whatever follows the batch

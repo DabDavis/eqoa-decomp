@@ -20,11 +20,11 @@ REGIONS = [
     ('VIRInit', 0, 22), ('VIRMaterial', 22, 26), ('VIRFan', 26, 317),
     ('VIRStrip', 317, 429), ('VIRStrip2', 429, 549), ('VIRStrip3', 549, 668),
     ('VIRStrip4', 668, 807), ('VIRStrip5', 807, 924), ('VIRStrip6', 924, 1037),
-    ('L1037 layers', 1037, 1085), ('L1085 clip?', 1085, 1266),
-    ('L1266', 1266, 1354), ('L1354 strip2 unlit', 1354, 1451),
-    ('L1451 type1', 1451, 1494), ('L1494 type3', 1494, 1523),
-    ('L1523 solid', 1523, 1545), ('L1545 wire', 1545, 1684),
-    ('L1684..', 1684, 2029),
+    ('layer_emitter', 1037, 1085), ('clip_strip', 1085, 1266),
+    ('clip_polygon', 1266, 1354), ('strip2_unlit', 1354, 1451),
+    ('layer_tex_wrap', 1451, 1494), ('layer_tex_clamp', 1494, 1523),
+    ('layer_solid', 1523, 1545), ('layer_wire', 1545, 1684),
+    ('clip_swap..dead', 1684, 2029),
 ]
 
 

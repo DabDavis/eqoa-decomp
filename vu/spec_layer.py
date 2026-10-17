@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""The layer routines behind L1037's jump table (raster.vsm 1451..1544), as
+"""The layer routines behind layer_emitter's jump table (raster.vsm 1451..1544), as
 functions: each turns the strip programs' 142+ buffer into one GIF packet for
-one material layer, at VU1 539, which L1037 then XGKICKs.
+one material layer, at VU1 539, which layer_emitter then XGKICKs.
 
 The layer list is VIMaterial::ConstructDMAPacket's (decomp/src/vimaterial.cpp),
 unpacked to VU1 435: a count, then 17 qwords per layer --
@@ -14,18 +14,18 @@ unpacked to VU1 435: a count, then 17 qwords per layer --
   +13     the layer colour x 128 (the GS's 1.0), alpha halved when blending
   +14..16 the layer's UV transform; row 2 carries the UV scroll offset
 Pass types (ConstructTextPass / ConstructSolidFillPass / ConstructWirePass):
-  0  solid fill    L1523  RGBAQ, XYZF2
-  1  textured, wrap on both axes          L1451  -- subtracts an integer UV
+  0  solid fill    layer_solid  RGBAQ, XYZF2
+  1  textured, wrap on both axes          layer_tex_wrap  -- subtracts an integer UV
      offset taken from the first vertex, invisible under wrapping, which keeps
      the coordinates near [0, 1)
-  2  wire          L1545  a LINE strip, white (255 in every lane of RGBAQ,
+  2  wire          layer_wire  a LINE strip, white (255 in every lane of RGBAQ,
      the vertex colour is ignored): v1, then per triangle n >= 2 the four
      points v(n), v(n-2), v(n-1), v(n) -- NLOOP 4(N-2)+1, template +12.  A
      fan (vi03 != 0) keeps v(n-2) at the hub.  The first two have ADC
      cleared; when v(n) carries ADC, the two back-references go out with w =
      0x8000 exactly (ISW over the whole word), and v(n) is remembered with w =
      (w - 0x8000) + 16 for the triangles after it
-  3  textured, clamp on S or T            L1494  -- the same with no offset
+  3  textured, clamp on S or T            layer_tex_clamp  -- the same with no offset
 
 Per vertex out, textured: (S, T, Q) = (u'*q, v'*q, q) with (u', v') the layer
 transform of (s, t); then ftoi0(colour * layer colour); then XYZF2 as is.
@@ -83,9 +83,9 @@ def layer(ptype, entry, buf, n, vf22, tag_offset=0):
 
 
 def wire(entry, buf, n, fan):
-    """L1545..1683 (strip) and L1616.. (fan)."""
+    """layer_wire..1683 (strip) and layer_wire_fan.. (fan)."""
     tag = list(entry[12])
-    tag[0] = 0x8000 | (((n - 2) * 4 + 1) & 0xFFFF)   # L1058: ior vi08, ((N-2)*4)+1
+    tag[0] = 0x8000 | (((n - 2) * 4 + 1) & 0xFFFF)   # layer_wire_tag: ior vi08, ((N-2)*4)+1
     white = [255, 255, 255, 255]                     # mfir.xyzw vf23, vi07 = 255
     out = [tag]
 

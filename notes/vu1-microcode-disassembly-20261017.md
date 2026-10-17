@@ -49,9 +49,9 @@ header of `decomp/vu/src/raster.vsm`. In short:
   by weight, the normal is renormalised with `rsqrt`, the vertices are
   rewritten in place in VUNC layout, and it ends `b VIRStrip`. This corrects
   `go-client-wasm-feasibility-20261016.md`'s "character lighting is `VIRStrip4`".
-- 1037–2028 is shared code reached by `BAL`. `L1037` walks a GIF packet list
+- 1037–2028 is shared code reached by `BAL`. `layer_emitter` walks a GIF packet list
   at VU1 435 and `XGKICK`s each packet through a four-way jump table (`jr vi10`
-  into 1075). `L1085` spills vf15–vf28 and vi01–vi14 to a stack at vi15
+  into 1075). `clip_strip` spills vf15–vf28 and vi01–vi14 to a stack at vi15
   (growing down from 1024) and rebuilds triangles. It is probably the clipper
   (unconfirmed).
 
@@ -78,7 +78,7 @@ header of `decomp/vu/src/raster.vsm`. In short:
   colour + ambient + sun·max(−N·S,0) + point·(1−min(|L|/r,1))·max(L·N/|L|,0), clamped to 1;
   fog clamp(w·scale+offset, near, far); per-triangle reject / clip / backface by ADC.
 - **The strips write an intermediate buffer** (VU1 142+: XYZF2, s,t,q/w,fog, float RGBA).
-  **`L1037` is the layer emitter**: one GS-state packet and one GIF strip packet per material
+  **`layer_emitter` is the layer emitter**: one GS-state packet and one GIF strip packet per material
   layer, built through the jump table at 1075.
 
 ## Third session: VIRStrip2 and VIRStrip3
@@ -136,7 +136,7 @@ header of `decomp/vu/src/raster.vsm`. In short:
   control that fails):
   - **`VIRFan`** is the strip loop with vertex 0 pinned as the hub: the triangle is
     (0, n−1, n), the winding parity stays 32, vertex 0 gets no cull test, and the clip path
-    goes through `L0187`.
+    goes through `clip_fan`.
   - **`VIRStrip2`'s lit path** adds the point term after the static colour. The code orders
     its sun factor c.w then static.w. **The data checks only the point term**: `vf31` is
     (0, 0, 0, 1.0) in all 1,129 lit runs, so both orders are read off the code alone.
@@ -172,7 +172,7 @@ header of `decomp/vu/src/raster.vsm`. In short:
 - **Read off the code only**: the plane order, and a made vertex growing the plane union. No
   captured clip makes a vertex outside a plane its triangle had not already crossed.
 - The remaining coverage gaps are unreachable: 1346 and 1351–1353 sit after a `b` or `jr`, and
-  `VIRFan` 183–186 follow `L0187`, which jumps back into the loop instead of returning.
+  `VIRFan` 183–186 follow `clip_fan`, which jumps back into the loop instead of returning.
 
 ## Seventh session: the billboard program — and with it, all of the microcode
 
@@ -192,7 +192,9 @@ header of `decomp/vu/src/raster.vsm`. In short:
 
 1. **Port**: everything VU1 runs is now readable code (`spec_strip`, `spec_layer`, `spec_clip`,
    `spec_billboard`), each checked bit for bit. A native or web renderer can follow it directly.
-2. Rename the remaining `L####` labels in the `.vsm` files after what they are now known to do.
+2. Done (2026-10-17): every `L####` label in both `.vsm` files is renamed for what its code does, and
+   labels are added where code is entered without a branch. The name→pair index is in
+   `decomp/vu/README.md`, "Labels". Both programs still assemble byte for byte.
 3. **Hand-scheduled VU code can read a register before an earlier write to it has
    finished**, so a port must model pipeline latency where the code relies on it. Find
    those spots first.

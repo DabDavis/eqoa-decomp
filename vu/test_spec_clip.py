@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Hold spec_clip to the simulator over every clip in a vu1dump capture: the
-polygon L1085/L0187 builds at 214 (checked at L1266's entry), and the vertex
-list L1266 hands the layer emitter (checked at its return, L1347).
+polygon clip_strip/clip_fan builds at 214 (checked at clip_polygon's entry), and the vertex
+list clip_polygon hands the layer emitter (checked at its return, clip_polygon_return).
 
     ./test_spec_clip.py <vu1dump.bin> [--pcsx2]
 """

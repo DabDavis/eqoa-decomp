@@ -216,7 +216,7 @@ def test_spec_layer_solid_and_wire():
 # ------------------------------------------------------------ the clipper --
 
 def test_spec_clip():
-    """The polygon L1085/L0187 builds and the fan L1266 returns, over the
+    """The polygon clip_strip/clip_fan builds and the fan clip_polygon returns, over the
     clips in character select (strips and fans, all four side planes).
     Not testable in any capture: the order of the planes and a made vertex
     growing the plane set -- no made vertex carries a bit the triangle had not."""
