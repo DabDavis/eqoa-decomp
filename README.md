@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **1,208 of 5,973** byte-exact; MCERR **44 of 44**, closed 2026-10-16; SETUP **1,661 of 1,805**: its whole libxml2 2.3.6 block, 458 of the 462 patcher functions and 250 of the 251 screens; STATION **1,983 of 2,339**, every function written but three (2026-10-16))
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **3,849 of 3,934** byte-exact (of 5,973 functions; plus 1,921 verified duplicates; 85 open, 5 unwritten, polish pass 2026-10-17); MCERR **44 of 44**, closed 2026-10-16; SETUP **1,661 of 1,805**: its whole libxml2 2.3.6 block, 458 of the 462 patcher functions and 250 of the 251 screens; STATION **1,985 of 2,339**, every function written but three (2026-10-16; +2 ported from CLIENT 2026-10-17))
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -25,6 +25,7 @@ decomp goes ahead.
 | `eqcalls.py` | resolves a function's CALLEES by name, out of a resident SUPPORT |
 | `eqcallcheck.py` | **byte-exact is not correct**: every `jal` in our objects against the callee the relocated dump names; `eqcheck.score` now refuses a match whose callees differ (`CALLEE` row) |
 | `eqrefcheck.py` | the same for DATA references: every %hi/%lo pair (traced through the CFG) against the relocated dump -- strings by text, floats by value, jump tables by target, globals by name |
+| `eqcallnames.py` | names placeholder (`func_`) map rows off the build's OWN call sites: where the target calls a placeholder and our object calls a real name at the same offset, that name is proposed (phase 62's polish pass named 14 container constructors and libgcc's RTTI helpers this way); renames nothing |
 | `eqlocal.py` | scores the functions the map does NOT name (statics, local helpers) by searching the unnamed code; reports what unique unnamed code is still unmatched |
 | `test_eqdecomp.py` | the canary — see below, it is the point |
 | `_q.py` | one TU, named symbols, 4.5 s — for sweeping source variants |
@@ -83,8 +84,8 @@ SUPPORT is one of five EE modules, and the only one that names its own functions
 | Module | Own code | Functions (sweep) | Names it exports | What it is |
 |---|---|---|---|---|
 | SUPPORT | 887 KB | 4,376 | 4,102 | the engine (the count includes the unnamed statics and per-TU template copies) |
-| CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat: **1,208 byte-exact** (phase 62; eight TUs shared with STATION) |
-| STATION | 587 KB | 2,339 | 1 (`station_main`) | the Station login, account pages, customer service, the account server: **1,983 byte-exact**, every function written but three (2026-10-16; `modules/station/README.md`) |
+| CLIENT | 1,100 KB | 5,973 | 1 (`client_main`) | the game: opcode handlers, entities, combat, the game UI: **3,849 of 3,934 scored functions byte-exact** plus 1,921 verified duplicates, 85 open, 5 unwritten (phase 62, polish pass 2026-10-17; eight TUs shared with STATION) |
+| STATION | 587 KB | 2,339 | 1 (`station_main`) | the Station login, account pages, customer service, the account server: **1,985 byte-exact**, every function written but three (2026-10-16; `modules/station/README.md`; +2 from CLIENT's VIWndEdit fixes 2026-10-17) |
 | SETUP | 476 KB | 1,805 | 2 | network config, DNAS auth, patcher, EULA: **1,661 byte-exact**: all of libxml2 2.3.6, the Verant patcher 458 of 462, and the screens 250 of 251 (2026-10-16) |
 | MCERR | 13 KB | 44 | 6 | the memory-card status window, the session key: **44 of 44 byte-exact** (2026-10-16) |
 
@@ -6564,6 +6565,43 @@ labelled in the source as a batch order, not proven original. The others got wor
 closes and the next one opens CLIENT.
 
 ## Phase 62: CLIENT (opened 2026-10-15)
+
+**2026-10-17, after the 18 lanes and the polish pass: 3,849 of 3,934 byte-exact, plus 1,921
+verified duplicates and 112 too small to attribute. 85 functions are open (4,862 wrong words)
+and 5 are unwritten**, all of them dead per-TU copies of VIItemList.h members. eqcallcheck
+finds 0 wrong callees and eqrefcheck 0 findings; STATION 1,985, SUPPORT 3,665, SETUP 1,661 and
+MCERR 44/44 are unchanged or better.
+- **The lanes** took CLIENT from 1,208 to 3,761: 18 isolated `_lane.py` trees, one address
+  range each, with by-address names for other lanes' code, merged owner-first. Their record is
+  `claude-notes/decomp-phase62-lanes-20261017.md`.
+- **The polish pass**, in `claude-notes/decomp-phase62-polish-20261017.md`:
+  - **Bookkeeping, 3,761 -> 3,786.** It fixed 94 rows the build emits that the map lacks, 7
+    byte-exact functions calling the wrong name, and four functions that the MERGE had broken
+    through a shared header. It also removed the merge hacks and rewrote `visort.h` in our
+    own words.
+  - **57 closes from ten more lanes.** The largest were SpellBook::OnDrawSelf 494,
+    Buddy::OnDrawSelf 443, LoadWorld 285, SendPosition, UpdateControls, Tick,
+    EnterGameLoad and ClassMastery::OnDrawSelf.
+  - **The scratch TU was folded back**, so `viclient.cpp` is VIClient.cpp again, re-padded
+    onto every assert line.
+- **Two gcc facts** came out of the fold and the lanes:
+  - **A template inline that is CALLED before its definition is never integrated later in
+    the same TU.** Tick broke when InitBody joined its TU, until InitBody used another 1-byte
+    specialization.
+  - **gcc 2.95's temp-slot allocator** records a slot's REQUESTED size and ADDS merged
+    sizes, so freed `VIVect2I` temps form regions an 8-byte request swallows whole. "Frame
+    too big" is a source shape, not missing reuse.
+- **The final permuter batch** closed ApplyItems: a `short` inline parameter, where the
+  permuter had used a one-use reference. Every find went through a fakematch spelling and
+  was read for the source fact behind it.
+  - **The image's immediates are the original OBJECT's addends.** SNR1's relocation table
+    holds each site's full target and the instruction keeps the addend, so a static read at
+    +800 was an offset into a bigger object. SelectCategory's `sOwned` and `sAvail` are one
+    `static VICMSkill *sSkills[2][200]`.
+  - Over every matched function the residues agree with our addends: CLIENT 0 of 1,182,
+    STATION, SETUP and MCERR 0. SUPPORT differs at 24 named statics (the DRDP tags among
+    them), which the original referenced as section offsets.
+
 
 **2026-10-16: CLIENT shares eight TUs with STATION, 1,136 -> 1,208 byte-exact.** Its `src/`
 links to STATION's `vidatetime`, `vimemstream{array,ops,set,vector}`, `vinet`, `vicsclient`

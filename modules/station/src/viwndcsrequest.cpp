@@ -235,6 +235,7 @@ void VIWndCSRequest::OnDrawSelf()
         m_status.Close(true);
     else
         m_status.Open(false);
+    char d;
     switch (client->GetState())
     {
     case 0:
@@ -263,35 +264,35 @@ void VIWndCSRequest::OnDrawSelf()
     case 1:
         m_x4D8 = 1;
         VIString::strcpy16(buf, sizeof(buf), Word(ui, 844));
-        for (char d = 0; d < sDots + 1; d++)
+        for (d = 0; d < sDots + 1; d++)
             VIString::strcat16(buf, sizeof(buf), ".");
         goto box;
     case 2:
         VIString::strcpy16(buf, sizeof(buf), Word(ui, 845));
-        for (char d = 0; d < sDots + 1; d++)
+        for (d = 0; d < sDots + 1; d++)
             VIString::strcat16(buf, sizeof(buf), ".");
         goto box;
     case 3:
         m_x4D0 = 1;
         VIString::strcpy16(buf, sizeof(buf), Word(ui, 886));
-        for (char d = 0; d < sDots + 1; d++)
+        for (d = 0; d < sDots + 1; d++)
             VIString::strcat16(buf, sizeof(buf), ".");
         goto box;
     case 4:
         VIString::strcpy16(buf, sizeof(buf), Word(ui, 847));
-        for (char d = 0; d < sDots + 1; d++)
+        for (d = 0; d < sDots + 1; d++)
             VIString::strcat16(buf, sizeof(buf), ".");
         goto box;
     case 5:
         m_x4D0 = 1;
         VIString::strcpy16(buf, sizeof(buf), Word(ui, 848));
-        for (char d = 0; d < sDots + 1; d++)
+        for (d = 0; d < sDots + 1; d++)
             VIString::strcat16(buf, sizeof(buf), ".");
         goto box;
     case 6:
         m_x4D4 = 1;
         VIString::strcpy16(buf, sizeof(buf), Word(ui, 849));
-        for (char d = 0; d < sDots + 1; d++)
+        for (d = 0; d < sDots + 1; d++)
             VIString::strcat16(buf, sizeof(buf), ".");
     box:
         m_status.SetTitle(m_status.T(271));

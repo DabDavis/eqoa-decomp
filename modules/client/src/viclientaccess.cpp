@@ -5,7 +5,7 @@
 #include "game.h"
 
 int VIClient::GetP2BAEC() { return m_p2BAEC; }
-char *VIClient::GetP4F098() { return m_p4F098; }
+VIAlarm *VIClient::GetP4F098() { return &m_alarm; }
 int VIClient::GetWorldId() { return m_worldId; }
 unsigned short *VIClient::GetReplyName() { return m_p4F0B8; }
 VIUI *VIClient::GetUI() { return &m_ui; }
@@ -29,3 +29,6 @@ unsigned short *VIClient::GetEffectName(int i) { return m_effectName[i]; }
 int VIClient::GetTargetInfoValid() { return m_targetInfoValid; }
 int VIClient::GetTargetDisposition() { return m_targetDisposition; }
 int VIClient::GetP2BB70() { return m_p2BB70; }
+
+// 0x00BE3B38, name provisional.
+VINetItem *VIClient::GetInvItem(int i) { return m_inventory.Item(i); }

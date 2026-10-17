@@ -110,6 +110,8 @@ def merge(name):
         if not mine.exists() or (base.exists() and filecmp.cmp(mine, base, shallow=False)):
             mine.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(theirs, mine); print(f"  take   {f}"); continue
+        if filecmp.cmp(mine, theirs, shallow=False):
+            print(f"  same   {f}"); continue
         if not base.exists():
             print(f"  CONFLICT {f}: new in lane and in main"); bad.append(f); continue
         if mine.name == "symbols.txt":

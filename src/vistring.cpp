@@ -856,9 +856,9 @@ char *VIString::strlwr(char *p)
     return ::strlwr(p);
 }
 
-char *VIString::strupr(char *p)
+void VIString::strupr(char *p)
 {
-    return ::strupr(p);
+    ::strupr(p);
 }
 
 void VIString::strlwr16(unsigned short *p)

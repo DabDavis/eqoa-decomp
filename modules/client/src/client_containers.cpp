@@ -37,36 +37,8 @@ template int VIMap<int, VIRec40_BBDD10>::Next(int) const;  // 0x00bbdd70
 template int VIMap<int, VIRec40_BBDD10>::DestroyPool();  // 0x00bbde28
 template VIMap<int, VIRec40_BBDD10>::~VIMap();  // 0x00bbde80
 
-// 0x00bf41a8..0x00bf5360: 17 members, 24-byte nodes; the key compares UNSIGNED.
-struct VIRec4_BF41A8 { int m_data[1]; };
-template int VIMap<unsigned int, VIRec4_BF41A8>::Begin() const;  // 0x00bf41a8
-template int VIMap<unsigned int, VIRec4_BF41A8>::End() const;  // 0x00bf4200
-template int VIMap<unsigned int, VIRec4_BF41A8>::Next(int) const;  // 0x00bf4208
-template int VIMap<unsigned int, VIRec4_BF41A8>::DestroyPool();  // 0x00bf42c0
-template VIMap<unsigned int, VIRec4_BF41A8>::~VIMap();  // 0x00bf4318
-template int VIMap<unsigned int, VIRec4_BF41A8>::Clear();  // 0x00bf45f8
-template int VIMap<unsigned int, VIRec4_BF41A8>::LinkFreeChain(int);  // 0x00bf4668
-template int VIMap<unsigned int, VIRec4_BF41A8>::Allocate();  // 0x00bf4710
-template int VIMap<unsigned int, VIRec4_BF41A8>::Init(int);  // 0x00bf4868
-template int VIMap<unsigned int, VIRec4_BF41A8>::Find(const unsigned int &) const;  // 0x00bf48c0
-template int VIMap<unsigned int, VIRec4_BF41A8>::LeftRotate(int);  // 0x00bf4930
-template int VIMap<unsigned int, VIRec4_BF41A8>::RightRotate(int);  // 0x00bf49e8
-template int VIMap<unsigned int, VIRec4_BF41A8>::EraseFixup(int);  // 0x00bf4aa0
-template int VIMap<unsigned int, VIRec4_BF41A8>::FreeNode(int);  // 0x00bf4e58
-template int VIMap<unsigned int, VIRec4_BF41A8>::Erase(int);  // 0x00bf4e98
-template int VIMap<unsigned int, VIRec4_BF41A8>::AddNode(int, int);  // 0x00bf5268
-template int VIMap<unsigned int, VIRec4_BF41A8>::Insert(const unsigned int &, const VIRec4_BF41A8 &);  // 0x00bf5360
+// 0x00bf41a8..0x00bf5360: was VIMap<unsigned int, VIRec4_BF41A8>; the value is the icon cache's
+// slot index, an int: VIMap<unsigned int, int>, instantiated in viclientpart06d50.cpp (cl-parts1).
 
-// 0x00cc0c88..0x00cc1800: 11 members, 28-byte nodes; nothing here compares keys, so `int` is a guess.
-struct VIRec8_CC0C88 { int m_data[2]; };
-template int VIMap<int, VIRec8_CC0C88>::Begin() const;  // 0x00cc0c88
-template int VIMap<int, VIRec8_CC0C88>::End() const;  // 0x00cc0ce0
-template int VIMap<int, VIRec8_CC0C88>::Next(int) const;  // 0x00cc0ce8
-template int VIMap<int, VIRec8_CC0C88>::DestroyPool();  // 0x00cc0da0
-template VIMap<int, VIRec8_CC0C88>::~VIMap();  // 0x00cc0df8
-template int VIMap<int, VIRec8_CC0C88>::Clear();  // 0x00cc0ec8
-template int VIMap<int, VIRec8_CC0C88>::LeftRotate(int);  // 0x00cc1298
-template int VIMap<int, VIRec8_CC0C88>::RightRotate(int);  // 0x00cc1350
-template int VIMap<int, VIRec8_CC0C88>::EraseFixup(int);  // 0x00cc1408
-template int VIMap<int, VIRec8_CC0C88>::FreeNode(int);  // 0x00cc17c0
-template int VIMap<int, VIRec8_CC0C88>::Erase(int);  // 0x00cc1800
+// 0x00cc0c68..0x00cc1cd8: VIMap<VICharResKey, int> (the KEY is the 8-byte record: Insert
+// compares it) -- in viswing.cpp, the TU that uses it (lane cl-tail).

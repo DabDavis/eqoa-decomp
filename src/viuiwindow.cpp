@@ -579,12 +579,12 @@ void VIUIWindow::DrawVScroll(VIVect2I at, int h, float t, unsigned int flags)
     }
 }
 
-int VIUIWindow::TickR(int x, int row, bool pulse)
+void VIUIWindow::TickR(int x, int row, bool pulse)
 {
     VIVect2I at = RowCenter(row);
     at.x = m_center.x - (m_size.x >> 1) + x - 16;
     at.y = at.y - 5;
-    return m_ui->BlitEx((VIUITexId)89, at, (VIAlphaBlendMode)3,
+    m_ui->BlitEx((VIUITexId)89, at, (VIAlphaBlendMode)3,
                         pulse ? TickPulse() : 1.0f, 0);
 }
 

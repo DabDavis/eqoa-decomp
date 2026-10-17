@@ -98,6 +98,7 @@ public:
     void WriteU16(unsigned short v) { Write(&v, 2, 1); }
     void WriteU32(unsigned int v) { Write(&v, 4, 1); }
     void WriteU64(unsigned long v) { Write(&v, 8, 1); }
+    void WriteF32(float v) { Write(&v, 4, 1); }     // VIEntity::WriteState's scale
     void WriteSigned(int v);                          // 0x00CB85E0: zigzag
     void ReadSigned(int &v);                          // 0x00CB8610: zigzag
     void WriteUnsigned(unsigned int v);               // 0x00CB8658: 7-bit varint
@@ -115,6 +116,10 @@ public:
     // when they are laid out, so they take block temporaries: 0x03D5's byte sits at
     // sp+224, after the record, not with the other cases' bytes at sp+2112.
     bool ReadBool() { unsigned char b; Read(&b, 1, 1); return b != 0; }
+    // Its writing twin (the server-select entry's writer, 0x00CBBAB8): a bool PARAMETER is
+    // loaded as a whole word and truncated by the byte store, where WriteByte(flag)
+    // narrows the load to an lbu.
+    void WriteBool(bool v) { WriteByte(v); }
     // The same read as a chainable operator (the guild member's reader chains it).
     VIMemStream &operator>>(bool &v) { unsigned char b; Read(&b, 1, 1); v = b != 0; return *this; }
     // A byte, the same way (Msg0010: the address goes through the reference, so `addiu`

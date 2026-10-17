@@ -13,6 +13,14 @@ containers: see "CLIENT carries its own template copies" below. **At the end of 
 512 of 5,973 exact (66,556 bytes), plus 1,703 verified duplicates counted apart. Then 557:
 the accessor batch below; then 598 with 41 handlers.**
 
+**State 2026-10-17, after the 18 lanes and the polish pass: 3,849 of 3,934 byte-exact,
+plus 1,921 verified duplicates and 112 too small to attribute. 85 functions are open (4,862
+wrong words) and 5 are unwritten.** The unwritten five are dead per-TU copies of VIItemList.h
+members. Exact, duplicate and tiny code together is 1,008,788 of CLIENT's 1,126,740 bytes.
+eqcallcheck finds 0 wrong callees and eqrefcheck 0 findings. The lanes' record is
+`decomp-phase62-lanes-20261017.md`; the polish pass, with the fold of the scratch TU, the
+levers and the remaining opens by diagnosis, is `decomp-phase62-polish-20261017.md`.
+
 The dispatcher's map, case by case, is `decomp-phase62-dispatcher-survey-20261015.md`.
 
 ## How CLIENT is worked
@@ -455,8 +463,20 @@ on the first build. What they established:
 
 ## Files
 
-- `decomp/modules/client/src/game.h`: CLIENT's classes. It was bootstrapped from a
-  declaration table and is maintained by hand from here.
-- `client_main.cpp`, `vimemstream.cpp`.
-- `viclient.cpp`: line-padded. The dispatcher's `VIASSERT(!HaveCorpse)` must stay on
-  **line 10306**; edit the blank padding above it when anything before it changes.
+- `decomp/modules/client/src/game.h` holds CLIENT's core classes. It was bootstrapped from a
+  declaration table and is maintained by hand. The lanes' classes live in `cl_<lane>.h`,
+  included at its end in by-value embedding order.
+- `client_main.cpp`, `vimemstream.cpp`, one TU per original file for the rest (window TUs end
+  with their `__tf` and inline members), and `client_vi*.cpp` for the template copies.
+- `viclient.cpp` is VIClient.cpp, the whole of it since the polish pass folded `vicscratch.cpp`
+  back in. It is line-padded up to Tick. The asserts sit at:
+  - Connect 1705;
+  - ConnectShard 1790;
+  - WriteQuantized 2207;
+  - SendPosition 2277;
+  - Msg000D 9800/9812/9818/9821;
+  - ProcessMessage (`HaveCorpse`) 10306;
+  - Tick 11682..11727.
+
+  `__LINE__` is the physical line minus one, because `#line 1` sits on line 1. After Tick
+  nothing is line-sensitive.

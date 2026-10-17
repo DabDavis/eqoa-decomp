@@ -69,7 +69,7 @@ public:
     void  SetX18C(int v) { m_x18C = v; }
     void  ClearX24() { m_x24 = 0; m_x28 = 0; }
     VIVect2I GetPos() { return m_pos; }
-    VIVect2I GetEnd() { return VIVect2I(m_pos.x + m_size.x, m_pos.y + m_size.y); }
+    VIVect2I GetEnd() { return m_pos + m_size; }   // CLIENT's VIWndCharCreateName needs operator+
     void  Touch() { m_lastInput = VITimer::GetTime(); }
 
     int             m_x24;          // +0x024  handed back with 259

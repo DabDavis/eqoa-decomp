@@ -189,6 +189,8 @@ void VIWndEdit::OnDrawSelf()
     fp[3].m_top.m_id = (VIUITexId)102;
     fp[3].m_tl.m_id = (VIUITexId)101;
     fp[3].m_tr.m_id = (VIUITexId)103;
+    VIVect2I pos;
+    VIVect2I size;
 
     // The fade in, the typed key's flash out, the Done key's pulse.
     m_x168 += dt * 5.0f;
@@ -217,14 +219,10 @@ void VIWndEdit::OnDrawSelf()
     if (gKeyboardAttached)
         padOnly = VIGetGameOptions()->m_x91 != 0;
     VIVect2I &where = m_pos;
-    VIVect2I pos = where;
+    pos = where;
     sPadOnly = padOnly;
-    VIVect2I size;
     size.x = 452;
-    if (padOnly)
-        size.y = m_rows * 17 + 42;
-    else
-        size.y = m_rows * 17 + 203;
+    size.y = padOnly ? m_rows * 17 + 42 : m_rows * 17 + 203;
     if (sPadOnly)
         size.y += 26;
     m_size = size;
@@ -241,7 +239,8 @@ void VIWndEdit::OnDrawSelf()
                 m_glide = 0;
             }
         }
-        if (m_repeatKey < 140 && m_repeatKey >= 136)
+        if (m_repeatKey < 140)
+        if (m_repeatKey >= 136)
         {
             m_repeatDelay -= dt;
             if (m_repeatDelay <= 0.0f)
@@ -263,7 +262,8 @@ void VIWndEdit::OnDrawSelf()
     if (m_title[0])
     {
         int w = ui->m_font.GetStringWidth(ui->m_raster, ui->m_dict, m_title) + 50;
-        ui->BlitBar(m_title, text, VIVect2I(pos.x + (size.x >> 1) - (w >> 1), pos.y - 28),
+        VIVect2I tp(pos.x + (size.x >> 1) - (w >> 1), pos.y - 28);
+        ui->BlitBar(m_title, text, tp,
                     (VIUITexId)33, (VIUITexId)34, w, (VIAlphaBlendMode)3, m_x168, 0, 1);
     }
     ui->BlitRect((VIUITexId)51, pos, size, (VIAlphaBlendMode)3, m_x168);
@@ -271,48 +271,38 @@ void VIWndEdit::OnDrawSelf()
     ui->BlitFillFrame(pos + VIVect2I(16, 16), VIVect2I(420, m_rows * 17 + 8), fp[3],
                       (VIUITexId)96, (VIAlphaBlendMode)3, m_x168, 1);
 
-    unsigned short label[128];
-    VIVect2I at;
+    unsigned short label[64];
     if (!sPadOnly)
     {
         // The legend under the box: Done, Cancel, Space, (Newline,) Back.
         pos.y += m_rows * 17 + 28;
-        at = VIVect2I(pos.x + 320, pos.y + 4);
         pos.x += 325;
-        ui->BlitEx((VIUITexId)193, at, (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
-        VIString::snprintf16(label, 128, "= %S", ui->m_words.GetString(905, ui->m_language));
+        ui->BlitEx((VIUITexId)193, VIVect2I(pos.x - 5, pos.y + 4), (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
+        VIString::snprintf16(label, sizeof(label), "= %S", ui->m_words.GetString(905, ui->m_language));
         ui->DrawStringEx(label, pos.x + 30, pos.y, text, 1);
-        at = VIVect2I(pos.x - 5, pos.y + 31);
         pos.y += 27;
-        ui->BlitEx((VIUITexId)194, at, (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
-        VIString::snprintf16(label, 128, "= %S", ui->m_words.GetString(909, ui->m_language));
+        ui->BlitEx((VIUITexId)194, VIVect2I(pos.x - 5, pos.y + 4), (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
+        VIString::snprintf16(label, sizeof(label), "= %S", ui->m_words.GetString(909, ui->m_language));
         ui->DrawStringEx(label, pos.x + 30, pos.y, text, 1);
-        at = VIVect2I(pos.x + 3, pos.y + 32);
         pos.y += 27;
-        ui->BlitEx((VIUITexId)71, at, (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
-        VIString::snprintf16(label, 128, "= %S", ui->m_words.GetString(908, ui->m_language));
+        ui->BlitEx((VIUITexId)71, VIVect2I(pos.x + 3, pos.y + 5), (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
+        VIString::snprintf16(label, sizeof(label), "= %S", ui->m_words.GetString(908, ui->m_language));
         ui->DrawStringEx(label, pos.x + 30, pos.y, text, 1);
         if (AllowSpaces())
         {
-            at = VIVect2I(pos.x + 3, pos.y + 32);
             pos.y += 27;
-            ui->BlitEx((VIUITexId)72, at, (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
-            VIString::snprintf16(label, 128, "= %S", ui->m_words.GetString(907, ui->m_language));
+            ui->BlitEx((VIUITexId)72, VIVect2I(pos.x + 3, pos.y + 5), (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
+            VIString::snprintf16(label, sizeof(label), "= %S", ui->m_words.GetString(907, ui->m_language));
             ui->DrawStringEx(label, pos.x + 30, pos.y, text, 1);
         }
-        at = VIVect2I(pos.x + 3, pos.y + 32);
         pos.y += 27;
-        ui->BlitEx((VIUITexId)69, at, (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
-        VIString::snprintf16(label, 128, "= %S", ui->m_words.GetString(753, ui->m_language));
+        ui->BlitEx((VIUITexId)69, VIVect2I(pos.x + 3, pos.y + 5), (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
+        VIString::snprintf16(label, sizeof(label), "= %S", ui->m_words.GetString(753, ui->m_language));
         ui->DrawStringEx(label, pos.x + 30, pos.y, text, 1);
 
         // The keys.
-        VIVect2I cell;
-        VIVect2I r;
-        int top = where.y + m_rows * 17 + 28;
-        pos.x = where.x + 16;
-        pos.y = top;
-        cell = pos;
+        pos = where + VIVect2I(16, m_rows * 17 + 28);
+        VIVect2I cell = pos;
         for (int row = 0; row < 6; row++)
         {
             for (int col = 0; col < 11; col++)
@@ -345,68 +335,52 @@ void VIWndEdit::OnDrawSelf()
                 }
                 else
                 {
-                    VIVect2I off;
                     switch (*k)
                     {
                     case 1:
-                        off = VIVect2I(4, 8);
-                        ui->BlitEx((VIUITexId)154, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)154, cell + VIVect2I(4, 8), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 2:
-                        off = VIVect2I(4, 8);
-                        ui->BlitEx((VIUITexId)155, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)155, cell + VIVect2I(4, 8), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 3:
-                        off = VIVect2I(7, 8);
-                        ui->BlitEx((VIUITexId)112, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)112, cell + VIVect2I(7, 8), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 5:
-                        off = VIVect2I(4, 8);
-                        ui->BlitEx((VIUITexId)156, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)156, cell + VIVect2I(4, 8), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 6:
-                        off = VIVect2I(7, 7);
-                        ui->BlitEx((VIUITexId)111, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)111, cell + VIVect2I(7, 7), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 7:
-                        off = VIVect2I(7, 7);
-                        ui->BlitEx((VIUITexId)226, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)226, cell + VIVect2I(7, 7), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 8:
-                        off = VIVect2I(7, 7);
-                        ui->BlitEx((VIUITexId)226, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 2);
+                        ui->BlitEx((VIUITexId)226, cell + VIVect2I(7, 7), (VIAlphaBlendMode)3, m_x168 * 0.8f, 2);
                         break;
                     case 9:
-                        off = VIVect2I(7, 7);
-                        ui->BlitEx((VIUITexId)113, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)113, cell + VIVect2I(7, 7), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 10:
-                        off = VIVect2I(7, 7);
-                        ui->BlitEx((VIUITexId)113, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 1);
+                        ui->BlitEx((VIUITexId)113, cell + VIVect2I(7, 7), (VIAlphaBlendMode)3, m_x168 * 0.8f, 1);
                         break;
                     case 11:
-                        off = VIVect2I(9, 10);
-                        ui->BlitEx((VIUITexId)169, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)169, cell + VIVect2I(9, 10), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 12:
-                        off = VIVect2I(7, 8);
-                        ui->BlitEx((VIUITexId)170, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)170, cell + VIVect2I(7, 8), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 13:
-                        off = VIVect2I(10, 13);
-                        ui->BlitEx((VIUITexId)171, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)171, cell + VIVect2I(10, 13), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 14:
-                        off = VIVect2I(7, 7);
-                        ui->BlitEx((VIUITexId)172, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)172, cell + VIVect2I(7, 7), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 15:
-                        off = VIVect2I(8, 16);
-                        ui->BlitEx((VIUITexId)114, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)114, cell + VIVect2I(8, 16), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     case 16:
-                        off = VIVect2I(10, 7);
-                        ui->BlitEx((VIUITexId)171, cell + off, (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
+                        ui->BlitEx((VIUITexId)171, cell + VIVect2I(10, 7), (VIAlphaBlendMode)3, m_x168 * 0.8f, 0);
                         break;
                     }
                 }
@@ -418,29 +392,27 @@ void VIWndEdit::OnDrawSelf()
 
         // The cursor ring, eased from the last key to this one.
         VIVect2I from(m_lastKey.x * 27, m_lastKey.y * 27);
+        VIVect2I base = where + VIVect2I(16, m_rows * 17 + 28);
         VIVect2I to(m_key.x * 27, m_key.y * 27);
         float t = 1.0f - m_glide;
         t = 1.0f - t * t;
-        VIVect2I base(where.x + 16, where.y + m_rows * 17 + 28);
         VIVect2I b = base + to;
         cell = base + from;
-        r = VIVect2I(cell.x + (int)((float)(b.x - cell.x) * t) - 4,
-                     cell.y + (int)((float)(b.y - cell.y) * t) + 5);
+        VIVect2I r(cell.x + (int)((float)(b.x - cell.x) * t) - 4,
+                   cell.y + (int)((float)(b.y - cell.y) * t) + 5);
         ui->BlitEx((VIUITexId)89, r, (VIAlphaBlendMode)3, m_x168, 0);
     }
     else
     {
         pos.y = where.y + m_rows * 17 + 28;
         pos.x = where.x + 16;
-        at = VIVect2I(where.x + 19, pos.y + 4);
-        ui->BlitEx((VIUITexId)194, at, (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
-        VIString::snprintf16(label, 128, "%S", ui->m_words.GetString(909, ui->m_language));
+        ui->BlitEx((VIUITexId)194, VIVect2I(pos.x + 3, pos.y + 4), (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
+        VIString::snprintf16(label, sizeof(label), "%S", ui->m_words.GetString(909, ui->m_language));
         ui->DrawStringEx(label, pos.x + 39, pos.y, text, 1);
         pos.y = where.y + m_rows * 17 + 28;
         pos.x = where.x + 121;
-        at = VIVect2I(where.x + 124, pos.y + 5);
-        ui->BlitEx((VIUITexId)69, at, (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
-        VIString::snprintf16(label, 128, "%S", ui->m_words.GetString(753, ui->m_language));
+        ui->BlitEx((VIUITexId)69, VIVect2I(pos.x + 3, pos.y + 5), (VIAlphaBlendMode)3, m_x168 * 0.75f, 0);
+        VIString::snprintf16(label, sizeof(label), "%S", ui->m_words.GetString(753, ui->m_language));
         ui->DrawStringEx(label, pos.x + 23, pos.y, text, 1);
         if (m_multiLine)
         {
@@ -448,7 +420,7 @@ void VIWndEdit::OnDrawSelf()
             pos.x = where.x + 276;
             const char *a = ui->m_words.GetString(905, ui->m_language);
             const char *b = ui->m_words.GetString(906, ui->m_language);
-            VIString::snprintf16(label, 128, "%S+%S = %S", a, b,
+            VIString::snprintf16(label, sizeof(label), "%S+%S = %S", a, b,
                                  ui->m_words.GetString(909, ui->m_language));
             ui->DrawStringEx(label, pos.x, pos.y, text, 1);
         }
@@ -784,6 +756,8 @@ void VIWndEdit::OnKeyUp(int key)
         break;
     case 142:
         m_shift = 0;
+        m_repeatKey = 0;
+        break;
     default:
         m_repeatKey = 0;
         break;
@@ -849,8 +823,8 @@ void VIWndEdit::WrapLines()
         m_lines[k].m_len = 0;
         m_lines[k].m_break = 0;
     }
-    unsigned short *start = m_text;
     m_numLines = 0;
+    unsigned short *start = m_text;
     unsigned short buf[256];
     while (m_text[i])
     {
@@ -868,11 +842,10 @@ void VIWndEdit::WrapLines()
         {
             if (m_text[i] == ' ')
                 lastSpace = i;
-            memcpy(buf, start, (&m_text[i] - start) * 2);
+            int count = &m_text[i] - start;
+            memcpy(buf, start, count * 2);
             buf[&m_text[i] - start] = 0;
-            if (ui->m_font.GetStringWidth(ui->m_raster, ui->m_dict, buf) < 389)
-                i++;
-            else
+            if (ui->m_font.GetStringWidth(ui->m_raster, ui->m_dict, buf) > 388)
             {
                 m_lines[m_numLines].m_start = start;
                 if (lastSpace)
@@ -891,6 +864,8 @@ void VIWndEdit::WrapLines()
                 lastSpace = 0;
                 m_numLines++;
             }
+            else
+                i++;
         }
     }
     if (&m_text[i] - start)

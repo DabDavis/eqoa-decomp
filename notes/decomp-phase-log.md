@@ -197,6 +197,35 @@ SETUP and MCERR) merged into `decomp/`, verified neutral. Findings:
 `decomp-phase61-finishing-support-20261013.md`, `decomp-alias-rule-inline-ref-params-20261014.md`,
 `decomp-eqperm-textbox-20261015.md`.
 
+**Phase 62 — CLIENT (opened 2026-10-15; polish pass 2026-10-17).**  The game module: 5,973
+functions, 1.1 MB, no symbols of its own. Day one wrote the opcode dispatcher in full (2,093
+instructions; its compare tree records EMPTY cases) and found that **CLIENT carries its own
+template copies**, one per TU with no COMDAT. `eqtmpl.py` names each instantiation off the
+call graph, and the dead copies score apart as VERIFIED DUPLICATES. The game is ONE object,
+`VIClient`, whose constructor roll-call lays out the engine; it is FrontiersForge's
+singleton. **Eighteen lanes** (2026-10-16/17) then took CLIENT from 1,208 to 3,761 in one
+night. Each owned an address range, called other lanes' code by address (`M_/F_/D_<ADDR>`),
+and was merged owner-first. All the merge work was in shared headers.
+**The polish pass** went from 3,761 to **3,849 of 3,934**, plus 1,921 duplicates; 85 are open
+and 5 unwritten:
+- **Bookkeeping +25.** It fixed 94 rows the build emits that the map lacks, 7 byte-exact
+  functions calling the wrong name, and four functions the MERGE had broken through a shared
+  header's spelling.
+- **Ten more lanes, +57.** SpellBook 494, Buddy 443, LoadWorld 285, SendPosition 355 (copy-init
+  `VIBBox old = range;`), Tick 242.
+- **The scratch TU folded back** into a re-padded VIClient.cpp. This exposed that **a template
+  inline CALLED before its definition is never integrated later in that TU**.
+- **The temp-slot rule** (pl-ui3b): `assign_stack_temp` records a slot's REQUESTED size and
+  ADDS merged sizes, so freed `VIVect2I` temps form regions an 8-byte request swallows whole.
+- `visort.h` (a Dinkumware transcription) was rewritten in our own words.
+- **The final permuter batch** closed ApplyItems (a `short` inline parameter). It also showed
+  that **the image's immediates are the original OBJECT's addends**: a static read at +800
+  was an offset into a bigger object, so SelectCategory's two lists are one
+  `sSkills[2][200]`.
+
+Findings: `decomp-phase62-client-20261015.md`, `decomp-phase62-dispatcher-survey-20261015.md`,
+`decomp-phase62-lanes-20261017.md`, `decomp-phase62-polish-20261017.md`.
+
 **Phase 57 — the RASTER'S DMA HALF.**  `viraster.cpp` again: 24 more of `VIRaster`'s
 167 functions written and 16 byte-exact, taking the file to 128 written.  Phase 56 wrote
 the object; this takes the half that talks to the hardware — the three microcode uploads,

@@ -291,7 +291,9 @@ def local_macros(text: str, before: int) -> dict:
             ps = n.child_by_field_name("parameters")
             params = [fn.t(k) for k in ps.named_children] if ps else []
         if "#" in body:
-            raise SystemExit(f"macro {nm} uses # or ##; not expanded by eqperm")
+            # stringising/pasting is not expanded here; only fatal if the function uses it
+            out[nm] = None
+            continue
         out[nm] = (params, body)
     return out
 
@@ -781,6 +783,10 @@ def cmd_setup(a) -> int:
     fname = fname or f"{stem}.cpp"
 
     macros = local_macros(tu_text, start)
+    for nm in [k for k, v in macros.items() if v is None]:
+        if re.search(r"\b" + re.escape(nm) + r"\b", func_orig):
+            raise SystemExit(f"macro {nm} uses # or ##; not expanded by eqperm")
+        del macros[nm]
     func = expand_macros(func_orig, macros)
     func = M.strip_comments(func)
     if M.Fn(func).root.has_error:

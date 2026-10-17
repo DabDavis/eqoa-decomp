@@ -1,4 +1,4 @@
-# STATION: the SOE Station account screens (1,983 of 2,339 byte-exact, 2026-10-16)
+# STATION: the SOE Station account screens (1,985 of 2,339 byte-exact, 2026-10-17)
 
 STATION is 596,668 bytes of its own code in 2,339 functions, followed by the usual
 library tail (183 `LIB` functions, crt0 onward). It runs after SETUP and before
@@ -15,9 +15,9 @@ It exports one name, `station_main(char *login, char *password)`. Every other na
 - SETUP and CLIENT twins;
 - names in comments marked "ours".
 
-**State:** 1,983 of the 2,007 written functions are byte-exact (504,780 of 596,668 bytes).
+**State:** 1,985 of the 2,007 written functions are byte-exact (1,983 on 2026-10-16, 504,780 of 596,668 bytes; +2 since from CLIENT's lanes, among them `VIWndEdit::OnKeyUp`, ported from CLIENT's polish pass with its `OnDrawSelf`/`WrapLines`/CS-window improvements).
 Another 311 are verified duplicates and 18 are stubs under four instructions. Only three are
-not written. `eqcallcheck` reports 0 mismatched callees and `eqrefcheck` 0 findings. The 24
+not written. `eqcallcheck` reports 0 mismatched callees; `eqrefcheck` reports 1 finding, the jump table of the open `VIWndGenericRenderer::OnValidateLogin` (its code is still misaligned). The 24
 opens and the 3 unwritten, each with its diagnosis, are in
 `claude-notes/decomp-station-20261016.md`.
 

@@ -62,9 +62,9 @@ void VIUI::Begin2D()
     m_raster->Begin2D();
 }
 
-int VIUI::End2D()
+void VIUI::End2D()
 {
-    return m_raster->End2D();
+    m_raster->End2D();
 }
 
 // Phase 61, wave 3.  The three rectangle fills return VOID: an ignored `int`

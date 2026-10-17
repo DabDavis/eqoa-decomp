@@ -110,6 +110,12 @@ public:
     // across the two calls between the set and the use, which is what parks
     // &at in a callee-saved register the way the target does.
     void Set(float _x, float _y, float _z) { x = _x; y = _y; z = _z; }
+    // Phase 62, CLIENT's VIEntity::WriteUpdate.  `m_hpr[i]`
+    // returns a REFERENCE, so every use rebuilds `this + i*4` with `this`
+    // first and each angle-wrap loop shadows its own MEM (load_mems);
+    // `(&m_hpr.x)[i]` puts the index first, and one `float &` hoists the
+    // address out of both loops.
+    float &operator[](int i) { return (&x)[i]; }
 
     VIVect3 &operator=(const VIVect3D &v);
     float Magnitude() const;
@@ -594,6 +600,7 @@ public:
     // Phase 61.  VIUI::BlitFrame offsets a corner by a (dx, 0) / (0, dy)
     // temporary: the operand lands in its own stack temp next to the result.
     VIVect2I operator+(const VIVect2I &v) const { return VIVect2I(x + v.x, y + v.y); }
+    VIVect2I operator-(const VIVect2I &v) const { return VIVect2I(x - v.x, y - v.y); }  // VIWndHUDMenu::DrawList
 };
 
 // SUPPORT 0x003EF750 (VIBRect) / 0x003F9EB0 (VIRect).  min at +0, max at +8.
@@ -664,6 +671,12 @@ public:
     VIBBox(const VIBBox &b) { min = b.min; max = b.max; }
 
     VIBBox(const VIVect3 &a, const VIVect3 &b) : min(a), max(b) {}
+
+    // A box around ONE point, read off VIClient::SendPosition's range
+    // trackers: six zeros (the members' own constructors), then min and max assigned
+    // from the point, which is reloaded for each.  `explicit` only keeps it out of
+    // overload resolution; it changes no code.
+    explicit VIBBox(const VIVect3 &p) { min = p; max = p; }
 
     int  Init(int n, VIVect3 *p);
     void Scale(float s);
@@ -766,7 +779,7 @@ public:
     static void snprintf16(unsigned short *d, int n, const unsigned short *f, ...);
 
     static char *strlwr(char *p);
-    static char *strupr(char *p);
+    static void strupr(char *p);
     static void  strlwr16(unsigned short *p);
     static void  strupr16(unsigned short *p);
     static int   strcasecmp(const char *a, const char *b);
@@ -2527,6 +2540,8 @@ public:
     int End() const;
     int Begin() const;
     int Next(int i) const;
+    int Prev(int i) const;                                     // CLIENT 0x00C35E10
+    T &Value(int i) const { return ((Node *)i)->m_data; }      // inline, as VIPool's
     int Clear();
     int Init();
     int Add();
@@ -4887,6 +4902,11 @@ public:
     // pseudo (phase 32), and that pseudo is what the fourteen descents keep in
     // a callee-saved register across their recursive calls.
     T &operator[](int i) const { return m_data[i]; }
+    // CLIENT's VICharacter.cpp writes the same subscript as a call and the
+    // count as Size(): its assert texts quote `ChatMenus(i).MenuItems.Size()` and
+    // `Old(k-1) < Old(k)` (VIKeyDiff.h).  Inline, so neither is ever emitted.
+    T &operator()(int i) const { return m_data[i]; }
+    int Size() const { return m_size; }
     // ... and the block itself.  `&a[0]` folds the pseudo away again (gcc
     // simplifies `&*(m_data + 0)` back to the member and then folds the base);
     // an accessor that names m_data does not, which is what the three
@@ -6285,8 +6305,8 @@ class VIRaceDef
 public:
     int          m_nameStrID;     // +0x00
     int          m_shortStrID;    // +0x04
-    unsigned int m_maleModel;     // +0x08  VIHashResourceID("<Race>Male")
-    unsigned int m_femaleModel;   // +0x0C
+    unsigned int m_model[2];      // +0x08  [sex]: VIHashResourceID("<Race>Male"), "<Race>Female"
+                                  //        an ARRAY: CLIENT's CreateCharacter indexes it base first
     int          m_bonus[7];      // +0x10  sums to 35
     int          m_classMask;     // +0x2C  bit N = class N allowed (srav)
     float        m_selectX;       // +0x30  create-screen placement
@@ -7725,7 +7745,7 @@ public:
     void SetLanguage(int l);
 
     void Begin2D();
-    int End2D();
+    void End2D();
 
     void FillRectangle(const VIVect2I *r, const VIColor32F *c);
     void FrameFillRectangle(const VIVect2I *r);
@@ -7894,7 +7914,7 @@ public:
 
     void DrawVScroll(VIVect2I at, int h, float t, unsigned int flags);
 
-    int TickR(int x, int row, bool pulse);
+    void TickR(int x, int row, bool pulse);
     int TickU(int x, int row, bool pulse);
     int TickD(int x, int row, bool pulse);
     float TickPulse() const;

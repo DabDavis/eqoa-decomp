@@ -41,6 +41,457 @@ CHK(c_50304,    OFF(m_p50304)   == 0x50304)
 CHK(c_buddy,    sizeof(VIBuddy) == 172)
 CHK(c_netitem,  sizeof(VINetItem) == 0x2FC)
 
+
+// A flag recorded as one byte.
+static inline void ReadFlag(VIJournal &j, int &v)
+{
+    unsigned char c;
+    j.Read((char *)&c, 1);           // Read<char>: Tick, later in this TU, must still inline Read<unsigned char>
+    v = c != 0;
+}
+// newlib's, by value through a hidden pointer.
+struct mallinfo
+{
+    int arena, ordblks, smblks, hblks, hblkhd, usmblks, fsmblks, uordblks, fordblks, keepcost;
+};
+extern "C" struct mallinfo mallinfo();
+extern "C" int ezNetCtlGetStatus(void *status);
+extern "C" int sprintf(char *buf, const char *fmt, ...);
+// What ezNetCtlGetStatus fills (data_00CCE5C0): the interface's state at +12.
+struct VINetCtlStatus
+{
+    int m_p00[3];
+    int m_state;                    // +0x0C: 0 down, 5 lost
+    int m_p10[12];
+};
+static VINetCtlStatus sNetStatus;
+// UpdateGame's death-tilt clamp.  The target clamps IN PLACE in one register
+// (three `bc1tl` to the join, OrbitRight's VIMIN(hi, VIMAX(lo, v)) shape) and copies the result
+// out at the join; an inline helper whose parameter is clamped in place gives that copy (24
+// words left: the arms' registers and lo/hi loaded early).  Not the original's spelling for sure.
+static inline float VIClampF(float v, float lo, float hi) { v = VIMIN(hi, VIMAX(lo, v)); return v; }
+// One function-static observed range per quantised field, seeded from its box: the 0x40's
+// debug bookkeeping (a change in the range is compared and not acted on).  All twelve
+// boxes are distinct slots in the frame, so they share one scope, not sibling blocks.
+// `old` is COPY-initialised (`= range`): g++ 2.95 then addresses its two members off the
+// frame (s2+208, s2+220, the stream's base), where `old(range)` builds it through a `this`
+// pseudo that the memcmp shares (300 words).  memcmp is declared with an `int` size, NOT
+// the builtin's: the call's result is discarded, and the builtin would let gcc drop it.
+extern "C" int memcmp(const void *, const void *, int);
+#define VI_TRACK_RANGE(n, box, v) \
+    static VIBBox range##n = box; \
+    VIBBox b##n(v); \
+    VIBBox old##n = range##n; \
+    range##n.Union(b##n); \
+    memcmp(&range##n, &old##n, sizeof(VIBBox));
+// The original's VIWalkPhysics names +0x58 `State`, an ENUM (vi.h: `int m_locoState`).  An
+// enum with no negative value is unsigned to g++, and its promotion to int survives
+// make_range, so the assert's two bounds are not merged into one unsigned compare --
+// `bltz` + `slti`, not `sltiu`.  vi.h is shared; the enum view is taken here.
+enum VIWalkState { VIWALKSTATE_0 };
+// VIWalkPhysics as SendPosition copies it.  vi.h's copy has the flag word in an
+// ANONYMOUS union, and g++ 2.95's synthesized copy constructor appends an anonymous union's
+// member init LAST (sort_member_init skips unnamed FIELD_DECLs), so +0x50 is copied after the
+// landscape normal; the target copies it in declaration order, between +0x44 and +0x54.  So
+// in the original the flag word is a NAMED member.  Same layout, with +0x58 the enum above.
+// (The `cp` reference matters too: a named reference is a flagged pointer, so the copy's
+// loads are not held behind the stack stores; `= m_walkCam.m_committed` is 57 words off.)
+struct VIWalkPhysicsView
+{
+    long    m_time;
+    VIVect3 m_position;
+    VIVect3 m_angles;
+    VIVect3 m_velocity;
+    VIVect3 m_angularVel;
+    VIVect3 m_force;
+    VIVect3 m_torque;
+    unsigned int m_flags;
+    float   m_floor;
+    VIWalkState State;
+    float   m_heightOffset;
+    float   m_targetHeading;
+    VIVect3 m_landscapeNormal;
+};
+
+
+// 0x00BBF698: the constructor.  The members are built in declaration order (the roll-call);
+// the subsystems that talk back take the client.
+VIClient::VIClient()
+    : m_p07578(100), m_guild(this), m_p2EF24(this), m_p2EFC8(this), m_p2EFCC(this),
+      m_p2EFD0(this), m_p33950(this), m_p382E8(this), m_p38300(this), m_p38334(this),
+      m_p3834C(this), m_p3FC10(this), m_bank(this), m_p4EC58(this), m_p4F078(this)
+{
+    m_p502FC = 0;
+    m_p50304 = 0;
+    m_p0007C = 0xFFFFFFFF;
+    m_p00064 = 1;
+    m_timeOfDay = 12.0f;
+    m_drdp = 0;
+    m_conn = 0;
+    m_quit = false;
+    m_p00070 = 0;
+    m_p00074 = 0;
+    m_p00078 = 0;
+    m_p00088 = 0;
+    m_p00068 = 0;
+    m_p2BD48 = 1;
+    m_p2BD4C = 1;
+    m_p2BD44 = 0;
+    m_p2BD40 = 0;
+    m_p2BD50 = 0;
+    m_worldId = -1;
+    m_p00058 = -1;
+    m_p4F0EC = -1;
+    m_p4F0E8 = 0;
+    m_loopHandle = -1;
+    m_p2C598 = 0;
+    m_pC150 = 1.2f;
+    m_pC158 = VIColor32F(0.5f, 0.5f, 0.5f, 0.0f);
+    m_pC154 = 0;
+    m_targetInfoValid = 0;
+    m_p2BB68 = 0;
+    m_p2BB70 = 2;
+    m_p2BB74 = 1;
+    m_targetDisposition = 0;
+    m_p071E8 = 0;
+    m_speed = 8.833333f;
+    m_p071F0 = 0;
+    m_petId = 0xFFFFFFFF;
+    m_petName[0] = 0;
+    m_loadSprite = -1;
+    m_p4F0B0 = 0;
+    m_p4F110 = 0;
+    m_worldLoaded = 0;
+    m_exitCode = 0;
+    m_p4F130 = 0;
+    m_shardOverride[0] = 0;
+    m_p00084 = 0;
+    m_p50310 = 1;
+    m_p50320 = 0;
+    m_p50308 = 0;
+    m_p5030C = 0;
+    m_p50318 = 0;
+    m_p50314 = 1;
+    memset(m_entities, 0, sizeof(m_entities));
+    memset(m_channels, 0, sizeof(m_channels));
+    m_p2EC28 = 0;
+    VIScene &scene = m_scene;
+    scene.m_p4BAC = m_worldId;
+}
+
+// 0x00BBFE30
+int VIClient::InitPlayback(const char *path)
+{
+    int r = m_journal.Open(2, path, 2048);
+    if (r < 0)
+        return r;
+    r = InitBody();
+    if (r >= 0)
+        r = 0;
+    return r;
+}
+
+// 0x00BC0098, name provisional: the start-up proper, after Init has recorded (or a
+// playback has opened) the journal: the journal's start-up record read back, the engine
+// brought up, every window made, the world loaded, the first window shown.  < 0 fails.
+int VIClient::InitBody()
+{
+    switch (VIHasDiscIdChanged())
+    {
+    case -1:
+        for (;;)
+            ;
+    case 1:
+        VIDisplayScreen16("ERROR", 4, true);
+        for (;;)
+            ;
+    }
+    char shard[64];
+    char user[32];
+    char pass[32];
+    int r;
+    VIJournal &journal = m_journal;
+    journal.Read(&m_p07568, 8, 1);
+    journal.ReadString(shard, 64);
+    journal.ReadString(user, 32);
+    journal.ReadString(pass, 32);
+    journal.Read(m_p502DC, 1, 32);
+    ReadFlag(journal, m_p4FC20);
+    ReadFlag(journal, m_p50300);
+    ReadFlag(journal, m_p2BD54);
+    strcpy(m_shardOverride, shard);
+    if (m_console.Init() < 0)
+    {
+        r = -1;
+        goto done;
+    }
+    if (m_raster.Init(0, 640, 448, 0) < 0)
+    {
+        r = -1;
+        goto done;
+    }
+    if ((r = m_collide.Init()) < 0)
+        goto done;
+    if ((r = m_sound.Init()) < 0)
+        goto done;
+    m_sound.SetSoundClassVolume((VISOUNDCLASS)0, VIGetGameOptions()->m_musicVolume);
+    m_sound.SetSoundClassVolume((VISOUNDCLASS)1, VIGetGameOptions()->m_effectVolume);
+    if (m_camera.Init(m_raster, VIVect3(0.0f, 0.0f, 0.0f), VIVect3(0.0f, 0.0f, 1.0f),
+                      55.0f, 1.42857146f, 0.1f, 900.0f) < 0)
+        return -1;
+    if ((r = m_dict.Init(0)) < 0)
+        goto done;
+    if (m_scene.Init(m_p07568, m_dict, &m_raster, &m_sound, m_collide) < 0)
+        return -1;
+    {
+        VIScene &scene = m_scene;
+        scene.m_spellEffects.SetVibrateCallback((VIVibrateFn)Rumble, &m_console);
+        if (VIGetFeatureFlags() & 0x200)
+            scene.m_spellEffects.SetCameraEffect(&m_walkCam.m_effect);
+    }
+    m_p0662C = true;
+    VISetWindowUI(&m_ui);
+    if (!(m_wndServerSelect = new VIWndServerSelect))
+    {
+        r = -1;
+        goto done;
+    }
+    m_wndServerSelect->SetAppPtr(this);
+    if ((r = m_wndServerSelect->Init(&m_shardInfo)) != 0)
+        goto done;
+    if (!(m_wndCharSelect = new VIWndCharacterSelect))
+    {
+        r = -1;
+        goto done;
+    }
+    m_wndCharSelect->SetAppPtr(this);
+    if (!(m_wndCharCreate = new VIWndCharCreateBlank))
+    {
+        r = -1;
+        goto done;
+    }
+    m_wndCharCreate->SetAppPtr(this);
+    if (!(m_wndIdle = new VIWndIdle))
+    {
+        r = -1;
+        goto done;
+    }
+    m_wndIdle->SetAppPtr(this);
+    if (!(m_wndGame = new VIWndGame))
+    {
+        r = -1;
+        goto done;
+    }
+    m_wndGame->SetAppPtr(this);
+    m_p2EF24.SetWnd(m_wndGame);
+    m_p4F078.SetGameWindow(m_wndGame);
+    m_p3FC10.SetGameWindow(m_wndGame);
+    m_p3834C.SetGameWindow(m_wndGame);
+    m_p38300.SetGameWindow(m_wndGame);
+    m_bank.SetGameWindow(m_wndGame);
+    if ((r = m_p3834C.Init(&m_p4F078)) != 0)
+        goto done;
+    if ((r = m_p4EC58.Init()) != 0)
+        goto done;
+    if ((r = m_wndGame->Init(&m_scene)) != 0)
+        goto done;
+    if ((r = m_ui.Init(&m_raster, &m_sound, &m_dict)) != 0)
+        goto done;
+    if ((r = LoadWorld()) < 0)
+        goto done;
+    if (!(m_wndLogin = new VIWndLogin))
+    {
+        r = -1;
+        goto done;
+    }
+    m_wndLogin->SetAppPtr(this);
+    if ((r = m_wndLogin->Init(user, pass)) != 0)
+        goto done;
+    if (!(m_wndInitFromMc = new VIWndInitFromMc))
+    {
+        r = -1;
+        goto done;
+    }
+    m_wndInitFromMc->SetAppPtr(this);
+    if ((r = m_wndInitFromMc->Init()) != 0)
+        goto done;
+    m_p2BD44 = m_wndInitFromMc;
+    SetActiveWindow(m_wndInitFromMc);
+    if ((r = m_dialogs.Init(12)) != 0)
+        goto done;
+    m_dialogHead = 0;
+    m_p2BB74 = 1;
+    m_dialogTail = 0;
+    m_p2EBFC = 0;
+    m_p2BB60 = 0;
+    m_targetInfoValid = 0;
+    m_p2BB68 = 0;
+    m_targetDisposition = 0;
+    m_p2BB70 = 2;
+    TradeReset();
+    m_p3834C.ResetP78C0();
+    m_p4EC58.ResetP41C();
+    m_p2BB0C = 0xFFFFFFFF;
+    m_p2BB10 = 0xFFFFFFFF;
+    m_questCount = 0;
+    m_fadeCur = 0.0f;
+    m_fadeTo = 0.0f;
+    m_fadeRate = 0.0f;
+    m_fadeMat = -1;
+    m_fadeColor.Set(0.0f, 0.0f, 0.0f, 1.0f);
+    ClearPC1B0();
+    m_text.SetClient(this);
+    m_p4FC28[0] = 0;
+    m_p4FCA8[0] = 0;
+    m_p50308 = 0;
+done:
+    return r;
+}
+
+// 0x00BC0730, name provisional ("PreGame Load: %d ms"): the start-up resources -- the
+// character-select and creation windows' scenes, pregame.csf, ui.csf and the fonts, the
+// item and character art, the four character-select sets, debug, fx and the sky -- then
+// the resources' pools, the walking camera, and the login window's "connecting" state.
+int VIClient::LoadWorld()
+{
+    VIESFParse parse;
+    VIArray<VIElem_BDF7A0> arr;
+    VICSFFile csf;
+    m_p4F110 = 0;
+    m_p4F130 = 0;
+    switch (VIHasDiscIdChanged())
+    {
+    case -1:
+        for (;;)
+            ;
+    case 1:
+        VIDisplayScreen16("ERROR", 4, true);
+        for (;;)
+            ;
+    }
+    VIScene &scene = m_scene;
+    int r;
+    if ((r = m_wndCharSelect->Init(scene, m_dict, m_raster, m_camera, m_walkCam, m_collide)) != 0)
+        goto done;
+    if ((r = m_wndCharCreate->Init(scene, m_camera, m_walkCam)) != 0)
+        goto done;
+    {
+    VIVect3 pos;
+    VIVect3 dir(0.0f, 0.0f, 1.0f);
+    if (m_camera.Init(m_raster, pos, dir, 55.0f, 10.0f / 7.0f, 0.1f, 900.0f) < 0)
+        return -1;
+    long t = -VITimer::GetTime();
+    TickNet();
+    if ((r = csf.Parse("data2\\pregame.csf", parse, scene)) != 0)
+        goto done;
+    TickNet();
+    if ((r = csf.Parse("data2\\ui.csf", parse, scene)) != 0)
+        goto done;
+    VIResourceType type;
+    VIDictionary *dict = scene.m_dict;
+    if (!dict->Find(VIHashResourceID("Loading_Gears"), type, m_loadSprite))
+        goto done;
+    parse.SetProgressCallback(LoadingProgress, this);
+    csf.SetProgressCallback(LoadingProgress, this);
+    if ((r = csf.Parse("data2\\Arial.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\ArialUI.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\Arena.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\item.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\charcust.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\charface.csf", parse, scene)) != 0)
+        goto done;
+    VICSpriteCust::SetResources(m_raster, m_dict);
+    if ((r = csf.Parse("data2\\charsel1.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\charsel2.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\charsel3.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\charsel4.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\debug.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\fx.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = csf.Parse("data2\\sky.csf", parse, scene)) != 0)
+        goto done;
+    if ((r = scene.SetSky()) != 0)
+        goto done;
+    scene.SetTimeOfDay(8.0f);
+    t += VITimer::GetTime();
+    printf("PreGame Load: %d ms\n", (int)t);
+    if (m_p06D50.Init(48, scene, m_loader) < 0)
+        return -1;
+    if (m_p06D00.Init(scene, m_loader) < 0)
+        return -1;
+    pos.Zero();
+    {
+        VIVect3 dir2(0.0f, 0.0f, 1.0f);
+        if (m_camera.Init(m_raster, pos, dir2, 55.0f, 0.75287354f, 0.1f, 900.0f) < 0)
+            return -1;
+    }
+    pos.Set(0.0f, 0.0f, -26.0f);
+    dir.Zero();
+    VIWalkCamera &walk = m_walkCam;
+    if ((r = walk.Init(pos, dir, m_camera, scene)) < 0)
+        goto done;
+    walk.m_minOrbitDistance = 0.5f;
+    walk.m_maxOrbitDistance = 25.0f;
+    walk.m_minCollisionDist = 3.5f;
+    m_wndCharSelect->Connecting();
+    m_p00080 = 0;
+    if (!(VIGetFeatureFlags() & 0x100))
+        StopMusic();
+    m_p4F110 = 1;
+    }
+done:
+    return r;
+}
+
+// 0x00BC0D80, name provisional (the destructor, and Msg000D's world change): the game's
+// resources cleared and the dictionary and the scene made new, the first failure returned.
+int VIClient::ReleaseGame()
+{
+    int r;
+    m_p4F110 = 0;
+    m_fadeMat = -1;
+    if ((r = m_p06D50.Clear()) != 0)
+        goto done;
+    if ((r = m_p06D00.Clear()) != 0)
+        goto done;
+    if ((r = m_scene.Clear()) != 0)
+        goto done;
+    if ((r = m_dict.Clear()) != 0)
+        goto done;
+    if ((r = m_sound.Reset()) != 0)
+        goto done;
+    m_sound.SetSoundClassVolume((VISOUNDCLASS)0, VIGetGameOptions()->m_musicVolume);
+    m_sound.SetSoundClassVolume((VISOUNDCLASS)1, VIGetGameOptions()->m_effectVolume);
+    if ((r = m_collide.Reset()) != 0)
+        goto done;
+    if ((r = m_raster.Reset()) != 0)
+        goto done;
+    if ((r = m_dict.Init(0)) != 0)
+        goto done;
+    if ((r = m_scene.Init(m_p07568, m_dict, &m_raster, &m_sound, m_collide)) != 0)
+        goto done;
+    {
+        VIScene &scene = m_scene;
+        scene.m_spellEffects.SetVibrateCallback((VIVibrateFn)Rumble, &m_console);
+        if (VIGetFeatureFlags() & 0x200)
+            scene.m_spellEffects.SetCameraEffect(&m_walkCam.m_effect);
+    }
+    if ((r = m_wndCharSelect->Free()) != 0)
+        goto done;
+    r = m_wndCharCreate->Free();
+done:
+    return r;
+}
 // 0x00BC16D0
 void VIClient::Shutdown()
 {
@@ -64,7 +515,7 @@ void VIClient::Disconnect(int reason, int quiet)
     m_p00058 = -1;
     m_p00080 = 0;
     m_p4F0E8 = reason;
-    if (!quiet && m_p4F130 && m_p2BD40 != &m_p2BB98 && reason != 21)
+    if (!quiet && m_p4F130 && m_p2BD40 != &m_wndDisconnect && reason != 21)
         Notify();
 
     for (int i = 0; i < 24; i++)
@@ -1206,457 +1657,6 @@ VIEntity *VIClient::FindEntity(int id)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // 0x00BC18C0: to a server by name.  A name that does not resolve ends the session (2);
 // otherwise a DRDP client on a random local port (another while that one is taken, 64
 // tries; 5 when none works), the UDP port through the journal, a connection to the
@@ -1681,7 +1681,7 @@ void VIClient::Connect(const char *host, unsigned short port)
         drdp_addr_t a;
         drdp_addr_t local;
         memset(&local, 0, sizeof(local));
-        local.m_usPort = m_random.Range(1025, 32767); a = local;
+        local.m_usPort = m_random.RandomRange(1025, 32767); a = local;
         r = drdp_create_client(&m_drdp, &a, m_p07568, m_journal.Playback(), 0);
         if (r != -3)
             break;
@@ -1717,17 +1717,17 @@ void VIClient::Connect(const char *host, unsigned short port)
         VINetSend(out, GetConn(251));
     }
     VIMemStream out;
-    int noPass = strlen(m_wnd2BB7C->m_pass) == 0;
+    int noPass = strlen(m_wndLogin->m_pass) == 0;
     out.WriteU16(0x0904);
-    out.WriteByte(0);
+    { unsigned char b = 0; out.Write(&b, 1, 1); }
     out << VIMemStreamRaw(VIGetExpansionFlags());
     out.WriteString(VIGetGameCode());
-    out.WriteString(m_wnd2BB7C->m_user);
-    out.WriteByte(noPass);
+    out.WriteString(m_wndLogin->m_user);
+    { unsigned char b = noPass; out.Write(&b, 1, 1); }
     if (noPass)
         out.Write(m_p502DC, 1, 32);
     else
-        out.WriteString(m_wnd2BB7C->m_pass);
+        out.WriteString(m_wndLogin->m_pass);
     VINetSend(out, GetConn(251));
     m_p07570 = -1;
     m_selfId = 0xFFFFFFFF;
@@ -1783,7 +1783,7 @@ void VIClient::Connect(const char *host, unsigned short port)
 void VIClient::ConnectShard(unsigned long addr)
 {
     m_p00058 = 2;
-    m_wndLogin->Connecting();
+    m_wndCharSelect->Connecting();
     m_p4F0E8 = 20;
     connection_close(m_conn);
     m_conn = 0;
@@ -1799,73 +1799,73 @@ void VIClient::ConnectShard(unsigned long addr)
     }
     {
         VIMemStream out;
-        int noPass = strlen(m_wnd2BB7C->m_pass) == 0;
-        out.WriteU16(1);
-        out.WriteByte(m_p4FC20);
+        int noPass = strlen(m_wndLogin->m_pass) == 0;
+        unsigned short o = 1; out.Write(&o, 2, 1);
+        out << VIMemStreamByte(m_p4FC20);
         out << VIMemStreamRaw(VIGetExpansionFlags());
         out.WriteString(VIGetGameCode());
-        out.WriteString(m_wnd2BB7C->m_user);
-        out.WriteByte(noPass);
+        out.WriteString(m_wndLogin->m_user);
+        out << VIMemStreamByte(noPass);
         if (noPass)
             out.Write(m_p502DC, 1, 32);
         else
-            out.WriteString(m_wnd2BB7C->m_pass);
+            out.WriteString(m_wndLogin->m_pass);
         VINetSend(out, GetConn(251));
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// 0x00BC2638: the destructor.  The windows it made, then the engine closed; the members
+// go in reverse.
+VIClient::~VIClient()
+{
+    if (m_worldLoaded)
+        UnloadWorld();
+    if (m_p4F110)
+        ReleaseGame();
+    if (m_wndInitFromMc)
+    {
+        delete m_wndInitFromMc;
+        m_wndInitFromMc = 0;
+    }
+    if (m_wndLogin)
+    {
+        delete m_wndLogin;
+        m_wndLogin = 0;
+    }
+    if (m_wndGame)
+    {
+        delete m_wndGame;
+        m_wndGame = 0;
+    }
+    if (m_wndIdle)
+    {
+        delete m_wndIdle;
+        m_wndIdle = 0;
+    }
+    if (m_wndCharCreate)
+    {
+        delete m_wndCharCreate;
+        m_wndCharCreate = 0;
+    }
+    if (m_wndCharSelect)
+    {
+        delete m_wndCharSelect;
+        m_wndCharSelect = 0;
+    }
+    if (m_wndServerSelect)
+    {
+        delete m_wndServerSelect;
+        m_wndServerSelect = 0;
+    }
+    m_ui.Close();
+    m_p06D50.Clear();
+    m_p06D00.Clear();
+    m_loader.Clear();
+    m_scene.Clear();
+    m_sound.Close();
+    m_collide.Close();
+    m_raster.Close();
+}
 
 
 
@@ -2265,6 +2265,1189 @@ void WriteQuantized(VIMemStream &s, const VIVect3 &v, int iBytesPerDimension, co
 
 
 
+void VIClient::SendPosition()
+{
+    if (!m_conn)
+        return;
+    if (m_selfId != 0xFFFFFFFF)
+    {
+        char buf[0x10000];
+        VIMemStream out(buf, sizeof(buf));
+        const VIWalkPhysicsView &cp = (const VIWalkPhysicsView &)m_walkCam.m_committed; VIWalkPhysicsView WalkPhysics = cp;
+        if (!(0 <= WalkPhysics.State && WalkPhysics.State < 256))
+            _VIAssert("0 <= WalkPhysics.State && WalkPhysics.State < 256", __FILE__, __LINE__);
+        out.WriteByte(m_worldId);
+        WriteQuantized(out, WalkPhysics.m_position, 3, gBoundsPos);
+        WriteQuantized(out, WalkPhysics.m_velocity, 2, gBoundsVel);
+        WriteQuantized(out, WalkPhysics.m_force, 2, gBoundsAccel);
+        VIVect3 angles = WalkPhysics.m_angles;
+        WrapAngles(angles);
+        WriteQuantized(out, angles, 1, gBoundsHpr);
+        WriteQuantized(out, WalkPhysics.m_angularVel, 1, gBoundsAVel);
+        WriteQuantized(out, WalkPhysics.m_torque, 1, gBoundsAAccel);
+        float heading = WalkPhysics.m_targetHeading;
+        WrapAngle(heading);
+        WriteQuantized(out, 1, heading, -3.14159265f, 3.14159265f);
+        WriteQuantized(out, 2, WalkPhysics.m_position.y - WalkPhysics.m_floor, -2000.0f, 2000.0f);
+        unsigned int flags = WalkPhysics.m_flags;
+        out.Write(&flags, 4, 1);
+        out.WriteByte(WalkPhysics.State);
+        out.WriteByte(m_autoAttack);
+        unsigned int target = m_target;
+        out.Write(&target, 4, 1);
+        VI_TRACK_RANGE(0, gBoundsPos, WalkPhysics.m_position)
+        VI_TRACK_RANGE(1, gBoundsHpr, angles)
+        VI_TRACK_RANGE(2, gBoundsVel, WalkPhysics.m_velocity)
+        VI_TRACK_RANGE(3, gBoundsAVel, WalkPhysics.m_angularVel)
+        VI_TRACK_RANGE(4, gBoundsAccel, WalkPhysics.m_force)
+        VI_TRACK_RANGE(5, gBoundsAAccel, WalkPhysics.m_torque)
+        int size = out.m_size;
+        connection_send(m_conn, buf, size, 64);
+    }
+    m_p382E8.ApplySimulation(m_conn);
+}
+
+// 0x00BC3AE8, name provisional: the controls -- the sticks (m_p07190's axes) and the arrow
+// keys turned into forward/strafe/turn/pitch/orbit, the modal camera's manual look, auto-face
+// of the target while fighting, follow (m_p0007C, a group member) steering and walking after
+// it, the locks (m_p06DC0/C4/C8, IsTimedOut), then per camera mode the walk calls, and
+// VIWalkCamera::Process.
+void VIClient::UpdateControls()
+{
+    VIVect3 d;
+    VIVect3 hpr;
+    float fwd;
+    float pitch;
+    VIGameOptions *opt = VIGetGameOptions();
+    VIEntity *self = FindEntity(m_selfId);
+    if (self)
+        m_walkCam.m_parm64 = self->m_actor;
+    float orbit = -m_p07190.m_keys[0];
+    float turn = 0.0f;
+    float strafe = m_p07190.m_keys[2];
+    int mode = m_console.m_pad.m_mode;
+    if (!mode && m_p50318 == 1)
+    {
+        VIUI &ui = m_ui;
+        m_wndGame->AddText((const unsigned short *)ui.m_words.GetString(1805, ui.m_language),
+                           VIColor32F(1.0f, 0.25f, 0.25f, 1.0f));
+        m_autoAttack = 0;
+        if (m_p00074)
+            ToggleP74();
+    }
+    m_p50318 = mode;
+    if (m_wndGame->ModeHasChat())
+    {
+        pitch = m_p07190.m_keys[1];
+        fwd = -m_p07190.m_keys[3];
+    }
+    else
+    {
+        pitch = m_p07190.m_keys[1] + m_keys[22] - m_keys[21];
+        fwd = (float)(m_keys[19] - m_keys[20]) - m_p07190.m_keys[3];
+    }
+    VIWalkCamera &walk = m_walkCam;
+    if (opt->m_x07 && (walk.m_cameraMode == 2 || walk.m_cameraMode == 0))
+        pitch = -pitch;
+    if (m_wndGame->IsModal() && m_walkCam.m_effect.ManualTerp() == 1.0f)
+    {
+        VIVect3 look = m_walkCam.m_effect.ManualHpr();
+        look.x += m_p07190.m_keys[0] * -0.05f;
+        float dp = m_p07190.m_keys[1] * 0.05f;
+        // One store of a COND_EXPR: fold distributes the `+` into both arms
+        // (two add.s), the single store after the join lets cse hand the clamp the register,
+        // and the assignment keeps fold from turning `y + -dp` into a sub.s.
+        float n;
+        look.y += opt->m_x07 ? (n = -dp) : dp;
+        look.y = VIMIN(VIMAX(-1.5607964f, look.y), 1.5607964f);
+        if (look.x < 0.0f)
+            look.x += 6.2831855f;
+        else if (6.2831855f <= look.x)
+            look.x -= 6.2831855f;
+        m_walkCam.m_effect.SetManualHpr(look);
+        if (walk.m_cameraMode != 3)
+        {
+            VIVect3 a = m_walkCam.m_committed.m_angles;
+            if (sinf(look.x) * sinf(a.x) + cosf(look.x) * cosf(a.x) < 0.95f)
+                walk.SetTargetHeading(look.x);
+        }
+    }
+    switch (walk.m_cameraMode)
+    {
+    case 0:
+        if (m_wndGame->ModeHasChat())
+            turn = -m_p07190.m_keys[0];
+        else
+            turn = -m_p07190.m_keys[0] + m_keys[17] - m_keys[18];
+        break;
+    case 1:
+        if (m_wndGame->ModeHasChat())
+            turn = -m_p07190.m_keys[2];
+        else
+            turn = -m_p07190.m_keys[2] + m_keys[17] - m_keys[18];
+        break;
+    case 2:
+        if (m_wndGame->ModeHasChat())
+            turn = -m_p07190.m_keys[0];
+        else
+            turn = -m_p07190.m_keys[0] + m_keys[17] - m_keys[18];
+        break;
+    case 3:
+        if (!m_wndGame->ModeHasChat())
+        {
+            orbit += (float)(m_keys[24] - m_keys[23]);
+            strafe += (float)(m_keys[18] - m_keys[17]);
+        }
+        break;
+    }
+    int face = 0;
+    float heading;
+    VIEntity *other;
+    if ((orbit == 0.0f && m_p07568 - m_p071F0 < 1000) || m_autoAttack)
+    {
+        if (m_target != 0xFFFFFFFF && self && self->m_actor != -1 && m_selfId != m_target)
+        {
+            other = FindEntity(m_target);
+            if (other && other->m_actor != -1)
+            {
+                face = 1;
+                d = other->GetActorPos();
+                d -= self->GetActorPos();
+                d.y = 0.0f;
+                d.HPR(&hpr.x, &hpr.y, &hpr.z);
+                heading = hpr.x;
+                hpr.x -= m_walkCam.m_committed.m_angles.x;
+                if (3.1415927f < hpr.x)
+                    hpr.x -= 6.2831855f;
+                else if (hpr.x < -3.1415927f)
+                    hpr.x += 6.2831855f;
+                if (0.17453292f < hpr.x)
+                    turn = 1.0f;
+                else if (hpr.x < -0.17453292f)
+                    turn = -1.0f;
+            }
+        }
+    }
+    if (m_autoAttack && m_p00078)
+        m_p00078 = 0;
+    float dpitch;
+    float dist;
+    float dh;
+    float height;
+    if (m_p00078)
+    {
+        if (m_p06DC0 && 0.7f < fabsf(fwd))
+            m_p00078 = 0;
+        if (m_p00078)
+        {
+            m_p00078 = 0;
+            for (int i = 0; i < GetP2BE4C(); i++)
+            {
+                unsigned int id = GetGroupMemberId(i);
+                if (id == m_p0007C && FindEntity(id))
+                    m_p00078 = 1;
+            }
+            if (m_p00078)
+            {
+                dpitch = 0.0f;
+                dh = 0.0f;
+                height = dh;
+                if (m_p0007C != 0xFFFFFFFF && self && self->m_actor != -1 && m_selfId != m_p0007C)
+                {
+                    other = FindEntity(m_p0007C);
+                    if (other && other->m_actor != -1)
+                    {
+                        face = 1;
+                        d = other->GetActorPos();
+                        d -= self->GetActorPos();
+                        height = d.y;
+                        d.y = dh;
+                        d.HPR(&hpr.x, &hpr.y, &hpr.z);
+                        heading = hpr.x;
+                        dist = d.Magnitude();
+                        if (walk.m_cameraMode == 3)
+                            dh = hpr.x - fmodf(m_walkCam.m_last.m_orbit.x + 3.1415927f, 6.2831855f);
+                        else
+                            dh = hpr.x - m_walkCam.m_committed.m_angles.x;
+                        if (3.1415927f < dh)
+                            dh -= 6.2831855f;
+                        else if (dh < -3.1415927f)
+                            dh += 6.2831855f;
+                        d = other->GetActorPos();
+                        d -= self->GetActorPos();
+                        d.HPR(&hpr.x, &dpitch, &hpr.z);
+                        dpitch -= m_walkCam.m_committed.m_angles.y;
+                        if (walk.m_cameraMode == 3)
+                        {
+                            if (3.0f < dist)
+                            {
+                                if (0.34906584f < dh)
+                                    orbit = -1.0f;
+                                else if (dh < -0.34906584f)
+                                    orbit = 1.0f;
+                                else if (0.08726646f < dh)
+                                    orbit = -0.125f;
+                                else if (dh < -0.08726646f)
+                                    orbit = 0.125f;
+                                if (opt->m_x07)
+                                    orbit = -orbit;
+                            }
+                        }
+                        else
+                        {
+                            if (0.17453292f < dh)
+                                turn = 1.0f;
+                            else if (dh < -0.17453292f)
+                                turn = -1.0f;
+                            else if (0.08726646f < dh)
+                                turn = 0.25f;
+                            else if (dh < -0.08726646f)
+                                turn = -0.25f;
+                        }
+                        goto followed;
+                    }
+                }
+                m_p00078 = 0;
+            }
+        }
+    }
+followed:
+    int walking = !(m_p07568 < m_p2BB40) && m_p07568 < m_p2BB48;
+    if (m_p00074 && m_p06DC0 && 0.7f < fabsf(fwd))
+        ToggleP74();
+    if (m_p00078 && m_p00074)
+        ToggleP74();
+    if (m_p00074 || m_p00078)
+    {
+        if (m_p00078)
+        {
+            if (walk.IsUnderLiquid() || walk.IsAtLiquidSurface())
+            {
+                if (walk.m_cameraMode != 3)
+                {
+                    if (0.17453292f < dpitch)
+                        pitch = 1.0f;
+                    else if (dpitch < -0.17453292f)
+                        pitch = -1.0f;
+                    else if (0.08726646f < dpitch)
+                        pitch = 0.25f;
+                    else if (dpitch < -0.08726646f)
+                        pitch = -0.25f;
+                    // The target keeps this compare and drops its arm: a store
+                    // every later path overwrites, deleted by flow after the branch is live.
+                    if (1.0f < fabsf(height))
+                        fwd = 0.0f;
+                }
+                else
+                {
+                    if (1.0f < height)
+                        pitch = -1.0f;
+                    else if (height < -1.0f)
+                        pitch = 1.0f;
+                }
+            }
+            if (1.0471976f < dh || dh < -1.0471976f)
+                fwd = 0.0f;
+            else if (6.0f < dist)
+                fwd = 1.0f;
+            else if (dist < 3.0f)
+                fwd = 0.0f;
+            else
+            {
+                fwd = 1.0f;
+                walking = 1;
+            }
+        }
+        else
+            fwd = 1.0f;
+    }
+    if (!m_p06DC0 || m_p06DC8)
+    {
+        strafe = 0.0f;
+        fwd = strafe;
+    }
+    if (!m_p06DC4)
+    {
+        orbit = 0.0f;
+        pitch = orbit;
+        turn = orbit;
+    }
+    if (IsTimedOut())
+    {
+        strafe = 0.0f;
+        fwd = strafe;
+        orbit = strafe;
+        pitch = orbit;
+        turn = orbit;
+    }
+    if (walk.m_cameraMode == 0)
+    {
+        if (!walking)
+            walk.Move(fwd, strafe);
+        else
+            walk.Walk(fwd, strafe);
+        walk.TurnLeft(turn);
+        walk.PitchDown(pitch);
+    }
+    else if (walk.m_cameraMode == 2)
+    {
+        if (!walking)
+            walk.Move(fwd, strafe);
+        else
+            walk.Walk(fwd, strafe);
+        walk.TurnLeft(turn);
+        walk.PitchDown(pitch);
+    }
+    else if (walk.m_cameraMode == 1)
+    {
+        if (!walking)
+            walk.Move(fwd, strafe);
+        else
+            walk.Walk(fwd, strafe);
+        walk.TurnLeft(turn);
+        walk.OrbitIn(-pitch);
+        if (opt->m_x07)
+            walk.OrbitRight(orbit);
+        else
+            walk.OrbitRight(-orbit);
+    }
+    else if (walk.m_cameraMode == 3)
+    {
+        if (!walking)
+            walk.ViewRelativeMove(m_camera.m_dir, fwd, strafe);
+        else
+            walk.ViewRelativeWalk(m_camera.m_dir, fwd, strafe);
+        if (face)
+            walk.SetTargetHeading(heading);
+        if (!walk.IsUnderLiquid() && !walk.IsAtLiquidSurface())
+            walk.OrbitIn(-pitch);
+        else
+            walk.SwimUp(-pitch);
+        if (!opt->m_x07)
+            walk.OrbitRight(-orbit);
+        else
+            walk.OrbitRight(orbit);
+    }
+    walk.Process(m_camera, m_scene, 1);
+}
+
+// 0x00BC4B18, name provisional: the selection rings around the target -- placed at the
+// target's slot 4 (or its position), skipped off screen, pulled toward the camera, scaled
+// in as m_pC150 falls to 0.2, tinted toward the disposition colour, and rastered twice
+// (the rings, then a larger fainter pass).  Hidden for the player's own entity in first
+// person.
+void VIClient::TrackTarget(const VIVect3 &pos, unsigned int id, int b, VIMatrix44 *viewProj)
+{
+    if ((m_wndGame->IsModal() || !m_walkCam.m_cameraMode || m_p00088) && m_selfId == id)
+    {
+        VIColor32F c(0.5f, 0.5f, 0.5f, 0.0f);
+        m_pC150 = 0.2f;
+        m_pC158 = c;
+        m_pC144 = id;
+        m_pC154 = 0;
+        return;
+    }
+    int pal;
+    int n;
+    VIRaster *raster;
+    VIScene *scene;
+    VIVect3 p;
+    VIVect3 d;
+    VIEntity *e = FindEntity(id);
+    if (!e || e->m_actor == -1)
+        return;
+    scene = &m_scene;
+    // The target SPILLS raster (slot 424) and keeps mv (sp+288) in s8; assigned
+    // here its live range is long enough that mv outranks it.  The target assigns it later
+    // (its store sits after GetAttachSprite), so something else lowers its priority there.
+    raster = &m_raster;
+    VISprite *spr = scene->GetActorSpritePtr(e->m_actor);
+    if (!spr)
+        return;
+    if (spr->m_type == 5)
+    {
+        VIMatrix44 m;
+        ((VICSprite *)spr)->CalcSlotWorldTransform((VICSpriteNodeID)4, e->m_actor, *scene, m);
+        p.x = m.m[3].x;
+        p.y = m.m[3].y;
+        p.z = m.m[3].z;
+    }
+    else
+    {
+        p.x = pos.x;
+        p.y = pos.y;
+        p.z = pos.z;
+    }
+    VIVect4 h = p * *viewProj;
+    float inv = 1.0f / h.w;
+    float *f = &h.x;
+    int i, j;
+    for (j = 0; j < 3; j++)
+        *f++ *= inv;
+    f = &h.x;
+    h.w = 0.0f;
+    int off = 0;
+    for (j = 0; j < 3; j++)
+    {
+        if (fabs(*f) > 1.0)
+        {
+            off = 1;
+            break;
+        }
+        f++;
+    }
+    if (off)
+        return;
+    if (id != (unsigned int)m_pC144)
+    {
+        VIColor32F c(0.5f, 0.5f, 0.5f, 0.0f);
+        m_pC150 = 1.2f;
+        m_pC158 = c;
+        m_pC144 = id;
+        m_pC154 = 0;
+    }
+    VIVect3 &cp = m_camera.m_position;
+    {
+        VIVect3 t(p.x - cp.x, p.y - cp.y, p.z - cp.z);
+        d = t;
+    }
+    float dist = d.Magnitude();
+    if (10.0f < dist)
+        dist = 10.0f;
+    dist -= 1.0f;
+    dist = VIMAX(2.0f, dist);
+    d.Normalize();
+    d.x = d.x * dist + cp.x;
+    d.y = d.y * dist + cp.y;
+    d.z = d.z * dist + cp.z;
+    VIMatrix44 view(m_camera.m_view);
+    VIMatrix44 rot(view);
+    rot.m[3].x = 0.0f;
+    rot.m[3].y = 0.0f;
+    rot.m[3].z = 0.0f;
+    rot.Transpose();
+    rot.m[3].x = d.x;
+    rot.m[3].y = d.y;
+    rot.m[3].z = d.z;
+    m_pC150 -= m_scene.m_particleSystem.DeltaTime() * 2.5f;
+    m_pC150 = VIMAX(0.2f, m_pC150);
+    VIHSprite *rings = (VIHSprite *)scene->Sprite(m_ringsIndex);
+    int a = rings->GetFirstAttach();
+    if (a < 0 || (a = rings->GetAttachSprite(a)) < 0)
+        return;
+    pal = ((VISimpleSprite *)scene->Sprite(a))->GetMaterialPal();
+    n = raster->GetMaterialPalSize(pal);
+    float t = m_pC150 - 0.2f;
+    static VIColor32 sColors[6] = {
+        VIColor32(255, 0, 0, 255),
+        VIColor32(255, 255, 0, 255),
+        VIColor32(128, 128, 128, 255),
+        VIColor32(0, 0, 255, 255),
+        VIColor32(0, 190, 255, 255),
+        VIColor32(0, 128, 0, 255),
+    };
+    float t2 = t * t;
+    for (i = 0; i < n; i++)
+    {
+        VIMaterial *mat = raster->GetMaterialPalEntry(pal, i);
+        mat->SetZTest(0);
+        for (j = 0; j < mat->m_numLayers; j++)
+        {
+            VIColor32 c = mat->GetLayerColor(j);
+            c.a = (int)(t2 * 255.0f);
+            if (i == 0)
+            {
+                if (m_targetInfoValid)
+                {
+                    VIColor32F want(sColors[m_p2BB70].r / 255.0f, sColors[m_p2BB70].g / 255.0f, sColors[m_p2BB70].b / 255.0f, 0.0f);
+                    m_pC158.r += (want.r - m_pC158.r) * 0.05f;
+                    m_pC158.g += (want.g - m_pC158.g) * 0.05f;
+                    m_pC158.b += (want.b - m_pC158.b) * 0.05f;
+                }
+                c.r = (int)(m_pC158.r * 255.0f);
+                c.g = (int)(m_pC158.g * 255.0f);
+                c.b = (int)(m_pC158.b * 255.0f);
+            }
+            mat->SetLayerColor(j, c);
+            mat->SetLayerBlendMode(j, (VIAlphaBlendMode)1);
+            mat->SetDither(0);
+        }
+    }
+    float s = 1.0f - t2;
+    VIMatrix44 world;
+    world.Mul(rot, view);
+    VIMatrix44 mv;
+    VIMatrix44 sc;
+    VIVect4 unused;
+    sc.Identity();
+    sc.m[1].y = sc.m[0].x = s * 2.2f;
+    mv.Mul(sc, world);
+    raster->SetModelView(mv);
+    scene->Sprite(m_ringsIndex)->Raster(m_camera, *scene, *raster, 3);
+    for (i = 0; i < n; i++)
+    {
+        VIMaterial *mat = raster->GetMaterialPalEntry(pal, i);
+        for (j = 0; j < mat->m_numLayers; j++)
+        {
+            VIColor32 c = mat->GetLayerColor(j);
+            if (i == 0)
+                c.a = (int)((1.0f - (m_pC150 - 0.2f)) * 128.0f);
+            else
+                c.a = (int)((1.0f - s) * 255.0f);
+            mat->SetLayerColor(j, c);
+        }
+    }
+    s = 1.0f - (m_pC150 - 0.2f);
+    sc.m[1].y = sc.m[0].x = s;
+    mv.Mul(sc, world);
+    raster->SetModelView(mv);
+    scene->Sprite(m_ringsIndex)->Raster(m_camera, *scene, *raster, 3);
+}
+
+// 0x00BC6500, name provisional: one in-game frame, VIWndGame's -- the world streamed, the
+// pools ticked, the battle music, the walk speed, the controls (or the death camera), the
+// player's own actor (hidden in first person or too near a fixed camera), its sprite and
+// pose, the creatures, the light, the sky and the sound, the scene drawn, the target
+// tracked, the damage numbers, the net and death overlays.  Times into m_frameStats.
+void VIClient::UpdateGame()
+{
+    m_frameStats[0] = -VITimer::GetTime();
+    if (IsNotP0662C())
+    {
+        if (m_scene.Stream(m_camera.m_position, m_loader, 5) < 0)
+        {
+            switch (VIHasDiscIdChanged())
+            {
+            case -1:
+                for (;;)
+                    ;
+            case 1:
+                VIDisplayScreen16("ERROR", 4, true);
+                for (;;)
+                    ;
+            }
+        }
+    }
+    else
+        m_loader.Process(m_scene);
+    m_p06D50.Update();
+    m_p06D00.Update(m_camera);
+    m_frameStats[0] += VITimer::GetTime();
+    if (m_target != 0xFFFFFFFF)
+    {
+        VIEntity *t = FindEntity(m_target);
+        if (t && !t->m_p19)
+            m_targetInfoValid = 0;
+    }
+    VIEntity *self = FindEntity(m_selfId);
+    VICreatureEntity *creature = 0;
+    if (self && self->IsType(130))
+        creature = (VICreatureEntity *)self;
+    if (!m_wndGame->IsOptionsMode())
+    {
+        if (creature && !m_pC1B0)
+        {
+            if (LeaderByte263())
+            {
+                if (VIGetFeatureFlags() & 0x100)
+                    m_battleMusic.Play(VIGetGameOptions()->m_language);
+                else
+                    m_battleMusic.Play(-1);
+            }
+            else
+                m_battleMusic.Stop(false);
+        }
+        else
+            m_battleMusic.Stop(m_pC1B0 != 0);
+        m_battleMusic.Process();
+    }
+    m_frameStats[2] = -VITimer::GetTime();
+    if (m_p00078)
+    {
+        VIWalkCamera &walk = m_walkCam;
+        walk.m_runSpeed = m_speed * 1.05f;
+        walk.InitIntermediate();
+    }
+    else
+    {
+        VIWalkCamera &walk = m_walkCam;
+        walk.m_runSpeed = m_speed;
+        walk.InitIntermediate();
+    }
+    RefreshCollision();
+    VIWalkCamera &walk = m_walkCam;
+    if (m_pC1B0 && m_p2BD44 == m_wndGame)
+    {
+        DeathCamera();
+        m_p00088 = 0;
+    }
+    else
+    {
+        UpdateControls();
+        m_p00088 = 0;
+    }
+    if (self)
+    {
+        if (self->m_actor != -1)
+        {
+            AutoAttackTick(self);
+            if (walk.m_cameraMode == 0
+                || (m_wndGame->IsModal() && m_walkCam.m_effect.ManualTerp() == 1.0f))
+            {
+                if (!m_pC1B0)
+                    m_scene.SetActorVisibility(self->m_actor, 0);
+            }
+            else if (walk.m_cameraMode == 2)
+            {
+                VIVect3 d;
+                d = m_scene.GetActorLocation(self->m_actor);
+                d.y += walk.m_targetHeight;
+                const VIVect3 &cam = m_camera.m_position;
+                d -= cam;
+                if (d.Magnitude() < 0.8f)
+                {
+                    m_p00088 = 1;
+                    m_scene.SetActorVisibility(self->m_actor, 0);
+                }
+                else
+                    m_scene.SetActorVisibility(self->m_actor, 1);
+            }
+            else
+                m_scene.SetActorVisibility(self->m_actor, 1);
+            if (creature && (creature->m_npcFlags & 0x200))
+                m_scene.SetActorVisibility(self->m_actor, 0);
+        }
+    }
+    if (self)
+    {
+        VIVect3 hpr;
+        hpr = m_walkCam.m_committed.m_angles;
+        hpr.y = 0.0f;
+        hpr.z = 0.0f;
+        if (self->m_actor != -1 && m_scene.GetActorSpriteType(self->m_actor) == 5)
+        {
+            VICSprite *spr = (VICSprite *)m_scene.GetActorSpritePtr(self->m_actor);
+            walk.UpdateSprite(*spr, m_scene);
+            spr->Process(m_camera, m_scene.GetActorLocation(self->m_actor), m_scene);
+            if (spr->m_dead)
+            {
+                walk.CalcPitchRollToLandscape(hpr);
+                if (creature)
+                {
+                    float f = VIClampF((float)(int)(m_scene.GetTime() - creature->m_deathTime) * 0.001f, 0.0f, 1.0f);
+                    hpr.y *= f;
+                    hpr.z *= f;
+                }
+            }
+        }
+        VIVect3 pos = m_walkCam.m_committed.GetSmoothLocation();
+        self->SetPos(pos);
+        self->SetHpr(hpr);
+    }
+    UpdateCreatures();
+    Extrapolate();
+    if (self && self->m_actor != -1 && m_scene.GetActorSpriteType(self->m_actor) == 5)
+    {
+        VICSprite *spr = (VICSprite *)m_scene.GetActorSpritePtr(self->m_actor);
+        spr->SetName("", (VICSpriteNameColor)1, m_scene);
+        spr->SetIsPlayer(1);
+    }
+    m_frameStats[2] += VITimer::GetTime();
+    m_frameStats[1] = -VITimer::GetTime();
+    UpdateTimeOfDay();
+    m_scene.SetPersonalLightMode((VIPersonalLightMode)m_p00068);
+    if (self && self->m_actor != -1)
+        m_scene.SetPersonalLight(self->m_actor, 20.0f, VIColor32F(1.0f, 0.69f, 0.36f, 1.0f));
+    m_scene.SetSky(m_camera, 0);
+    m_scene.SetSoundTrack(m_camera, m_loader, 1);
+    m_scene.Render(m_camera);
+    m_raster.SetFog(0, 0.0f, 100.0f, VIColor32F(0.0f, 0.0f, 0.0f, 0.0f));
+    self = FindEntity(m_target);
+    if (self && self->m_actor != -1 && m_wndGame->m_p05C)
+        TrackTarget(self->GetActorPos(), m_target, self->m_p19, &m_camera.m_viewProj);
+    else
+    {
+        *(unsigned int *)&m_pC144 = 0xFFFFFFFF;
+        m_pC150 = 1.2f;
+        m_pC158 = VIColor32F(0.5f, 0.5f, 0.5f, 0.0f);
+        m_pC154 = 0;
+    }
+    if (m_wndGame->IsModal())
+    {
+        VIEntity *me = FindEntity(m_selfId);
+        if (me)
+        {
+            VIVect3 p = me->GetActorPos();
+            p.y += GetRaceCamera(GetRace(), ExpansionFlags())->m_p34;
+            m_walkCam.m_effect.SetManualXyz(p);
+        }
+        if (m_walkCam.m_effect.ManualTerp() == 1.0f)
+            TargetCentre();
+    }
+    m_p4FD28.Process(m_camera, m_scene.m_particleSystem.DeltaTime());
+    m_raster.Begin2D();
+    VIVect2I at(520, 16);
+    if (m_p382E8.GetP0C())
+        DrawNetStats();
+    if (m_p502FC)
+    {
+        char buf[64];
+        VIString::snprintf(buf, 64, "s%04ubps r%04ubps", drdp_get_bps_sent(m_drdp),
+                           drdp_get_bps_recv(m_drdp));
+        VIUI &ui = m_ui;
+        ui.m_font.SetTextColor(VIColor32F(1.0f, 1.0f, 0.0f, 1.0f));
+        ui.m_font.DrawString(ui.m_raster, ui.m_dict, buf, 448,
+                             ui.m_font.GetHeight(ui.m_raster, ui.m_dict) * 3);
+    }
+    if (m_pC1B0)
+    {
+        float a = VIMIN(m_pC1D0 * 0.5f, 1.0f);
+        VIUI &ui = m_ui;
+        int w = ui.m_font.GetStringWidth(ui.m_raster, ui.m_dict,
+                                         (const unsigned short *)ui.m_words.GetString(501, ui.m_language));
+        ui.BlitBar((unsigned short)501, VIColor32F(0.8f, 0.8f, 0.8f, a),
+                   VIVect2I(320 - (w + 50 >> 1), 229), (VIUITexId)33, (VIUITexId)34, w + 50,
+                   (VIAlphaBlendMode)3, a, 0, 1);
+    }
+    m_wndGame->UpdateQuickBars();
+    m_raster.End2D();
+    m_frameStats[1] += VITimer::GetTime();
+    m_p07588 = m_p07568;
+}
+
+// 0x00BC7BF0: one frame -- the network watched, the console, the dialog queue, a Tick,
+// the message pump, a pending logout, the scene, the 0x40 when due, the window drawn,
+// sound and music, the pet's name, a frame-rate cap of 20 ms, two option bytes sent when
+// they change, the frame statistics, the time-out notice, the fade, and a queued move.
+void VIClient::Process()
+{
+    char buf[128];
+    memset(m_frameStats, 0, sizeof(m_frameStats));
+    long start = VITimer::GetTime();
+    if (m_p4F0E8 == 21)
+    {
+        ezNetCtlGetStatus(&sNetStatus);
+        switch (sNetStatus.m_state)
+        {
+        case 0:
+            Disconnect(11, 0);
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            break;
+        case 5:
+            Disconnect(12, 0);
+            break;
+        }
+    }
+    m_console.Process(start);
+    {
+        VIEntity *self = FindEntity(m_selfId);
+        VIScene &scene = m_scene;
+        scene.m_spellEffects.SetPlayerActor(self ? self->m_actor : -1);
+    }
+    if (m_wndGame->IsLootable())
+    {
+        if (m_dialogHead != m_dialogTail)
+        {
+            m_wndGame->OpenDialog(m_dialogs[m_dialogHead].m_text, 1);
+            if (++m_dialogHead == 12)
+                m_dialogHead = 0;
+        }
+        else if (m_p2EBFC)
+        {
+            m_wndGame->ShowDialogBox(&m_dialog);
+            m_p2EBFC = 0;
+        }
+        else if (m_p2BD58.Size() > 0)
+        {
+            int i = m_p2BD58.Begin();
+            m_wndGame->ShowInvite(m_p2BD58.Value(i).m_name);
+        }
+        else if (m_alarm.IsOn())
+            m_alarm.Tick(this);
+    }
+    Tick(3);
+    if (m_quit)
+        return;
+    PumpMessages();
+    if (m_p2EC28)
+    {
+        printf("LOGOUT!\n");
+        {
+            VIMemStream out;
+            out.WriteU16(2480);
+            VINetSend(out, GetConn(251));
+        }
+        if (VIGetGameOptions()->m_x97)
+            m_console.m_pad.StopVibration();
+        Disconnect(9, 1);
+        Msg0777Done(2);
+        m_p2EC28 = 0;
+    }
+    if (m_p2BD44 != m_wndIdle)
+        m_raster.BeginScene();
+    if (m_p07570 == -1 || m_p07568 - m_p07570 >= m_p07578)
+    {
+        SendPosition();
+        m_p07570 = m_p07568;
+    }
+    if (m_p2BD44 != m_wndIdle)
+        m_p2BD44->OnDraw();
+    m_sound.Process();
+    if (!(VIGetFeatureFlags() & 0x100))
+        UpdateMusic();
+    if (HasPet() && strlen(m_petName) == 0)
+    {
+        VIEntity *pet = FindEntity(m_petId);
+        if (pet && pet->IsType(130))
+            VIString::strcpy8(m_petName, 24, ((VICreatureEntity *)pet)->m_name);
+        else
+            m_petName[0] = 0;
+    }
+    if (m_p00080)
+        DrawPosition();
+    if (m_p2BD44 == m_wndGame && VIGetGameOptions()->m_x95 && m_target != 0xFFFFFFFF
+        && m_autoAttack == 1)
+    {
+        VIEntity *t = FindEntity(m_target);
+        if (t && !t->m_p19)
+            m_autoAttack = 0;
+        if (m_target == m_selfId)
+            m_autoAttack = 0;
+    }
+    long now;
+    long elapsed;
+    do
+    {
+        now = VITimer::GetTime();
+        elapsed = now - start;
+    }
+    while (elapsed < 20);
+    if (m_p2BD44 == m_wndGame)
+    {
+        VIGameOptions *o = VIGetGameOptions();
+        unsigned int on = !o->m_x93;
+        if (m_p502D4 != on)
+        {
+            m_p502D4 = on;
+            SendOpByteByte(201, on ^ 1, 1);
+        }
+        on = !o->m_x94;
+        if (m_p502D8 != on)
+        {
+            m_p502D8 = on;
+            SendOpByteByte(202, on ^ 1, 1);
+        }
+    }
+    if (m_p2BD44 == m_wndGame && m_wndGame->m_p05C)
+        m_wndGame->ShowNetStat(m_p00084);
+    else
+        m_wndGame->ShowNetStat(0);
+    if (m_p2BD44 == m_wndGame && m_wndGame->m_p05C && m_p00084)
+    {
+        struct mallinfo mi = mallinfo();
+        m_raster.Begin2D();
+        int fps = (int)(1000.0f / (float)(now - start));
+        if (fps > 30)
+            fps = 30;
+        sprintf(buf, "Frame: %02d (S:%02d C:%02d R:%02d F:%02d KF:%05d)", fps,
+                (int)m_frameStats[0], (int)m_frameStats[2], (int)m_frameStats[1],
+                (int)m_frameStats[3], mi.fordblks >> 10);
+        if (fps < 25 || m_frameStats[2] + m_frameStats[1] + m_frameStats[3] >= 30
+            || mi.fordblks >> 10 < 2048)
+            m_ui.m_font.SetTextColor(VIColor32F(1.0f, 0.0f, 0.0f, 1.0f));
+        else
+            m_ui.m_font.SetTextColor(VIColor32F(1.0f, 1.0f, 1.0f, 1.0f));
+        VIUI &ui = m_ui;
+        char *s = buf;
+        int w = ui.m_font.GetStringWidth(ui.m_raster, ui.m_dict, s);
+        m_raster.SetSolidFillUIMaterial();
+        m_raster.BeginTriFan();
+        m_raster.Color(VIColor32F(0.0f, 0.0f, 0.0f, 1.0f));
+        m_raster.Vertex(VIVect2I(128, 7));
+        m_raster.Vertex(VIVect2I(w + 132, 7));
+        m_raster.Vertex(VIVect2I(w + 132, 26));
+        m_raster.Vertex(VIVect2I(128, 26));
+        m_raster.EndTriFan();
+        ui.m_font.DrawString(ui.m_raster, ui.m_dict, s, 130, 5);
+
+        ui.m_font.SetTextColor(VIColor32F(1.0f, 1.0f, 1.0f, 1.0f));
+        m_raster.End2D();
+    }
+    if (m_worldLoaded && IsTimedOut() && (m_p06DC0 || m_p06DC4) && m_p4F0E8 == 21)
+    {
+        VIUI &ui = m_ui;
+        ui.Begin2D();
+        unsigned short text[64];
+        VIString::snprintf16(text, sizeof(text), (const unsigned short *)ui.m_words.GetString(1193, ui.m_language));
+        int w = ui.m_font.GetStringWidth(ui.m_raster, ui.m_dict, text);
+        ui.BlitBar(text, VIColor32F(1.0f, 1.0f, 1.0f, 1.0f),
+                   VIVect2I(320 - ((w + 64) >> 1), 224 - (ui.m_font.GetHeight(ui.m_raster, ui.m_dict) >> 2)),
+                   (VIUITexId)33, (VIUITexId)34,
+                   ui.m_font.GetStringWidth(ui.m_raster, ui.m_dict, text) + 64,
+                   (VIAlphaBlendMode)0, 1.0f, 0, 1);
+        ui.End2D();
+    }
+    DrawFade(0);
+    if (m_p2BD44 != m_wndIdle)
+        m_raster.EndScene();
+    m_p07580 = m_p07568;
+    if (m_drdp)
+    {
+        Msg0790Done();
+        drdp_flush(m_drdp);
+    }
+    if (m_worldLoaded)
+    {
+        if (m_p50308)
+        {
+            m_p50308 = 0;
+            MoveToGrid(m_p5030C, m_p50310, m_p50314);
+        }
+    }
+    else
+        m_p50308 = 0;
+}
+
+// 0x00BCA2E8, name provisional: what `stat` would total with item `index` of `source`
+// (0 the inventory, 1 the merchant, 2 the bank) equipped, on a copy of the inventory.  An
+// item that cannot go in says so (word 823) and the stat stays as it is.
+int VIClient::StatWithItem(int index, int stat, int source)
+{
+    VIItemList list;
+    if (source == 0)
+        list.CopyFrom(m_inventory);
+    else
+    {
+        for (int i = 0; i < m_inventory.Count(); i++)
+        {
+            VINetItem it;
+            m_inventory.Get(i, it);
+            if (it.m_equipSlot != -1)
+                list.Merge(it, it.m_maxStack, 40);
+        }
+    }
+    VINetItem item;
+    VINetItem *src;
+    int slot;
+    switch (source)
+    {
+    case 0:
+        slot = index;
+        src = list.Item(slot);
+        break;
+    case 1:
+        src = m_merchant.Item(index);
+        item = *src;
+        if (!list.AddItem(item, item.m_maxStack, 40) && !FindFullStack(list, src, &item.m_invIndex))
+        {
+            VIUI &ui = m_ui;
+            m_wndGame->AddText((const unsigned short *)ui.m_words.GetString(823, ui.m_language));
+            return GetStatTotal(stat);
+        }
+        slot = list.Find(item.m_invIndex);
+        break;
+    case 2:
+        src = m_bank.Item(index);
+        item = *src;
+        if (!list.AddItem(item, item.m_maxStack, 40) && !FindFullStack(list, src, &item.m_invIndex))
+        {
+            VIUI &ui = m_ui;
+            m_wndGame->AddText((const unsigned short *)ui.m_words.GetString(823, ui.m_language));
+            return GetStatTotal(stat);
+        }
+        slot = list.Find(item.m_invIndex);
+        break;
+    default:
+        return GetStatTotal(stat);
+    }
+    if (slot < 0 || slot >= list.ItemCount || !src)
+        return GetStatTotal(stat);
+    EquipItem(&list, slot, EquipSlotFor(&list, src));
+    int total = m_player.m_baseStat[stat];
+    for (int i = 0; i < list.ItemCount; i++)
+    {
+        src = list.Item(i);
+        for (int j = 0; j < src->m_stats.m_size; j++)
+            if (src->m_stats[j].m_id == stat && src->m_equipSlot != -1)
+                total += src->m_stats[j].m_value;
+    }
+    return total;
+}
+
+// 0x00BCDE88, name provisional: 0x00F0 -- the player's name, `to`, and "Text=" with the
+// game window's text ring joined by '|'.  Not to oneself (word 1471, in red).
+void VIClient::SendReport(const char *to)
+{
+    unsigned short msg[128];
+    char me[24];
+    int err = 0;
+    GetPlayerName(me, 24);
+    if (VIString::strcasecmp(me, to) == 0)
+    {
+        VIUI &ui = m_ui;
+        err = 1471;
+        VIString::snprintf16(msg, 256, (const unsigned short *)ui.m_words.GetString(1471, ui.m_language));
+    }
+    if (err)
+    {
+        m_wndGame->AddText(msg, VIColor32F(1.0f, 0.25f, 0.25f, 1.0f));
+        return;
+    }
+    if (!m_wndGame || !m_wndGame->GetChatLog())
+        return;
+    unsigned short text[2688];
+    char head[20];
+    text[0] = 0;
+    VIString::snprintf(head, 20, "Text=");
+    VIString::strcat16(text, 5376, head);
+    VIChatText ring = *m_wndGame->GetChatLog();
+    int at = ring.First();
+    for (int i = 0; i < ring.Count(); i++)
+    {
+        VIString::strcat16(text, 5376, ring.Line(at)->m_text);
+        VIString::strcat16(text, 5376, "|");
+        at = ring.Next(at);
+    }
+    VIMemStream out;
+    out.WriteU16(240);
+    out.WriteString(me);
+    out.WriteString(to);
+    out.WriteString(text);
+    VINetSend(out, GetConn(251));
+}
+
+// 0x00BCFE78, name provisional: a line typed into chat.  A "/command" line: /sa /say, /g
+// /group, /gu /guild, /s /shout (each switching channel 14 for the line and back), /t
+// /tell, /r /reply (to the last teller), /alarm, /time, /follow, /create, /mastery and
+// /tradelvl; anything else is "unknown command" (word 826).  Plain text goes to the
+// channel in use: 3 shout, 4 guild, else say/group.
+void VIClient::ChatLine(const unsigned short *text)
+{
+    if (m_selfId == 0xFFFFFFFF || VIString::strlen16(text) >= 128u)
+        return;
+    int handled = 0;
+    if (text[0] == '/')
+    {
+        char cmd[256];
+        int n = 0;
+        const unsigned short *s = text;
+        char *d = cmd;
+        do
+        {
+            *d = (char)*s;
+            if ((unsigned char)(*d - 'A') < 26)
+                *d += 32;
+            s++;
+            d++;
+            n++;
+        }
+        while (*s != ' ' && *s != 0 && n < 10);
+        cmd[n] = 0;
+        if (!strcmp(cmd, "/sa") || !strcmp(cmd, "/say"))
+        {
+            SendOpcodeByte(14, 0);
+            SendOpWStringInt(11, text[n] == ' ' ? &text[n + 1] : &text[n], m_target);
+            handled = 1;
+            SendOpcodeByte(14, m_p382E4);
+        }
+        if (!strcmp(cmd, "/g") || !strcmp(cmd, "/group"))
+        {
+            SendOpcodeByte(14, 2);
+            SendOpWStringInt(11, text[n] == ' ' ? &text[n + 1] : &text[n], m_target);
+            handled = 1;
+            SendOpcodeByte(14, m_p382E4);
+        }
+        if (!strcmp(cmd, "/gu") || !strcmp(cmd, "/guild"))
+        {
+            SendOpcodeByte(14, 4);
+            m_p2EF24.Say(text[n] == ' ' ? &text[n + 1] : &text[n]);
+            handled = 1;
+            SendOpcodeByte(14, m_p382E4);
+        }
+        if (!strcmp(cmd, "/s") || !strcmp(cmd, "/shout"))
+        {
+            SendOpcodeByte(14, 3);
+            m_p2EFCC.SendText(text[n] == ' ' ? &text[n + 1] : &text[n]);
+            handled = 1;
+            SendOpcodeByte(14, m_p382E4);
+        }
+        if (!strcmp(cmd, "/t") || !strcmp(cmd, "/tell"))
+        {
+            SendOpWStringInt(11, text, m_target);
+            handled = 1;
+        }
+        if (!strcmp(cmd, "/r") || !strcmp(cmd, "/reply"))
+        {
+            if (m_p4F0B8[0])
+            {
+                unsigned short line[128];
+                VIString::snprintf16(line, 256, "/t %S %S", m_p4F0B8,
+                                     text[n] == ' ' ? &text[n + 1] : &text[n]);
+                SendOpWStringInt(11, line, m_target);
+            }
+            handled = 1;
+        }
+        if (!strcmp(cmd, "/alarm"))
+        {
+            m_alarm.Command(this, text[n] == ' ' ? &text[n + 1] : &text[n]);
+            handled = 1;
+        }
+        if (!strcmp(cmd, "/time"))
+        {
+            DoAction(0x0B0E0008, 0);
+            handled = 1;
+        }
+        if (!strcmp(cmd, "/follow"))
+        {
+            DoAction(0x0B0E0007, 0);
+            handled = 1;
+        }
+        if (!strcmp(cmd, "/create"))
+        {
+            if (m_p382E8.IsEnabled() > 0)
+                m_p382E8.DoText(0xA1111000, text[n] == ' ' ? &text[n + 1] : &text[n]);
+            handled = 1;
+        }
+        if (!strcmp(cmd, "/mastery"))
+        {
+            if (m_p382E8.IsEnabled() > 0)
+                m_p382E8.DoText(0xA1360000, text[n] == ' ' ? &text[n + 1] : &text[n]);
+            handled = 1;
+        }
+        if (!strcmp(cmd, "/tradelvl"))
+        {
+            if (m_p382E8.IsEnabled() > 0)
+                m_p382E8.DoText(0xA1370000, text[n] == ' ' ? &text[n + 1] : &text[n]);
+            handled = 1;
+        }
+        if (!handled)
+        {
+            VIUI &ui = m_ui;
+            unsigned short msg[512];
+            VIString::snprintf16(msg, 1024, "%S \"%s\".", ui.m_words.GetString(826, ui.m_language), cmd);
+            m_wndGame->AddText(msg);
+        }
+    }
+    else
+    {
+        switch (m_p382E4)
+        {
+        case 4:
+            m_p2EF24.Say(text);
+            break;
+        case 3:
+            m_p2EFCC.SendText(text);
+            break;
+        default:
+            SendOpWStringInt(11, text, m_target);
+            break;
+        }
+    }
+}
 
 
 
@@ -8567,1308 +9750,125 @@ void WriteQuantized(VIMemStream &s, const VIVect3 &v, int iBytesPerDimension, co
 
 
 
+// 0x00BD0630 (asserts on VIClient.cpp:9800/9812/9818/9821): 0x000D, the world entry --
+// the player's record and world, the text sets, the inventory and bank, the corpse, the
+// abilities, the parts' sections; then (once) the game's resources, the world, the
+// position, the camera, the sky, and the game window, or Msg0777 on a short stream.
+void VIClient::Msg000D(int src, VIMemStream &s)
+{
+    VIArray<VIRec6A> sets;
+    m_p00058 = 5;
+    m_p4F0E8 = 21;
+    s >> m_p0662C;
+    s.ReadString(m_worldPath, 256);
+    m_player.Read(s);
+    int count;
+    s.ReadSigned(count);
+    sets.Init(count);
+    for (int i = 0; i < count; i++)
+    {
+        s.ReadSigned(sets[i].m_p00);
+        sets[i].m_p04.Init(4);
+        for (int j = 0; j < 4; j++)
+        {
+            s.ReadSigned(sets[i].m_p04[j].m_p00);
+            s.ReadString(sets[i].m_p04[j].m_p04, 256);
+            s.ReadString(sets[i].m_p04[j].m_p104, 128);
+        }
+    }
+    LoadTextSets(sets);
+    s.Read(&m_p2BB60, 4, 1);
+    s.Read(&m_p2BB0C, 4, 1);
+    s.Read(&m_questCount, 4, 1);
+    for (int q = 0; q < m_questCount; q++)
+        s.ReadString(m_questTitle[q], 256);
+    m_inventory.Read(s);
+    m_bank.Read(s);
+    m_p13B90 = 0;
+    s.Read(&HaveCorpse, 1, 1);
+    if (HaveCorpse)
+    {
+        m_corpse.Read(s);
+        LootNoWindow();
+    }
+    ReadAbilities(s, m_abilities);
+    s.Read(&m_speed, 4, 1);
+    int x;
+    s.Read(&x, 4, 1);
+    m_p3834C.SetP78C0(x);
+    m_p3834C.ReadSlots(s);
+    int result = m_p4EC58.ReadState(s);
+    VIASSERT(result == 0);
+    if (result == 0 && !s.GetError())
+    {
+        m_selfId = src;
+        if (!m_p2BD50)
+        {
 
 
 
 
 
+            if (ReleaseGame())
+                VIASSERT(0);
 
 
 
 
+            if (EnterGameLoad())
+                VIASSERT(0);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            VIASSERT(LoadModels() >= 0);
+            LoadWorld(m_player.m_world);
+        }
+        EnterWorld(m_player.m_world, m_player.m_pos);
+        m_walkCam.SetLocation(m_player.m_pos, m_player.m_hpr, m_camera, m_scene);
+        m_walkCam.SetOrbitAngleBehind();
+        m_battleMusic.StopNow();
+        m_scene.StopSoundTrack(m_loader, 1);
+        m_scene.SetSky(m_camera, 1);
+        LoadInvIcons();
+        static const unsigned short kReady = 20;
+        connection_send(m_conn, &kReady, 2, 251);
+        m_p2BD44 = m_wndGame;
+        SetActiveWindow(m_wndGame);
+        m_wndGame->SetMode(1);
+        if (!m_pC1B0)
+            m_wndGame->ChatRefresh();
+        GroupChanged(m_p382E4);
+        m_petName[0] = 0;
+        m_petId = 0xFFFFFFFF;
+    }
+    else
+        Msg0777();
+    m_p502D4 = !VIGetGameOptions()->m_x93;
+    SendOpByteByte(201, !m_p502D4, 0);
+    m_p502D8 = !VIGetGameOptions()->m_x94;
+    SendOpByteByte(202, !m_p502D8, 0);
+    ClearPC1B0();
+    m_walkCam.m_effect.Reset();
+    m_walkCam.m_effect.EndManual(0.0f);
+    memset(m_keys, 0, sizeof(m_keys));
+    PlayCue("respawn", 0.4f);
+    SetFade(1.0f, 0.0f);
+    SetFade(0.0f, 1.0f);
+    if (!m_p2BD50)
+        ToggleCameraStyle();
+    else
+        SetCameraStyle(m_camSaved.m_mode);
+    m_p2BD50 = 1;
+    switch (VIHasDiscIdChanged())
+    {
+    case -1:
+        for (;;)
+            ;
+    case 1:
+        VIDisplayScreen16("ERROR", 4, true);
+        for (;;)
+            ;
+    }
+}
 
 
 
@@ -10202,14 +10202,14 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
         break;
 
     case 0x002E:
-        m_wndLogin->ShowWord(269);
+        m_wndCharSelect->ShowWord(269);
         m_charCount--;
         break;
 
     case 0x0065:
     {
         VIUI &ui = m_ui;
-        m_wndLogin->ShowText((const unsigned short *)ui.m_words.GetString(828, ui.m_language));
+        m_wndCharSelect->ShowText((const unsigned short *)ui.m_words.GetString(828, ui.m_language));
         m_charCount--;
         break;
     }
@@ -10217,7 +10217,7 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     case 0x002F:
     {
         VIUI &ui = m_ui;
-        m_wndLogin->ShowText((const unsigned short *)ui.m_words.GetString(829, ui.m_language));
+        m_wndCharSelect->ShowText((const unsigned short *)ui.m_words.GetString(829, ui.m_language));
         m_charCount--;
         break;
     }
@@ -10574,7 +10574,7 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     case 0x124D:
         if (m_wndGame->IsLootable())
         {
-            m_wndGame->BankClose();
+            m_wndGame->OpenBank();
             m_bank.Close();
         }
         break;
@@ -10728,7 +10728,7 @@ void VIClient::ProcessMessage(long src, const void *data, int size)
     {
         char name[24];
         s.ReadString(name, 24);
-        m_wnd2BB88->SetName(name);
+        m_wndCharCreate->SetName(name);
         break;
     }
 
@@ -11183,9 +11183,9 @@ void VIClient::Msg0061(int a)
 void VIClient::Notify()
 {
     m_pC1B0 = 0;
-    m_p2BB98.SetAppPtr(this);
-    m_p2BD44 = &m_p2BB98;
-    SetActiveWindow(&m_p2BB98);
+    m_wndDisconnect.SetAppPtr(this);
+    m_p2BD44 = &m_wndDisconnect;
+    SetActiveWindow(&m_wndDisconnect);
 }
 
 void VIClient::Msg0A7A(VIMemStream &s)
@@ -11232,16 +11232,16 @@ void VIClient::DamageFromSelf(int defender, int amount)
 void VIClient::CharSelectMsg(int id)
 {
     m_p00058 = 3;
-    m_wnd2BB88->m_visible = 0;
-    m_wndLogin->m_visible = 1;
-    m_p2BD44 = m_wndLogin;
-    SetActiveWindow(m_wndLogin);
-    m_wndLogin->ShowWord(id);
+    m_wndCharCreate->m_visible = 0;
+    m_wndCharSelect->m_visible = 1;
+    m_p2BD44 = m_wndCharSelect;
+    SetActiveWindow(m_wndCharSelect);
+    m_wndCharSelect->ShowWord(id);
 }
 
 void VIClient::Msg0777()
 {
-    m_wndLogin->m_visible = 0;
+    m_wndCharSelect->m_visible = 0;
     printf("Disconnect-12\n");
     m_p4F0EC = -1;
     Disconnect(0, 1);
@@ -11324,8 +11324,8 @@ void VIClient::Msg1003Done()
         VIEntity *e = m_entities[i];
         if (e)
         {
-            e->Virtual9();
-            if (e->Virtual3(130) && e->m_id != m_selfId)
+            e->Refresh();
+            if (e->IsType(130) && e->m_id != m_selfId)
                 ((VICreatureEntity *)e)->m_p2B8 = 1;
         }
     }
@@ -11382,7 +11382,7 @@ int VIClient::IsMerchantOpen()
 void VIClient::TradeName(char *buf)
 {
     VIEntity *e;
-    if (m_p2BB00 == 0xFFFFFFFF || !(e = FindEntity(m_p2BB00)) || !e->Virtual3(130))
+    if (m_p2BB00 == 0xFFFFFFFF || !(e = FindEntity(m_p2BB00)) || !e->IsType(130))
         strcpy(buf, "Unknown");
     else
         strcpy(buf, ((VICreatureEntity *)e)->m_name);
@@ -11650,7 +11650,7 @@ int VIClient::GetTradeOfferEquipSlot(int side, int i) { return TradeItem(side, i
 // 0x00BCD348
 int VIClient::GetTradeOfferP18(int side, int i) { return TradeItem(side, i)->m_item.m_p18; }
 
-
+template <class T> inline void VIJournal::Read(T *p, int n) { Read(p, sizeof(T), n); }  // game.h: why it is defined here
 
 
 // 0x00BD4630: one tick played back out of the journal -- JournalTick's records read back
@@ -11679,7 +11679,7 @@ void VIClient::Tick(int net)
             unsigned short size;
             unsigned char buf[0x10000];
             Journal.Read(size);
-            Journal.Read(buf, 1, size);
+            Journal.Read(buf, size);
             VIASSERT(!Journal.GetError());
             ProcessPacket(buf, size);
             break; }
@@ -11710,9 +11710,9 @@ void VIClient::Tick(int net)
 
         case 5: {
             VIClientPart07190 pad;
-            Journal.Read((unsigned char *)&pad, 1, 1);
-            Journal.Read((unsigned char *)&pad + 1, 1, 1);
-            Journal.Read(pad.m_keys, 4, 20);
+            Journal.Read(pad.m_p00);
+            Journal.Read(pad.m_p01);
+            Journal.Read(pad.m_keys, 20);
             VIASSERT(!Journal.GetError());
             PadKeys(&pad);
             break; }
@@ -12021,18 +12021,22 @@ int VIAbility::Read(VIMemStream &s)
     s.ReadString(m_desc, sizeof(m_desc));
     int n;
     s.ReadSigned(n);
+    // One exit: r is the return value throughout (v1), the loop's first test reads the zero
+    // out of it, and the success path stores 0 into it again (`move v1,zero`).
     int r = m_p1BC.Init(n);
-    if (r)
-        return r;
-    for (int i = 0; i < m_p1BC.m_size; i++)
+    if (r == 0)
     {
-        s.ReadSigned(m_p1BC[i].m_p00);
-        s.ReadSigned(m_p1BC[i].m_p04);
-        s.ReadSigned(m_p1BC[i].m_p08);
-        s.ReadSigned(m_p1BC[i].m_p0C);
-        s.ReadString(m_p1BC[i].m_name, sizeof(m_p1BC[i].m_name));
+        for (int i = 0; i < m_p1BC.m_size; i++)
+        {
+            s.ReadSigned(m_p1BC[i].m_p00);
+            s.ReadSigned(m_p1BC[i].m_p04);
+            s.ReadSigned(m_p1BC[i].m_p08);
+            s.ReadSigned(m_p1BC[i].m_p0C);
+            s.ReadString(m_p1BC[i].m_name, sizeof(m_p1BC[i].m_name));
+        }
+        r = 0;
     }
-    return 0;
+    return r;
 }
 
 // 0x00BCF3A0: one ability, added to the map; the flag shows word 721.
@@ -12241,14 +12245,13 @@ void VIClient::SetWeather(unsigned char w, bool instant)
 void VIClient::Msg0040(int slot)
 {
     VINetItem item;
-    VIItemList &inv = m_inventory;
     int i;
-    for (i = 0; i < inv.ItemCount; i++)
-        if (inv.Item(i)->m_equipSlot == slot)
+    for (i = 0; i < m_inventory.Count(); i++)
+        if (m_inventory.Item(i)->m_equipSlot == slot)
             break;
-    if (i < inv.ItemCount)
+    if (i < m_inventory.Count())
     {
-        inv.Get(i, item);
+        m_inventory.Get(i, item);
         if (item.m_attackType == 0)
             PlaySound(5);
         else
@@ -12352,14 +12355,13 @@ void VIClient::Msg0010(VIMemStream &s)
 void VIClient::Msg001A()
 {
     VINetItem item;
-    VIItemList &corpse = m_corpse;
     int i = 0;
-    while (i < corpse.ItemCount)
+    while (i < m_corpse.Count())    // inline: gcse's reaching reg for &m_corpse is a copy (move s2,a0)
     {
-        corpse.Get(i, item);
+        m_corpse.Get(i, item);
         item.m_equipSlot = -1;
         int n = m_inventory.AddItem(item, item.m_maxStack, 40);
-        corpse.Took(i, n);
+        m_corpse.Took(i, n);
         if (n != item.Quantity)
             i++;
     }
@@ -12426,7 +12428,7 @@ void VIClient::SetFade(float to, float time)
 }
 
 // 0x00BD7618: both windows hear message 295 with (old, new); the loader shows its
-// progress only while m_p2BB8C is the active window.
+// progress only while m_wndIdle is the active window.
 void VIClient::SetActiveWindow(VIWnd *w)
 {
     SetFade(0.0f, 0.0f);
@@ -12436,7 +12438,7 @@ void VIClient::SetActiveWindow(VIWnd *w)
         w->OnMessage(m_p2BD40, 295, (int)m_p2BD40, (int)w);
     m_p2BD40 = w;
     w->SetFocus(w, false);
-    if (m_p2BD40 == m_p2BB8C)
+    if (m_p2BD40 == m_wndIdle)
         m_loader.SetProgressCallback(LoadingProgress, this);
     else
         m_loader.SetProgressCallback(0, 0);
@@ -12489,7 +12491,7 @@ void VIClient::Msg0057(int partner, unsigned int id)
         char name[32];
         unsigned short text[128];
         VIEntity *e = FindEntity(id);
-        if (e && e->Virtual3(130))
+        if (e && e->IsType(130))
             strcpy(name, ((VICreatureEntity *)e)->m_name);
         else
             strcpy(name, "Someone");
@@ -12564,6 +12566,16 @@ void VIClient::Msg0790Done()
             m_p4F108 = m_p07568;
         }
     }
+}
+
+// 0x00BDE1A0
+void VIClient::SendRaw(unsigned long endpoint)
+{
+    char msg[2] = { -1, -1 };
+    drdp_addr_t addr;
+    unsigned short drdpPort;
+    drdp_endpoint_to_address(endpoint, addr.m_ucIp, &addr.m_usPort, &drdpPort);
+    drdp_send_addr(m_drdp, &addr, 1, msg, 2);
 }
 
 // 0x00BDA528: the trade sub-opcodes while +0x2BB04 is set (6 and 7 are the window's).
@@ -12700,6 +12712,34 @@ int VIClient::PlayCue(const char *name, float vol)
     return m_ui.SoundPlay(name, vol);
 }
 
+// 0x00BD8EB8
+int VIClient::PlayLoop(const char *name)
+{
+    VIResourceType type;
+    int index;
+    if (m_loopHandle == -1)
+    {
+        if (m_dict.Find(VIHashResourceID(name), type, index))
+        {
+            VIXm *snd = m_sound.Sound(index);
+            VIXm *xm = snd->AsXm();
+            if (snd && snd->IsCached())
+                m_loopHandle = m_sound.Play(index, 127, (VISOUNDCLASS)1);
+        }
+    }
+    else if (!m_sound.IsPlaying(m_loopHandle))
+    {
+        if (m_dict.Find(VIHashResourceID(name), type, index))
+        {
+            VIXm *snd = m_sound.Sound(index);
+            VIXm *xm = snd->AsXm();
+            if (snd && snd->IsCached())
+                m_loopHandle = m_sound.Play(index, 127, (VISOUNDCLASS)1);
+        }
+    }
+    return 0;
+}
+
 // 0x00BCD980
 void VIClient::TradeCancel()
 {
@@ -12735,7 +12775,7 @@ void VIClient::Msg005E()
         if (scene.GetActorSpriteType(e->m_actor) == 5)
         {
             ((VICSprite *)scene.Sprite(scene.GetActorSprite(e->m_actor)))->SetDeath(1, 0, scene);
-            if (e->Virtual3(130))
+            if (e->IsType(130))
             {
                 scene.m_spellEffects.StopIfThisWasCaster(e->m_actor);
                 ((VICreatureEntity *)e)->m_deathTime = scene.GetTime();
@@ -12889,8 +12929,8 @@ void VIClient::Msg076F(VIMemStream &s)
     {
         {
             VIMemStream out;
-            unsigned short op = 872;
-            out.Write(&op, 2, 1);
+            out.WriteU16(872);
+
             out.WriteU32(m_p2BB10);
             out.WriteByte(8);
             VINetSend(out, GetConn(251));
@@ -12901,8 +12941,8 @@ void VIClient::Msg076F(VIMemStream &s)
         m_wndGame->ShowBuddyRequest();
 }
 
-// 0x00BD2E80: open -- the target recomputes this + i*96 + K for each raw read instead of
-// reusing the record base the zigzag reads go through.
+// 0x00BD2E80.  The raw reads are VIMemStream::Read(T &): binding the reference keeps each
+// &m_chars[i].f an ADDR_EXPR, (this + i*96) + K, where Read(&f, n, 1) reuses the record base.
 void VIClient::CharacterList(VIMemStream &s)
 {
     s.ReadSigned(m_charCount);
@@ -12920,21 +12960,21 @@ void VIClient::CharacterList(VIMemStream &s)
         s.ReadSigned(c.m_hairLength);
         s.ReadSigned(c.m_hairStyle);
         s.ReadSigned(c.m_face);
-        s.Read(&m_chars[i].m_robe, 4, 1);
-        s.Read(&m_chars[i].m_p40, 1, 1);
-        s.Read(m_chars[i].m_weapons, 4, 3);
-        s.Read(m_chars[i].m_p50, 1, 3);
-        s.Read(m_chars[i].m_armor, 1, 6);
-        s.Read(m_chars[i].m_p59, 1, 6);
+        s.Read(m_chars[i].m_robe);
+        s.Read(m_chars[i].m_p40);
+        s.Read(m_chars[i].m_weapons);
+        s.Read(m_chars[i].m_p50);
+        s.Read(m_chars[i].m_armor);
+        s.Read(m_chars[i].m_p59);
     }
-    m_wnd2BB88->ShowList();
-    m_wnd2BB88->m_visible = 0;
+    m_wndCharCreate->Reset();
+    m_wndCharCreate->m_visible = 0;
     m_p4F130 = 1;
-    m_wndLogin->m_visible = 1;
-    m_p2BD44 = m_wndLogin;
-    SetActiveWindow(m_wndLogin);
+    m_wndCharSelect->m_visible = 1;
+    m_p2BD44 = m_wndCharSelect;
+    SetActiveWindow(m_wndCharSelect);
     if (m_p50300)
-        m_wndLogin->Option(1);
+        m_wndCharSelect->Option(1);
 }
 
 // ------------------------------------------------------------ small wrappers --
@@ -12980,26 +13020,26 @@ void VIClient::SetP50308(int a, int b, int c)
 void VIClient::SendRaw(const void *data, int size) { connection_send(m_conn, data, size, 251); }
 
 // ------------------------------------------------------- panel forwarders --
-void VIClient::ClosePanel6FC() { m_wndGame->ClosePanel6FC(); }              // 0x00BCE150
-void VIClient::ClosePanel700() { m_wndGame->ClosePanel700(); }              // 0x00BCE178
-void VIClient::OpenPanel27() { m_wndGame->OpenPanel27(); }                  // 0x00BCE7B0
-void VIClient::ClosePanel6EC() { m_wndGame->ClosePanel6EC(); }              // 0x00BCE7D8
-void VIClient::OpenPanel22() { m_wndGame->OpenPanel22(); }                  // 0x00BCEC80
-void VIClient::ClosePanel6DC() { m_wndGame->ClosePanel6DC(); }              // 0x00BCECA8
-void VIClient::OpenPanel24() { m_wndGame->OpenPanel24(); }                  // 0x00BCED60
-void VIClient::ClosePanel6E4() { m_wndGame->ClosePanel6E4(); }              // 0x00BCED88
-void VIClient::OpenPanel23() { m_wndGame->OpenPanel23(); }                  // 0x00BCEDB0
-void VIClient::ClosePanel6E0() { m_wndGame->ClosePanel6E0(); }              // 0x00BCEDD8
-void VIClient::OpenPanel28() { m_wndGame->OpenPanel28(); }                  // 0x00BCEE00
-void VIClient::ClosePanel6F4() { m_wndGame->ClosePanel6F4(); }              // 0x00BCEE28
-void VIClient::OpenPanel29() { m_wndGame->OpenPanel29(); }                  // 0x00BCEE50
-void VIClient::ClosePanel6F8() { m_wndGame->ClosePanel6F8(); }              // 0x00BCEE78
+void VIClient::ClosePanel6FC() { m_wndGame->CloseCSRequest(); }              // 0x00BCE150
+void VIClient::ClosePanel700() { m_wndGame->CloseCSInbox(); }              // 0x00BCE178
+void VIClient::OpenPanel27() { m_wndGame->OpenBuffs(); }                  // 0x00BCE7B0
+void VIClient::ClosePanel6EC() { m_wndGame->CloseBuffs(); }              // 0x00BCE7D8
+void VIClient::OpenPanel22() { m_wndGame->OpenQuestLog(); }                  // 0x00BCEC80
+void VIClient::ClosePanel6DC() { m_wndGame->CloseQuestLog(); }              // 0x00BCECA8
+void VIClient::OpenPanel24() { m_wndGame->OpenGramInbox(); }                  // 0x00BCED60
+void VIClient::ClosePanel6E4() { m_wndGame->CloseGramInbox(); }              // 0x00BCED88
+void VIClient::OpenPanel23() { m_wndGame->OpenComposeGram(); }                  // 0x00BCEDB0
+void VIClient::ClosePanel6E0() { m_wndGame->CloseComposeGram(); }              // 0x00BCEDD8
+void VIClient::OpenPanel28() { m_wndGame->OpenTell(); }                  // 0x00BCEE00
+void VIClient::ClosePanel6F4() { m_wndGame->CloseTell(); }              // 0x00BCEE28
+void VIClient::OpenPanel29() { m_wndGame->OpenReply(); }                  // 0x00BCEE50
+void VIClient::ClosePanel6F8() { m_wndGame->CloseReply(); }              // 0x00BCEE78
 
 // 0x00BCAB78
 VIArray<VIItemStat> *VIClient::GetInvItemStats(int i) { return &m_inventory.Item(i)->m_stats; }
-void VIClient::ClosePanel708() { m_wndGame->ClosePanel708(); }              // 0x00BCEF30
-void VIClient::ClosePanel70C() { m_wndGame->ClosePanel70C(); }              // 0x00BCEF58
-void VIClient::OpenPanel18() { m_wndGame->OpenPanel18(); }                  // 0x00BCDCE8
+void VIClient::ClosePanel708() { m_wndGame->CloseRecipe(); }              // 0x00BCEF30
+void VIClient::ClosePanel70C() { m_wndGame->CloseExperiment(); }              // 0x00BCEF58
+void VIClient::OpenPanel18() { m_wndGame->OpenBuddyList(); }                  // 0x00BCDCE8
 // 0x00BD5F38
 void VIClient::ClearTarget()
 {
@@ -13255,7 +13295,7 @@ void VIItemList::Took(int Slot, int Quantity)
         ItemCount--;
     }
 }
-#line 1 "C:/code-frontiers-gm/game/VIClient-tail.cpp"
+#line 13298 "C:/code-frontiers-gm/game/VIClient.cpp"
 
 // 0x00BE50B0
 void VIClient::SendOpIntIntByte(int op, int a, unsigned int b, unsigned char c)
@@ -13406,11 +13446,11 @@ int VIClient::GetQuestTitle(int i, unsigned short *buf)
 // 0x00BD8990
 void VIClient::BackToLogin()
 {
-    m_wnd2BB88->m_visible = 0;
-    m_wnd2BB88->ShowList();
-    m_wndLogin->m_visible = 1;
-    m_p2BD44 = m_wndLogin;
-    SetActiveWindow(m_wndLogin);
+    m_wndCharCreate->m_visible = 0;
+    m_wndCharCreate->Reset();
+    m_wndCharSelect->m_visible = 1;
+    m_p2BD44 = m_wndCharSelect;
+    SetActiveWindow(m_wndCharSelect);
 }
 
 // 0x00BDD488
@@ -13709,7 +13749,7 @@ void VIClient::PumpMessages()
 // 0x00BCDD10
 void VIClient::ClosePanel6D0()
 {
-    m_wndGame->ClosePanel6D0();
+    m_wndGame->CloseBuddyList();
     m_p2BB10 = 0xFFFFFFFF;
 }
 
@@ -13717,49 +13757,49 @@ void VIClient::ClosePanel6D0()
 void VIClient::OpenPanel34()
 {
     m_battleMusic.Unload();
-    m_wndGame->OpenPanel34();
+    m_wndGame->OpenOptions();
 }
 
 // 0x00BCECD0
 void VIClient::OpenPanel40()
 {
     m_p4EC58.Open();
-    m_wndGame->OpenPanel40();
+    m_wndGame->OpenClassMastery();
 }
 
 // 0x00BCED18
 void VIClient::ClosePanel6C0()
 {
     m_p4EC58.Close();
-    m_wndGame->ClosePanel6C0();
+    m_wndGame->CloseClassMastery();
 }
 
 // 0x00BCEEA0
 void VIClient::OpenPanel35()
 {
     m_p38334.Open();
-    m_wndGame->SetPanel35();
+    m_wndGame->OpenWhoList();
 }
 
 // 0x00BCEEE8
 void VIClient::ClosePanel704()
 {
     m_p38334.Close();
-    m_wndGame->ClosePanel704();
+    m_wndGame->CloseWhoList();
 }
 
 // 0x00BD60C0
-int VIClient::GetP44Total()
+int VIClient::GetP44Total(int i)
 {
     int n = m_player.m_p44;
-    return n + m_p4EC58.Count();
+    return n + m_p4EC58.GetBonus(i);
 }
 
 // 0x00BC2128
 void VIClient::ReturnToSelect()
 {
-    m_p2BD44 = m_wnd2BB7C;
-    SetActiveWindow(m_wnd2BB7C);
+    m_p2BD44 = m_wndLogin;
+    SetActiveWindow(m_wndLogin);
     if (m_p50300)
         ShowLoginWindow();
 }
@@ -13812,7 +13852,7 @@ int VIClient::HasPet() { return m_petId != 0xFFFFFFFF; }
 int VIClient::PetIsCreature()
 {
     VIEntity *e;
-    if (HasPet() && (e = FindEntity(m_petId)) != 0 && e->Virtual3(130))
+    if (HasPet() && (e = FindEntity(m_petId)) != 0 && e->IsType(130))
         return 1;
     return 0;
 }
@@ -13947,7 +13987,7 @@ int VIClient::PetFlag4()
     if (m_petId == 0xFFFFFFFF)
         return -1;
     VIEntity *e = FindEntity(m_petId);
-    if (e && e->Virtual3(130))
+    if (e && e->IsType(130))
         return ((VICreatureEntity *)e)->Flag4() != 0;
     return 0;
 }
@@ -13958,7 +13998,7 @@ int VIClient::PetFlag8()
     if (m_petId == 0xFFFFFFFF)
         return -1;
     VIEntity *e = FindEntity(m_petId);
-    if (e && e->Virtual3(130))
+    if (e && e->IsType(130))
         return ((VICreatureEntity *)e)->Flag8() != 0;
     return 0;
 }
@@ -13992,7 +14032,7 @@ void VIClient::ShowNetStats()
 int VIClient::GetTargetName(char *buf)
 {
     VIEntity *e = FindEntity(m_target);
-    if (e && e->Virtual3(130))
+    if (e && e->IsType(130))
     {
         VIString::strcpy8(buf, 24, ((VICreatureEntity *)e)->m_name);
         return 0;
@@ -14005,7 +14045,7 @@ int VIClient::GetTargetName(char *buf)
 int VIClient::GetTargetPlayerName(char *buf)
 {
     VIEntity *e = FindEntity(m_target);
-    if (e && e->Virtual3(130) && ((VICreatureEntity *)e)->m_p256 == 2)
+    if (e && e->IsType(130) && ((VICreatureEntity *)e)->m_p256 == 2)
     {
         VIString::strcpy8(buf, 24, ((VICreatureEntity *)e)->m_name);
         return 0;
@@ -14075,7 +14115,7 @@ void VIClient::JournalTick(int flags)
 void VIClient::ApplyOptions()
 {
     VIGameOptions *o = VIGetGameOptions();
-    m_wndGame->HidePanel6F0();
+    m_wndGame->CloseOptions();
     m_battleMusic.Preload(o->m_language);
     if ((m_walkCam.m_cameraMode == 2 && o->m_x06 == 0) || (m_walkCam.m_cameraMode == 3 && o->m_x06 == 1))
         ToggleCameraStyle();
@@ -14089,7 +14129,7 @@ int VIClient::GroupMemberFlag4(int i)
     if (i >= m_p2BE4C)
         return -1;
     VIEntity *e = FindEntity(m_group[i].m_id);
-    if (e && e->Virtual3(130))
+    if (e && e->IsType(130))
         return ((VICreatureEntity *)e)->Flag4() != 0;
     return 0;
 }
@@ -14102,7 +14142,7 @@ int VIClient::GroupMemberFlag8(int i)
     if (i >= m_p2BE4C)
         return -1;
     VIEntity *e = FindEntity(m_group[i].m_id);
-    if (e && e->Virtual3(130))
+    if (e && e->IsType(130))
         return ((VICreatureEntity *)e)->Flag8() != 0;
     return 0;
 }
@@ -14120,7 +14160,7 @@ int VIClient::LeaderByte263()
     if (m_p2BE4C > 0)
     {
         VIEntity *e = FindEntity(m_group[0].m_id);
-        if (e && e->Virtual3(130) && ((VICreatureEntity *)e)->Byte263())
+        if (e && e->IsType(130) && ((VICreatureEntity *)e)->Byte263())
             return 1;
     }
     return 0;
@@ -14172,6 +14212,13 @@ void VIClient::DropInvites(int id)
             i = m_p2BD58.Next(i);
 }
 
+// Display indices from 0xFC up are items, not spells.  Inline: the comparison comes back as
+// a materialised value (slt) that the caller then tests, as IsAbilitySlotSpell's does.
+static inline int IsSpell(const VIAbility &a)
+{
+    return a.m_displayIndex < 0xFC;
+}
+
 // 0x00BCBE40: no caller in the image.  It walks the map by NODE index, 0..Size()-1.
 int VIClient::IsAbilitySlotSpell(int slot)
 {
@@ -14181,7 +14228,7 @@ int VIClient::IsAbilitySlotSpell(int slot)
         if (a.m_slot == slot)
         {
             int r = 0;
-            if (a.m_displayIndex < 0xFC)
+            if (IsSpell(a))
                 r = 1;
             return r;
         }
@@ -14195,7 +14242,7 @@ int VIClient::GetPetHealth(float *hp)
     if (m_petId != 0xFFFFFFFF)
     {
         VIEntity *e = FindEntity(m_petId);
-        if (e && e->Virtual3(130))
+        if (e && e->IsType(130))
         {
             *hp = e->m_p19 / 255.0f;
             return 0;
@@ -14509,7 +14556,10 @@ void VIClient::SendOpByteByte(int op, unsigned char a, unsigned char b)
     VIMemStream out;
     unsigned short o = op;
     out.Write(&o, 2, 1);
-    VINetSend(out << VIMemStreamByte(a) << VIMemStreamByte(b), GetConn(251));
+    // ONE statement: an inline's by-value parameter keeps its 16-byte slot to the end of
+    // the statement, so the two bytes get two slots (two statements would share one).
+    out.WriteByte(a), out.WriteByte(b);
+    VINetSend(out, GetConn(251));
 }
 
 // 0x00BE5F10
@@ -14519,6 +14569,84 @@ void VIClient::SendOpByteRaw(int op, unsigned char a, int b)
     unsigned short o = op;
     out.Write(&o, 2, 1);
     VINetSend(out << VIMemStreamByte(a) << VIMemStreamRaw(b), GetConn(251));
+}
+
+// The senders' TU (0x00BE4B78 .. 0x00BE6540) also holds these, none of which anything in
+// the image calls but 0x00BE6188 (lane cl-parts1).
+
+// 0x00BE5900
+void VIClient::SendOpByteByteInt(int op, unsigned char a, unsigned char b, int c)
+{
+    VIMemStream out;
+    unsigned short o = op;
+    out.Write(&o, 2, 1);
+    out.WriteByte(a), out.WriteByte(b);
+    out.WriteU32(c);
+    VINetSend(out, GetConn(251));
+}
+
+// 0x00BE5A10
+void VIClient::SendOpByteU16U16(int op, unsigned char a, unsigned short b, unsigned short c)
+{
+    VIMemStream out;
+    unsigned short o = op;
+    out.Write(&o, 2, 1);
+    out.WriteByte(a), out.WriteU16(b), out.WriteU16(c);
+    VINetSend(out, GetConn(251));
+}
+
+// 0x00BE5E00
+void VIClient::SendOpByteIntInt(int op, unsigned char a, int b, int c)
+{
+    VIMemStream out;
+    unsigned short o = op;
+    out.Write(&o, 2, 1);
+    out.WriteByte(a);
+    out.WriteU32(b);
+    out.WriteU32(c);
+    VINetSend(out, GetConn(251));
+}
+
+// 0x00BE6000
+void VIClient::SendOpU16(int op, unsigned short v)
+{
+    VIMemStream out;
+    unsigned short o = op;
+    out.Write(&o, 2, 1);
+    out.WriteU16(v);
+    VINetSend(out, GetConn(251));
+}
+
+// 0x00BE60C8
+void VIClient::SendOpWString(int op, const unsigned short *s)
+{
+    VIMemStream out;
+    unsigned short o = op;
+    out.Write(&o, 2, 1);
+    out.WriteString(s);
+    VINetSend(out, GetConn(251));
+}
+
+// 0x00BE6188
+void VIClient::SendOpWStringInt(int op, const unsigned short *s, int v)
+{
+    VIMemStream out;
+    unsigned short o = op;
+    out.Write(&o, 2, 1);
+    out.WriteString(s);
+    out.WriteU32(v);
+    VINetSend(out, GetConn(251));
+}
+
+// 0x00BE6470
+void VIClient::SendOpStrStr(int op, const char *a, const char *b)
+{
+    VIMemStream out;
+    unsigned short o = op;
+    out.Write(&o, 2, 1);
+    out.WriteString(a);
+    out.WriteString(b);
+    VINetSend(out, GetConn(251));
 }
 
 // 0x00BD50E8
@@ -14629,11 +14757,447 @@ int VIClient::GetFrameRate()
     return 50;
 }
 
+// 0x00BDD5B0, name provisional: back to the built-in quick-chat menus -- every custom set
+// freed (and its slot reported, 0x006B), then the default tree, each set a title and four
+// (label, text) pairs; "|N" is an emote or command number, %2/%3/%4 the player's words.
+void VIClient::DefaultTextSets()
+{
+    VITextSet **table = VITextSet::GetTable();
+    for (int i = 0; i < 256; i++)
+    {
+        if (table[i])
+        {
+            if (i > 0)
+                Send006B(i);
+            table[i]->Remove();
+        }
+    }
+    int id;
+    SetTextSet(0, "Adventure", 0, "Social", 0, "Commands", 0, "Custom", 0);
+    id = VITextSet::MakeId(0, -1, -1);
+    SetTextSet(id, "Needs", 0, "Orders", 0, "Pets", 0, "Questions", 0);
+    id = VITextSet::MakeId(0, 0, -1);
+    SetTextSet(id, "Help", "I need help!", "Healing", "I need healing!", "Power", "I need power!", "Evacuate", "I need to get out of here!");
+    id = VITextSet::MakeId(0, 1, -1);
+    SetTextSet(id, "Attack", "Attack %4!", "Retreat", "Retreat! We can't win this one.", "Back off", "Back off of %3.", "Follow", "Follow me!");
+    id = VITextSet::MakeId(0, 2, -1);
+    SetTextSet(id, "Passive", "|22", "Defensive", "|23", "Aggressive", "|24", "More...", 0);
+    id = VITextSet::MakeId(0, 2, 3);
+    SetTextSet(id, "Neutral", "|25", "Dismiss", "|26", 0, 0, 0, 0);
+    id = VITextSet::MakeId(0, 3, -1);
+    SetTextSet(id, "Help?", "Do you need help?", "Confused", "What should I do?", "Where to?", "Where should we go?", "Location?", "Where are you?");
+    id = VITextSet::MakeId(1, -1, -1);
+    SetTextSet(id, "Questions", 0, "Needs", 0, "Answers", 0, "Emote", 0);
+    id = VITextSet::MakeId(1, 0, -1);
+    SetTextSet(id, "Class/Level", "What level and class are you?", "Requests", 0, 0, 0, 0, 0);
+    id = VITextSet::MakeId(1, 0, 1);
+    SetTextSet(id, "Group", "I am a %2 level %3 looking for a group.", "Trade", "Are you interested in some of the great items I have for sale?", "Teleport", "I am looking to travel a long distance. Can you help me?", 0, 0);
+    id = VITextSet::MakeId(1, 1, -1);
+    SetTextSet(id, "Food", "I need food.", "Directions", "I need directions.", 0, 0, 0, 0);
+    id = VITextSet::MakeId(1, 2, -1);
+    SetTextSet(id, "Class/Level", "I am a level %2 %3.", "Yes", "Yes", "No", "No", "Maybe", "I'm not sure.");
+    id = VITextSet::MakeId(1, 3, -1);
+    SetTextSet(id, "Fun", 0, "Happy", 0, "Sad", 0, "Physical", 0);
+    id = VITextSet::MakeId(1, 3, 3);
+    SetTextSet(id, "Wave", "|0", "Bow", "|1", "Point", "|2", "Cheer", "|3");
+    id = VITextSet::MakeId(2, -1, -1);
+    SetTextSet(id, "Group", 0, "Privacy", 0, "Custom setup", 0, "Chat", 0);
+    id = VITextSet::MakeId(2, 0, -1);
+    SetTextSet(id, "Invite", "|4", "Boot Member", "|5", 0, 0, "Leave Group", "|6");
+    id = VITextSet::MakeId(2, 1, -1);
+    SetTextSet(id, "Ignore Target", 0, "Stop Ignoring", 0, "Privacy List", 0, "More...", 0);
+    id = VITextSet::MakeId(2, 1, 3);
+    SetTextSet(id, "Ignore Shouts", "|10", "Restore Shouts", "|11", "Ignore Guild", "|12", "Restore Guild", "|13");
+    id = VITextSet::MakeId(2, 3, -1);
+    SetTextSet(id, "Modes", 0, "Reply", "|18", "Tell", "|19", "Message", 0);
+    id = VITextSet::MakeId(2, 3, 0);
+    SetTextSet(id, "Say", "|14", "Group", "|15", "Shout", "|16", "Guild", "|17");
+}
+
 // 0x00BCEF80
-void VIClient::ClosePanel718() { m_wndGame->ClosePanel718(); }
+void VIClient::ClosePanel718() { m_wndGame->CloseAuctionSearch(); }
 
 // 0x00BD6228
-void VIClient::ClosePanel6BC() { m_wndGame->ClosePanel6BC(); }
+void VIClient::ClosePanel6BC() { m_wndGame->CloseTrainer(); }
+
+// 0x00BD6250, name provisional: an action id (a menu entry, a key, a /command) -- first
+// offered to the parts that own a range of them, then a switch over the client's own.
+void VIClient::DoAction(int id, int arg)
+{
+    unsigned short buf[128];
+    VIClientPart382E8 &p = m_p382E8;
+    if (p.IsCommand(id))
+    {
+        p.Show(id, arg);
+        return;
+    }
+    if (p.IsCommand2(id))
+    {
+        p.Do2(id, arg);
+        return;
+    }
+    if (m_p3834C.IsMine(id))
+    {
+        m_p3834C.Use(id, arg);
+        return;
+    }
+    if (m_bank.IsCommand(id))
+    {
+        m_bank.Do(id, arg);
+        return;
+    }
+    if (m_p4EC58.IsMine(id))
+    {
+        m_p4EC58.Use(id, arg);
+        return;
+    }
+    if (m_p4F078.IsFactionId(id))
+    {
+        m_p4F078.Command(id, arg);
+        return;
+    }
+    switch (id)
+    {
+    case 0x0B0D0002:
+        OpenPanel34();
+        break;
+    case 0x01010100:
+        m_ui.SetLanguage(0);
+        break;
+    case 0x01010200:
+        m_ui.SetLanguage(1);
+        break;
+    case 0x01050400:
+    {
+        VIUI &ui = m_ui;
+        m_p2BD48 ^= 1;
+        VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(989, ui.m_language),
+                             ui.m_words.GetString(m_p2BD48 ? 551 : 552, ui.m_language));
+        m_wndGame->AddText(buf);
+        break;
+    }
+    case 0x01050500:
+    {
+        VIUI &ui = m_ui;
+        m_p2BD4C ^= 1;
+        VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(990, ui.m_language),
+                             ui.m_words.GetString(m_p2BD4C ? 551 : 552, ui.m_language));
+        m_wndGame->AddText(buf);
+        break;
+    }
+    case 0x05080000:
+        if (m_target != 0xFFFFFFFF)
+            SendOpInt(4, m_target);
+        break;
+    case 0x05030000:
+    case 0x050A0000:
+    case 0x050B0000:
+    case 0x050C0000:
+    case 0x050D0000:
+    case 0x050E0000:
+    case 0x050F0000:
+    case 0x050F1000:
+        PetCommand(id);
+        break;
+    case 0x05091006:
+        if (m_p0662C)
+            MoveToOrigin();
+        else
+            m_wndGame->OpenGoto();
+        break;
+    case 0x05091007:
+    {
+        m_p00070 = 1 - m_p00070;
+        if (m_p00070)
+        {
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(831, ui.m_language), ui.m_words.GetString(551, ui.m_language));
+            m_wndGame->AddText(buf);
+            m_speed = 15.0f;
+            VIWalkCamera &w = m_walkCam;
+            w.m_runSpeed = 15.0f;
+            w.InitIntermediate();
+        }
+        else
+        {
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(831, ui.m_language), ui.m_words.GetString(552, ui.m_language));
+            m_wndGame->AddText(buf);
+            VIClientPart4EC58 &q = m_p4EC58;
+            SetSpeed(q.m_speed);
+        }
+        break;
+    }
+    case 0x05091008:
+    {
+        VIScene &scene = m_scene;
+        if (scene.GetRadialFloraMode() == 1)
+        {
+            scene.SetRadialFloraMode((VIRadialFloraMode)0);
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(1597, ui.m_language), ui.m_words.GetString(552, ui.m_language));
+        }
+        else
+        {
+            scene.SetRadialFloraMode((VIRadialFloraMode)1);
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(1597, ui.m_language), ui.m_words.GetString(551, ui.m_language));
+        }
+        m_wndGame->AddText(buf);
+        break;
+    }
+    case 0x03010000:
+        m_wndGame->OnMessage(0, 261, 0x03010000, m_p382E4);
+        break;
+    case 0x0B0D0000:
+        m_wndGame->OnMessage(0, 261, 0x0B0D0000, 0);
+        break;
+    case 0x0B0D0001:
+        m_wndGame->OnMessage(0, 261, 0x0B0D0001, 0);
+        break;
+    case 0x09020000:
+        PrintPosition();
+        break;
+    case 0x09050000:
+        m_p00080 = 1 - m_p00080;
+        break;
+    case 0x05090100:
+    {
+        m_p00064 = 1 - m_p00064;
+        if (m_p00064)
+        {
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S (%05.2f)", ui.m_words.GetString(832, ui.m_language),
+                                 ui.m_words.GetString(551, ui.m_language), m_timeOfDay);
+            m_wndGame->AddText(buf);
+        }
+        else
+        {
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S (%05.2f)", ui.m_words.GetString(832, ui.m_language),
+                                 ui.m_words.GetString(552, ui.m_language), m_timeOfDay);
+            m_wndGame->AddText(buf);
+        }
+        break;
+    }
+    case 0x05090200:
+        m_scene.m_atmosphere.SetWeather((VIAtmosphere::WXTYPE)0, false);
+        break;
+    case 0x05090300:
+        m_scene.m_atmosphere.SetWeather((VIAtmosphere::WXTYPE)2, false);
+        break;
+    case 0x05090400:
+        m_scene.m_atmosphere.SetWeather((VIAtmosphere::WXTYPE)5, false);
+        break;
+    case 0x05090410:
+    {
+        switch (m_p00068)
+        {
+        case 0:
+        {
+            m_p00068 = 1;
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(833, ui.m_language), ui.m_words.GetString(551, ui.m_language));
+            m_wndGame->AddText(buf);
+            break;
+        }
+        case 1:
+        {
+            m_p00068 = 2;
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(833, ui.m_language), ui.m_words.GetString(552, ui.m_language));
+            m_wndGame->AddText(buf);
+            break;
+        }
+        case 2:
+        {
+            m_p00068 = 0;
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %S", ui.m_words.GetString(833, ui.m_language), ui.m_words.GetString(834, ui.m_language));
+            m_wndGame->AddText(buf);
+            break;
+        }
+        }
+        break;
+    }
+    case 0x05091000:
+        m_wndGame->ToggleHud();
+        break;
+    case 0x03020000:
+        m_wndGame->OpenTrainer();
+        break;
+    case 0x02080000:
+        OpenPanel40();
+        break;
+    case 0x06010000:
+        PlayEmote(0);
+        break;
+    case 0x06020000:
+        PlayEmote(1);
+        break;
+    case 0x06030000:
+        PlayEmote(2);
+        break;
+    case 0x06040000:
+        PlayEmote(3);
+        break;
+    case 0x0A010000:
+        m_p2EC28 = 1;
+        break;
+    case 0x0B010000:
+        GroupChanged(0);
+        break;
+    case 0x0B020000:
+        GroupChanged(1);
+        break;
+    case 0x0B030000:
+        if (InGroup() && GetP2BE4C() >= 2)
+            GroupChanged(2);
+        else
+            ShowMsg(629);
+        break;
+    case 0x0B030001:
+        GroupChanged(3);
+        break;
+    case 0x0B030002:
+    {
+        int r = m_p2EF24.CanChat();
+        switch (r)
+        {
+        case 0:
+            GroupChanged(4);
+            break;
+        case 3:
+            ShowMsg(570);
+            break;
+        default:
+        {
+            VIUI &ui = m_ui;
+            VIString::snprintf16(buf, 256, "%S: %u", ui.m_words.GetString(835, ui.m_language), r);
+            ShowText(buf);
+            break;
+        }
+        }
+        break;
+    }
+    case 0x07010000:
+        InviteEntity(m_target);
+        break;
+    case 0x07040000:
+        if (!InGroup())
+            ShowMsg(629);
+        else if (m_target != 0xFFFFFFFF)
+        {
+            if (IsGroupLeader())
+                SendOp0626(m_target);
+            else
+                ShowMsg(638);
+        }
+        break;
+    case 0x07050000:
+        if (InGroup())
+        {
+            if (IsGroupLeader())
+                DisbandGroup();
+            else
+                ShowMsg(639);
+        }
+        else
+            ShowMsg(629);
+        break;
+    case 0x07060000:
+        if (InGroup())
+            LeaveGroup();
+        else
+            ShowMsg(629);
+        break;
+    case 0x07070000:
+        m_p2EFC8.Send(arg != 0);
+        break;
+    case 0x0B030003:
+        m_p2EFCC.SendFlag(arg != 0);
+        break;
+    case 0x0B05100C:
+        m_p2EF24.SetChat(arg != 0);
+        break;
+    case 0x0B030004:
+        OpenPanel35();
+        break;
+    case 0x0B050000:
+        OpenPanel18();
+        break;
+    case 0x0B060000:
+        RequestTrade();
+        break;
+    case 0x0B080000:
+        DefaultTextSets();
+        break;
+    case 0x0B051001:
+        if (m_guild.InGuild())
+            m_p2EF24.ShowInvite();
+        else
+        {
+            VIUI &ui = m_ui;
+            ShowText((const unsigned short *)ui.m_words.GetString(570, ui.m_language));
+        }
+        break;
+    case 0x0B052000:
+        SendOpcode(69);
+        break;
+    case 0x0B090000:
+        SendOpU32(123, m_target);
+        break;
+    case 0x05091005:
+    {
+        VIUI &ui = m_ui;
+        VIString::snprintf16(buf, 256, "%S %05.3f Protocol=%i", ui.m_words.GetString(836, ui.m_language),
+                             1.108f, 18);
+        m_wndGame->AddText(buf);
+        break;
+    }
+    case 0x05091004:
+        m_p502FC ^= 1;
+        break;
+    case 0x0B053000:
+        m_p38300.OpenPanel();
+        break;
+    case 0x0B053001:
+        ShowTargetPlayerName(0x0B053001, 995);
+        break;
+    case 0x0B0E0000:
+    {
+        VIMemStream out;
+        out.WriteU16(198);
+        SendRaw(out.m_rbuf, out.m_size);
+        break;
+    }
+    case 0x0B0E0001:
+        SendOpcode(222);
+        break;
+    case 0x0B0E0002:
+        m_p00084 ^= 1;
+        break;
+    case 0x0B0E0003:
+        SendOpcode(200);
+        break;
+    case 0x0B0E0006:
+        SendOpU32(203, m_target);
+        break;
+    case 0x0B0E0007:
+        ToggleFollow();
+        break;
+    case 0x0B0E0008:
+        VITimeOfDay::GetLocalTime(buf, 128);
+        m_wndGame->AddText(buf);
+        break;
+    case 0x0B0E0009:
+        if (m_alarm.IsOn())
+            m_alarm.Set(this, 0, 0, 0);
+        else
+            ShowNameClear(0x0B0E000A, 1199);
+        break;
+    }
+}
 
 // 0x00BD9860
 void VIClient::Send0701a() { m_p382E8.Send0701a(); }
@@ -14651,7 +15215,7 @@ void VIClient::TargetNearest(int group)
 // 0x00BCCB28
 int VIClient::ClosePanel6AC()
 {
-    m_wndGame->ClosePanel6AC();
+    m_wndGame->CloseBank();
     return 0;
 }
 
@@ -14723,8 +15287,8 @@ void VIClient::RefreshCollision()
         VIEntity *e = m_entities[i];
         if (!e)
             continue;
-        e->Virtual9();
-        if (!e->Virtual3(130))
+        e->Refresh();
+        if (!e->IsType(130))
             continue;
         if (e->m_id == m_selfId)
             continue;
@@ -14778,7 +15342,7 @@ void VIClient::SendOpU32(int op, unsigned int v)
 void VIClient::InteractWithTarget()
 {
     VIEntity *e = FindEntity(m_target);
-    if (!e || !e->Virtual3(130))
+    if (!e || !e->IsType(130))
         return;
     VICreatureEntity *c = (VICreatureEntity *)e;
     unsigned short f = c->m_npcFlags;
@@ -14962,7 +15526,7 @@ void VIClient::DrawReticle(int flash)
 }
 
 // 0x00BD4E60
-int VIClient::OpenResources()
+int VIClient::LoadModels()
 {
     VILoader &ld = m_loader;
     if (ld.Init(0x110000, IsNotP0662C() ? 6 : 5) < 0)
@@ -14999,7 +15563,7 @@ void VIClient::DeleteCharacter(int i)
 void VIClient::RequestTrade()
 {
     VIEntity *e = FindEntity(m_target);
-    if (!e || !e->Virtual3(130))
+    if (!e || !e->IsType(130))
         return;
     if (((VICreatureEntity *)e)->m_p256 != 2)
         return;
@@ -15032,7 +15596,7 @@ void VIClient::ToggleAutoAttack()
     // `c` is not initialised when Virtual3 says no: the target's `movn` keeps whatever
     // the register held.
     VICreatureEntity *c;
-    if (e->Virtual3(130))
+    if (e->IsType(130))
         c = (VICreatureEntity *)e;
     if (!c)
         return;
@@ -15247,17 +15811,17 @@ void VIClient::ShowLoginWindow()
 {
     m_p4F130 = 0;
     m_shardInfo.Clear();
-    m_p2BD44 = m_wnd2BB80;
-    SetActiveWindow(m_wnd2BB80);
+    m_p2BD44 = m_wndServerSelect;
+    SetActiveWindow(m_wndServerSelect);
 }
 
 // 0x00BCE8E0: ApplyOptions' body, run only when the options panel is up.
 void VIClient::ResetBattleMusic()
 {
     VIGameOptions *o = VIGetGameOptions();
-    if (!m_wndGame->IsPanel6F0Open())
+    if (!m_wndGame->IsOptionsOpen())
         return;
-    m_wndGame->HidePanel6F0();
+    m_wndGame->CloseOptions();
     m_battleMusic.Preload(o->m_language);
     if ((m_walkCam.m_cameraMode == 2 && o->m_x06 == 0) || (m_walkCam.m_cameraMode == 3 && o->m_x06 == 1))
         ToggleCameraStyle();
@@ -15568,11 +16132,11 @@ int VIClient::SelectCharacter(int i)
 {
     if (i >= m_charCount && m_charCount < 8)
     {
-        m_wndLogin->ShowWord(413);
-        m_wndLogin->m_visible = 0;
-        m_wnd2BB88->m_visible = 1;
-        m_p2BD44 = m_wnd2BB88;
-        SetActiveWindow(m_wnd2BB88->Focus());
+        m_wndCharSelect->ShowWord(413);
+        m_wndCharSelect->m_visible = 0;
+        m_wndCharCreate->m_visible = 1;
+        m_p2BD44 = m_wndCharCreate;
+        SetActiveWindow(m_wndCharCreate->Focus());
     }
     else if (m_chars[i].m_serverId != -1)
     {
@@ -15782,12 +16346,13 @@ void VIClient::SendNewChar(int op, const VINewChar *c)
 void VIClient::CreateCharacter(VINewChar *c)
 {
     const VIRaceDef *race = ::GetRace(c->m_race);
-    const unsigned int *models = &race->m_maleModel;            // male, female
     memset(&m_chars[m_charCount], 0, sizeof(VICharRecord));
+    // The models are indexed as a MEMBER ARRAY, race->m_model[c->m_sex] (an ARRAY_REF:
+    // `addu v0,s4,v0`, the base first); a pointer to the first one indexes the other way.
     m_chars[m_charCount].m_name[0] = 0;
     m_chars[m_charCount].m_race = c->m_race;
     m_chars[m_charCount].m_serverId = -1;
-    m_chars[m_charCount].m_modelId = models[c->m_sex];
+    m_chars[m_charCount].m_modelId = race->m_model[c->m_sex];
     m_chars[m_charCount].m_class = c->m_class;
     m_chars[m_charCount].m_hairColor = c->m_hairColor;
     m_chars[m_charCount].m_hairLength = c->m_hairLength;
@@ -15795,15 +16360,15 @@ void VIClient::CreateCharacter(VINewChar *c)
     m_chars[m_charCount].m_face = c->m_face;
     m_chars[m_charCount].m_robe = -1;
     m_chars[m_charCount].m_level = 1;
-    m_wnd2BB88->m_visible = 0;
-    m_wndLogin->m_visible = 1;
-    m_p2BD44 = m_wndLogin;
-    m_wndLogin->m_p428 = m_charCount;
+    m_wndCharCreate->m_visible = 0;
+    m_wndCharSelect->m_visible = 1;
+    m_p2BD44 = m_wndCharSelect;
+    m_wndCharSelect->m_sel = m_charCount;
     SetActiveWindow(m_p2BD44);
-    m_wndLogin->ShowCharacter(models[c->m_sex], c->m_race, c->m_class, c->m_hairColor,
+    m_wndCharSelect->ShowCharacter(race->m_model[c->m_sex], c->m_race, c->m_class, c->m_hairColor,
                               c->m_hairLength, c->m_hairStyle, c->m_face, -1, 0, 0, 0, 0, 0, 0);
     m_charCount++;
-    m_wndLogin->ShowWord(413);
+    m_wndCharSelect->ShowWord(413);
     SendNewChar(43, c);
 }
 
@@ -15834,7 +16399,7 @@ void VIClient::Extrapolate()
         VIVect3 hpr;
         e->SetActorPos(*e->GetPos() + vel);
         hpr = *e->GetHpr() + rot;
-        if (e->Virtual3(130) && ((VICreatureEntity *)e)->m_p255)
+        if (e->IsType(130) && ((VICreatureEntity *)e)->m_p255)
         {
             hpr.y = 0.0f;
             hpr.z = 0.0f;
@@ -16374,7 +16939,7 @@ void VIClient::InviteEntity(int id)
         ShowText((const unsigned short *)ui.m_words.GetString(678, ui.m_language));
         return;
     }
-    if (!e->Virtual3(130))
+    if (!e->IsType(130))
     {
         VIUI &ui = m_ui;
         ShowText((const unsigned short *)ui.m_words.GetString(588, ui.m_language));
@@ -16799,7 +17364,7 @@ void VIClient::TargetCentre()
         pos = e->GetActorPos();
         if (e->m_id == m_selfId || e->m_id == m_petId)
             continue;
-        if (e->Virtual3(130) && ((VICreatureEntity *)e)->m_p256 == 3)
+        if (e->IsType(130) && ((VICreatureEntity *)e)->m_p256 == 3)
             continue;
         VISprite *s = m_scene.GetActorSpritePtr(e->m_actor);
         if (s == 0)
@@ -16933,6 +17498,15 @@ static inline VIVect3 Cross(const VIVect3 &a, const VIVect3 &b)
                    a.x * b.y - a.y * b.x);
 }
 
+// The walk camera's manual move through an INLINE forwarder (VIWalkCamera.h's, presumably):
+// &hpr reaches the out-of-line VICameraEffect::BeginManual as a constant (addiu a2,sp,64 at
+// each call), so gcse's LCM has no occurrence after the switch to make case 3's
+// ConvertToEulerZXY(hpr) address partially redundant (it hoisted sp+64 into a2/s0).
+static inline void BeginManual(VIWalkCamera &cam, const VIVect3 &xyz, const VIVect3 &hpr, float time)
+{
+    cam.m_effect.BeginManual(xyz, hpr, time);
+}
+
 // 0x00BCE270, name provisional: hold the camera at the player's eye -- the race camera's
 // height above the actor -- facing the way the walk camera does (first person and fixed:
 // its own heading; third person: along the camera), the pitch kept short of vertical.
@@ -16979,9 +17553,9 @@ void VIClient::BeginManualCamera()
     }
     hpr.y = VIMIN(VIMAX(-1.5607964f, hpr.y), 1.5607964f);
     if (cam.m_cameraMode)
-        m_walkCam.m_effect.BeginManual(pos, hpr, 0.2f);
+        BeginManual(m_walkCam, pos, hpr, 0.2f);
     else
-        m_walkCam.m_effect.BeginManual(pos, hpr, 0.0f);
+        BeginManual(m_walkCam, pos, hpr, 0.0f);
     m_wndGame->ManualCameraBegun();
 }
 
@@ -17004,9 +17578,9 @@ int VIClient::TargetInRange(int slot)
     VIEntity *me = FindEntity(m_selfId);
     if (me == 0)
         return 0;
-    if (!t->Virtual3(130))
+    if (!t->IsType(130))
         return 0;
-    if (!me->Virtual3(130))
+    if (!me->IsType(130))
         return 0;
     if (((VICreatureEntity *)me)->m_p256 == 2
         && (((VICreatureEntity *)t)->m_p256 == 2 || ((VICreatureEntity *)t)->m_p256 == 3))
@@ -17127,12 +17701,12 @@ void VIClient::AutoAttackTick(VIEntity *me)
         else if (m_inventory.Item(i)->m_equipSlot == 20)
             b20 = 1;
     }
-    VISwing *swing = GetSwing(m_player.m_class, m_player.m_level, b14, b15, b16, b18, b17, b19, b20);
-    unsigned int effect = swing->Effect();
+    int swing = GetSwing(m_player.m_class, m_player.m_level, b14, b15, b16, b18, b17, b19, b20);
+    unsigned int effect = SwingEffect(swing);
     if (effect == 0)
         noEffect = 1;
     else
-        delay = swing->Delay();
+        delay = SwingDelay(swing);
     if (TargetInRange(slot) && !noEffect)
     {
         int idx;
@@ -17220,7 +17794,7 @@ int VIClient::GetShardServer(char *host, unsigned short *port)
     {
         if (m_p4F0B0 == 0)
             return -1;
-        int k = m_random.Range(0, m_p4F0B4);
+        int k = m_random.RandomRange(0, m_p4F0B4);
         strcpy(host, m_p4F0B0[k].m_name);
         *port = m_p4F0B0[k].m_p20;
     }
@@ -17265,8 +17839,8 @@ void VIClient::UpdateCreatures()
         VIEntity *e = m_entities[i];
         if (e == 0)
             continue;
-        e->Virtual9();
-        if (!e->Virtual3(130))
+        e->Refresh();
+        if (!e->IsType(130))
             continue;
         if (e->m_id == m_selfId)
             continue;
@@ -17314,13 +17888,13 @@ void VIClient::Msg00B4(int index, int slot)
         }
     if (i == m_abilities.End())
         return;
-    VIUI &ui = m_ui;
     for (i = m_abilities.Begin(); i != m_abilities.End(); i = m_abilities.Next(i))
         if (m_abilities.Value(i).m_slot == slot && m_abilities.Value(i).m_displayIndex != index)
         {
             m_abilities.Value(i).m_valid = 0;
             m_abilities.Value(i).m_slot = -1;
         }
+    VIUI &ui = m_ui;
     m_abilities.Value(found).m_valid = !m_abilities.Value(found).m_valid;
     m_abilities.Value(found).m_slot = slot;
     unsigned short text[256];
@@ -17528,7 +18102,7 @@ void VIClient::ChannelEntity(int ch, const void *data, int size)
         s.Read(&type, 1, 1);
         if (m_entities[ch])
         {
-            if (m_entities[ch]->Virtual2() != type || m_entities[ch]->m_id != id || !kind)
+            if (m_entities[ch]->GetType() != type || m_entities[ch]->m_id != id || !kind)
             {
                 delete m_entities[ch];
                 m_entities[ch] = 0;
@@ -17543,9 +18117,9 @@ void VIClient::ChannelEntity(int ch, const void *data, int size)
         }
         VIEntity *e = m_entities[ch];
         e->m_id = id;
-        if (e->Virtual3(130))
+        if (e->IsType(130))
             old = ((VICreatureEntity *)e)->m_p218;
-        e->Virtual5(s);
+        e->ReadUpdate(s);
         if (created || e->m_actor == -1)
         {
             m_entVel[ch].Set(0.0f, 0.0f, 0.0f);
@@ -17558,7 +18132,7 @@ void VIClient::ChannelEntity(int ch, const void *data, int size)
             WrapAngles(m_entRot[ch]);
         }
         m_entStamp[ch] = m_p07568 + gEntityUpdateRate * 2;
-        if (e->Virtual3(130))
+        if (e->IsType(130))
         {
             if (((VICreatureEntity *)e)->m_p218 == old)
             {
@@ -17633,10 +18207,15 @@ void VIClient::LoadingProgress(void *client)
 // character customisation, debug art and the extra art (off the memory card when it is
 // there); the battle music; nine o'clock; and every session field back to its start.
 // Prints the time it took.
+// The scene's raster and dictionary through inline accessors (VIScene.h's, presumably): an
+// inline call's result is a pseudo set where the argument is expanded, so the dictionary
+// pointer is loaded BEFORE VIHashResourceID's call (lw s0,19356(s2) in its delay slot).
+static inline VIRaster *SceneRaster(VIScene &s) { return s.m_raster; }
+static inline VIDictionary *SceneDict(VIScene &s) { return s.m_dict; }
 int VIClient::EnterGameLoad()
 {
     VIESFParse parse;
-    VIArray<VIElem_BDF7A0> arr;
+    VIElemList_BDF7A0 arr;
     VICSFFile csf;
     m_worldLoaded = 0;
     switch (VIHasDiscIdChanged())
@@ -17649,61 +18228,61 @@ int VIClient::EnterGameLoad()
         for (;;)
             ;
     }
+    VIRaster &raster = m_raster;
     VIVect3 pos;
     VIVect3 dir(0.0f, 0.0f, 1.0f);
-    if (m_camera.Init(m_raster, pos, dir, 55.0f, 10.0f / 7.0f, 0.1f, 900.0f) < 0)
+    if (m_camera.Init(raster, pos, dir, 55.0f, 10.0f / 7.0f, 0.1f, 900.0f) < 0)
         return -1;
     long t = -VITimer::GetTime();
-    VIScene &scene = m_scene;
     int r;
     char buf[16384];
     VIResourceType type;
     int n;
-    if ((r = csf.Parse("data2\\ui.csf", parse, scene)) != 0)
+    if ((r = csf.Parse("data2\\ui.csf", parse, m_scene)) != 0)
         goto done;
-    m_pC144 = -1;
-    if (!scene.m_dict->Find(VIHashResourceID("Selection_Rings"), type, m_ringsIndex)
-        || !scene.m_dict->Find(VIHashResourceID("Loading_Gears"), type, m_loadSprite))
+    *(unsigned int *)&m_pC144 = 0xFFFFFFFF;
+    if (!SceneDict(m_scene)->Find(VIHashResourceID("Selection_Rings"), type, m_ringsIndex)
+        || !SceneDict(m_scene)->Find(VIHashResourceID("Loading_Gears"), type, m_loadSprite))
     {
         r = -1;
         goto done;
     }
     parse.SetProgressCallback(LoadingProgress, this);
     csf.SetProgressCallback(LoadingProgress, this);
-    if ((r = csf.Parse("data2\\Arial.csf", parse, scene)) != 0)
+    if ((r = csf.Parse("data2\\Arial.csf", parse, m_scene)) != 0)
         goto done;
-    if ((r = csf.Parse("data2\\ArialUI.csf", parse, scene)) != 0)
+    if ((r = csf.Parse("data2\\ArialUI.csf", parse, m_scene)) != 0)
         goto done;
-    if ((r = csf.Parse("data2\\spellFX.csf", parse, scene)) != 0)
+    if ((r = csf.Parse("data2\\spellFX.csf", parse, m_scene)) != 0)
         goto done;
-    if ((r = csf.Parse("data2\\fx.csf", parse, scene)) != 0)
+    if ((r = csf.Parse("data2\\fx.csf", parse, m_scene)) != 0)
         goto done;
-    if ((r = VILightningFxInit(*scene.m_raster, *scene.m_dict)) != 0)
+    if ((r = VILightningFxInit(*SceneRaster(m_scene), *SceneDict(m_scene))) != 0)
         goto done;
-    if ((r = csf.Parse("data2\\sky.csf", parse, scene)) != 0)
+    if ((r = csf.Parse("data2\\sky.csf", parse, m_scene)) != 0)
         goto done;
-    if ((r = scene.SetSky()) != 0)
+    if ((r = m_scene.SetSky()) != 0)
         goto done;
-    if ((r = csf.Parse("data2\\charcust.csf", parse, scene)) != 0)
+    if ((r = csf.Parse("data2\\charcust.csf", parse, m_scene)) != 0)
         goto done;
-    VICSpriteCust::SetResources(m_raster, m_dict);
-    if ((r = csf.Parse("data2\\debug.csf", parse, scene)) != 0)
+    VICSpriteCust::SetResources(raster, m_dict);
+    if ((r = csf.Parse("data2\\debug.csf", parse, m_scene)) != 0)
         goto done;
     n = VIMemCardReadFile("addart.csf", buf, sizeof(buf));
     if (n >= 0)
-        csf.Parse(buf, n, parse, scene);
+        csf.Parse(buf, n, parse, m_scene);
     else
-        csf.Parse("data2\\addart.csf", parse, scene);
-    m_battleMusic.Init(&scene);
+        csf.Parse("data2\\addart.csf", parse, m_scene);
+    m_battleMusic.Init(&m_scene);
     if (!(VIGetFeatureFlags() & 0x100))
         m_battleMusic.Preload(VIGetGameOptions()->m_language);
     t += VITimer::GetTime();
     printf("EnterGame Load: %d ms\n", (int)t);
     m_p00064 = 1;
     m_timeOfDay = 9.0f;
-    scene.SetTimeOfDay(9.0f);
+    m_scene.SetTimeOfDay(9.0f);
     m_p00068 = 0;
-    scene.SetPersonalLightMode((VIPersonalLightMode)0);
+    m_scene.SetPersonalLightMode((VIPersonalLightMode)0);
     m_p06DC0 = 1;
     m_p06DC4 = 1;
     m_p06DC8 = 0;
@@ -17727,13 +18306,13 @@ int VIClient::EnterGameLoad()
     m_p4EC58.ResetP41C();
     m_p2BB10 = 0xFFFFFFFF;
     m_p2EF24.Reset();
-    m_p2BB48 = 0;
     m_p2BB40 = 0;
+    m_p2BB48 = 0;
     m_p00080 = 0;
     m_p4F0B8[0] = 0;
-    if ((r = m_p4FD28.Init(scene, m_entities, 24)) < 0)
+    if ((r = m_p4FD28.Init(m_scene, m_entities, 24)) < 0)
         goto done;
-    LoadTargetEffect(scene);
+    LoadTargetEffect(m_scene);
     m_reticleTex = -1;
     m_p50308 = 0;
     m_worldLoaded = 1;
@@ -17804,6 +18383,7 @@ void VIClient::CycleTarget(int group)
         for (int i = 0; i < 24; i++)
         {
             VIVect3 pos;
+            const VIVect3 &cd = m_camera.m_dir;
             VIEntity *e = m_entities[i];
             if (e == 0 || e->m_actor == -1)
                 continue;
@@ -17820,17 +18400,18 @@ void VIClient::CycleTarget(int group)
                 }
             if (inGroup || isSelf || isPet)
                 continue;
-            if (e->Virtual3(130))
+            if (e->IsType(130))
             {
                 if (((VICreatureEntity *)e)->m_p256 == 3)
                     continue;
                 dead = ((VICreatureEntity *)e)->m_state == 14;
             }
             int near = 0;
-            if (DistSq(pos, m_camera.m_position) < 15.0f)
+            const VIVect3 &cp = m_camera.m_position;
+            if (DistSq(pos, cp) < 15.0f)
             {
-                VIVect3 a(pos.x - m_camera.m_position.x, 0.0f, pos.z - m_camera.m_position.z);
-                VIVect3 b = Flat(m_camera.m_dir);
+                VIVect3 a(pos.x - cp.x, 0.0f, pos.z - cp.z);
+                VIVect3 b = Flat(cd);
                 a.Normalize();
                 b.Normalize();
                 if (a.x * b.x + a.y * b.y + a.z * b.z > 0.65f)
@@ -17838,30 +18419,29 @@ void VIClient::CycleTarget(int group)
             }
             if (!near && m_camera.m_frustum.Cull(pos, 0.0f))
                 continue;
-            if (!(e->m_p18 & 1))
-                continue;
-            VIVect3 t[2];
-            VIVect4 h;
-            t[0] = pos;
-            h = VIVect4(pos.x, pos.y, pos.z, 1.0f) * vp;
-            float d2 = DistSq(pos, m_camera.m_position);
-            v[0] = h;
-            float inv = 1.0f / h.w;
-            t[0].x = h.x * inv;
-            t[0].y = h.y * inv;
-            t[0].z = 0.0f;
-            if (d2 < 40000.0f)
+            if (e->m_p18 & 1)
             {
-                float s;
-                if (near)
-                    s = t[0].z;
-                else if (d2 < 25.0f)
-                    s = sqrtf(d2) / 50.0f * 0.35f;
-                else
-                    s = sqrtf(d2) / 50.0f * 0.35f + t[0].x * t[0].x;
-                cand[n].score = s + (dead ? 2.0f : 0.0f);
-                cand[n].key = (unsigned int)e;
-                n++;
+                VIVect3 t[2];
+                t[0] = pos;
+                VIVect4 h = VIVect4(pos.x, pos.y, pos.z, 1.0f) * vp;
+                float d2 = DistSq(pos, m_camera.m_position);
+                v[0].Set(h);
+                float inv = 1.0f / h.w;
+                t[0].x = h.x * inv;
+                t[0].y = h.y * inv;
+                t[0].z = 0.0f;
+                if (d2 < 40000.0f)
+                {
+                    if (near)
+                        d2 = t[0].z;
+                    else if (d2 < 25.0f)
+                        d2 = sqrtf(d2) / 50.0f * 0.35f;
+                    else
+                        d2 = sqrtf(d2) / 50.0f * 0.35f + t[0].x * t[0].x;
+                    cand[n].score = d2 + (dead ? 2.0f : 0.0f);
+                    cand[n].key = (unsigned int)e;
+                    n++;
+                }
             }
         }
     }
@@ -17898,3 +18478,7 @@ pick:
     SendOpIntInt(16, m_p2BB68, m_target);
     lastGroup = group;
 }
+
+// VIClient.cpp's out-of-line copy of the inline VIJournal::Read(T *, int), 0x00BE3680: InitBody
+// (vicscratch.cpp) calls it, the way the original's InitBody did before the body was seen.
+template void VIJournal::Read<char>(char *, int);
