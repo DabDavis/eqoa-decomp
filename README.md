@@ -36,6 +36,16 @@ decomp goes ahead.
 | `eqperm_mut.py` | its mutations, on tree-sitter's C++ syntax tree: statement order, temporaries and named references, declaration position and scope, if/else polarity, operand order, `+=` forms, `&a[i]` vs `a + i` |
 | `eqmodule.py` | the modules that do not name their own functions (MCERR first): `seed` sweeps the image into a symbol map for the repository, `status` counts named and byte-exact, `imports` lists the import table, `sweepcheck` holds the sweep against SUPPORT's real map. See "Other modules" below |
 
+## The VU1 microcode: `vu/` (2026-10-17)
+
+The game's two VU1 microprograms (raster, 2,029 instruction pairs; billboard, 205) are in
+`vu/src/*.vsm` and assemble back **byte for byte** (`vu/vudis.py check`). `vu/vusim.py` is a VU1
+simulator that matches PCSX2 bit for bit on 22,591 captured launches. **Every reachable routine is
+read** as plain Python and checked against it: the strip and fan programs (`spec_strip.py`), the
+per-material-layer packet routines (`spec_layer.py`), the clipper (`spec_clip.py`) and the weather
+billboards (`spec_billboard.py`). The captures are not in this repository. `vu/README.md` has
+the data map, the method and what each capture covered.
+
 ## Running it outside this project tree
 
 This directory is also published on its own, as
