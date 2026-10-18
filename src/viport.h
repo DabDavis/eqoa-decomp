@@ -127,6 +127,17 @@ int inflateReset2(struct z_stream_s *strm, int windowBits);
 // REFs): the surface's own bytes, the same until it is locked, unlocked or
 // freed, which VISurface reports with vi_port_surface_changed(data, size).
 #define VI_DMA_STATIC_TEX(id) ((id) | 8)
+// The DrawPrimBuffer hook (the port's modules/hook_port.cpp): UploadMatrices
+// and UploadPerMaterial report the uniform qwords they built, and each prim
+// buffer material run reports itself after AddMaterial, which may add a
+// marker tag to the chain.
+#ifdef __cplusplus
+class VIRaster;
+class VIPrimBuffer;
+struct _sceDmaTag;
+void vi_port_hook_run(VIRaster *r, VIPrimBuffer *pb, int run, int mat, _sceDmaTag **tag);
+extern "C" void vi_port_hook_uniforms(const void *qw, int first, int n);
+#endif
 #ifdef __cplusplus
 extern "C" void vi_port_surface_changed(const void *p, int size);
 #else

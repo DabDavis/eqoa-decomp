@@ -1828,7 +1828,7 @@ int VIRaster::UploadPerMaterial(_sceDmaTag **tag)
     ((unsigned int *)base)[12] = 0;
     ((unsigned int *)q)[3] = mscal;
     ((unsigned int *)q)[2] = 0;
-    ((unsigned int *)q)[1] = 0;
+    ((unsigned int *)q)[1] = 0; VI_HOST_ONLY(vi_port_hook_uniforms(base + 32, 17, 1);)
     return 0;
 }
 
@@ -2756,7 +2756,7 @@ int VIRaster::UploadMatrices(_sceDmaTag **tag)
     ((unsigned int *)p)[1] = 0;
     ((unsigned int *)p)[2] = 0;
     ((unsigned int *)p)[0] = 0;
-    m_dirtyLights = 0;
+    m_dirtyLights = 0; VI_HOST_ONLY(vi_port_hook_uniforms(base + 32, 0, 21);)
     *(unsigned char *)VI_SPR(0x70000224) = 0;
     *(unsigned char *)VI_SPR(0x70000225) = 0;
     *(unsigned char *)VI_SPR(0x70000226) = 0;
@@ -3072,7 +3072,7 @@ int VIRaster::DrawPrimBufferVUNC(int prim, int pal, unsigned int flags)
             r = 1;
         if (ds ? (flags & 1) : (flags & 2))
         {
-            AddMaterial(mat, &m_dmaTag);
+            AddMaterial(mat, &m_dmaTag); VI_HOST_ONLY(vi_port_hook_run(this, pb, i, mat, &m_dmaTag);)
             int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
             int qwc = pb->m_materials[i].m_numVerts;
             m_dmaTag->m_id = VI_DMA_STATIC(48);
@@ -3122,7 +3122,7 @@ int VIRaster::DrawPrimBufferPackVUNC(int prim, int pal, unsigned int flags)
             r = 1;
         if (ds ? (flags & 1) : (flags & 2))
         {
-            AddMaterial(mat, &m_dmaTag);
+            AddMaterial(mat, &m_dmaTag); VI_HOST_ONLY(vi_port_hook_run(this, pb, i, mat, &m_dmaTag);)
             int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
             int qwc = pb->m_materials[i].m_numVerts;
             m_dmaTag->m_id = VI_DMA_STATIC(48);
@@ -3155,7 +3155,7 @@ int VIRaster::DrawPrimBufferPackVUNCG(int prim, int pal, unsigned int flags)
             r = 1;
         if (ds ? (flags & 1) : (flags & 2))
         {
-            AddMaterial(mat, &m_dmaTag);
+            AddMaterial(mat, &m_dmaTag); VI_HOST_ONLY(vi_port_hook_run(this, pb, i, mat, &m_dmaTag);)
             int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
             int qwc = pb->m_materials[i].m_numVerts;
             m_dmaTag->m_id = VI_DMA_STATIC(48);
@@ -3435,7 +3435,7 @@ int VIRaster::DrawPrimBufferPackVUNBW(int prim, int pal, unsigned int flags)
             r = 1;
         if (ds ? (flags & 1) : (flags & 2))
         {
-            AddMaterial(mat, &m_dmaTag);
+            AddMaterial(mat, &m_dmaTag); VI_HOST_ONLY(vi_port_hook_run(this, pb, i, mat, &m_dmaTag);)
             int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
             int qwc = pb->m_materials[i].m_numVerts;
             m_dmaTag->m_id = VI_DMA_STATIC(48);
@@ -3467,7 +3467,7 @@ int VIRaster::DrawPrimBufferPackVU(int prim, int pal, float f, unsigned int flag
             r = 1;
         if (ds ? (flags & 1) : (flags & 2))
         {
-            AddMaterial(mat, &m_dmaTag);
+            AddMaterial(mat, &m_dmaTag); VI_HOST_ONLY(vi_port_hook_run(this, pb, i, mat, &m_dmaTag);)
             int addr = (pb->m_materials[i].m_firstVert << 4) + (int)pb->m_verts;
             int qwc = pb->m_materials[i].m_numVerts;
             m_dmaTag->m_id = VI_DMA_STATIC(48);
@@ -3519,7 +3519,7 @@ int VIRaster::DrawPrimBufferPackVUNC(int prim, int cbi, int pal,
             r = 1;
         if (ds ? (flags & 1) : (flags & 2))
         {
-            AddMaterial(mat, &m_dmaTag);
+            AddMaterial(mat, &m_dmaTag); VI_HOST_ONLY(vi_port_hook_run(this, pb, i, mat, &m_dmaTag);)
             int addr = (((int *)(cb->m_headers + i * 8))[1] << 4) + (int)cb->m_verts;
             m_dmaTag->m_id = VI_DMA_STATIC(80);
             m_dmaTag->m_addr = addr;
