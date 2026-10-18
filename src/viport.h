@@ -116,6 +116,29 @@ int inflateReset2(struct z_stream_s *strm, int windowBits);
 #endif
 #define VI_ZLIB_RAW(s) inflateReset2(&(s), -15)
 
+// A DMA tag whose data is a prim buffer's or a colour buffer's: built once and
+// the same bytes every frame until the buffer is released or rebuilt.  The
+// port (platform/vif1.c) keeps what such data does to VIF1 and VU1 and does
+// not re-send it; the tag says so with PCE (bits 26-27, which the EE's DMAC
+// ignores on channel 1 with PCE off in D_CTRL, and the port never reads).
+// vi_port_static_dma_changed(): a buffer was released or is being rebuilt.
+#define VI_DMA_STATIC(id) ((id) | 4)
+
+// VIClient::Process's frame cap: it spins until this many VITimer ticks
+// (983.04 Hz, so 20 is 20.3 ms) have passed since the frame began.  The port
+// can lower it (VI_FRAME_TICKS, platform/kernel.c) to run the game uncapped.
+#ifdef __cplusplus
+extern "C" int vi_port_frame_ticks(int ticks);
+#else
+int vi_port_frame_ticks(int ticks);
+#endif
+#define VI_FRAME_TICKS(n) vi_port_frame_ticks(n)
+#ifdef __cplusplus
+extern "C" void vi_port_static_dma_changed(void);
+#else
+void vi_port_static_dma_changed(void);
+#endif
+
 #else  // the PS2 build: the original tokens
 
 #define VI_VA_LIST            char *
@@ -133,6 +156,8 @@ int inflateReset2(struct z_stream_s *strm, int windowBits);
 #define VI_UNCACHED(a) (a | 0x20000000)
 #define VI_QUAD long long
 #define VI_ZLIB_RAW(s) *(int *)s.state = 7
+#define VI_DMA_STATIC(id) id
+#define VI_FRAME_TICKS(n) n
 
 #endif
 

@@ -75,7 +75,7 @@ int VIColorBuffer::Lock(VIRaster &r)
     if (m_locked)
         return -1;
 
-    m_locked = 1;
+    m_locked = 1; VI_HOST_ONLY(vi_port_static_dma_changed();)
     pBuildSource = r.PrimBuffer(m_primBuffer);
     pBuildDMATag = (unsigned int *)(m_verts + m_vertCursor * 16);
     BuildVQSource = 0;

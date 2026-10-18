@@ -3125,7 +3125,7 @@ void VIClient::Process()
         now = VITimer::GetTime();
         elapsed = now - start;
     }
-    while (elapsed < 20);
+    while (elapsed < VI_FRAME_TICKS(20));
     if (m_p2BD44 == m_wndGame)
     {
         VIGameOptions *o = VIGetGameOptions();
