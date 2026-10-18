@@ -44,6 +44,13 @@ long ftell(FILE *);
 int remove(const char *);
 int rename(const char *, const char *);
 void perror(const char *);
+#if VI_PORT
+/* the offset is a `long`: 8 bytes in the tree, 4 in the host's -m32 libc */
+int vi_fseek(FILE *, long, int);
+long vi_ftell(FILE *);
+#define fseek vi_fseek
+#define ftell vi_ftell
+#endif
 #ifdef __cplusplus
 }
 #endif

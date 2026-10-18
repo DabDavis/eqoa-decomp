@@ -245,7 +245,7 @@ int Http_get::http_uncompress(Bytef *dest, uLongf *destLen, const Bytef *source,
     stream.zfree = (free_func)0;
 
     err = inflateInit(&stream);
-    *(int *)stream.state = 7;
+    VI_ZLIB_RAW(stream);
     if (err != Z_OK)
         return err;
 

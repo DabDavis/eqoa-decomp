@@ -97,6 +97,25 @@ void vi_port_text16(const unsigned short *s, int max);
 // heap has no mirror: the address itself.
 #define VI_UNCACHED(a) (a)
 
+// `long long` is a 128-bit quadword on the EE (lq/sq): SETUP's RunPatcher copies
+// a whole 16-byte sceDNAS2Status through one.  abi.h's `long` cannot take a
+// second `long`, so the host copies a 16-byte struct.
+typedef struct { unsigned int w[4]; } vi_quad;
+#define VI_QUAD vi_quad
+
+// SETUP's Http_get::http_uncompress inflates a gzip body's raw deflate stream
+// by poking zlib 1.1.4's private inflate state: mode (its first word) = 7,
+// BLOCKS, right after inflateInit.  The host's zlib keeps a different state
+// (the mode is not first, and BLOCKS is not 7); its public way to the same
+// thing is inflateReset2 with negative window bits.
+struct z_stream_s;
+#ifdef __cplusplus
+extern "C" int inflateReset2(struct z_stream_s *strm, int windowBits);
+#else
+int inflateReset2(struct z_stream_s *strm, int windowBits);
+#endif
+#define VI_ZLIB_RAW(s) inflateReset2(&(s), -15)
+
 #else  // the PS2 build: the original tokens
 
 #define VI_VA_LIST            char *
@@ -112,6 +131,8 @@ void vi_port_text16(const unsigned short *s, int max);
 #define VI_EE_ASM(s) __asm__ __volatile__ (s)
 #define VI_MALLINFO mallinfo
 #define VI_UNCACHED(a) (a | 0x20000000)
+#define VI_QUAD long long
+#define VI_ZLIB_RAW(s) *(int *)s.state = 7
 
 #endif
 

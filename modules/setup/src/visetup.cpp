@@ -431,7 +431,7 @@ int VISetup::RunPatcher()
             MainLoop();
             if (memcmp(&last, &status, sizeof(status)))
             {
-                *(long long *)&last = *(long long *)&status;
+                *(VI_QUAD *)&last = *(VI_QUAD *)&status;
                 start = VITimer::GetTime();
                 if (status.code == 6 && (status.sub_code == -105 || status.sub_code == -101))
                 {
