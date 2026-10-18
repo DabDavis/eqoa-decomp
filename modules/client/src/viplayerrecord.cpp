@@ -5,7 +5,7 @@
 // the image.  The file name is provisional (the original falls between VIFileStream.cpp
 // and VIJournal.cpp); the record names are ours (cl_tail.h).
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" void *memcpy(void *, const void *, unsigned int);)  // gcc 2.95: implicit
 // 0x00CB7510 .. 0x00CB7688: the compare pairs, `m_key < k` then `m_key > k`.
 bool VIRecKey_CB7510::operator<(const int &k) const { return m_key < k; }
 bool VIRecKey_CB7510::operator>(const int &k) const { return m_key > k; }

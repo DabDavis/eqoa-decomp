@@ -47,7 +47,7 @@ template <class T> void VI_vsnprintf(T *dst, int dstCount, const T *fmt, char *a
 
 // Every vararg occupies one 8-byte slot on this EABI; the target reads it back
 // with `addiu ap,ap,8` and a load at -8 and nothing else.
-#define va_arg(ap, T)  (*(T *)(((ap) += 8) - 8))
+#define va_arg(ap, T)  VI_VA_ARG(ap, T)
 
 // gcc 2.95's own va-mips.h, reconstructed: SETUP_INCOMING_VARARGS for the EABI
 // (config/mips/abi64.h) puts the register save block BELOW
@@ -56,9 +56,9 @@ template <class T> void VI_vsnprintf(T *dst, int dstCount, const T *fmt, char *a
 // too high -- past the whole save area -- and the three snprintf wrappers are
 // one instruction wrong.  __builtin_args_info(2) is CUM.arg_words and folds at
 // compile time, so va_start stays a single addiu.
-typedef char *va_list;
+typedef VI_VA_LIST va_list;
 #define va_start(ap, last) \
-    ((ap) = (char *)__builtin_next_arg(last) - (8 - __builtin_args_info(2)) * 8)
+    VI_VA_START(ap, last)
 
 unsigned short VIString::ConversionTable1252[32];
 static int ConversionTable1252Count;

@@ -9,9 +9,9 @@
 // functions below are in the original's order and an asserting function has
 // to sit on its original line.  Functions without an assert can go anywhere.
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" unsigned int strlen(const char *); extern "C" char *strcpy(char *, const char *); extern "C" void *memcpy(void *, const void *, unsigned int);)  // gcc 2.95: implicit
 // The layout game.h declares, checked here so a wrong offset fails the build.
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #define OFF(m)     ((int)&((VIClient *)0)->m)
 CHK(c_ui,       OFF(m_ui)       == 0x4)
 CHK(c_language, OFF(m_ui.m_language) == 0x34)

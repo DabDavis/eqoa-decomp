@@ -8,9 +8,9 @@
 // does nothing.
 #include "drdp.h"
 
-typedef char *va_list;
+typedef VI_VA_LIST va_list;
 #define va_start(ap, last) \
-    ((ap) = (char *)__builtin_next_arg(last) - (8 - __builtin_args_info(2)) * 8)
+    VI_VA_START(ap, last)
 
 extern "C" int vprintf(const char *, va_list);
 

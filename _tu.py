@@ -31,7 +31,7 @@ def main():
     if not asm.exists():
         print("BUILD FAILED (compile)\n" + r.stderr); return 2
     for _ in range(2):
-        r = subprocess.run(["wine", str(C.ASSEMBLER), "-o", str(o), str(asm)],
+        r = subprocess.run(C.assemble_cmd(asm, o),
                            capture_output=True, text=True, cwd=C.BUILD)
         if o.exists(): break
     if not o.exists():

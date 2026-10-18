@@ -151,6 +151,9 @@ int VIVect4::Normalize()
     if (d != 0.0f)
     {
         float r = 1.0f / sqrtf(d);
+#if VI_PORT
+        x = x * r; y = y * r; z = z * r; w = w * r;
+#else
         __asm__ __volatile__(
             "lqc2 $vf4, 0x0(%0)\n"
             "mfc1 $t0, %1\n"
@@ -158,6 +161,7 @@ int VIVect4::Normalize()
             "vmulx.xyzw $vf6, $vf4, $vf5x\n"
             "sqc2 $vf6, 0x0(%0)\n"
             : : "r"(this), "f"(r) : "$8");
+#endif
         return 1;
     }
     return 0;

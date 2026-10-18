@@ -11,11 +11,11 @@
 #ifndef CL_WQ_H
 #define CL_WQ_H
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 
 // VIWndQuestLog: ctor 0x00C860D0, 496 bytes (`new`), vtable 0x00CEE500;

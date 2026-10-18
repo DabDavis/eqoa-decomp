@@ -4,7 +4,7 @@
 // byte and its fields.  No asserts, so no #line: the original file name is unknown.
 // The TU ends with its template copies (VIMap<int, 4>, VIArray<8>) and VIItemList::Item.
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" unsigned int strlen(const char *);)  // gcc 2.95: implicit
 // 0x00BB4A80
 VIMemStream &operator<<(VIMemStream &s, const VIAuctionQuery &q)
 {

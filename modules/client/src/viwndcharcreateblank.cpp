@@ -3,7 +3,7 @@
 // form (VIClient+0x2BB88) and the five pages it walks through.  The pages are
 // cl_wc.h's (race, misc, name, review) and cl_wb.h's (class).
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" void *memcpy(void *, const void *, unsigned int);)  // gcc 2.95: implicit
 // 0x00C22C18.
 VIWndCharCreateBlank::VIWndCharCreateBlank()
 {

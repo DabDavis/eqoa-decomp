@@ -101,6 +101,9 @@ class Module:
     image: Path
     symbols: Path
     base: int
+    # "ee" for the SNR1 modules; "iop" for an IRX, whose image is synthesised
+    # from the .IRX on load (`irx_image`) and which builds with the IOP toolchain
+    cpu: str = "ee"
 
 
 def _p(rel: str) -> Path:
@@ -148,6 +151,19 @@ MODULES = {
         image=_p("claude-eqoa-iso/decrypted_modules/SETUP_decompressed_SNR1.bin"),
         symbols=HERE / "modules/setup/symbols.txt",
         base=0x00566B00,
+    ),
+    # The IOP sound driver, MODULES2\\SNDDRV.IRX off the Frontiers disc, untouched.
+    # An IRX is not an SNR1 image: `irx_image` lays its sections out at their
+    # link addresses behind a 0x40-byte header carrying an SNR1-shaped
+    # relocation table, so every tool reads it like the others.  The base puts
+    # the module's address 0 at 0x000AAA30, where a running game holds it
+    # (gSndStatus[0] = 0xBBCC8 is its 0x11298 relocated, in the in-world dump).
+    "SNDDRV": Module(
+        name="SNDDRV",
+        image=_p("claude-eqoa-iso/decrypted_modules/SNDDRV.IRX"),
+        symbols=HERE / "modules/snddrv/symbols.txt",
+        base=0x000AAA30 - 0x40,
+        cpu="iop",
     ),
 }
 
@@ -582,6 +598,8 @@ class Image:
     def __init__(self, module: Module):
         self.module = module
         self.data = module.image.read_bytes()
+        if module.cpu == "iop":
+            self.data = irx_image(self.data)
         self.base = module.base
 
     def covers(self, addr: int, length: int) -> bool:
@@ -806,6 +824,69 @@ def module_relocations(data: bytes) -> list[tuple[int, int, int, int]]:
         site, info, target = struct.unpack_from("<III", data, table + 12 * i)
         out.append((site, info & 0xFF, info >> 8, target))
     return out
+
+
+IRX_HEADER = 0x40
+
+
+def irx_image(irx: bytes) -> bytes:
+    """An IOP module (.IRX, a MIPS ELF of type 0xFF80 with no symbols) as an
+    SNR1-shaped image: a 0x40-byte header, then .text/.rodata/.data/.sdata at
+    their link addresses (.sbss/.bss as zeros), then the relocation table.
+
+    The header has the two words the tools read -- +0x04/+0x08 the relocation
+    table and its count, +0x0C/+0x10 an empty symbol table (an IRX imports by
+    STUB, `jr ra; addiu zero,zero,N` after a 0x41E00000 table head, so its calls
+    to a library are local `jal`s) -- and each ELF relocation becomes one
+    (site, type, 0, target) entry with the full target address: a HI16 takes the
+    value its LO16 completes, as loadcore pairs them.  The image keeps the
+    file's own un-relocated words."""
+    shoff, = struct.unpack_from("<I", irx, 0x20)
+    shnum, shstrndx = struct.unpack_from("<HH", irx, 0x30)
+    sh = [struct.unpack_from("<10I", irx, shoff + 40 * i) for i in range(shnum)]
+    names = sh[shstrndx][4]
+    secs = []
+    for n, typ, _f, addr, off, size, _l, info, _a, _e in sh:
+        name = irx[names + n:irx.index(b"\0", names + n)].decode()
+        secs.append((name, typ, addr, off, size, info))
+    load = {".text", ".rodata", ".data", ".sdata", ".sbss", ".bss"}
+    top = max(a + z for nm, _t, a, _o, z, _i in secs if nm in load)
+    H = IRX_HEADER
+    img = bytearray(H + ((top + 15) & ~15))
+    for nm, typ, a, o, z, _i in secs:
+        if nm in load and typ != 8:                       # NOBITS stays zero
+            img[H + a:H + a + z] = irx[o:o + z]
+    rel = []
+    for nm, typ, a, o, z, info in secs:
+        if typ != 9:                                      # SHT_REL
+            continue
+        base = 0                          # an IRX r_offset is a MODULE address (.rel.rodata too)
+        hi = []
+        for k in range(z // 8):
+            off, inf = struct.unpack_from("<II", irx, o + 8 * k)
+            site, kind = base + off, inf & 0xFF
+            w, = struct.unpack_from("<I", img, H + site)
+            if kind == R_WORD:
+                rel.append((site, kind, w))
+            elif kind == R_JAL:
+                rel.append((site, kind, (w & 0x03FFFFFF) << 2))
+            elif kind == R_HI16:
+                hi.append(site)
+            elif kind == R_LO16:
+                lo, = struct.unpack_from("<h", img, H + site)
+                if not hi:
+                    raise ValueError(f"IRX: LO16 at {site:#x} with no HI16 before it")
+                hw, = struct.unpack_from("<I", img, H + hi[-1])
+                val = (((hw & 0xFFFF) << 16) + lo) & 0xFFFFFFFF
+                rel += [(h, R_HI16, val) for h in hi] + [(site, kind, val)]
+                hi = []
+            else:
+                raise ValueError(f"IRX: relocation type {kind} at {site:#x}")
+    table = len(img)
+    for site, kind, val in sorted(rel):
+        img += struct.pack("<III", H + site, kind, H + val)
+    struct.pack_into("<IIIII", img, 0, 0x31585249, table, len(rel), table, 0)   # 'IRX1'
+    return bytes(img)
 
 
 def _cstr(data: bytes, off: int) -> str:

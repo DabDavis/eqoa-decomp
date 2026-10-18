@@ -11,7 +11,7 @@
 // -- set on the way in by whichever entry point was called and cleared again
 // on the way out.
 #include "vi.h"
-
+VI_HOST_ONLY(extern "C" void *memcpy(void *, const void *, unsigned int);)  // gcc 2.95: implicit
 VIESFParse::VIESFParse()
 {
     m_permResource = 1;

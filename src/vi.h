@@ -4,6 +4,8 @@
 #ifndef VI_H
 #define VI_H
 
+#include "viport.h"   // VI_PORT: the native build's switches
+
 extern "C" float sinf(float);
 extern "C" float acosf(float);
 extern "C" float asinf(float);
@@ -221,6 +223,9 @@ public:
     // words in line.
     VIMatrix44()
     {
+#if VI_PORT
+        __builtin_memset(m, 0, sizeof(m));
+#else
         __asm__ __volatile__(
             "vsub.xyzw $vf4, $vf0, $vf0\n"
             "sqc2 $vf4, 0x30(%0)\n"
@@ -228,6 +233,7 @@ public:
             "sqc2 $vf4, 0x10(%0)\n"
             "sqc2 $vf4, 0x0(%0)\n"
             : : "r"(m));
+#endif
     }
 
     // VU0 macro mode, and defined IN the class body: VIQuat::ConvertTo inlines
@@ -235,6 +241,9 @@ public:
     // out-of-line copy at 0x003F01D0.
     void Zero()
     {
+#if VI_PORT
+        __builtin_memset(m, 0, sizeof(m));
+#else
         __asm__ __volatile__(
             "vsub.xyzw $vf4, $vf0, $vf0\n"
             "sqc2 $vf4, 0x30(%0)\n"
@@ -242,6 +251,7 @@ public:
             "sqc2 $vf4, 0x10(%0)\n"
             "sqc2 $vf4, 0x0(%0)\n"
             : : "r"(m));
+#endif
     }
     VIMatrix44(const VIMatrix44 &a);
     VIMatrix44 &operator=(const VIMatrix44 &a);
@@ -2887,8 +2897,8 @@ public:
 
     VIPool<VIParticleMotif *> m_motifs;      // +0x2D4
     BLENDMODE                 m_blendMode;   // +0x2EC
-    bool                      m_zWrite;      // +0x2F0
-    bool                      m_zTest;       // +0x2F4
+    VI_BOOL4                  m_zWrite;      // +0x2F0
+    VI_BOOL4                  m_zTest;       // +0x2F4
     int                       m_texConfig;   // +0x2F8
 };
 
@@ -5603,6 +5613,10 @@ public:
     // ReleaseRefMap, which is what names it.
     int        m_refMap;         // +0x180  -1
     int        m_defaultAnim;    // +0x184  -1  (GetDefaultAnim)
+    // The host ABI (Itanium) puts a derived class's data in a non-POD base's tail
+    // padding; gcc 2.95 did not, so VICSprite's data starts at +0x190 only if the
+    // host's VIHSprite has no tail to reuse.
+    VI_HOST_ONLY(char m_portTail[8];)
 };
 
 class VITrailFx;
@@ -7858,6 +7872,7 @@ public:
     VIColor32F m_colors[4];      // +0x130
     long       m_pulseTime;      // +0x170
     int        m_x178;           // +0x178
+    VI_HOST_ONLY(int m_portTail;)  // no Itanium tail-padding reuse: VIUITextScroll at +0x180
 
     VIUIWindow();
     ~VIUIWindow();
@@ -9124,7 +9139,7 @@ public:
     float              m_p22C;           // +0x22C
 };
 
-#define VIRASTER_SPR ((VIRasterSPR *)0x70000000)
+#define VIRASTER_SPR ((VIRasterSPR *)VI_SPR(0x70000000))
 
 // The tessellator, VIRaster's biggest member by far: 17,480 bytes at +0x40.
 // Phase 61 read the layout off its own seven functions: a fixed 16-node BSP of

@@ -10,7 +10,7 @@
 //   VIWndCSRequest             0x00C3E860..0x00C41A48
 #ifndef CL_WD_H
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 #define CL_WD_H
 

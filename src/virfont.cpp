@@ -537,7 +537,7 @@ int VIRFont::Cache(VIRaster &r, const char *s, int max, int *out)
     int           n;
     int           locked = 0;
 
-    n = 0;
+    n = 0; VI_HOST_ONLY(vi_port_text8(s, max);)  // the port's screen text
 
     VISurface *surf = r.Surface(m_surface);
     float invW = 1.0f / (float)surf->m_width;
@@ -627,7 +627,7 @@ int VIRFont::Cache(VIRaster &r, const unsigned short *s, int max, int *out)
     int           n;
     int           locked = 0;
 
-    n = 0;
+    n = 0; VI_HOST_ONLY(vi_port_text16(s, max);)  // the port's screen text
 
     VISurface *surf = r.Surface(m_surface);
     float invW = 1.0f / (float)surf->m_width;

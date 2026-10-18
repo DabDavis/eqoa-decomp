@@ -8,6 +8,9 @@
 // copy the walker took v0 and `this` stayed in a0, 19 words wrong).
 VIMatrix44::VIMatrix44(const VIMatrix44 &a)
 {
+#if VI_PORT
+    __builtin_memcpy(m, a.m, sizeof(m));
+#else
     __asm__ __volatile__(
         "lq $6, 0x0(%1)\n"
         "lq $7, 0x10(%1)\n"
@@ -18,6 +21,7 @@ VIMatrix44::VIMatrix44(const VIMatrix44 &a)
         "sq $8, 0x20(%0)\n"
         "sq $9, 0x30(%0)\n"
         : : "r"(m), "r"(a.m) : "$6", "$7", "$8", "$9");
+#endif
 }
 
 void VIMatrix44::Scale(float s)
@@ -686,6 +690,10 @@ extern "C" void sceVu0ApplyMatrix(VIVect4 &out, const VIMatrix44 &m,
 // sceVu0ScaleVector: out = in * t.
 static inline void ScaleVector(VIVect4 &out, const VIVect4 &in, float t)
 {
+#if VI_PORT
+    float x = in.x * t, y = in.y * t, z = in.z * t, w = in.w * t;
+    out.x = x; out.y = y; out.z = z; out.w = w;
+#else
     __asm__ __volatile__(
         "lqc2 $vf4, 0x0(%1)\n"
         "mfc1 $t0, %2\n"
@@ -693,11 +701,16 @@ static inline void ScaleVector(VIVect4 &out, const VIVect4 &in, float t)
         "vmulx.xyzw $vf6, $vf4, $vf5x\n"
         "sqc2 $vf6, 0x0(%0)\n"
         : : "r"(&out), "r"(&in), "f"(t) : "$8", "memory");
+#endif
 }
 
 // acc += row * t.
 static inline void AddScaledVector(VIVect4 &acc, const VIVect4 &row, float t)
 {
+#if VI_PORT
+    float x = row.x * t, y = row.y * t, z = row.z * t, w = row.w * t;
+    acc.x = acc.x + x; acc.y = acc.y + y; acc.z = acc.z + z; acc.w = acc.w + w;
+#else
     __asm__ __volatile__(
         "lqc2 $vf3, 0x0(%0)\n"
         "lqc2 $vf4, 0x0(%1)\n"
@@ -707,12 +720,22 @@ static inline void AddScaledVector(VIVect4 &acc, const VIVect4 &row, float t)
         "vadd.xyzw $vf3, $vf3, $vf6\n"
         "sqc2 $vf3, 0x0(%0)\n"
         : : "r"(&acc), "r"(&row), "f"(t) : "$8", "memory");
+#endif
 }
 
 // sceVu0ApplyMatrix's body: out = in * m, row vectors.
 static inline void ApplyMatrix(VIVect4 &out, const VIMatrix44 &m,
                                const VIVect4 &in)
 {
+#if VI_PORT
+    const VIVect4 &r0 = m.m[0], &r1 = m.m[1], &r2 = m.m[2], &r3 = m.m[3];
+    float vx = in.x, vy = in.y, vz = in.z, vw = in.w;
+    float x = ((r0.x * vx + r1.x * vy) + r2.x * vz) + r3.x * vw;
+    float y = ((r0.y * vx + r1.y * vy) + r2.y * vz) + r3.y * vw;
+    float z = ((r0.z * vx + r1.z * vy) + r2.z * vz) + r3.z * vw;
+    float w = ((r0.w * vx + r1.w * vy) + r2.w * vz) + r3.w * vw;
+    out.x = x; out.y = y; out.z = z; out.w = w;
+#else
     __asm__ __volatile__(
         "lqc2 $vf4, 0x0(%1)\n"
         "lqc2 $vf5, 0x10(%1)\n"
@@ -725,6 +748,7 @@ static inline void ApplyMatrix(VIVect4 &out, const VIMatrix44 &m,
         "vmaddw.xyzw $vf9, $vf7, $vf8w\n"
         "sqc2 $vf9, 0x0(%0)\n"
         : : "r"(&out), "r"(&m), "r"(&in) : "memory");
+#endif
 }
 
 // 0x003F01D0.  The class-body Zero() is inline -- VIQuat::ConvertTo expands its
@@ -735,6 +759,12 @@ void (VIMatrix44::*VIMatrix44ZeroOutOfLine)() = &VIMatrix44::Zero;
 // 0x003F01F0.  (0,0,0,1) rotated through the rows with VMR32.
 void VIMatrix44::Identity()
 {
+#if VI_PORT
+    m[0].x = 1.0f; m[0].y = 0.0f; m[0].z = 0.0f; m[0].w = 0.0f;
+    m[1].x = 0.0f; m[1].y = 1.0f; m[1].z = 0.0f; m[1].w = 0.0f;
+    m[2].x = 0.0f; m[2].y = 0.0f; m[2].z = 1.0f; m[2].w = 0.0f;
+    m[3].x = 0.0f; m[3].y = 0.0f; m[3].z = 0.0f; m[3].w = 1.0f;
+#else
     __asm__ __volatile__(
         "vsub.xyzw $vf4, $vf0, $vf0\n"
         "vadd.w $vf4, $vf4, $vf0\n"
@@ -746,12 +776,29 @@ void VIMatrix44::Identity()
         "sqc2 $vf6, 0x10(%0)\n"
         "sqc2 $vf7, 0x0(%0)\n"
         : : "r"(m) : "memory");
+#endif
 }
 
 // 0x003F0220.  this = a * b, unrolled, the next row of `a` loaded under the
 // current row's multiply.
 void VIMatrix44::Mul(const VIMatrix44 &a, const VIMatrix44 &b)
 {
+#if VI_PORT
+    VIVect4 b0 = b.m[0], b1 = b.m[1], b2 = b.m[2], b3 = b.m[3];
+    VIVect4 a0 = a.m[0], a1 = a.m[1], a2 = a.m[2], a3 = a.m[3];
+    VIVect4 o0, o1, o2, o3;
+#define VI_ROWMUL(o, r) \
+    o.x = ((b0.x * r.x + b1.x * r.y) + b2.x * r.z) + b3.x * r.w; \
+    o.y = ((b0.y * r.x + b1.y * r.y) + b2.y * r.z) + b3.y * r.w; \
+    o.z = ((b0.z * r.x + b1.z * r.y) + b2.z * r.z) + b3.z * r.w; \
+    o.w = ((b0.w * r.x + b1.w * r.y) + b2.w * r.z) + b3.w * r.w
+    VI_ROWMUL(o0, a0);
+    VI_ROWMUL(o1, a1);
+    VI_ROWMUL(o2, a2);
+    VI_ROWMUL(o3, a3);
+    m[0] = o0; m[1] = o1; m[2] = o2; m[3] = o3;
+#undef VI_ROWMUL
+#else
     __asm__ __volatile__(
         "lqc2 $vf8, 0x0(%1)\n"
         "lqc2 $vf4, 0x0(%2)\n"
@@ -782,6 +829,7 @@ void VIMatrix44::Mul(const VIMatrix44 &a, const VIMatrix44 &b)
         "sqc2 $vf14, 0x20(%0)\n"
         "sqc2 $vf15, 0x30(%0)\n"
         : : "r"(m), "r"(&a), "r"(&b) : "memory");
+#endif
 }
 
 // 0x003F0298.
@@ -891,6 +939,23 @@ int VIMatrix44::Invert(const VIMatrix44 &a)
 // transposed into place and scaled by 1/det, then the translation.
 void VIMatrix44::InvertAffine(const VIMatrix44 &a)
 {
+#if VI_PORT
+    VIVect4 r0 = a.m[0], r1 = a.m[1], r2 = a.m[2], t = a.m[3];
+    float c0x = r1.y * r2.z - r2.y * r1.z, c0y = r1.z * r2.x - r2.z * r1.x, c0z = r1.x * r2.y - r2.x * r1.y;
+    float c1x = r0.y * r2.z - r2.y * r0.z, c1y = r0.z * r2.x - r2.z * r0.x, c1z = r0.x * r2.y - r2.x * r0.y;
+    float c2x = r0.y * r1.z - r1.y * r0.z, c2y = r0.z * r1.x - r1.z * r0.x, c2z = r0.x * r1.y - r1.x * r0.y;
+    float det = (r0.x * c0x + r0.y * c0y) + r0.z * c0z;
+    float q = 1.0f / det;
+    VIVect4 o0, o1, o2, o3;
+    o0.x = (0.0f + c0x) * q; o0.y = (0.0f - c1x) * q; o0.z = (0.0f + c2x) * q; o0.w = 0.0f;
+    o1.x = (0.0f + c0y) * q; o1.y = (0.0f - c1y) * q; o1.z = (0.0f + c2y) * q; o1.w = 0.0f;
+    o2.x = (0.0f + c0z) * q; o2.y = (0.0f - c1z) * q; o2.z = (0.0f + c2z) * q; o2.w = 0.0f;
+    o3.x = ((0.0f - o0.x * t.x) - o1.x * t.y) - o2.x * t.z;
+    o3.y = ((0.0f - o0.y * t.x) - o1.y * t.y) - o2.y * t.z;
+    o3.z = ((0.0f - o0.z * t.x) - o1.z * t.y) - o2.z * t.z;
+    o3.w = 1.0f;
+    m[0] = o0; m[1] = o1; m[2] = o2; m[3] = o3;
+#else
     __asm__ __volatile__(
         "lqc2 $vf4, 0x0(%1)\n"
         "lqc2 $vf5, 0x10(%1)\n"
@@ -932,6 +997,7 @@ void VIMatrix44::InvertAffine(const VIMatrix44 &a)
         "sqc2 $vf16, 0x20(%0)\n"
         "sqc2 $vf17, 0x30(%0)\n"
         : : "r"(m), "r"(&a) : "memory");
+#endif
 }
 
 // 0x003F0728.

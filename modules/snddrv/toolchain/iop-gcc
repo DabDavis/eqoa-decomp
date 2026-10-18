@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+"""A gcc driver for the IOP toolchain: cccp + cc1/cc1plus (egcs 1.1.2) + GNU as.
+
+    iop-gcc -S [-O0 -I... -D...] file.cpp -o file.s
+    iop-gcc -c [...] file.cpp -o file.o
+    iop-gcc -E [...] file.cpp -o file.ii
+
+egcs 1.1.2's own driver is not built (no install tree); this is the part
+of its spec that matters for the IOP: the predefines of mips/elfl.h, C++ for
+.cpp/.cc/.C (C for .c, or `-x c`), and the SN assembler model, iop-as, for -c.
+"""
+import os
+import subprocess
+import sys
+import tempfile
+
+LIB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib")
+AS = os.environ.get("IOP_AS", os.path.join(os.path.dirname(os.path.abspath(__file__)), "iop-as"))
+AS_FLAGS = []
+
+PREDEF = ["-D__GNUC__=2", "-D__GNUC_MINOR__=91", "-Dmips", "-D__mips__", "-D__mips",
+          "-DMIPSEL", "-D__MIPSEL__", "-D_MIPSEL", "-D__MIPSEL", "-D__ELF__",
+          "-D__R3000__", "-D_R3000", "-D__mips=1", "-D_MIPS_SZINT=32", "-D_MIPS_SZLONG=32",
+          "-D_MIPS_SZPTR=32", "-D__LANGUAGE_C", "-D_LANGUAGE_C", "-D__iop__", "-D_IOP"]
+
+
+def main(argv):
+    mode, out, src, lang = None, None, None, None
+    cpp, cc = [], []
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a in ("-S", "-c", "-E"):
+            mode = a
+        elif a == "-o":
+            i += 1
+            out = argv[i]
+        elif a == "-x":
+            i += 1
+            lang = argv[i]
+        elif a.startswith(("-I", "-D", "-U")):
+            if a in ("-I", "-D", "-U"):
+                i += 1
+                a += argv[i]
+            cpp.append(a)
+        elif a == "-v":
+            pass
+        elif a.startswith("-"):
+            cc.append(a)
+        else:
+            src = a
+        i += 1
+    if not src or not mode:
+        sys.exit("iop-gcc: need -S/-c/-E and a source file")
+    if lang is None:
+        lang = "c" if src.endswith(".c") else "c++"
+    plus = lang == "c++"
+    cmd = [os.path.join(LIB, "cccp"), "-lang-c++" if plus else "-lang-c"] + PREDEF + \
+          (["-D__cplusplus", "-D__GNUG__=2"] if plus else []) + cpp
+    if mode == "-E":
+        return subprocess.run(cmd + [src] + ([out] if out else [])).returncode
+    with tempfile.TemporaryDirectory() as t:
+        ii = os.path.join(t, "t.ii" if plus else "t.i")
+        r = subprocess.run(cmd + [src, ii])
+        if r.returncode:
+            return r.returncode
+        s = out if mode == "-S" else os.path.join(t, "t.s")
+        r = subprocess.run([os.path.join(LIB, "cc1plus" if plus else "cc1"), "-quiet",
+                            "-dumpbase", os.path.basename(src)] + cc + [ii, "-o", s])
+        if r.returncode or mode == "-S":
+            return r.returncode
+        o = out or os.path.splitext(os.path.basename(src))[0] + ".o"
+        return subprocess.run([AS] + AS_FLAGS + ["-o", o, s]).returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

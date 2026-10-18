@@ -378,7 +378,7 @@ int MovieStopCallback();
 void sAlarmCallback(int id, unsigned short time, void *thread)
 {
     iWakeupThread((int)thread);
-    __asm__ volatile("sync.l; ei");
+    VI_EE_ASM("sync.l; ei");
 }
 
 // 0x00568A28.  The title's "Connect": DNAS authentication (retried once its

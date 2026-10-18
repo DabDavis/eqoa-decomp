@@ -13,7 +13,7 @@
 //   VIWndQuantity              0x00C84878..0x00C860C8
 #ifndef CL_WM_H
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 #define CL_WM_H
 

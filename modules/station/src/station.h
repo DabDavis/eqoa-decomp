@@ -26,7 +26,7 @@
 #include "vurl.h"          // SETUP's, shared
 #include "vimemstream.h"   // CLIENT's, shared
 
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 
 // The libgraph call station_main makes four times (a LIB function, 0x0034FE28).
 extern "C" int sceGsSyncV(int mode);

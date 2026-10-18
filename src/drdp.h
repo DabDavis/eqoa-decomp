@@ -9,6 +9,8 @@
 #ifndef DRDP_H
 #define DRDP_H
 
+#include "viport.h"   // VI_PORT: the native build's switches
+
 // The mangled names settle every one of these: buffer_read_int8 takes `PSc`
 // (signed char *) where buffer_read_string takes `Pc` (plain char *), so the
 // three char types are distinct and int8 is `signed char`, not `char`.

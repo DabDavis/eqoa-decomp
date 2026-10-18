@@ -36,6 +36,7 @@ that returns 0.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -82,6 +83,38 @@ ASSEMBLER = HERE / "toolchains/ee-gcc2.95.3-114/lib/gcc-lib/ee/2.95.3/ps2eeas.ex
 # this is invisible until a function does.  RTTI stays ON: the module carries
 # __rtti / __tf<n> symbols.
 FLAGS = ["-O2", "-G0", "-fno-exceptions"]
+
+# An IOP module (SNDDRV) is another compiler entirely: stock GNU gcc 2.8.1's
+# cc1plus for mipsel-elf at -O0, assembled by SN's assembler modelled for the
+# R3000 (modules/snddrv/toolchain/build.sh and iop-as say what picks each).  -G 8 is gcc's
+# default, and the image does reach small data through $gp.
+IOP = E.MODULES[E.MODULE].cpu == "iop"
+IOP_AS = os.environ.get("EQ_IOP_AS", str(HERE / "modules/snddrv/toolchain/iop-as")).split()
+if IOP:
+    # gcc 2.95.x for an IOP target WITHOUT weak symbols (-fno-weak): a TU's
+    # un-inlined inline members, its synthesized ctor/dtor and its static
+    # initializer go into .text after its last function -- ctor, dtor,
+    # __static_initialization_and_destruction_0, the inlines in declaration
+    # order, then _GLOBAL_$I$/$D$, exactly the target's 0x3C3C..0x402C.  With
+    # weak support they go to .gnu.linkonce.t.*; egcs 1.1.2 emits them in
+    # reverse and has no __static_initialization function.  2.95 also folds a
+    # field offset into the symbol of a variably indexed array (`la
+    # $3,gXmSlot+4`) and never forms `symbol + register` addresses, both of
+    # which 2.8.1 gets wrong.  BIGGEST_ALIGNMENT 32: toolchain/build.sh.
+    # -fno-exceptions as on the EE: with exceptions on, the synthesized XmSlot
+    # ctor carries a cleanup region the target does not have.
+    TOOLCHAIN = "iop-gcc2.95.3"
+    FLAGS = ["-O0", "-fno-weak", "-fno-exceptions"]
+    # experiments: EQ_IOP_TC=iop-egcs-1.1.2 EQ_IOP_FLAGS="-O0" ./_tu.py <tu>
+    TOOLCHAIN = os.environ.get("EQ_IOP_TC", TOOLCHAIN)
+    FLAGS = os.environ.get("EQ_IOP_FLAGS", " ".join(FLAGS)).split()
+
+
+def assemble_cmd(asm: Path, o: Path) -> list[str]:
+    """The assembler command for the current module's toolchain."""
+    if IOP:
+        return IOP_AS + ["-o", str(o), str(asm)]
+    return ["wine", str(ASSEMBLER), "-o", str(o), str(asm)]
 
 
 # Phase 61: the one TU the original did NOT build with the settled compiler.
@@ -131,14 +164,15 @@ def compile_cmd(stem: str, tc: str | None = None, flags: list[str] | None = None
         # libc and libxml's headers, for its C and its C++ alike)
         cmd += _module_cflags()
         # another module's classes derive from SUPPORT's (VIWnd, VIUIWindow), so
-        # its TUs include SUPPORT's headers
-        cmd.append("-I" + str(HERE / "src"))
+        # its TUs include SUPPORT's headers (an IOP module shares none of them)
+        if not IOP:
+            cmd.append("-I" + str(HERE / "src"))
     return cmd
 
 
 def driver(name: str):
     d = HERE / "toolchains" / name
-    for c in ("bin/ee-gcc", "bin/ee-gcc.exe", "ee/bin/gcc"):
+    for c in ("bin/ee-gcc", "bin/ee-gcc.exe", "ee/bin/gcc", "bin/iop-gcc"):
         p = d / c
         if p.is_file():
             return ["wine", str(p)] if p.suffix == ".exe" else [str(p)]
@@ -171,7 +205,7 @@ def build(tc: str, flags: list[str], gnu_as: bool = False) -> tuple[list[Path], 
             # in one TU, all of them still byte-exact when that TU was rebuilt
             # on its own.  One retry; a second failure is still reported.
             for _ in range(2):
-                r = subprocess.run(["wine", str(ASSEMBLER), "-o", str(o), str(asm)],
+                r = subprocess.run(assemble_cmd(asm, o),
                                    capture_output=True, text=True, cwd=BUILD)
                 if o.exists():
                     break

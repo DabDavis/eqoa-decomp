@@ -11,7 +11,7 @@
 #define CL_WB_H
 
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 
 extern "C" double pow(double, double);

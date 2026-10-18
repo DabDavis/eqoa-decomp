@@ -329,7 +329,7 @@ struct VIDbCharAuction : public VIDbCharAuctionKey
     int m_x18;
     int m_x1C;
     int m_x20;
-    char m_x24;
+    char m_x24; VI_HOST_ONLY(char m_portTail[3];)  // no Itanium tail reuse: VIDbAuction
 };
 bool operator<(const VIDbCharAuctionKey &a, const VIDbCharAuctionKey &b);
 bool operator==(const VIDbCharAuctionKey &a, const VIDbCharAuctionKey &b);
@@ -360,7 +360,7 @@ struct VIDbCharBid : public VIDbCharBidKey
     int m_x08;
     int m_x0C;
     int m_x10;
-    char m_x14;
+    char m_x14; VI_HOST_ONLY(char m_portTail[3];)  // no Itanium tail reuse: VIDbBidHistory
 };
 bool operator<(const VIDbCharBidKey &a, const VIDbCharBidKey &b);
 bool operator==(const VIDbCharBidKey &a, const VIDbCharBidKey &b);

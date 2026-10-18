@@ -1,0 +1,168 @@
+# SNDDRV.IRX (MODULES2, Frontiers): the IOP sound driver, "VI Sound Driver X (build: Apr 23 2003)".
+# VA = 0x000AAA30 + IRX address (where a running game holds it).  Seeded from
+# the jal targets and prologues; import stubs named from ps2sdk headers.
+# Rename a func_ entry to its mangled name when its source is written.
+0x000AAA30 SdInitBgmSystem__Fv
+0x000AABC8 SdFreeBgmSystem__Fv
+0x000AACD0 SdPlayBgm__FPci
+0x000AAE38 SdStopBgm__Fv
+0x000AAF10 SdIsBgmPlaying__Fv
+0x000AAF60 SdSetBgmVolume__FUi
+0x000AB044 BgmThread__FPv
+0x000AB5E0 BgmRead__Fi
+0x000AB67C BgmTransIntr__FiPv
+0x000AB6C0 BgmTransfer__Fi
+0x000AB864 BgmTransferDone__Fv
+0x000AB9BC CdOpen__FPc
+0x000ABB64 CdRead__FiPvi
+0x000ABE0C CdSeek__Fiii
+0x000ABF58 CdClose__Fi
+0x000ABFA8 _start
+0x000AC084 SdFree__FPv
+0x000AC0DC SdAlloc__Fi
+0x000AC13C SdAbort__Fv
+0x000AC188 SdExit__Fv
+0x000AC1D4 SdCommand__FiPi
+0x000AC68C SdRpc__FiPvi
+0x000AC9A0 SdRpcThread__Fv
+0x000ACB28 SdXmThread__FPv
+0x000ACEC4 SdTimerHandler__FPv
+0x000ACF3C SdInitSpu__Fv
+0x000AD264 SdFreeSpu__Fv
+0x000AD370 SdAdpcmTransfer__Fii
+0x000AD468 SdPlayWave__FUiiUiiiii
+0x000AD678 SdStopVoices__FUiUi
+0x000AD6D4 SdSetPitch__Fiii
+0x000AD7EC SdSetVolume__Fiiii
+0x000ADAE4 SdXmLoaded__Fii
+0x000ADB34 SdXmPlay__FUiUiiUiiii
+0x000ADE90 SdXmSetVolume__Fiiii
+0x000AE070 SdXmSetPitch__Fiii
+0x000AE208 SdXmStop__Fii
+0x000AE440 SdTestTone__FiUi
+0x000AE66C __6XmSlot
+0x000AE6BC _$_6XmSlot
+0x000AE730 __static_initialization_and_destruction_0
+0x000AE86C SetRepeat__8XmPlayeri
+0x000AE8A8 Tempo__8XmPlayer
+0x000AE8F0 SetVolume__8XmPlayeri
+0x000AE92C SetPan__8XmPlayeri
+0x000AE968 SetPitch__8XmPlayeri
+0x000AE9A4 Pitch__8XmPlayer
+0x000AE9EC _GLOBAL_$I$gBgmState
+0x000AEA24 _GLOBAL_$D$gBgmState
+0x000AEA5C Init__8XmVoicesUiUiUi
+0x000AED48 Reset__8XmVoices
+0x000AED7C Wait__8XmVoices
+0x000AEDBC Busy__8XmVoices
+0x000AEDFC Wait2__8XmVoices
+0x000AEE3C Elapsed__8XmVoices
+0x000AEE7C Flush__8XmVoicesi
+0x000AEF60 KeyOn__8XmVoicesiUiiUiiUiii
+0x000AF1EC KeyOff__8XmVoicesi
+0x000AF2C8 SetPitch__8XmVoicesiUi
+0x000AF418 Nop__8XmVoicesii
+0x000AF460 SetVolume__8XmVoicesiii
+0x000AF5D4 SetOffset__8XmVoicesiUi
+0x000AF834 __8XmPlayer
+0x000AF870 _$_8XmPlayer
+0x000AF8DC Play__8XmPlayerUiP8XmModuleUi
+0x000AF9B4 Stop__8XmPlayer
+0x000AFA08 Restart__8XmPlayer
+0x000AFB94 Process__8XmPlayer
+0x000AFCC8 Tick__8XmPlayer
+0x000AFFE8 SkipRows__8XmPlayeri
+0x000B01E4 ReadRow__8XmPlayeri
+0x000B08E8 TickEffects__8XmPlayer
+0x000B0998 Effects__8XmPlayerP9XmChannel
+0x000B1060 Fx__8XmPlayerP9XmChannelUcUc
+0x000B16E4 ExtFx__8XmPlayerP9XmChannelUc
+0x000B1A58 Update__8XmPlayer
+0x000B2144 AmigaPeriod__8XmPlayerUcs
+0x000B22F8 LinearPeriod__8XmPlayerUcs
+0x000B2374 Period__8XmPlayerUcs
+0x000B2434 Rate__8XmPlayeri
+0x000B259C KeyOff__8XmPlayerP9XmChannel
+0x000B2608 Reset__9XmChannel
+0x000B264C Envelopes__9XmChannel
+0x000B271C EnvStep__9XmChannelP10XmEnvelopePUsPUcT3
+0x000B2A78 Porta__9XmChannel
+0x000B2B4C Vibrato__9XmChanneli
+0x000B2D00 Tremolo__9XmChanneli
+0x000B2EDC VolSlide__9XmChanneli
+0x000B2F94 PanSlide__9XmChanneliUc
+0x000B30BC XmInterp__Fsssss
+0x000B31C8 SetKey__9XmChanneli
+0x000B3228 __8XmModule
+0x000B325C _$_8XmModule
+0x000B32BC Relocate__8XmModuleUii
+0x000B368C Nop__8XmModule
+0x000B36B0 Channels__8XmModule
+0x000B36E8 [DATA] _imp_sysmem
+0x000B36FC [IMPORT] AllocSysMemory
+0x000B3704 [IMPORT] FreeSysMemory
+0x000B3714 [DATA] _imp_intrman
+0x000B3728 [IMPORT] CpuSuspendIntr
+0x000B3730 [IMPORT] CpuResumeIntr
+0x000B3740 [DATA] _imp_loadcore
+0x000B3754 [IMPORT] FlushDcache
+0x000B3764 [DATA] _imp_sifcmd
+0x000B3778 [IMPORT] sceSifInitRpc
+0x000B3780 [IMPORT] sceSifRegisterRpc
+0x000B3788 [IMPORT] sceSifSetRpcQueue
+0x000B3790 [IMPORT] sceSifRpcLoop
+0x000B37A0 [DATA] _imp_stdio
+0x000B37B4 [IMPORT] printf
+0x000B37C4 [DATA] _imp_sysclib
+0x000B37D8 [IMPORT] longjmp
+0x000B37E0 [IMPORT] memset
+0x000B37E8 [IMPORT] sprintf
+0x000B37F0 [IMPORT] strlen
+0x000B3800 [DATA] _imp_thbase
+0x000B3814 [IMPORT] CreateThread
+0x000B381C [IMPORT] DeleteThread
+0x000B3824 [IMPORT] StartThread
+0x000B382C [IMPORT] TerminateThread
+0x000B3834 [IMPORT] GetThreadId
+0x000B383C [IMPORT] ReferThreadStatus
+0x000B3844 [IMPORT] SleepThread
+0x000B384C [IMPORT] iWakeupThread
+0x000B3854 [IMPORT] DelayThread
+0x000B385C [IMPORT] USec2SysClock
+0x000B386C [DATA] _imp_timrman
+0x000B3880 [IMPORT] AllocHardTimer
+0x000B3888 [IMPORT] FreeHardTimer
+0x000B3890 [IMPORT] SetTimerHandler
+0x000B3898 [IMPORT] SetupHardTimer
+0x000B38A0 [IMPORT] StartHardTimer
+0x000B38A8 [IMPORT] StopHardTimer
+0x000B38B8 [DATA] _imp_vblank
+0x000B38CC [IMPORT] WaitVblankEnd
+0x000B38DC [DATA] _imp_libsd
+0x000B38F0 [IMPORT] sceSdInit
+0x000B38F8 [IMPORT] sceSdSetParam
+0x000B3900 [IMPORT] sceSdGetParam
+0x000B3908 [IMPORT] sceSdSetSwitch
+0x000B3910 [IMPORT] sceSdSetAddr
+0x000B3918 [IMPORT] sceSdGetAddr
+0x000B3920 [IMPORT] sceSdSetCoreAttr
+0x000B3928 [IMPORT] sceSdVoiceTrans
+0x000B3930 [IMPORT] sceSdVoiceTransStatus
+0x000B3938 [IMPORT] sceSdSetEffectAttr
+0x000B3940 [IMPORT] sceSdSetTransIntrHandler
+0x000B3950 [DATA] _imp_vicds
+0x000B3964 [IMPORT] vicdsInit
+0x000B396C [IMPORT] vicdsQuit
+0x000B3974 [IMPORT] vicdsSearch
+0x000B397C [IMPORT] vicdsRead
+0x000B3984 [IMPORT] vicdsSync
+0x000B398C [IMPORT] vicdsGetError
+0x000B39A0 [LIB] __do_global_dtors
+0x000B3A04 [LIB] __do_global_ctors
+0x000B3A94 [LIB] __main
+0x000B3AD0 [LIB] __builtin_delete
+0x000B3B00 [LIB] __builtin_new
+0x000B3B70 [LIB] __builtin_vec_delete
+0x000B3B90 [LIB] set_new_handler
+0x000B3BB8 [LIB] __default_new_handler
+0x000B3BD0 [DATA] _rodata

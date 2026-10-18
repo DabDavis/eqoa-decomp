@@ -9,7 +9,7 @@
 // the app.  The VIMap<int, int> and VIArray<VIItemStat> copies between Wrap and
 // __tf are template instantiations this TU does not write.
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" void *memcpy(void *, const void *, unsigned int);)  // gcc 2.95: implicit
 // One WORDS.TXT entry in the current language, as SETUP's windows read them.
 static inline const unsigned short *Word(VIUI *ui, int id)
 {

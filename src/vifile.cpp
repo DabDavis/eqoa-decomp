@@ -256,7 +256,7 @@ extern "C" int SetAlarm(unsigned short time, void (*cb)(int, unsigned short, voi
 static void FileDelayAlarm(int id, unsigned short time, void *sema)
 {
     iSignalSema((int)sema);
-    __asm__ __volatile__ ("sync.l\n\tei\n");
+    VI_EE_ASM("sync.l\n\tei\n");
 }
 
 // Sleep `n` horizontal blanks (480 is two fields): a one-shot alarm posts a

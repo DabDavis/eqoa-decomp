@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""The IOP assembler, as a MODEL: SN Systems' ps2eeas plus the two things its
+R3000 build would do differently from its R5900 one.
+
+    iop-as -o file.o file.s
+
+SNDDRV was assembled by an SN assembler, not GNU as -- measured on bgm.cpp:
+  * `lw $3,sym+4` of an 8-byte .sdata object is ABSOLUTE (lui + lw) while
+    `lw $2,sym` is $gp-relative.  ps2eeas does exactly that; no GNU as from
+    2.8.1 to 2.4x does (all of them make both halves $gp-relative).
+  * a load followed by a two-instruction store macro (`lw $2,32($fp)` then
+    `sw $2,sym`, which expands `lui $at` first) gets NO nop.  ps2eeas: none;
+    every GNU as: one.
+  * branch delay slots are never filled.  ps2eeas: never; GNU as -O2: filled.
+The SN IOP assembler itself is not preserved anywhere we could find, and the EE
+one cannot be switched to MIPS I (`.set mipsN` is parsed and then rejected, or
+crashes, in every copy in toolchains/).  So the R5900 build is run on input
+rewritten for what an R3000 needs:
+  1. `move rd,rs` is a 32-bit `addu rd,rs,$0` (the R5900 build emits `daddu`);
+  2. a load is followed by a `nop` when the NEXT instruction reads the loaded
+     register -- the R3000's load delay, which the R5900 interlocks.  The
+     target has that nop exactly there (`lhu; nop; ori`) and nowhere else
+     (`lw; lui $at; sw`).
+"""
+import os
+import re
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PS2EEAS = os.environ.get("IOP_PS2EEAS") or os.path.join(
+    HERE, "..", "..", "..", "toolchains", "ee-gcc2.95.3-114", "lib", "gcc-lib", "ee",
+    "2.95.3", "ps2eeas.exe")
+
+LOADS = {"lb", "lbu", "lh", "lhu", "lw", "lwl", "lwr"}
+# instructions whose FIRST register operand is read, not written
+READS_FIRST = {"sb", "sh", "sw", "swl", "swr", "beq", "bne", "beqz", "bnez", "bgez", "bgtz",
+               "blez", "bltz", "bgezal", "bltzal", "jr", "jalr", "j", "mult", "multu", "div",
+               "divu", "mthi", "mtlo", "teq", "tne", "bge", "bgt", "ble", "blt", "bgeu",
+               "bgtu", "bleu", "bltu", "b", "jal"}
+REG = re.compile(r"\$(\d+|[a-z]+[0-9]?)")
+NAMES = {"zero": 0, "at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7,
+         "gp": 28, "sp": 29, "fp": 30, "s8": 30, "ra": 31}
+
+
+def reg(tok):
+    t = tok.lstrip("$")
+    return int(t) if t.isdigit() else NAMES.get(t, -1)
+
+
+def parse(line):
+    """(mnemonic, [operand strings]) for an instruction line, else None."""
+    s = line.split("#", 1)[0].strip()
+    while True:                                   # strip leading labels
+        m = re.match(r"^[$\w.]+:\s*", s)
+        if not m:
+            break
+        s = s[m.end():]
+    if not s or s.startswith("."):
+        return None
+    parts = s.split(None, 1)
+    ops = [o.strip() for o in parts[1].split(",")] if len(parts) > 1 else []
+    return parts[0], ops
+
+
+MEMOPS = LOADS | {"sb", "sh", "sw", "swl", "swr"}
+
+
+def small_symbols(src):
+    """Labels defined in .sdata/.sbss in this file: the symbols a memory op
+    reaches through $gp in ONE instruction.  Anything else -- an extern, or
+    `sym+N` (SN's rule, measured: the second word of an 8-byte .sdata object is
+    absolute) -- expands to `lui` + op, whose first instruction reads nothing."""
+    out, sec = set(), None
+    for line in src.splitlines():
+        s = line.split("#", 1)[0].strip()
+        m = re.match(r"^\.(sdata|sbss|data|bss|text|rdata|rodata)\b", s)
+        if m:
+            sec = m.group(1)
+            continue
+        m = re.match(r"^\.section\s+([.\w]+)", s)
+        if m:
+            sec = m.group(1).lstrip(".")
+            continue
+        m = re.match(r"^([$\w.]+):", s)
+        if m and sec in ("sdata", "sbss"):
+            out.add(m.group(1))
+    return out
+
+
+def reads(mn, ops, small=frozenset()):
+    if mn in MEMOPS and len(ops) == 2 and "(" not in ops[1] and ops[1] not in small:
+        return set()                              # lui first: reads no register
+    regs = []
+    for i, o in enumerate(ops):
+        rs = [reg(t) for t in REG.findall(o)]
+        if i == 0 and mn not in READS_FIRST and "(" not in o:
+            continue                              # the destination
+        regs += rs
+    return set(regs)
+
+
+def transform(src):
+    small = small_symbols(src)
+    out = []
+    pending = None                                # register a load is still writing
+    for line in src.splitlines():
+        p = parse(line)
+        if p is None:
+            out.append(line)
+            if re.match(r"^\s*\$L\d+:", line):   # a branch target: reached from
+                pending = None                    # elsewhere too; no hazard is tracked
+                                                  # ($LCFI/$LBB debug labels are not)
+            continue
+        mn, ops = p
+        if pending is not None and pending in reads(mn, ops, small):
+            out.append("\tnop")
+        pending = None
+        if mn in ("div", "divu", "rem", "remu") and len(ops) == 3 and ops[0] != "$0":
+            # SN's expansion, read off the target (0x51ec, 0x7ae8, 0x8740):
+            # the divide, the result, THEN the zero check, and no overflow
+            # check on a signed divide.  ps2eeas checks first.
+            n = len(out)
+            base = "divu" if mn in ("divu", "remu") else "div"
+            mf = "mflo" if mn in ("div", "divu") else "mfhi"
+            out += ["\t%s\t$0,%s,%s" % (base, ops[1], ops[2]),
+                    "\t%s\t%s" % (mf, ops[0]),
+                    "\tbne\t%s,$0,$Ldiv%d" % (ops[2], n),
+                    "\tbreak\t7",
+                    "$Ldiv%d:" % n]
+            continue
+        if mn == "move" and len(ops) == 2:
+            line = "\taddu\t%s,%s,$0" % (ops[0], ops[1])
+        if mn in LOADS and ops:
+            r = reg(REG.findall(ops[0])[0]) if REG.findall(ops[0]) else -1
+            pending = r if r > 0 else None
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
+def main(argv):
+    out, src = None, None
+    i = 0
+    while i < len(argv):
+        if argv[i] == "-o":
+            out = argv[i + 1]
+            i += 2
+            continue
+        if not argv[i].startswith("-"):
+            src = argv[i]
+        i += 1
+    tmp = (out or "a.o") + ".iop.s"
+    with open(src) as f:
+        text = transform(f.read())
+    with open(tmp, "w") as f:
+        f.write(text)
+    r = subprocess.run(["wine", PS2EEAS, "-o", out, tmp], capture_output=True, text=True)
+    if r.returncode or not os.path.exists(out):
+        sys.stderr.write(r.stdout + r.stderr)
+        return r.returncode or 1
+    if not os.environ.get("IOP_AS_KEEP"):
+        os.unlink(tmp)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

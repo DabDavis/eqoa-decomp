@@ -32,7 +32,7 @@ struct mallinfo_t
     int arena, ordblks, smblks, hblks, hblkhd;
     int usmblks, fsmblks, uordblks, fordblks, keepcost;
 };
-extern "C" mallinfo_t mallinfo();
+extern "C" mallinfo_t VI_MALLINFO();
 
 // libgraph / libpkt / libdma
 struct sceDmaChan;
@@ -173,9 +173,9 @@ extern "C" void _VIAssert(const char *expr, const char *file, int line)
         ;
 }
 
-typedef char *va_list;
+typedef VI_VA_LIST va_list;
 #define va_start(ap, last) \
-    ((ap) = (char *)__builtin_next_arg(last) - (8 - __builtin_args_info(2)) * 8)
+    VI_VA_START(ap, last)
 
 // The VIASSERTF macro parks file and line in the two globals and calls this.
 extern "C" void _VIAssertf(int cond, const char *fmt, ...)
@@ -325,7 +325,11 @@ void VIEEDMASync(int chan)
     if (chan == 1)
     {
         if (sDMASyncSkip == 0)
+#if VI_PORT
+            ;
+#else
             __asm__ __volatile__ ("sync.l\n1:\n\tbc0f 1b\n\tnop\n");
+#endif
         sDMASyncSkip = 0;
     }
     else
@@ -335,8 +339,12 @@ void VIEEDMASync(int chan)
 int VIEEDMAIsBusy()
 {
     volatile int busy;
+#if VI_PORT
+    busy = 0;
+#else
     __asm__ __volatile__ ("li $7, 1\n\tsync.l\n\tbc0f 1f\n\tnop\n\taddi $7, $7, -1\n1:\n\tsw $7, %0\n"
                           : "=m" (busy) : : "$7");
+#endif
     return busy;
 }
 
@@ -371,7 +379,7 @@ int VIEEUnloadIrx(int id)
 // Free heap in KB.
 int VIEEKBFree()
 {
-    mallinfo_t mi = mallinfo();
+    mallinfo_t mi = VI_MALLINFO();
     return mi.fordblks >> 10;
 }
 

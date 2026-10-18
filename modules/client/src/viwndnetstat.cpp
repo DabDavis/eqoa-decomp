@@ -2,7 +2,7 @@
 // VIWndNetStat.cpp -- CLIENT 0x00C7EB10 .. 0x00C7FFC8.  The network meter: a texture of
 // the last 64 sends and receives, and the ping.
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" void *memcpy(void *, const void *, unsigned int);)  // gcc 2.95: implicit
 // 0x00C7EB10.
 VIWndNetStat::VIWndNetStat()
 {

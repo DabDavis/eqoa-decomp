@@ -12,11 +12,11 @@
 #ifndef CL_WL_H
 #define CL_WL_H
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 
 // A menu VIWndMenu shows: a static table of 32-byte entries (the window reads through the
@@ -123,7 +123,7 @@ public:
     long           m_time;         // +0x088: Elapsed's clock
     VIArray<VIRec24_C6A8B8> m_items; // +0x090
     VIUIWindow     m_window;       // +0x098
-    VIKeyFlash     m_flash;        // +0x218: the up/down keys (138, 139)
+    VIKeyFlash     m_flash; VI_HOST_ONLY(int m_portTail;)  // +0x218: the up/down keys (138, 139); host: no Itanium tail reuse
 };
 CHK(c_VIWndList, sizeof(VIWndList) == 592)
 

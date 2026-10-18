@@ -65,8 +65,8 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int pal)
 {
     VIPickSegment local;
     int hit = 0;
-    ((VIMatrix44 *)0x70000100)->Invert(*(VIMatrix44 *)0x70000000);
-    if (local.Init(seg, *(VIMatrix44 *)0x70000100) < 0)
+    ((VIMatrix44 *)VI_SPR(0x70000100))->Invert(*(VIMatrix44 *)VI_SPR(0x70000000));
+    if (local.Init(seg, *(VIMatrix44 *)VI_SPR(0x70000100)) < 0)
         return -1;
     VIMaterialPal *mp = m_materialPals.Value(pal);
     VIPrimBuffer *pb = PrimBuffer(prim);
@@ -78,7 +78,7 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int pal)
             hit = PickPrimBufferVUNC(local, *pb, *mp);
             if (hit)
             {
-                if (seg.Init(local, *(VIMatrix44 *)0x70000000) < 0)
+                if (seg.Init(local, *(VIMatrix44 *)VI_SPR(0x70000000)) < 0)
                     return -1;
                 hit = 1;
             }
@@ -87,7 +87,7 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int pal)
             hit = PickPrimBufferPackVUNC(local, *pb, *mp);
             if (hit)
             {
-                if (seg.Init(local, *(VIMatrix44 *)0x70000000) < 0)
+                if (seg.Init(local, *(VIMatrix44 *)VI_SPR(0x70000000)) < 0)
                     return -1;
                 hit = 1;
             }
@@ -96,7 +96,7 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int pal)
             hit = PickPrimBufferPackVUNCG(local, *pb, *mp);
             if (hit)
             {
-                if (seg.Init(local, *(VIMatrix44 *)0x70000000) < 0)
+                if (seg.Init(local, *(VIMatrix44 *)VI_SPR(0x70000000)) < 0)
                     return -1;
                 hit = 1;
             }
@@ -105,7 +105,7 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int pal)
             hit = PickPrimBufferPackVUNBW(local, *pb, *mp);
             if (hit)
             {
-                if (seg.Init(local, *(VIMatrix44 *)0x70000000) < 0)
+                if (seg.Init(local, *(VIMatrix44 *)VI_SPR(0x70000000)) < 0)
                     return -1;
                 hit = 1;
             }
@@ -114,10 +114,10 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int pal)
     }
     if (hit)
     {
-        seg.m_hitColor.r += *(float *)0x70000200;
-        seg.m_hitColor.g += *(float *)0x70000204;
-        seg.m_hitColor.b += *(float *)0x70000208;
-        seg.m_hitColor.a *= *(float *)0x7000020C;
+        seg.m_hitColor.r += *(float *)VI_SPR(0x70000200);
+        seg.m_hitColor.g += *(float *)VI_SPR(0x70000204);
+        seg.m_hitColor.b += *(float *)VI_SPR(0x70000208);
+        seg.m_hitColor.a *= *(float *)VI_SPR(0x7000020C);
     }
     return hit;
 }
@@ -126,8 +126,8 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int cbi, int pal)
 {
     VIPickSegment local;
     int hit = 0;
-    ((VIMatrix44 *)0x70000100)->Invert(*(VIMatrix44 *)0x70000000);
-    if (local.Init(seg, *(VIMatrix44 *)0x70000100) < 0)
+    ((VIMatrix44 *)VI_SPR(0x70000100))->Invert(*(VIMatrix44 *)VI_SPR(0x70000000));
+    if (local.Init(seg, *(VIMatrix44 *)VI_SPR(0x70000100)) < 0)
         return -1;
     VIMaterialPal *mp = m_materialPals.Value(pal);
     VIPrimBuffer *pb = PrimBuffer(prim);
@@ -140,7 +140,7 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int cbi, int pal)
             hit = PickPrimBufferPackVUNC(local, *pb, *cb, *mp);
             if (hit)
             {
-                if (seg.Init(local, *(VIMatrix44 *)0x70000000) < 0)
+                if (seg.Init(local, *(VIMatrix44 *)VI_SPR(0x70000000)) < 0)
                     return -1;
                 hit = 1;
             }
@@ -149,10 +149,10 @@ int VIRaster::PickPrimBuffer(VIPickSegment &seg, int prim, int cbi, int pal)
     }
     if (hit)
     {
-        seg.m_hitColor.r += *(float *)0x70000200;
-        seg.m_hitColor.g += *(float *)0x70000204;
-        seg.m_hitColor.b += *(float *)0x70000208;
-        seg.m_hitColor.a *= *(float *)0x7000020C;
+        seg.m_hitColor.r += *(float *)VI_SPR(0x70000200);
+        seg.m_hitColor.g += *(float *)VI_SPR(0x70000204);
+        seg.m_hitColor.b += *(float *)VI_SPR(0x70000208);
+        seg.m_hitColor.a *= *(float *)VI_SPR(0x7000020C);
     }
     return hit;
 }

@@ -114,7 +114,7 @@ struct VICSMessage : public VICSMessageHeader
 struct VICSSubcategory
 {
     int            m_id;         // +0x00  zigzag on the wire
-    bool           m_x04;        // +0x04  one byte on the wire
+    VI_BOOL4       m_x04;        // +0x04  one byte on the wire
     unsigned short m_name[64];   // +0x08
 };
 VIMemStream &operator<<(VIMemStream &s, const VICSSubcategory &c);
@@ -126,7 +126,7 @@ VIMemStream &operator>>(VIMemStream &s, VICSSubcategory &c);
 struct VICSCategory
 {
     int                       m_id;         // +0x00
-    bool                      m_x04;        // +0x04
+    VI_BOOL4                  m_x04;        // +0x04
     unsigned short            m_name[64];   // +0x08
     VIVector<VICSSubcategory> m_subs;       // +0x88
 };
@@ -178,6 +178,6 @@ public:
     VICSMessage             m_message;      // +0x0970
     VIVector<VICSCategory>  m_categories;   // +0x4988
 };
-typedef char c_VICSClient_size[(sizeof(VICSClient) == 0x4994) ? 1 : -1];
+typedef char c_VICSClient_size[(sizeof(VICSClient) == 0x4994) || VI_PORT ? 1 : -1];
 
 #endif

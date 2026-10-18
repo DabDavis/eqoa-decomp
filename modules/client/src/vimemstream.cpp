@@ -11,7 +11,7 @@
 
 extern "C" void *memcpy(void *, const void *, int);
 
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 CHK(c_size, sizeof(VIMemStream) == 32)
 
 extern "C" void *malloc(int);

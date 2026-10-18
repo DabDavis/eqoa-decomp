@@ -936,6 +936,37 @@ def test_relocate_rebuilds_the_dump_from_the_modules_own_table():
     ck(raw > 10000, f"the un-relocated image differs from the dump at only {raw} words")
 
 
+def test_irx_image_relocates_every_section():
+    """
+    An IOP module is loaded from its .IRX (`eqdecomp.irx_image`), and its ELF
+    relocations must land where loadcore puts them.  An IRX's `r_offset` is a
+    MODULE address, not section-relative: SNDDRV's dispatcher jump table is
+    .rodata at 0x92C0, and after relocation its first word must be the absolute
+    address of case 0's body (module 0x1898), and the 100-entry table must hold
+    only code addresses inside the module.
+
+    Negative control: the un-relocated image holds the bare offset 0x1898 there,
+    so agreeing is the relocation's doing; and the table site must carry a
+    relocation entry, as it would not if the offset were section-relative
+    (0x91A0 + 0x92C0 is past the end of .rodata).
+    """
+    try:
+        mod, st, img = E.load("SNDDRV")
+    except FileNotFoundError as e:
+        raise Skipped(str(e))
+    ram = E.relocate(mod, img.data)
+    base = mod.base + E.IRX_HEADER                  # the module's address 0
+    word = lambda va: int.from_bytes(ram[va:va + 4], "little")
+    ck(word(base + 0x92C0) == base + 0x1898,
+       f"jump table[0] = {word(base + 0x92C0):#x}, want {base + 0x1898:#x}")
+    bad = [i for i in range(100) if not base <= word(base + 0x92C0 + 4 * i) < base + 0x91A0]
+    ck(not bad, f"jump table entries outside the module's code: {bad[:5]}")
+    ck(img.read(base + 0x92C0, 4) == (0x1898).to_bytes(4, "little"),
+       "the un-relocated image does not hold the bare offset: the check proves nothing")
+    sites = {site for site, _, _, _ in E.module_relocations(img.data)}
+    ck(E.IRX_HEADER + 0x92C0 in sites, "no relocation at the jump table's site")
+
+
 def test_module_imports_name_every_import_call():
     """
     MCERR names none of its own functions, but its import table names every call

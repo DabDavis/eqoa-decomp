@@ -1,4 +1,4 @@
-# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **3,849 of 3,934** byte-exact (of 5,973 functions; plus 1,921 verified duplicates; 85 open, 5 unwritten, polish pass 2026-10-17); MCERR **44 of 44**, closed 2026-10-16; SETUP **1,661 of 1,805**: its whole libxml2 2.3.6 block, 458 of the 462 patcher functions and 250 of the 251 screens; STATION **1,985 of 2,339**, every function written but three (2026-10-16; +2 ported from CLIENT 2026-10-17))
+# `decomp/` — matching decomp of the EQOA PS2 modules (**3,665 of 3,751 byte-exact**, plus 65 of 65 unnamed functions; SUPPORT closed at phase 61; phase 62, CLIENT: **3,849 of 3,934** byte-exact (of 5,973 functions; plus 1,921 verified duplicates; 85 open, 5 unwritten, polish pass 2026-10-17); MCERR **44 of 44**, closed 2026-10-16; SETUP **1,661 of 1,805**: its whole libxml2 2.3.6 block, 458 of the 462 patcher functions and 250 of the 251 screens; STATION **1,985 of 2,339**, every function written but three (2026-10-16; +2 ported from CLIENT 2026-10-17); and the first IOP module, SNDDRV (the sound driver), **94 of 96** (2026-10-18))
 
 Phase 0 of the experiment scoped in the VIMatrix44 discussion: extract any
 function out of a decrypted module image, disassemble it, and diff it against
@@ -30,6 +30,7 @@ decomp goes ahead.
 | `test_eqdecomp.py` | the canary — see below, it is the point |
 | `_q.py` | one TU, named symbols, 4.5 s — for sweeping source variants |
 | `_tu.py` | one TU, EVERY function in it, plus regressions against `MATCHED.txt` |
+| `_tud.py` | one TU, and the instruction diff of every function in it matching a regex that is not byte-exact; builds nothing else (`eqcheck.py -f` still builds every TU) |
 | `_perm.py` | permute a run of source lines, rebuild one TU, score one symbol |
 | `_lane.py` | isolated copies of `src/` + `build/`, so several functions are ground at once; with `EQMODULE` set, also that module's `src/` and `symbols.txt` (merged per address) |
 | `eqperm.py` | **the permuter**: random source rewrites of one open function, built and scored ~25/s on 7 cores, unattended; `reduce` strips a find back to the hunks it needs (singly, then in pairs and adjacent runs, since an added `{`/`}` pair is two or three hunks that build only together); `--alloc W` adds the ALLOCATION-ORDER term: priority gaps, read from the candidate's own `-dl`/`-dg` dumps, of the call-crossing pseudos the target allocated in the other order -- a gradient through ties the byte score cannot see; `--length W` penalises a different instruction count, because the alignment grade can prefer a SHORTER function that aligns well; `--anchor N` workers never drift from the start text; `batch LIST` runs a list of searches back to back, then reduces every run's best find several at once and writes one summary table, for an unattended night (needs `pip install tree-sitter tree-sitter-cpp`; `claude-notes/decomp-eqperm-textbox-20261015.md`) |
@@ -58,6 +59,7 @@ compiler** — the inputs it is scored against are supplied by whoever runs it:
 |---|---|---|
 | `SUPPORT_decompressed_SNR1.bin`, `SUPPORT_symbol_map.txt` | `$EQOA_ROOT/claude-eqoa-iso/decrypted_modules/` | the SUPPORT module, decrypted and decompressed off your own *EverQuest Online Adventures: Frontiers* disc (SLUS-20744) |
 | `MCERR_decompressed_SNR1.bin` | the same directory | the MCERR module, the same way; only `EQMODULE=MCERR` reads it |
+| `SNDDRV.IRX` | the same directory | `MODULES2\SNDDRV.IRX` copied off the disc as it is (an IRX is not encrypted); only `EQMODULE=SNDDRV` reads it, and its compiler is built from GNU source by `modules/snddrv/toolchain/build.sh` |
 | the compiler and the assembler | `toolchains/ee-gcc2.95.3-107/` and `toolchains/ee-gcc2.95.3-114/` | the [decompme/compilers](https://github.com/decompme/compilers/releases) releases (the second is only for its SN `ps2eeas.exe`) |
 | an EE memory dump taken in-world (OPTIONAL) | `$EQOA_ROOT/memory-dumps/inworld-eqoa.live.eememory` | PCSX2. Without it, `eqcalls.relocated()` rebuilds the relocated copy from the image's own relocation table, which agrees with the dump in every word of SUPPORT's code; three tests that compare the two skip |
 | `as`, `objcopy`, `objdump`, `readelf` for the R5900 | `$PS2DEV/ee/bin/` (default `~/ps2dev/ps2dev`) | the ps2dev toolchain |
@@ -102,6 +104,13 @@ SUPPORT is one of five EE modules, and the only one that names its own functions
 All five share SUPPORT's build: no `$gp`, `sq ra` saves. Each ends in the same runtime
 tail: crt0, libgcc, soft float and the C++ runtime, saving `ra` with `sd`. That tail is
 GPL runtime and is not decompiled. UTIL is IOP code (R3000), with another compiler.
+
+**The IOP modules are another build entirely.** SNDDRV (`modules/snddrv/README.md`, 94 of 96
+byte-exact) is C++ at `-O0` from gcc 2.95.3 with `BIGGEST_ALIGNMENT` 32, `-fno-weak
+-fno-exceptions`, assembled by SN's assembler, modelled as `modules/snddrv/toolchain/iop-as`
+on ps2eeas. Its image is the `.IRX` itself: `eqdecomp.irx_image` gives it the SNR1 header
+and relocation table the tools read, so `EQMODULE=SNDDRV` works with every tool. The native
+port compiles the same source as its sound server.
 
 - **`EQMODULE=MCERR` in front of any tool selects the module.** SUPPORT is the default.
   - `SRC`/`BUILD`/`MATCHED` move to `modules/mcerr/src`, `modules/mcerr/build` and

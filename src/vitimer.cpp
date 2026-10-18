@@ -43,7 +43,7 @@ int VITimer::Handler(int ca)
     SystemTime += 2;
     T0_MODE = TimerMode;
 
-    __asm__ __volatile__ ("sync\n\tei\n");
+    VI_EE_ASM("sync\n\tei\n");
     return 0;
 }
 

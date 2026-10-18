@@ -9,15 +9,15 @@
 //   VIWndFishing               0x00C4BB28..0x00C4E5F8
 #ifndef CL_WE_H
 #define CL_WE_H
-#define CL_WE_CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CL_WE_CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 
-#define CL_WE_CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CL_WE_CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 
-#define CL_WE_CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CL_WE_CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 
 // VIWndDeposit: ctor 0x00C41A60, 528 bytes (`new`), vtable 0x00CE6C38;
 //   slots [0]0x00C43448 [1]0x00C41AC0 [2]OnDraw__5VIWnd [3]0x00C41B60 [4]0x00C42310 [5]0x00C42070 [6]0x00C42388

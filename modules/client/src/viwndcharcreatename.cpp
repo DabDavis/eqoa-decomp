@@ -2,7 +2,7 @@
 // VIWndCharCreateName -- CLIENT 0x00C29968 .. 0x00C2B058: the name step of character
 // creation (cl_wc.h).
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" unsigned int strlen(const char *);)  // gcc 2.95: implicit
 // One WORDS.TXT entry in the current language.
 static inline const unsigned short *Word(VIUI *ui, int id)
 {

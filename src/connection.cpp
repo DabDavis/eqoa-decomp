@@ -17,9 +17,9 @@ static const char NULL_TAG[] = "NULL";
 
 // Phase 10's va_start: the EABI's register save block sits BELOW
 // virtual_incoming_args, so bare __builtin_next_arg lands past the whole area.
-typedef char *va_list;
+typedef VI_VA_LIST va_list;
 #define va_start(ap, last) \
-    ((ap) = (char *)__builtin_next_arg(last) - (8 - __builtin_args_info(2)) * 8)
+    VI_VA_START(ap, last)
 
 extern "C" void vpf(const char *pFormat, char *ap);
 extern "C" unsigned int strlen(const char *);

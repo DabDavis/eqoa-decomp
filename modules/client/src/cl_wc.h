@@ -14,7 +14,7 @@
 #ifndef CL_WC_H
 #define CL_WC_H
 #ifndef CHK
-#define CHK(n, c)  typedef char n[(c) ? 1 : -1];
+#define CHK(n, c)  typedef char n[(c) || VI_PORT ? 1 : -1];
 #endif
 
 // The walk camera's orbit limits in the character scenes.  VIWndCharCreateMisc::Activate and

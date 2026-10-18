@@ -91,7 +91,7 @@ static inline void RasterColor32(VIColor32 &c, const VIColor32F &f)
 extern "C" long VIRInit[], VIRMaterial[], VIRStrip[], VIRStrip2[], VIRStrip3[],
                 VIRStrip4[], VIRStrip5[], VIRStrip6[], VIRFan[];
 
-int VIRaster::ColorMatrix = 0;
+int VIRaster::ColorMatrix = 15;
 int VIRaster::RInitOffset = 0;
 int VIRaster::RMaterialOffset = (VIRMaterial - VIRInit);
 int VIRaster::RStripOffset = (VIRStrip - VIRInit);
@@ -101,10 +101,10 @@ int VIRaster::RStrip4Offset = (VIRStrip4 - VIRInit);
 int VIRaster::RStrip5Offset = (VIRStrip5 - VIRInit);
 int VIRaster::RStrip6Offset = (VIRStrip6 - VIRInit);
 int VIRaster::RFanOffset = (VIRFan - VIRInit);
-int VIRaster::ObjectBlendsBuffer;
-int VIRaster::PreTransBuffer;
-int VIRaster::PrimBuffer1;
-int VIRaster::PrimBuffer2;
+int VIRaster::ObjectBlendsBuffer = 612;
+int VIRaster::PreTransBuffer = 932;
+int VIRaster::PrimBuffer1 = 21;
+int VIRaster::PrimBuffer2 = 314;
 long VIRaster::DBuffer[128];
 
 // File scope, constructed by the same static initialiser.
@@ -350,7 +350,7 @@ int VIRaster::EnableSunLight(int on)
 
 int VIRaster::EnableDirLight(int i, int on)
 {
-    ((unsigned char *)0x70000000)[i + 546] = on;
+    ((unsigned char *)VI_SPR(0x70000000))[i + 546] = on;
     m_dirtyLights = 1;
     return 0;
 }
@@ -368,7 +368,7 @@ int VIRaster::MaxDirLights()
 
 int VIRaster::EnablePointLight(int i, int on)
 {
-    ((unsigned char *)0x70000000)[i + 546] = on;
+    ((unsigned char *)VI_SPR(0x70000000))[i + 546] = on;
     m_dirtyLights = 1;
     return 0;
 }
@@ -380,7 +380,7 @@ int VIRaster::MaxPointLights()
 
 int VIRaster::EnableAllPointLights(int on)
 {
-    unsigned char *p = (unsigned char *)0x70000222;
+    unsigned char *p = (unsigned char *)VI_SPR(0x70000222);
     for (int i = 0; i >= 0; i--)
         *p-- = on;
     m_dirtyLights = 1;
@@ -845,13 +845,13 @@ int VIRaster::SetFog(int on, float near, float far, const VIColor32F &c)
     m_fogNear = near;
     m_fogFar = far;
     m_fogEnabled = on;
-    float *sprNear = (float *)0x700001F8;
-    float *sprFar = (float *)0x700001FC;
+    float *sprNear = (float *)VI_SPR(0x700001F8);
+    float *sprFar = (float *)VI_SPR(0x700001FC);
     *sprNear = 0.0f;
     *sprFar = 255.0f;
     m_fogColor = c;
-    *(float *)0x700001F0 = (*sprNear - *sprFar) / (m_fogFar - m_fogNear);
-    *(float *)0x700001F4 =
+    *(float *)VI_SPR(0x700001F0) = (*sprNear - *sprFar) / (m_fogFar - m_fogNear);
+    *(float *)VI_SPR(0x700001F4) =
         (*sprFar * m_fogFar - *sprNear * m_fogNear) / (m_fogFar - m_fogNear);
     SetFogRegisters();
     m_dirtyLights = 1;
@@ -911,31 +911,31 @@ int VIRaster::ReleaseFont(int i, VIDictionary &d)
 
 int VIRaster::CalcMatrices()
 {
-    ((VIMatrix44 *)0x70000080)->Mul(*(VIMatrix44 *)0x70000000,
-                                    *(VIMatrix44 *)0x70000040);
-    ((VIMatrix44 *)0x70000140)->Mul(*(VIMatrix44 *)0x70000080,
-                                    *(VIMatrix44 *)0x700000C0);
-    ((VIMatrix44 *)0x70000100)->InvertAffine(*(VIMatrix44 *)0x70000000);
-    ((VIMatrix44 *)0x70000100)->SubMatrixMul(*(VIVect3 *)0x700001A0,
-                                             *(VIVect3 *)0x70000180);
-    ((VIVect3 *)0x70000180)->Normalize();
-    if (*(unsigned char *)0x70000222 != 0)
-        ((VIMatrix44 *)0x70000100)->Mul(*(VIVect3 *)0x700001C0,
-                                        *(VIVect3 *)0x70000190);
+    ((VIMatrix44 *)VI_SPR(0x70000080))->Mul(*(VIMatrix44 *)VI_SPR(0x70000000),
+                                    *(VIMatrix44 *)VI_SPR(0x70000040));
+    ((VIMatrix44 *)VI_SPR(0x70000140))->Mul(*(VIMatrix44 *)VI_SPR(0x70000080),
+                                    *(VIMatrix44 *)VI_SPR(0x700000C0));
+    ((VIMatrix44 *)VI_SPR(0x70000100))->InvertAffine(*(VIMatrix44 *)VI_SPR(0x70000000));
+    ((VIMatrix44 *)VI_SPR(0x70000100))->SubMatrixMul(*(VIVect3 *)VI_SPR(0x700001A0),
+                                             *(VIVect3 *)VI_SPR(0x70000180));
+    ((VIVect3 *)VI_SPR(0x70000180))->Normalize();
+    if (*(unsigned char *)VI_SPR(0x70000222) != 0)
+        ((VIMatrix44 *)VI_SPR(0x70000100))->Mul(*(VIVect3 *)VI_SPR(0x700001C0),
+                                        *(VIVect3 *)VI_SPR(0x70000190));
     return 0;
 }
 
 int VIRaster::CalcClipToScreen()
 {
-    ((VIMatrix44 *)0x700000C0)->Identity();
-    *(float *)0x700000C0 = (float)m_viewportW * 0.5f;
-    *(float *)0x700000D4 = -(float)m_viewportH * 0.5f;
-    *(float *)0x700000F0 = 2048.0f - (float)m_screenW * 0.5f
+    ((VIMatrix44 *)VI_SPR(0x700000C0))->Identity();
+    *(float *)VI_SPR(0x700000C0) = (float)m_viewportW * 0.5f;
+    *(float *)VI_SPR(0x700000D4) = -(float)m_viewportH * 0.5f;
+    *(float *)VI_SPR(0x700000F0) = 2048.0f - (float)m_screenW * 0.5f
                            + (float)m_viewportW * 0.5f + (float)m_viewportX;
-    *(float *)0x700000F4 = 2048.0f - (float)m_screenH * 0.5f
+    *(float *)VI_SPR(0x700000F4) = 2048.0f - (float)m_screenH * 0.5f
                            + (float)m_viewportH * 0.5f + (float)m_viewportY;
-    *(float *)0x700000E8 = -(m_p4570 - m_p456C) * 0.5f;
-    *(float *)0x700000F8 = (m_p4570 - m_p456C) * 0.5f + m_p456C + m_zBias;
+    *(float *)VI_SPR(0x700000E8) = -(m_p4570 - m_p456C) * 0.5f;
+    *(float *)VI_SPR(0x700000F8) = (m_p4570 - m_p456C) * 0.5f + m_p456C + m_zBias;
     return 0;
 }
 
@@ -951,10 +951,10 @@ void VIRaster::SetZBias(int z)
 
 int VIRaster::Store2D()
 {
-    sceVu0CopyMatrix(m_m44B0, *(VIMatrix44 *)0x70000000);
-    sceVu0CopyMatrix(m_m44F0, *(VIMatrix44 *)0x70000040);
-    unsigned char *amb = (unsigned char *)0x70000220;
-    unsigned char *sun = (unsigned char *)0x70000221;
+    sceVu0CopyMatrix(m_m44B0, *(VIMatrix44 *)VI_SPR(0x70000000));
+    sceVu0CopyMatrix(m_m44F0, *(VIMatrix44 *)VI_SPR(0x70000040));
+    unsigned char *amb = (unsigned char *)VI_SPR(0x70000220);
+    unsigned char *sun = (unsigned char *)VI_SPR(0x70000221);
     m_b4530 = *amb;
     m_b4531 = *sun;
     *amb = 0;
@@ -965,10 +965,10 @@ int VIRaster::Store2D()
 
 int VIRaster::Restore2D()
 {
-    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000000, m_m44B0);
-    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000040, m_m44F0);
-    *(unsigned char *)0x70000220 = m_b4530;
-    *(unsigned char *)0x70000221 = m_b4531;
+    sceVu0CopyMatrix(*(VIMatrix44 *)VI_SPR(0x70000000), m_m44B0);
+    sceVu0CopyMatrix(*(VIMatrix44 *)VI_SPR(0x70000040), m_m44F0);
+    *(unsigned char *)VI_SPR(0x70000220) = m_b4530;
+    *(unsigned char *)VI_SPR(0x70000221) = m_b4531;
     m_dirtyLights = 1;
     return 0;
 }
@@ -977,9 +977,9 @@ int VIRaster::Restore2D()
 
 int VIRaster::InitSPRDoubleBuffer()
 {
-    m_p08 = 0x70002000;
-    m_p04 = 0x70000000;
-    m_p00 = 0x70002000;
+    m_p08 = VI_SPRI(0x70002000);
+    m_p04 = VI_SPRI(0x70000000);
+    m_p00 = VI_SPRI(0x70002000);
     return 0;
 }
 
@@ -1276,9 +1276,9 @@ int VIRaster::SetDirLight(int i, const VIMatrix44 &m, const VIRasterDirLight &l)
     // assignment is what keeps TWO address pseudos alive -- written through a
     // named pointer or reference, cse merges the store address with the one
     // the two calls need and the second `mult` disappears.
-    ((VIRasterDirLight *)0x700001BC)[i] = l;
-    m.SubMatrixMul(l.m_direction, ((VIRasterDirLight *)0x700001BC)[i].m_direction);
-    ((VIRasterDirLight *)0x700001BC)[i].m_direction.Normalize();
+    ((VIRasterDirLight *)VI_SPR(0x700001BC))[i] = l;
+    m.SubMatrixMul(l.m_direction, ((VIRasterDirLight *)VI_SPR(0x700001BC))[i].m_direction);
+    ((VIRasterDirLight *)VI_SPR(0x700001BC))[i].m_direction.Normalize();
     m_dirtyLights = 1;
     return 0;
 }
@@ -1304,11 +1304,11 @@ int VIRaster::SetDefaultLights(const VIMatrix44 &m)
     // shared base into a callee-saved register and every store goes off it,
     // where the target gives the two colours a pointer each (three uses) and
     // leaves every single-use field to the assembler's `lui at` macro.
-    ((VIColor32F *)0x700001E0)->r = 0.4f;
-    ((VIColor32F *)0x700001E0)->g = 0.4f;
-    ((VIColor32F *)0x700001E0)->b = 0.4f;
-    *(unsigned char *)0x70000220 = 1;
-    *(float *)0x700001EC = 0.0f;
+    ((VIColor32F *)VI_SPR(0x700001E0))->r = 0.4f;
+    ((VIColor32F *)VI_SPR(0x700001E0))->g = 0.4f;
+    ((VIColor32F *)VI_SPR(0x700001E0))->b = 0.4f;
+    *(unsigned char *)VI_SPR(0x70000220) = 1;
+    *(float *)VI_SPR(0x700001EC) = 0.0f;
     // Set(), not three field assignments: the inlined `this` is what
     // materialises `addiu v1,sp,16` for the second vector.  `fill` is never
     // read -- a dead local, and a source fact.
@@ -1316,15 +1316,15 @@ int VIRaster::SetDefaultLights(const VIMatrix44 &m)
     fill.Set(0.577f, 0.577f, 0.577f);
     m.SubMatrixMul(dir, VIRASTER_SPR->m_sun.m_direction);
     VIRASTER_SPR->m_sun.m_direction.Normalize();
-    ((VIColor32F *)0x700001AC)->r = 0.8f;
-    ((VIColor32F *)0x700001AC)->g = 0.8f;
-    ((VIColor32F *)0x700001AC)->b = 0.8f;
-    *(unsigned char *)0x70000221 = 1;
-    *(float *)0x7000020C = 1.0f;
-    *(float *)0x700001B8 = 0.0f;
-    *(float *)0x70000200 = 0.0f;
-    *(float *)0x70000204 = 0.0f;
-    *(float *)0x70000208 = 0.0f;
+    ((VIColor32F *)VI_SPR(0x700001AC))->r = 0.8f;
+    ((VIColor32F *)VI_SPR(0x700001AC))->g = 0.8f;
+    ((VIColor32F *)VI_SPR(0x700001AC))->b = 0.8f;
+    *(unsigned char *)VI_SPR(0x70000221) = 1;
+    *(float *)VI_SPR(0x7000020C) = 1.0f;
+    *(float *)VI_SPR(0x700001B8) = 0.0f;
+    *(float *)VI_SPR(0x70000200) = 0.0f;
+    *(float *)VI_SPR(0x70000204) = 0.0f;
+    *(float *)VI_SPR(0x70000208) = 0.0f;
     m_dirtyLights = 1;
     return 0;
 }
@@ -1421,7 +1421,7 @@ int VIEERasterDMACHandler(int ch)
             VIEEDMASend(1, pVIEERasterPendingDMA);
         pVIEERasterPendingDMA = 0;
     }
-    __asm__ __volatile__ ("sync.l\n\tei\n");
+    VI_EE_ASM("sync.l\n\tei\n");
     return 0;
 }
 
@@ -1432,9 +1432,9 @@ int VIRaster::Begin2D()
         UploadRasterMicro(&m_dmaTag);
     Store2D();
     m.Identity();
-    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000000, m);
+    sceVu0CopyMatrix(*(VIMatrix44 *)VI_SPR(0x70000000), m);
     m.m[3].z = -0.9999989867f;
-    sceVu0CopyMatrix(*(VIMatrix44 *)0x70000040, m);
+    sceVu0CopyMatrix(*(VIMatrix44 *)VI_SPR(0x70000040), m);
     m_dirtyLights = 1;
     return 0;
 }
@@ -1801,10 +1801,10 @@ int VIRaster::InitGSRegisters(_sceDmaTag **tag)
 int VIRaster::UploadPerMaterial(_sceDmaTag **tag)
 {
     VIColor32F c;
-    c.r = *(unsigned char *)0x70000224 * (1.0f / 255.0f);
-    c.g = *(unsigned char *)0x70000225 * (1.0f / 255.0f);
-    c.b = *(unsigned char *)0x70000226 * (1.0f / 255.0f);
-    c.a = *(unsigned char *)0x70000227 * (1.0f / 255.0f);
+    c.r = *(unsigned char *)VI_SPR(0x70000224) * (1.0f / 255.0f);
+    c.g = *(unsigned char *)VI_SPR(0x70000225) * (1.0f / 255.0f);
+    c.b = *(unsigned char *)VI_SPR(0x70000226) * (1.0f / 255.0f);
+    c.a = *(unsigned char *)VI_SPR(0x70000227) * (1.0f / 255.0f);
     (*tag)->m_id = 16;
     (*tag)->m_addr = 0;
     (*tag)->m_qwc = 3;
@@ -1819,11 +1819,11 @@ int VIRaster::UploadPerMaterial(_sceDmaTag **tag)
     ((unsigned int *)p)[1] = 0;
     ((unsigned int *)p)[2] = 0;
     ((unsigned int *)p)[3] = unpack;
-    ((float *)q)[0] = c.r + *(float *)0x700001E0;
-    ((float *)q)[1] = c.g + *(float *)0x700001E4;
-    ((float *)q)[2] = c.b + *(float *)0x700001E8;
+    ((float *)q)[0] = c.r + *(float *)VI_SPR(0x700001E0);
+    ((float *)q)[1] = c.g + *(float *)VI_SPR(0x700001E4);
+    ((float *)q)[2] = c.b + *(float *)VI_SPR(0x700001E8);
     unsigned int mscal = RMaterialOffset | 0x14000000;
-    ((float *)q)[3] = c.a + *(float *)0x700001EC;
+    ((float *)q)[3] = c.a + *(float *)VI_SPR(0x700001EC);
     q = base + 48;
     ((unsigned int *)base)[12] = 0;
     ((unsigned int *)q)[3] = mscal;
@@ -2008,14 +2008,14 @@ int VIRaster::Init()
     m_dirtyLights = 1;
     m_dirtyMatrices = 1;
     m_dirtyPreTrans = 1;
-    *(float *)0x7000022C = 0.15f;
-    *(float *)0x70000228 = 1.0f;
-    *(int *)0x70000210 = 0;
-    *(int *)0x70000214 = 0;
-    *(int *)0x70000218 = 0;
-    *(int *)0x7000021C = 0;
-    ((VIMatrix44 *)0x70000000)->Identity();
-    ((VIMatrix44 *)0x70000040)->Identity();
+    *(float *)VI_SPR(0x7000022C) = 0.15f;
+    *(float *)VI_SPR(0x70000228) = 1.0f;
+    *(int *)VI_SPR(0x70000210) = 0;
+    *(int *)VI_SPR(0x70000214) = 0;
+    *(int *)VI_SPR(0x70000218) = 0;
+    *(int *)VI_SPR(0x7000021C) = 0;
+    ((VIMatrix44 *)VI_SPR(0x70000000))->Identity();
+    ((VIMatrix44 *)VI_SPR(0x70000040))->Identity();
     CalcClipToScreen();
     CalcMatrices();
     UploadMatrices(&m_dmaTag);
@@ -2154,7 +2154,7 @@ int VIRaster::Flip()
 // VIMaterialPass as its implicit operator= sees it: the A+D block is an array
 // of FOUR quadwords, copied element by element with `lq`/`sq`, and +0x4C is
 // alignment padding that no copy touches.
-typedef unsigned int VIRasterQW __attribute__((mode(TI)));
+VI_QWORD_TYPEDEF(VIRasterQW);
 class VIRasterPassImage
 {
 public:
@@ -2254,9 +2254,9 @@ int VIRaster::AddMaterial(int i, _sceDmaTag **tag)
     (*tag)->m_addr = addr;
     (*tag)->m_qwc = qwc;
     *tag = *tag + 1;
-    if (*(int *)0x70000224 != *(int *)&m->m_emissive)
+    if (*(int *)VI_SPR(0x70000224) != *(int *)&m->m_emissive)
     {
-        *(VIColor32 *)0x70000224 = m->m_emissive;
+        *(VIColor32 *)VI_SPR(0x70000224) = m->m_emissive;
         UploadPerMaterial(tag);
     }
     m_curMaterial = (int)m;
@@ -2506,8 +2506,8 @@ int VIRaster::DrawCenteredString(int font, const VIVect3 &at,
         return -1;
     if (AddMaterial(f->m_material, &m_dmaTag) < 0)
         return -1;
-    v.Set(at * *(VIMatrix44 *)0x70000000);
-    v.Set(v * *(VIMatrix44 *)0x70000040);
+    v.Set(at * *(VIMatrix44 *)VI_SPR(0x70000000));
+    v.Set(v * *(VIMatrix44 *)VI_SPR(0x70000040));
     float inv = 1.0f / v.w;
     v.x *= inv;
     v.y *= inv;
@@ -2518,8 +2518,8 @@ int VIRaster::DrawCenteredString(int font, const VIVect3 &at,
     q.x = (int)(v.x * hw + hw);
     q.y = (int)(-v.y * hh + hh);
     Store2D();
-    ((VIMatrix44 *)0x70000000)->Identity();
-    ((VIMatrix44 *)0x70000040)->Identity();
+    ((VIMatrix44 *)VI_SPR(0x70000000))->Identity();
+    ((VIMatrix44 *)VI_SPR(0x70000040))->Identity();
     m_dirtyLights = 1;
     int w = 0;
     int i;
@@ -2573,8 +2573,8 @@ int VIRaster::CalcCenteredStringScreenRect(int font, const VIVect3 &at,
     VIVect4 v;
     VIVect2I q;
     VIRFont *f = m_fonts.Value(font);
-    v.Set(at * *(VIMatrix44 *)0x70000000);
-    v.Set(v * *(VIMatrix44 *)0x70000040);
+    v.Set(at * *(VIMatrix44 *)VI_SPR(0x70000000));
+    v.Set(v * *(VIMatrix44 *)VI_SPR(0x70000040));
     float inv = 1.0f / v.w;
     v.x *= inv;
     v.y *= inv;
@@ -2663,34 +2663,34 @@ int VIRaster::UploadMatrices(_sceDmaTag **tag)
     ((unsigned int *)p)[2] = 0x13000000;
     ((unsigned int *)p)[1] = 0;
     ((unsigned int *)p)[3] = 0x6C150000;
-    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 32), *(VIMatrix44 *)0x70000140);
-    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 96), *(VIMatrix44 *)0x70000080);
-    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 160), *(VIMatrix44 *)0x700000C0);
+    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 32), *(VIMatrix44 *)VI_SPR(0x70000140));
+    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 96), *(VIMatrix44 *)VI_SPR(0x70000080));
+    sceVu0CopyMatrix(*(VIMatrix44 *)(base + 160), *(VIMatrix44 *)VI_SPR(0x700000C0));
     p = base + 224;
-    ((float *)p)[0] = *(float *)0x70000180;
-    ((float *)p)[1] = -*(float *)0x70000188;
-    ((float *)p)[2] = *(float *)0x70000184;
+    ((float *)p)[0] = *(float *)VI_SPR(0x70000180);
+    ((float *)p)[1] = -*(float *)VI_SPR(0x70000188);
+    ((float *)p)[2] = *(float *)VI_SPR(0x70000184);
     ((float *)p)[3] = 0.0f;
     p = base + 240;
-    ((float *)p)[0] = *(float *)0x70000190;
-    ((float *)p)[1] = *(float *)0x70000194;
-    ((float *)p)[2] = *(float *)0x70000198;
+    ((float *)p)[0] = *(float *)VI_SPR(0x70000190);
+    ((float *)p)[1] = *(float *)VI_SPR(0x70000194);
+    ((float *)p)[2] = *(float *)VI_SPR(0x70000198);
     float range = 1.0f;
-    if (*(unsigned char *)0x70000222)
-        range = 1.0f / *(float *)0x700001CC;
+    if (*(unsigned char *)VI_SPR(0x70000222))
+        range = 1.0f / *(float *)VI_SPR(0x700001CC);
     ((float *)p)[3] = range;
     p = base + 256;
     ((int *)p)[0] = m_p45C8;
-    ((float *)p)[1] = *(float *)0x7000022C;
+    ((float *)p)[1] = *(float *)VI_SPR(0x7000022C);
     ((float *)p)[2] = 0.0f;
-    ((float *)p)[3] = *(float *)0x70000228;
+    ((float *)p)[3] = *(float *)VI_SPR(0x70000228);
     p = base + 272;
-    if (*(unsigned char *)0x70000221)
+    if (*(unsigned char *)VI_SPR(0x70000221))
     {
-        ((float *)p)[0] = *(float *)0x700001AC;
-        ((float *)p)[1] = *(float *)0x700001B0;
-        ((float *)p)[2] = *(float *)0x700001B4;
-        ((float *)p)[3] = *(float *)0x700001B8;
+        ((float *)p)[0] = *(float *)VI_SPR(0x700001AC);
+        ((float *)p)[1] = *(float *)VI_SPR(0x700001B0);
+        ((float *)p)[2] = *(float *)VI_SPR(0x700001B4);
+        ((float *)p)[3] = *(float *)VI_SPR(0x700001B8);
     }
     else
     {
@@ -2700,9 +2700,9 @@ int VIRaster::UploadMatrices(_sceDmaTag **tag)
         ((float *)p)[3] = 0.0f;
     }
     p += 16;
-    if (*(unsigned char *)0x70000222)
+    if (*(unsigned char *)VI_SPR(0x70000222))
     {
-        VIRasterPointLight *l = (VIRasterPointLight *)0x700001C0;
+        VIRasterPointLight *l = (VIRasterPointLight *)VI_SPR(0x700001C0);
         ((float *)p)[0] = l->m_color.r;
         ((float *)p)[1] = l->m_color.g;
         ((float *)p)[2] = l->m_color.b;
@@ -2716,12 +2716,12 @@ int VIRaster::UploadMatrices(_sceDmaTag **tag)
         ((float *)p)[3] = 0.0f;
     }
     p += 16;
-    if (*(unsigned char *)0x70000220)
+    if (*(unsigned char *)VI_SPR(0x70000220))
     {
-        ((float *)p)[0] = *(float *)0x700001E0;
-        ((float *)p)[1] = *(float *)0x700001E4;
-        ((float *)p)[2] = *(float *)0x700001E8;
-        ((float *)p)[3] = *(float *)0x700001EC;
+        ((float *)p)[0] = *(float *)VI_SPR(0x700001E0);
+        ((float *)p)[1] = *(float *)VI_SPR(0x700001E4);
+        ((float *)p)[2] = *(float *)VI_SPR(0x700001E8);
+        ((float *)p)[3] = *(float *)VI_SPR(0x700001EC);
     }
     else
     {
@@ -2736,31 +2736,31 @@ int VIRaster::UploadMatrices(_sceDmaTag **tag)
     // a PLUS_EXPR, so true_dependence finds the RInitOffset load (a scalar at a
     // fixed lo_sum address) in conflict and holds it two cycles behind this
     // store.  An aggregate member at a varying address cannot alias it.
-    ((VIQWord *)p)->m_f[0] = *(float *)0x70000210;
+    ((VIQWord *)p)->m_f[0] = *(float *)VI_SPR(0x70000210);
     unsigned int mscal = RInitOffset | 0x14000000;
-    ((float *)p)[1] = *(float *)0x70000214;
-    ((float *)p)[2] = *(float *)0x70000218;
-    ((float *)p)[3] = *(float *)0x7000021C;
+    ((float *)p)[1] = *(float *)VI_SPR(0x70000214);
+    ((float *)p)[2] = *(float *)VI_SPR(0x70000218);
+    ((float *)p)[3] = *(float *)VI_SPR(0x7000021C);
     p += 16;
-    ((float *)p)[0] = *(float *)0x700001F0;
-    ((float *)p)[1] = *(float *)0x700001F4;
-    ((float *)p)[2] = *(float *)0x700001F8;
-    ((float *)p)[3] = *(float *)0x700001FC;
+    ((float *)p)[0] = *(float *)VI_SPR(0x700001F0);
+    ((float *)p)[1] = *(float *)VI_SPR(0x700001F4);
+    ((float *)p)[2] = *(float *)VI_SPR(0x700001F8);
+    ((float *)p)[3] = *(float *)VI_SPR(0x700001FC);
     p += 16;
-    ((float *)p)[0] = *(float *)0x70000200;
-    ((float *)p)[1] = *(float *)0x70000204;
-    ((float *)p)[2] = *(float *)0x70000208;
-    ((float *)p)[3] = *(float *)0x7000020C;
+    ((float *)p)[0] = *(float *)VI_SPR(0x70000200);
+    ((float *)p)[1] = *(float *)VI_SPR(0x70000204);
+    ((float *)p)[2] = *(float *)VI_SPR(0x70000208);
+    ((float *)p)[3] = *(float *)VI_SPR(0x7000020C);
     p += 16;
     ((unsigned int *)p)[3] = mscal;
     ((unsigned int *)p)[1] = 0;
     ((unsigned int *)p)[2] = 0;
     ((unsigned int *)p)[0] = 0;
     m_dirtyLights = 0;
-    *(unsigned char *)0x70000224 = 0;
-    *(unsigned char *)0x70000225 = 0;
-    *(unsigned char *)0x70000226 = 0;
-    *(unsigned char *)0x70000227 = 0;
+    *(unsigned char *)VI_SPR(0x70000224) = 0;
+    *(unsigned char *)VI_SPR(0x70000225) = 0;
+    *(unsigned char *)VI_SPR(0x70000226) = 0;
+    *(unsigned char *)VI_SPR(0x70000227) = 0;
     return 0;
 }
 
@@ -2856,16 +2856,16 @@ int VIRaster::BeginBillboards(VIBillboard **bb, int count)
             ((unsigned int *)p)[1] = 0;
             p += 16;
             void *dst = p;
-            memcpy(dst, (void *)0x70000000, 64);
+            memcpy(dst, (void *)VI_SPR(0x70000000), 64);
             p += 64;
-            mat.Mul(*(VIMatrix44 *)0x70000040, *(VIMatrix44 *)0x700000C0);
+            mat.Mul(*(VIMatrix44 *)VI_SPR(0x70000040), *(VIMatrix44 *)VI_SPR(0x700000C0));
             ((VIRasterQW *)p)[0] = ((VIRasterQW *)&mat)[0];
             ((VIRasterQW *)p)[1] = ((VIRasterQW *)&mat)[1];
             ((VIRasterQW *)p)[2] = ((VIRasterQW *)&mat)[2];
             ((VIRasterQW *)p)[3] = ((VIRasterQW *)&mat)[3];
             p += 64;
             dst = p;
-            memcpy(dst, (void *)0x70000080, 64);
+            memcpy(dst, (void *)VI_SPR(0x70000080), 64);
             p += 64;
             ((unsigned int *)p)[0] = 0;
             ((unsigned int *)p)[1] = 0;
@@ -3094,21 +3094,21 @@ int VIRaster::DrawPrimBufferPackVUNC(int prim, int pal, unsigned int flags)
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
     int r = 0;
     FlushDMABufferIfFull();
-    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    ((VIVect4 *)VI_SPR(0x70000210))->Set(pb->m_scale);
     if (m_dirtyLights)
         CalcMatrices();
     m_p45C8 = 0;
-    if (*(unsigned char *)0x70000222)
+    if (*(unsigned char *)VI_SPR(0x70000222))
     {
         VISphere s;
-        float x = *(float *)0x70000100;
-        float y = *(float *)0x70000104;
-        float z = *(float *)0x70000108;
+        float x = *(float *)VI_SPR(0x70000100);
+        float y = *(float *)VI_SPR(0x70000104);
+        float z = *(float *)VI_SPR(0x70000108);
         float len = sqrtf(x * x + y * y + z * z);
-        s.r = *(float *)0x700001CC * (1.0f / len);
-        s.c.x = *(float *)0x70000190;
-        s.c.y = *(float *)0x70000194;
-        s.c.z = *(float *)0x70000198;
+        s.r = *(float *)VI_SPR(0x700001CC) * (1.0f / len);
+        s.c.x = *(float *)VI_SPR(0x70000190);
+        s.c.y = *(float *)VI_SPR(0x70000194);
+        s.c.z = *(float *)VI_SPR(0x70000198);
         if (pb->m_bbox.Intersects(s))
             m_p45C8 = 1;
     }
@@ -3140,7 +3140,7 @@ int VIRaster::DrawPrimBufferPackVUNCG(int prim, int pal, unsigned int flags)
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
     int r = 0;
     FlushDMABufferIfFull();
-    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    ((VIVect4 *)VI_SPR(0x70000210))->Set(pb->m_scale);
     if (m_dirtyLights)
         CalcMatrices();
     UploadMatrices(&m_dmaTag);
@@ -3227,20 +3227,20 @@ int VIRaster::DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags)
 {
     int i, prims, k;
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
-    if (*(unsigned char *)0x70000222 != 0 && m_tessellate != 0)
+    if (*(unsigned char *)VI_SPR(0x70000222) != 0 && m_tessellate != 0)
     {
         VIBBox box;
         VIVect3 v[3];
-        ((VIMatrix44 *)0x70000100)->Mul(*(VIVect3 *)0x700001C0, v[0]);
+        ((VIMatrix44 *)VI_SPR(0x70000100))->Mul(*(VIVect3 *)VI_SPR(0x700001C0), v[0]);
         {
-            VISphere s(v[0] + m_preTransAt, *(float *)0x700001CC);
+            VISphere s(v[0] + m_preTransAt, *(float *)VI_SPR(0x700001CC));
             BoxAround(box, s);
         }
         if (box.Intersects(pb->m_bbox))
         {
             VIBBox lbox;
             VIBBox tbox;
-            VISphere ls(v[0], *(float *)0x700001CC);
+            VISphere ls(v[0], *(float *)VI_SPR(0x700001CC));
             BoxAround(lbox, ls);
             char *verts = pb->m_verts;
             prims = 0;
@@ -3257,7 +3257,7 @@ int VIRaster::DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags)
                     {
                         if (box.Intersects(pb->m_prims[prims].m_bbox))
                         {
-                            float *sc = (float *)0x70000210;
+                            float *sc = (float *)VI_SPR(0x70000210);
                             verts += 32;
                             VIPrimVertexPackVUNCG *b = (VIPrimVertexPackVUNCG *)verts;
                             verts += 32;
@@ -3275,7 +3275,7 @@ int VIRaster::DrawPrimBufferTessPackVUNCG(int prim, int pal, unsigned int flags)
                                 verts += 32;
                                 v[0] = v[1];
                                 v[1] = v[2];
-                                TessPos(v[2], c->m_pos, *(float *)0x70000210);
+                                TessPos(v[2], c->m_pos, *(float *)VI_SPR(0x70000210));
                                 v[2] += m_preTrans[c->m_preTrans];
                                 tbox.Init(3, v);
                                 if (lbox.Intersects(tbox))
@@ -3390,9 +3390,9 @@ int VIRaster::TessTriangle(VIVect3 &a, VIVect3 &b, VIVect3 &c,
                            VIPrimVertexPackVUNCG *vc)
 {
     VITessVertex t[3];
-    float *uvScale = (float *)0x70000214;
-    float *nScale = (float *)0x70000218;
-    float *cScale = (float *)0x7000021C;
+    float *uvScale = (float *)VI_SPR(0x70000214);
+    float *nScale = (float *)VI_SPR(0x70000218);
+    float *cScale = (float *)VI_SPR(0x7000021C);
     t[0].m_pos = a;
     TessUV(t[0].m_uv, va->m_uv, *uvScale);
     TessNormal(t[0].m_normal, va->m_normal, *nScale);
@@ -3422,7 +3422,7 @@ int VIRaster::DrawPrimBufferPackVUNBW(int prim, int pal, unsigned int flags)
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
     int r = 0;
     FlushDMABufferIfFull();
-    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    ((VIVect4 *)VI_SPR(0x70000210))->Set(pb->m_scale);
     if (m_dirtyLights)
         CalcMatrices();
     UploadMatrices(&m_dmaTag);
@@ -3453,8 +3453,8 @@ int VIRaster::DrawPrimBufferPackVU(int prim, int pal, float f, unsigned int flag
     VIPrimBuffer *pb = m_primBuffers.Value(prim);
     int r = 0;
     FlushDMABufferIfFull();
-    *(float *)0x70000228 = f;
-    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    *(float *)VI_SPR(0x70000228) = f;
+    ((VIVect4 *)VI_SPR(0x70000210))->Set(pb->m_scale);
     if (m_dirtyLights)
         CalcMatrices();
     UploadMatrices(&m_dmaTag);
@@ -3491,21 +3491,21 @@ int VIRaster::DrawPrimBufferPackVUNC(int prim, int cbi, int pal,
     FlushDMABufferIfFull();
     if (prim != cb->m_primBuffer)
         return -1;
-    ((VIVect4 *)0x70000210)->Set(pb->m_scale);
+    ((VIVect4 *)VI_SPR(0x70000210))->Set(pb->m_scale);
     if (m_dirtyLights)
         CalcMatrices();
     m_p45C8 = 0;
-    if (*(unsigned char *)0x70000222)
+    if (*(unsigned char *)VI_SPR(0x70000222))
     {
         VISphere s;
-        float x = *(float *)0x70000100;
-        float y = *(float *)0x70000104;
-        float z = *(float *)0x70000108;
+        float x = *(float *)VI_SPR(0x70000100);
+        float y = *(float *)VI_SPR(0x70000104);
+        float z = *(float *)VI_SPR(0x70000108);
         float len = sqrtf(x * x + y * y + z * z);
-        s.r = *(float *)0x700001CC * (1.0f / len);
-        s.c.x = *(float *)0x70000190;
-        s.c.y = *(float *)0x70000194;
-        s.c.z = *(float *)0x70000198;
+        s.r = *(float *)VI_SPR(0x700001CC) * (1.0f / len);
+        s.c.x = *(float *)VI_SPR(0x70000190);
+        s.c.y = *(float *)VI_SPR(0x70000194);
+        s.c.z = *(float *)VI_SPR(0x70000198);
         if (pb->m_bbox.Intersects(s))
             m_p45C8 = 1;
     }

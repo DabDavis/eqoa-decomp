@@ -3,7 +3,7 @@
 // requests on 0x1101 (a sub-op byte, the server's token, arguments), replies on 0x1102.
 // The file name is ours.
 #include "game.h"
-
+VI_HOST_ONLY(extern "C" void *memcpy(void *, const void *, unsigned int);)  // gcc 2.95: implicit
 extern "C" void qsort(void *base, unsigned int n, unsigned int size,
                       int (*compare)(const void *, const void *));
 
