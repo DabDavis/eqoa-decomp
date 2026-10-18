@@ -6,6 +6,11 @@ a candidate build. **No compiler is required for anything in this directory** â€
 it is offline tooling, and it is useful for ordinary RE work whether or not the
 decomp goes ahead.
 
+**A native PC port** of this source lives in its own repository,
+[eqoa-port](https://github.com/DabDavis/eqoa-port), which takes this one as a
+submodule. Its only footprint here is `src/viport.h`: the switches expand to
+the original tokens on the PS2, so the matching build sees no difference.
+
 ```bash
 ./test_eqdecomp.py                                  # 36 tests, ~1,300 assertions
 ./eqd.py census '__C?10VIMatrix44' -v               # scalar / VU0-asm split
