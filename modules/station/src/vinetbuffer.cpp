@@ -54,7 +54,7 @@ int VINetSendBuffer::Add(const void *data, int len)
         return 1;
     memcpy(m_buf + m_length, data, len);
     m_length += len;
-    printf("Bytes in send buffer = %i\n", m_length);
+    printf("Bytes in send buffer = %i\n", m_length); VI_HOST_ONLY(return 0;)
 }
 
 // 0x002E5558.  What did not go out stays, at the front of a new buffer.

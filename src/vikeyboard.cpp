@@ -179,7 +179,7 @@ int VIStartKeyboardDriver()
 
 int VIStopKeyboardDriver()
 {
-    lgKbMPrepareForRebootIOP();
+    lgKbMPrepareForRebootIOP(); VI_HOST_ONLY(return 0;)
 }
 
 VIKeyboard::VIKeyboard()

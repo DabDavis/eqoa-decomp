@@ -814,12 +814,12 @@ int VIString::vsnprintf16(unsigned short *d, int n, const char *f, char *ap)
     int size = (strlen(f) + 1) * 2;
     unsigned short *t = (unsigned short *)__builtin_alloca(size);
     str8to16(t, size, f);
-    vsnprintf16(d, n, t, ap);
+    VI_HOST_ONLY(return) vsnprintf16(d, n, t, ap);
 }
 
 int VIString::vsnprintf16(unsigned short *d, int n, const unsigned short *f, char *ap)
 {
-    VI_vsnprintf(d, n, f, ap);
+    VI_vsnprintf(d, n, f, ap); VI_HOST_ONLY(return 0;)
 }
 
 // Phase 61, wave 3: VOID (no caller reads a result, and the tail call leaves

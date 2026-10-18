@@ -610,7 +610,7 @@ int usocket_sendto(usocket_t *pSocket, const void *pData, int iSize, int iDrop,
     ipaddress_t addr;
 
     ipaddress_read(&addr, pData);
-    usocket_sendto_addr(pSocket, &addr, (const char *)pData + 6, iSize - 6,
+    VI_HOST_ONLY(return) usocket_sendto_addr(pSocket, &addr, (const char *)pData + 6, iSize - 6,
                         iDrop, iDelay, iJitter);    // no `return`: v0 carries it
 }
 

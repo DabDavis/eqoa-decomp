@@ -583,4 +583,4 @@ int VIWndConnect::SetCombination()
         sAuthSeen = 0;
         m_deadline = VITimer::GetTime() + m_timeout;
     }
-}
+VI_HOST_ONLY(return 0;) }

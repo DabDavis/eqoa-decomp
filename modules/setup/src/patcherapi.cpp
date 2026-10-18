@@ -389,5 +389,5 @@ void PatcherAPI::SetPatchImage(VIPatchImage *a)
 VIPatchImage *PatcherAPI::FindPatchImage(const char *a)
 {
     if (m_impl)
-        return m_impl->FindPatchImage(a);
+        return m_impl->FindPatchImage(a); VI_HOST_ONLY(return 0;)
 }

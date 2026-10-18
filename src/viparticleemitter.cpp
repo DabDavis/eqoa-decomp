@@ -189,7 +189,7 @@ int VIParticleEmitter::Purge()
     while ((n = m_particles.RemHead()) != 0)
         m_system->m_freeParticles.AddTail(n);
 
-    m_numParticles = 0;
+    m_numParticles = 0; VI_HOST_ONLY(return 0;)
 }
 
 // Phase 61: VOID, not int.  The body is the same either way -- there was never
@@ -250,7 +250,7 @@ int VIParticleEmitter::BlendMotifs()
         RecomputeStaticBBox();
         m_blendVersion = version;
     }
-}
+VI_HOST_ONLY(return 0;) }
 
 static inline VIVect3 operator-(const VIVect3 &a, const VIVect3 &b)
 {

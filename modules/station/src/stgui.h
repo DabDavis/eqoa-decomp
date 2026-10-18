@@ -151,8 +151,8 @@ public:
     VIGUIDataModel *GetModel();                                 // 0x002C19E0
     void SetSelected(int f);                                    // 0x002C19E8
     int  IsSelected();                                          // 0x002C19F0
-    virtual int OnKeyUp(int key) {}
-    virtual int OnKeyDown(int key) {}
+    virtual int OnKeyUp(int key) { VI_HOST_ONLY(return 0;) }
+    virtual int OnKeyDown(int key) { VI_HOST_ONLY(return 1;) }
     virtual int OnMessage(VIWnd *w, int msg, int p1, int p2) { return 0; }
 
     char        m_name[32];                                     // +0x00

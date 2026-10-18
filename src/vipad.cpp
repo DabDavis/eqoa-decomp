@@ -69,7 +69,7 @@ int VIPad::Close()
         m_open = 0;
         scePadPortClose(m_port, m_slot);
     }
-    m_mode = 0;
+    m_mode = 0; VI_HOST_ONLY(return 0;)
 }
 
 int VIPad::Process(long now)
@@ -110,7 +110,7 @@ int VIPad::VibrateLf(unsigned char level, int ms)
         m_lfEnd = ms + m_time;
         m_dirty = 1;
     }
-}
+VI_HOST_ONLY(return 0;) }
 
 int VIPad::VibrateHf(int ms)
 {
@@ -120,7 +120,7 @@ int VIPad::VibrateHf(int ms)
         m_hfEnd = ms + m_time;
         m_dirty = 1;
     }
-}
+VI_HOST_ONLY(return 0;) }
 
 void VIPad::StopVibration()
 {

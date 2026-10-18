@@ -1041,7 +1041,7 @@ int VIAtmosphere::Update(VIScene &sc, VICamera &cam, long time, float a, float b
         ProcessWeather(sc, cam);
         ProcessTransitions(sc, a, b);
     }
-}
+VI_HOST_ONLY(return 0;) }
 
 int VIAtmosphere::Clear(VIScene &sc)
 {
@@ -1085,7 +1085,7 @@ int VIAtmosphere::Clear(VIScene &sc)
         delete [] m_splashNodes;
         m_splashNodes = 0;
     }
-    m_initialised = 0;
+    m_initialised = 0; VI_HOST_ONLY(return 0;)
 }
 
 int VIAtmosphere::SetSkyColor(VIScene &sc, const VIColor32 &c)
@@ -1168,7 +1168,7 @@ int VIAtmosphere::RenderSplashes(VIScene &sc, VICamera &cam)
         r->EndBillboards();
         bb = 0;
     }
-}
+VI_HOST_ONLY(return 0;) }
 
 int VIAtmosphere::RenderSky(VIScene &sc, VICamera &cam)
 {
@@ -1203,7 +1203,7 @@ int VIAtmosphere::RenderSky(VIScene &sc, VICamera &cam)
         if (m_p618 == 0)
             RenderStars(sc, cam);
     }
-}
+VI_HOST_ONLY(return 0;) }
 
 void VIAtmosphere::RenderWeather(VIScene &sc, VICamera &cam)
 {
