@@ -23,7 +23,8 @@ import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
+# the inputs' directory, as eqdecomp.py reads it: $EQOA_ROOT, else the tree's parent
+ROOT = os.environ.get('EQOA_ROOT') or os.path.dirname(os.path.dirname(HERE))
 IMAGE = os.path.join(ROOT, 'claude-eqoa-iso/decrypted_modules/SUPPORT_decompressed_SNR1.bin')
 SYMBOLS = os.path.join(ROOT, 'claude-eqoa-iso/decrypted_modules/SUPPORT_symbol_map.txt')
 IMAGE_BASE = 0x003E3D00
