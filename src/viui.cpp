@@ -881,8 +881,8 @@ int VIUI::ReloadWords()
 
 const VIUISoundEntry *GetUISound(VIUISoundId id)
 {
-    static VIUISoundEntry sSounds[17];
+    extern VIUISoundEntry sUISounds[17];    // data (sm_FontName+0x990), as sTextures
     if ((unsigned int)id < 17)
-        return &sSounds[id];
-    return &sSounds[0];
+        return &sUISounds[id];
+    return &sUISounds[0];
 }

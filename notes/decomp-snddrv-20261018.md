@@ -112,9 +112,24 @@ Measured:
   ambience XM (commands 7, 8, then 10s). The XM player keys voices inside its 16-voice
   mask.
 
-Not yet: a comparison against PCSX2's SPU2 output for the same scene. The ADSR,
-interpolation and sweep code follows OpenGOAL's and is not checked against hardware
-here.
+Against PCSX2 (the same day, with the tracer's new `wavrec`: the SPU2's own output
+before PCSX2's ×0x4FFF gain and DC filter, as a 48 kHz WAV), after four fixes:
+- the login screen's UI clicks are bit-exact, every sample on both channels;
+- character select's BGM is bit-exact for 20.6 s, across the ring refills;
+- the world's BGM is bit-exact until the XM starts. With the BGM subtracted, the XM
+  correlates 0.998–0.9997 at 27–32 dB. The residual is the 100 Hz timer's phase: a
+  host clock in the port, emulated IOP time in PCSX2.
+
+The four fixes:
+- `GetUISound`'s table is data (`sm_FontName+0x990`). As a decomp-local static it was
+  all zeros, so every UI sound started at volume 0. It is now an `extern`, as
+  `sTextures` is; viui is still 43/43. Any function-local static table is all zeros on
+  a host build.
+- ADPCM prediction rounds as the hardware does:
+  `(c0 * h1 + c1 * h2 + 32) >> 6`.
+- The voice runs in PCSX2's per-sample order. The old order ended one-shots 13 samples
+  early.
+- The world's music needs IOP streaming, so the port now serves CDSTREAM's `0x2114`.
 
 Two pre-existing port bugs turned up:
 - `vi_cd_lookup` read the root directory's place before opening the ISO. The game
