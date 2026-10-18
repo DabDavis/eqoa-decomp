@@ -641,7 +641,7 @@ int VIFile::BufferedReadCopy(void *dst, int n)
         if (got)
         {
             if (sIopStream)
-                memcpy(dst, (char *) ((unsigned) (m_bufferAligned + (int) m_bufPos) | 0x20000000), got);
+                memcpy(dst, (char *) VI_UNCACHED((unsigned) (m_bufferAligned + (int) m_bufPos)), got);
             else
                 memcpy(dst, m_bufferAligned + (int) m_bufPos, got);
             m_bufPos = m_bufPos + got;

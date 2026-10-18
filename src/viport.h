@@ -92,6 +92,11 @@ void vi_port_text16(const unsigned short *s, int max);
 // for good, past the fog's near plane (everything near fogged solid).
 #define VI_MALLINFO vi_ee_mallinfo
 
+// An address in the EE's uncached mirror (KSEG 0x20000000 + RAM), which the
+// IOP-streaming file path reads its DMA'd sector buffer through.  The host's
+// heap has no mirror: the address itself.
+#define VI_UNCACHED(a) (a)
+
 #else  // the PS2 build: the original tokens
 
 #define VI_VA_LIST            char *
@@ -106,6 +111,7 @@ void vi_port_text16(const unsigned short *s, int max);
 #define VI_BOOL4 bool
 #define VI_EE_ASM(s) __asm__ __volatile__ (s)
 #define VI_MALLINFO mallinfo
+#define VI_UNCACHED(a) (a | 0x20000000)
 
 #endif
 
