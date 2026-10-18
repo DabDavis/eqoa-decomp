@@ -86,7 +86,7 @@ int VISurface::LockMipLevel(int level, int &stride, VIPixelStore &ps, unsigned c
 {
     if (m_lockLevel != -1)
         return -1;
-    m_dirty = 1;
+    m_dirty = 1; VI_HOST_ONLY(vi_port_surface_changed(m_data, m_dataSize);)
     m_lockLevel = level;
     ps = m_pixelStore;
     stride = m_levels[level].m_stride;
@@ -98,7 +98,7 @@ int VISurface::UnlockMipLevel(int level)
 {
     if (m_lockLevel != level)
         return -1;
-    m_lockLevel = -1;
+    m_lockLevel = -1; VI_HOST_ONLY(vi_port_surface_changed(m_data, m_dataSize);)
     return 0;
 }
 
@@ -107,7 +107,7 @@ int VISurface::LockPalette(int &count, VIPixelStore &ps, unsigned char **p)
     if (m_lockLevel != -1)
         return -1;
     ReorderPalette();
-    m_dirty = 1;
+    m_dirty = 1; VI_HOST_ONLY(vi_port_surface_changed(m_data, m_dataSize);)
     m_lockLevel = m_numMipLevels;
     if (m_paletteCount == 0)
     {
@@ -129,7 +129,7 @@ int VISurface::UnlockPalette()
     if (m_lockLevel != m_numMipLevels)
         return -1;
     ReorderPalette();
-    m_lockLevel = -1;
+    m_lockLevel = -1; VI_HOST_ONLY(vi_port_surface_changed(m_data, m_dataSize);)
     return 0;
 }
 
@@ -148,7 +148,7 @@ int VISurface::Deallocate()
 {
     if (m_data)
     {
-        delete [] m_data;
+        delete [] m_data; VI_HOST_ONLY(vi_port_surface_changed(m_data, m_dataSize);)
         // Field order, and the two closing stores the other way round.  What
         // decides it is the value-hoist: gcc emits the LAST store of each
         // distinct constant first, in source order, and the rest after it in

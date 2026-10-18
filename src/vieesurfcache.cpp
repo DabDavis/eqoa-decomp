@@ -850,7 +850,7 @@ int VIEESurfCache::ConstructDMAPacket(VISurface &s, VIEESurfCacheInfo &c,
 
         int ha = s.m_paletteHeader;
         int hq = s.m_paletteQWC;
-        (*tag)->m_id = 48;
+        (*tag)->m_id = VI_DMA_STATIC_TEX(48);
         (*tag)->m_addr = ha;
         (*tag)->m_qwc = hq;
         *tag = *tag + 1;
@@ -905,7 +905,7 @@ int VIEESurfCache::ConstructDMAPacket(VISurface &s, VIEESurfCacheInfo &c,
         h >>= 1;
         int la = s.m_levels[k].m_header;
         int lq = s.m_levels[k].m_qwc;
-        (*tag)->m_id = 48;
+        (*tag)->m_id = VI_DMA_STATIC_TEX(48);
         (*tag)->m_addr = la;
         (*tag)->m_qwc = lq;
         *tag = *tag + 1;

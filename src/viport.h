@@ -123,6 +123,15 @@ int inflateReset2(struct z_stream_s *strm, int windowBits);
 // ignores on channel 1 with PCE off in D_CTRL, and the port never reads).
 // vi_port_static_dma_changed(): a buffer was released or is being rebuilt.
 #define VI_DMA_STATIC(id) ((id) | 4)
+// A surface's upload (VIEESurfCache::ConstructDMAPacket's palette and level
+// REFs): the surface's own bytes, the same until it is locked, unlocked or
+// freed, which VISurface reports with vi_port_surface_changed(data, size).
+#define VI_DMA_STATIC_TEX(id) ((id) | 8)
+#ifdef __cplusplus
+extern "C" void vi_port_surface_changed(const void *p, int size);
+#else
+void vi_port_surface_changed(const void *p, int size);
+#endif
 
 // VIClient::Process's frame cap: it spins until this many VITimer ticks
 // (983.04 Hz, so 20 is 20.3 ms) have passed since the frame began.  The port
@@ -157,6 +166,7 @@ void vi_port_static_dma_changed(void);
 #define VI_QUAD long long
 #define VI_ZLIB_RAW(s) *(int *)s.state = 7
 #define VI_DMA_STATIC(id) id
+#define VI_DMA_STATIC_TEX(id) id
 #define VI_FRAME_TICKS(n) n
 
 #endif
