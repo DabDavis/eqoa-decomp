@@ -6,7 +6,7 @@
 #include "station.h"
 #include "vilist_t.h"
 
-void McErr(VIWnd *w, const VIVect2I &pos, int x);
+VI_RET(int, void) McErr(VIWnd *w, const VIVect2I &pos, int x);
 extern "C" unsigned int VIHashResourceID(const char *s);
 extern "C" float sinf(float);
 

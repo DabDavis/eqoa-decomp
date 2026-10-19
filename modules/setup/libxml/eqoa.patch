@@ -64,6 +64,15 @@
  		"xmlInitParserCtxt: out of memory\n");
 --- a/xmlIO.c
 +++ b/xmlIO.c
+@@ -160,7 +160,7 @@
+ }
+ 
+ static int
+-xmlNop(void) {
++xmlNop(void *context, char *buffer, int len) {	/* EQOA port: a read callback's parameters, as later libxml2 has them; wasm types every indirect call, and the PS2's code is the same */
+     return(0);
+ }
+ 
 @@ -1536,6 +1536,14 @@
   *
   * Returns a new allocated string containing the directory, or NULL.

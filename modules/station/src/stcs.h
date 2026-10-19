@@ -21,7 +21,7 @@
 // ------------------------------------------------------- the interface --
 // What VICSInterface.cpp calls in other modules and the C library.
 const char *VIGetGameCode();
-void McErr(VIWnd *parent, const VIVect2I &pos, int code);   // MCERR's export
+VI_RET(int, void) McErr(VIWnd *parent, const VIVect2I &pos, int code);   // MCERR's export
 extern "C" void _VIAlert(const char *fmt, ...);
 extern "C" const char *__VIAssertf_file;
 extern "C" int __VIAssertf_line;

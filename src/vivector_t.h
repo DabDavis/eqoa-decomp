@@ -12,7 +12,7 @@
 // Allocate's two induction pointers come out in the other order.
 #ifndef VI_PLACEMENT_NEW
 #define VI_PLACEMENT_NEW
-inline void *operator new(unsigned int, void *p) throw()
+inline void *operator new(VI_SIZE_T, void *p) throw()
 {
     return p;
 }

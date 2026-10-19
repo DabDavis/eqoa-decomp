@@ -15,7 +15,7 @@
 // scaled index FIRST in the sum and, for a one-byte element, m_data first.
 #ifndef VI_PLACEMENT_NEW
 #define VI_PLACEMENT_NEW
-inline void *operator new(unsigned int, void *p) throw()
+inline void *operator new(VI_SIZE_T, void *p) throw()
 {
     return p;
 }

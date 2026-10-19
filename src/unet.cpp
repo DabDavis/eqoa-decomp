@@ -16,7 +16,7 @@ extern "C" char    *strcpy(char *, const char *);
 extern "C" void    *memset(void *, int, unsigned);
 extern "C" void    *memalign(unsigned align, unsigned size);
 extern "C" int      printf(const char *, ...);
-extern "C" int      pf(const char *, ...);
+extern "C" VI_RET(void, int)      pf(const char *, ...);
 
 // ps2sdk's thread block: status +0, func +4, stack +8, stack_size +12,
 // gp_reg +16, initial_priority +20.  The startup fills five of the nine.

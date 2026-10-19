@@ -7,7 +7,7 @@
 int    McErr(VIWnd *owner, const VIVect2I &center, int screen);
 VIWnd *McErrWnd();
 int    VIIsMcSameSession();
-void   VIMemCardCopyProhibit();
+VI_RET(int, void)   VIMemCardCopyProhibit();
 
 // One WORDS.TXT entry in the current language (MCERR's Word).
 static inline const unsigned short *Word(VIUI *ui, int id)

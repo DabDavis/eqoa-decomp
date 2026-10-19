@@ -12,7 +12,7 @@ extern "C" int ezNetCtlUpInterface(int n);
 extern "C" int ezNetCnfGetProperties(const char *dev, const char *name, void *props);
 
 int   VIEELoadIrx(const char *name, int argLen, const char *args);
-void  VIEEUnloadIrx(int id);   // void here: an int return moves BeginConnect's -1 to v1
+VI_RET(int, void)  VIEEUnloadIrx(int id);   // void here: an int return moves BeginConnect's -1 to v1
 void  preparePowerOff();
 VIWnd *McErrWnd();
 int   McErr(VIWnd *owner, const VIVect2I &center, int screen);

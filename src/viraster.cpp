@@ -22,7 +22,7 @@ extern "C" int   sceGsResetGraph(int mode, int inter, int omode, int ffmd);
 extern "C" int   sceGsSyncV(int mode);
 extern "C" int   sceGsSyncPath(int mode, unsigned short timeout);
 extern "C" void *sceDmaGetChan(int ch);
-extern int   VIEEDMASync(int wait);
+extern VI_RET(void, int)   VIEEDMASync(int wait);
 extern "C" void FlushCache(int mode);
 void VIEEDMASend(int chan, void *tag);
 // (Phase 61: `VIEEDMAStart`/`VIEEDMAKick` were guesses -- Flush calls these two.)
@@ -31,7 +31,7 @@ void VIEEDMASend(int chan, void *tag);
 // VIVect3::Normalize, whose `int` result is what puts the test in v1.)
 // (Phase 61: `VIVu0UnitMatrix`/`VIVu0CopyMatrix` were guesses -- CalcClipToScreen
 // calls VIMatrix44::Identity, Store2D/Restore2D sceVu0CopyMatrix.)
-int VIEEDebugVU1Memory(int a, int b);
+VI_RET(void, int) VIEEDebugVU1Memory(int a, int b);
 extern "C" void *memcpy(void *, const void *, unsigned int);
 
 // The DMAC handler the raster installs on channel 1 (VIF1).  The handler body

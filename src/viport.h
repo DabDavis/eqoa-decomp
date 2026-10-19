@@ -37,14 +37,48 @@ extern "C++" {
 template <class T> struct vi_va_promote { typedef T type; };
 template <> struct vi_va_promote<char> { typedef int type; };
 template <> struct vi_va_promote<unsigned short> { typedef int type; };
+#ifdef __wasm__
+// wasm32's list is a void * into the caller's argument block, each argument
+// at its own alignment and at least 4 bytes.  The tree hands a list on as a
+// char * (VI_vsnprintf's `ap`), which i386's char * list allowed, so in C++
+// the list is a char * here too and is read by hand.
+template <class T> inline T vi_va_arg(char *&ap)
+{
+    typedef typename vi_va_promote<T>::type P;
+    const unsigned int a = __alignof__(P) > 4 ? __alignof__(P) : 4;
+    P v;
+    ap = (char *)(((unsigned int)ap + a - 1) & ~(a - 1));
+    __builtin_memcpy(&v, ap, sizeof(P));
+    ap += (sizeof(P) + 3) & ~3u;
+    return (T)v;
+}
+#undef VI_VA_LIST
+#undef VI_VA_START
+#define VI_VA_LIST            char *
+#define VI_VA_START(ap, last) \
+    ({ __builtin_va_list vi_va_; __builtin_va_start(vi_va_, last); (ap) = (char *)vi_va_; })
+#else
 template <class T> inline T vi_va_arg(__builtin_va_list &ap)
 {
     return (T)__builtin_va_arg(ap, typename vi_va_promote<T>::type);
 }
+#endif
 }
 #undef VI_VA_ARG
 #define VI_VA_ARG(ap, T)      vi_va_arg<T>(ap)
 #endif
+
+// A function whose callers and definer declare different return types (the
+// caller's TU wrote `void`, the definer returns int, or the reverse), which the
+// PS2's linker never compared.  wasm-ld does, and turns such a direct call into
+// a trap, so the host gives the CALLER's declaration the definer's type: every
+// such caller ignores the value.  VI_RET(host, ps2).
+#define VI_RET(h, p) h
+
+// The placement new's size parameter (the `_t.h` container headers): the
+// host's own size_t, which C++ requires there, and which is `unsigned long` on
+// wasm32 -- unspellable in the tree, where abi.h makes `long` eight bytes.
+#define VI_SIZE_T __typeof__(sizeof(0))
 
 // A 128-bit quadword (`mode(TI)`).  i386 has none; the code only copies them.
 #define VI_QWORD_TYPEDEF(name) \
@@ -203,6 +237,8 @@ extern "C" int vi_port_wide_edge(int x, int screenW);
 #define VI_VA_START(ap, last) \
     ((ap) = (char *)__builtin_next_arg(last) - (8 - __builtin_args_info(2)) * 8)
 #define VI_VA_ARG(ap, T)      (*(T *)(((ap) += 8) - 8))
+#define VI_SIZE_T unsigned int
+#define VI_RET(h, p) p
 #define VI_QWORD_TYPEDEF(name) \
     typedef unsigned int name __attribute__((mode(TI)))
 #define VI_SPR(a)  a
