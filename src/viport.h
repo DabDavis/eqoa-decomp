@@ -155,7 +155,8 @@ int inflateReset2(struct z_stream_s *strm, int windowBits);
 // port (platform/vif1.c) keeps what such data does to VIF1 and VU1 and does
 // not re-send it; the tag says so with PCE (bits 26-27, which the EE's DMAC
 // ignores on channel 1 with PCE off in D_CTRL, and the port never reads).
-// vi_port_static_dma_changed(): a buffer was released or is being rebuilt.
+// vi_port_static_dma_range(p, size): a buffer's bytes were freed, released or are being
+// rebuilt (vi_port_static_dma_changed(), which said only that one was, is no longer called).
 #define VI_DMA_STATIC(id) ((id) | 4)
 // A surface's upload (VIEESurfCache::ConstructDMAPacket's palette and level
 // REFs): the surface's own bytes, the same until it is locked, unlocked or
@@ -196,9 +197,9 @@ int vi_port_frame_ticks(int ticks);
 #endif
 #define VI_FRAME_TICKS(n) vi_port_frame_ticks(n)
 #ifdef __cplusplus
-extern "C" void vi_port_static_dma_changed(void);
+extern "C" void vi_port_static_dma_range(const void *p, int size);
 #else
-void vi_port_static_dma_changed(void);
+void vi_port_static_dma_range(const void *p, int size);
 #endif
 
 // Widescreen (the port's modules/wide_port.cpp; VI_ASPECT=16:9).  The picture

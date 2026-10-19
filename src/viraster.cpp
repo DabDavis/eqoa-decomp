@@ -1083,7 +1083,7 @@ int VIRaster::ReleasePrimBuffer(int i, VIDictionary &d)
             if (d.Remove(*(VIResource *)pb) < 0)
                 return -1;
         }
-        pb->m_userFlags = m_frame; VI_HOST_ONLY(vi_port_static_dma_changed();)
+        pb->m_userFlags = m_frame; VI_HOST_ONLY(vi_port_static_dma_range(pb->m_data, pb->m_dataSize);)
         if (m_primBufferFree.Add(pb) < 0)
             return -1;
         if (m_primBuffers.Erase(i) < 0)
@@ -1342,7 +1342,7 @@ int VIRaster::ReleaseColorBuffer(int i, VIDictionary &d)
             ReleasePrimBuffer(cb->m_primBuffer, d);
             cb->m_primBuffer = -1;
         }
-        delete cb; VI_HOST_ONLY(vi_port_static_dma_changed();)
+        VI_HOST_ONLY(vi_port_static_dma_range(cb->m_data, cb->m_dataSize);) delete cb;
     }
     return 0;
 }

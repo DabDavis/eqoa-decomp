@@ -65,7 +65,7 @@ VIPrimBuffer::~VIPrimBuffer()
 
 int VIPrimBuffer::Clear()
 {
-    if (m_data)
+    VI_HOST_ONLY(vi_port_static_dma_range(m_data, m_dataSize);) if (m_data)
         delete [] m_data;
     m_type = 0;
     m_locked = 0;

@@ -23,7 +23,7 @@ VIColorBuffer::~VIColorBuffer()
 
 int VIColorBuffer::Clear()
 {
-    if (m_data)
+    VI_HOST_ONLY(vi_port_static_dma_range(m_data, m_dataSize);) if (m_data)
         delete [] m_data;
 
     m_locked = 0;
@@ -75,7 +75,7 @@ int VIColorBuffer::Lock(VIRaster &r)
     if (m_locked)
         return -1;
 
-    m_locked = 1; VI_HOST_ONLY(vi_port_static_dma_changed();)
+    m_locked = 1; VI_HOST_ONLY(vi_port_static_dma_range(m_data, m_dataSize);)
     pBuildSource = r.PrimBuffer(m_primBuffer);
     pBuildDMATag = (unsigned int *)(m_verts + m_vertCursor * 16);
     BuildVQSource = 0;
