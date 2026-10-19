@@ -136,6 +136,14 @@ class VIRaster;
 class VIPrimBuffer;
 struct _sceDmaTag;
 void vi_port_hook_run(VIRaster *r, VIPrimBuffer *pb, int run, int mat, _sceDmaTag **tag);
+// Level 4: inside a hooked run that qualifies (vi_port_hook_begin), a texture
+// download keeps all of its bookkeeping but adds no DMA (the GS thread has the
+// surface's bytes); such a surface is OWED its upload, which the next
+// download-free Cache of it outside a hooked run sends after all.
+class VISurface;
+void vi_port_hook_begin(VIRaster *r, VIPrimBuffer *pb, int mat);
+int vi_port_hook_nodownload(VISurface *s);
+int vi_port_hook_owed(VISurface *s);
 extern "C" void vi_port_hook_uniforms(const void *qw, int first, int n);
 #endif
 #ifdef __cplusplus

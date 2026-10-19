@@ -176,7 +176,7 @@ int VIEESurfCache::Cache(VISurface &s, VIMaterial &m, VIMaterialPass &p,
     int i = s.m_cacheIndex;
     if (i != -1)
     {
-        int n = i;
+        int n = i; VI_HOST_ONLY(if (vi_port_hook_owed(&s) && ConstructDMAPacket(s, m_infos.Value(n), tag) < 0) return -1;)
         if (noLRU == 0)
             MoveToLRUEnd(i);
         else
@@ -788,7 +788,7 @@ int VIEESurfCache::Set(VISurface &s, VIEESurfCacheInfo &c, VIMaterialPass &p)
 int VIEESurfCache::Download(VISurface &s, VIEESurfCacheInfo &c,
                             _sceDmaTag **tag)
 {
-    if (ConstructDMAPacket(s, c, tag) < 0)
+    if (VI_HOST_ONLY(!vi_port_hook_nodownload(&s) &&) ConstructDMAPacket(s, c, tag) < 0)
         return -1;
     c.m_stamp = Key++;
     m_numDownloads++;
