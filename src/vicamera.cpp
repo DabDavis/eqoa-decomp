@@ -164,7 +164,7 @@ int VICamera::Update(const VIVect3 &pos, VIVect3 &right, VIVect3 &up,
     m_proj = proj;
     m_viewProj.Mul(view, m_proj);
 
-    m.Invert(m_proj);
+    m.Invert(m_proj); VI_HOST_ONLY(vi_port_wide_cull(m, m_proj, m_aspect);)
     CalcFrustum(m, wld);
     return 0;
 }

@@ -2689,7 +2689,7 @@ void VIClient::TrackTarget(const VIVect3 &pos, unsigned int id, int b, VIMatrix4
     int off = 0;
     for (j = 0; j < 3; j++)
     {
-        if (fabs(*f) > 1.0)
+        if (fabs(*f) > 1.0 VI_HOST_ONLY(* (j ? 1.0f : vi_port_wide())))
         {
             off = 1;
             break;
@@ -16672,13 +16672,13 @@ void VIClient::DrawFade(int force)
             c = VIColor32F(0.0f, 0.0f, 0.0f, 0.5f);
         r.Color(c);
         VIVect2I v;
-        v.Set(-1, r.m_screenH + 1);
+        v.Set(VI_WIDE_EDGE(-1, r.m_screenW), r.m_screenH + 1);
         r.Vertex(v);
-        v.Set(-1, -1);
+        v.Set(VI_WIDE_EDGE(-1, r.m_screenW), -1);
         r.Vertex(v);
-        v.Set(r.m_screenW + 1, r.m_screenH + 1);
+        v.Set(VI_WIDE_EDGE(r.m_screenW + 1, r.m_screenW), r.m_screenH + 1);
         r.Vertex(v);
-        v.Set(r.m_screenW + 1, -1);
+        v.Set(VI_WIDE_EDGE(r.m_screenW + 1, r.m_screenW), -1);
         r.Vertex(v);
         r.EndTriStrip();
         r.End2D();

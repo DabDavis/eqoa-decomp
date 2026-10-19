@@ -82,13 +82,13 @@ void VIFader::Update()
         m_raster->BeginTriStrip();
         VIColor32F c(0.0f, 0.0f, 0.0f, m_alpha);
         m_raster->Color(c);
-        VIVect2I v(0, m_raster->m_screenH);
+        VIVect2I v(VI_WIDE_EDGE(0, m_raster->m_screenW), m_raster->m_screenH);
         m_raster->Vertex(v);
-        v.Set(0, -1);
+        v.Set(VI_WIDE_EDGE(0, m_raster->m_screenW), -1);
         m_raster->Vertex(v);
-        v.Set(m_raster->m_screenW + 1, m_raster->m_screenH);
+        v.Set(VI_WIDE_EDGE(m_raster->m_screenW + 1, m_raster->m_screenW), m_raster->m_screenH);
         m_raster->Vertex(v);
-        v.Set(m_raster->m_screenW + 1, -1);
+        v.Set(VI_WIDE_EDGE(m_raster->m_screenW + 1, m_raster->m_screenW), -1);
         m_raster->Vertex(v);
         m_raster->EndTriStrip();
         m_raster->End2D();

@@ -832,7 +832,7 @@ int VIRaster::Viewport(int x1, int y1, int x2, int y2)
     SetGSScissoring();
     m_dirtyLights = 1;
     m_dirtyMatrices = 1;
-    return 0;
+    VI_HOST_ONLY(vi_port_wide_viewport(this);) return 0;
 }
 
 int VIRaster::NumTextureSwaps()
@@ -912,7 +912,7 @@ int VIRaster::ReleaseFont(int i, VIDictionary &d)
 int VIRaster::CalcMatrices()
 {
     ((VIMatrix44 *)VI_SPR(0x70000080))->Mul(*(VIMatrix44 *)VI_SPR(0x70000000),
-                                    *(VIMatrix44 *)VI_SPR(0x70000040));
+                                    *(VIMatrix44 *)VI_SPR(0x70000040)); VI_HOST_ONLY(vi_port_wide_mvp(this, (VIMatrix44 *)VI_SPR(0x70000080));)
     ((VIMatrix44 *)VI_SPR(0x70000140))->Mul(*(VIMatrix44 *)VI_SPR(0x70000080),
                                     *(VIMatrix44 *)VI_SPR(0x700000C0));
     ((VIMatrix44 *)VI_SPR(0x70000100))->InvertAffine(*(VIMatrix44 *)VI_SPR(0x70000000));
@@ -936,7 +936,7 @@ int VIRaster::CalcClipToScreen()
                            + (float)m_viewportH * 0.5f + (float)m_viewportY;
     *(float *)VI_SPR(0x700000E8) = -(m_p4570 - m_p456C) * 0.5f;
     *(float *)VI_SPR(0x700000F8) = (m_p4570 - m_p456C) * 0.5f + m_p456C + m_zBias;
-    return 0;
+    VI_HOST_ONLY(vi_port_wide_clip(this);) return 0;
 }
 
 void VIRaster::SetZBias(int z)
@@ -2801,7 +2801,7 @@ int VIRaster::SetGSScissoring()
     a.x = m_viewportX;
     a.y = m_viewportY;
     b.x = m_viewportX + m_viewportW - 1;
-    b.y = m_viewportY + m_viewportH - 1;
+    b.y = m_viewportY + m_viewportH - 1; VI_HOST_ONLY(vi_port_wide_scissor(this, a, b);)
     m_dmaTag->m_id = 16;
     m_dmaTag->m_addr = 0;
     m_dmaTag->m_qwc = 4;
@@ -2858,7 +2858,7 @@ int VIRaster::BeginBillboards(VIBillboard **bb, int count)
             void *dst = p;
             memcpy(dst, (void *)VI_SPR(0x70000000), 64);
             p += 64;
-            mat.Mul(*(VIMatrix44 *)VI_SPR(0x70000040), *(VIMatrix44 *)VI_SPR(0x700000C0));
+            mat.Mul(VI_WIDE_PROJ(*(VIMatrix44 *)VI_SPR(0x70000040)), *(VIMatrix44 *)VI_SPR(0x700000C0));
             ((VIRasterQW *)p)[0] = ((VIRasterQW *)&mat)[0];
             ((VIRasterQW *)p)[1] = ((VIRasterQW *)&mat)[1];
             ((VIRasterQW *)p)[2] = ((VIRasterQW *)&mat)[2];

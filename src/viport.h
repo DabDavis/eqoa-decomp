@@ -167,6 +167,36 @@ extern "C" void vi_port_static_dma_changed(void);
 void vi_port_static_dma_changed(void);
 #endif
 
+// Widescreen (the port's modules/wide_port.cpp; VI_ASPECT=16:9).  The picture
+// is shown W times wider than the 4:3 the game draws for (W = aspect / (4/3)),
+// and the GS frame stays 640x448, stretched by W on the way out.  So every
+// draw in the FULL-SCREEN viewport has its NDC x scaled by 1/W where VIRaster
+// builds the matrices VU1 gets (CalcMatrices, and the billboards' own
+// product): the world shows W times more at the sides (Hor+), and the 2D
+// layer, in 640x448 game pixels, keeps its shape in the middle 4:3.  The
+// full-screen camera's culling frustum widens with it (VICamera::Update, the
+// camera whose aspect is 10/7), and an INSET viewport (the character preview,
+// a text scroll, the loading gears) is squeezed about the screen centre as a
+// whole: CalcClipToScreen, the scissor, the billboard offset.  What the game
+// works out from its own projection (targeting, name plates, damage numbers)
+// stays in 4:3 terms, and the 2D layer's squeeze puts it where the wide world
+// drew it.  W = 1 changes nothing.  vi_port_wide() is W.
+#ifdef __cplusplus
+class VIMatrix44;
+class VIVect2I;
+extern "C" float vi_port_wide(void);
+void vi_port_wide_cull(VIMatrix44 &inv, const VIMatrix44 &proj, float aspect);
+void vi_port_wide_mvp(VIRaster *r, VIMatrix44 *m);
+const VIMatrix44 &vi_port_wide_proj(VIRaster *r, const VIMatrix44 &p);
+void vi_port_wide_clip(VIRaster *r);
+void vi_port_wide_scissor(VIRaster *r, VIVect2I &a, VIVect2I &b);
+void vi_port_wide_viewport(VIRaster *r);
+// A screen-covering 2D quad's x edge (the fades), spread to the wide picture's
+extern "C" int vi_port_wide_edge(int x, int screenW);
+#define VI_WIDE_PROJ(p) vi_port_wide_proj(this, p)
+#define VI_WIDE_EDGE(x, sw) vi_port_wide_edge(x, sw)
+#endif
+
 #else  // the PS2 build: the original tokens
 
 #define VI_VA_LIST            char *
@@ -187,6 +217,8 @@ void vi_port_static_dma_changed(void);
 #define VI_DMA_STATIC(id) id
 #define VI_DMA_STATIC_TEX(id) id
 #define VI_FRAME_TICKS(n) n
+#define VI_WIDE_PROJ(p) p
+#define VI_WIDE_EDGE(x, sw) x
 
 #endif
 
