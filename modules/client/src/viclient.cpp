@@ -12333,11 +12333,11 @@ void VIClient::SendMsg(int op, int v, unsigned char b)
     VINetSend(out, GetConn(251));
 }
 
-// 0x00BD9D60: FrontiersForge's target info (disposition 0..6).
+// 0x00BD9D60: target info, the answer to SendOpIntInt(16, m_p2BB68, target): disposition 0..6 (the face), con colour, a byte, title, guild, and the request's token.
 void VIClient::Msg0010(VIMemStream &s)
 {
     unsigned char disp, b, c;
-    int id;
+    int id VI_HOST_ONLY(= m_p2BB68);    // Sandstorm's reply (261 bytes) stops before the token: the read fails, and the console compares a stale stack word.  The port takes it as answered
     s >> disp >> b >> c;
     s.Read(m_p4FCA8, 2, 64);
     s.Read(m_p4FC28, 2, 64);
