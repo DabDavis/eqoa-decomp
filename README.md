@@ -74,10 +74,12 @@ compiler** — the inputs it is scored against are supplied by whoever runs it:
 thing to run: it fails loudly if the image is not the one these results were
 measured against.
 
-**License scope.** The MIT license (`LICENSE`) covers this repository's own work —
-the tools, the reconstructed source and the notes. It grants no rights in
-*EverQuest Online Adventures* itself: the game, its binaries and its data belong to
-their owners, and none of them are distributed here.
+**License scope.** The GNU Affero General Public License, version 3 or (at your
+option) any later version (`LICENSE`), covers this repository's own work — the tools,
+the reconstructed source and the notes. Commits up to `e803a6a` (2026-11-07) were
+released under the MIT license and stay available under it at those commits; `NOTICE`
+keeps its notice. It grants no rights in *EverQuest Online Adventures* itself: the game,
+its binaries and its data belong to their owners, and none of them are distributed here.
 
 **For the rights holder.** This is a preservation project. The game's original
 source is understood to be lost, and this repository is an attempt to recover it —
