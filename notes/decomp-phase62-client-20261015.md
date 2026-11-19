@@ -256,7 +256,7 @@ several of these. Proof that SUPPORT is unchanged:
   - CLIENT's own `__builtin_vec_delete`/`__builtin_delete` (libgcc tail) named.
   - 430 call sites, all landing on the member each names.
 
-**Duplicates are counted APART (the user's call, 2026-10-15).** `eqcheck` prints a
+**Duplicates are counted APART (decided 2026-10-15).** `eqcheck` prints a
 second total after the byte-exact one: map entries the tree does not compile whose
 RELOCATED bytes, every call and data target included, equal a function it matches. They
 are credited to the source of the function they duplicate, listed with `--dups`, and never

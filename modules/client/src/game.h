@@ -297,7 +297,7 @@ public:
     VIVect3       m_pos;                           // +0x4C: where; Read takes it raw, three words.  VIClient's roll-call zeroes it
     VIVect3       m_hpr;                           // +0x58: ... and the heading, the same
     // The stat channel (DRDP type 0x42, 233 bytes) is these two blocks and m_p30, read by
-    // ReadStats in that order.  Indices per claude-notes/sandstorm-stat-channel.md: 0-6 STR
+    // ReadStats in that order.  Indices per the stat-channel notes: 0-6 STR
     // STA AGI DEX WIS INT CHA (totals), 7 HP, 8 max HP, 9 power, 10 max power.
     int           m_stat[29];                      // +0x64 (+0xC340): GetPlayerStats
     int           m_baseStat[29];                  // +0xD8 (+0xC3B4): indexed by stat id (func_00BC9F88); GetPlayerPD8

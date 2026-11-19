@@ -4,7 +4,7 @@
 // file is padded to put it there).  Every request is one stream sent on GetConn() --
 // message 0x1205 with a sub-op byte for the auction, 0x1254/0x1255 to move items and
 // money -- and m_state says which reply is awaited.  The 0x1206 replies are sub-ops
-// 128..137 (claude-notes/sandstorm-s2-live-20261015.md has the server side).  The TU
+// 128..137 (the server side is documented separately).  The TU
 // ends with its template copies (the item list, both pools, the result arrays, the
 // VIMemStreamArray.h readers) and VIItemList::Get, an inline of VIItemList.h emitted here.
 #include "game.h"

@@ -10,7 +10,7 @@ reports 129 data references, 0 findings. Source: `decomp/modules/mcerr/src/`
 ## Names came from the 2002 betas, not from guessing
 
 Retail MCERR exports 6 symbols. The two 2002 USA beta discs export 41
-(`decomp-builds/tools/snr1map.py modules/eqoa-beta-20021020/MCERR.snr1`). That
+(read with an SNR1 export-table dumper). That
 list gives the whole class: ctor, dtor, `Init`, `Free`, the four `VIWnd`
 overrides, `GotoScreen`, `ExitMcErr`, `ProcessScreen`, `ProcessScreenNN` for
 each screen, `DrawPrompt`, and the session-id pair.

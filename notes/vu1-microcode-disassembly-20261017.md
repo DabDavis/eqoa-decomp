@@ -124,9 +124,9 @@ header of `decomp/vu/src/raster.vsm`. In short:
   solid fill are `VIRaster::SetWireframe`/`SetSolidFill`, debug overrides still in the retail
   build. They render on the console as described: the whole scene as white line strips, or
   as flat shaded colour.
-- **`EQOASAND.ELF` can no longer reach a world on live Sandstorm**: it goes black at CLIENT's
-  load, twice, while Sandstorm's own `ss_prod.iso` goes in. That fits the §5 hazard in
-  `sandstorm-s2-live-20261015.md`, but the cause is not traced.
+- **Our boot ELF can no longer reach a world on the reference server**: it goes black at
+  CLIENT's load, twice, while that server's own disc image goes in. That fits a known hazard
+  in its current patch, but the cause is not traced.
 - **A finished `vu1dump` does not re-arm**: it needs `vu1dumpstop` first, and the count
   otherwise stays 0 with no error.
 - **PCSX2-only, a fifth item: `ERLENG` of a zero vector is +inf on the host.** `SSE_DIVSS`

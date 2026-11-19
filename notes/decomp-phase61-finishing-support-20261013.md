@@ -15,7 +15,7 @@ snapshot so `_lane.py merge` is a three-way `git merge-file` back into main. `_t
 (raster, scene, drdp, ui, fx, flora, core, sys) and the coordinator worked the ESF
 lane; each merge was followed by one whole-tree `eqcheck.py` in main.
 
-The assembler now runs under a private wine prefix (`claude-eqoa/.wine`, no display,
+The assembler now runs under a dedicated wine prefix (no display,
 no winemenubuilder), held up by one idle `wine cmd.exe` so every assembler call does
 not cold-start a wineserver.
 

@@ -206,7 +206,7 @@ All are register or scheduling ties, or are written and not yet polished:
 - **Four functions fell between two lanes' ranges.** `VIWndStationLogin`'s inline members sit
   after its `__tf` at the very start of the next lane's range. Declaring them inline in the
   class emits them in order. A TU-to-lane split should give a TU's tail to its owner.
-- **Scratch tools** (not in the repo) are in `~/.cache/station/`:
+- **Scratch tools** (not in the repo):
   - `sdis.py` disassembles with names and full strings;
   - `ren.py` renames map rows;
   - `cmpmod.py` / `cmp2.py` do the masked cross-module comparison;

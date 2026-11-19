@@ -1,7 +1,7 @@
 // mcerr.h -- MCERR's one class, on top of SUPPORT's vi.h.
 //
 // The names are the 2002 betas' own: their MCERR exports 41 symbols where the
-// retail builds export six (decomp-builds/, `snr1map.py`).  Frontiers adds four
+// retail builds export six (read off their SNR1 export tables).  Frontiers adds four
 // screens the betas do not have (12, 17, 21, 22), drops 25 from the dispatcher
 // while keeping its body, and gives McErrSyncIdle a keyboard.
 #ifndef MCERR_H

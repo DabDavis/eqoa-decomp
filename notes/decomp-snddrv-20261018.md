@@ -107,7 +107,7 @@ Measured:
 - `test/snd_bgm` streams `BGM/THEME.BGM`. Against an independent PS-ADPCM decode at the
   same pitch step (`0xEB3/0x1000`), the correlation is 0.91–0.96 in every one-second
   window over 8 s and three ring refills.
-- In the game, login → world on Sandstorm: character select's `bgm\erudites.bgm` plays
+- In the game, login → world on a live server: character select's `bgm\erudites.bgm` plays
   (core 1 voices 22/23), UI sounds go out as command 2, and the world loads its
   ambience XM (commands 7, 8, then 10s). The XM player keys voices inside its 16-voice
   mask.

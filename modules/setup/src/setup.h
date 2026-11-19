@@ -1,7 +1,7 @@
 // setup.h -- SETUP's game half: the title screens and the program that runs them
 // (0x00566C00 .. 0x0057CDD8), on top of SUPPORT's vi.h and the patcher's
 // patcher.h.  The class and method names are the 2002 betas' own exports
-// (decomp-builds/, `snr1map.py`); the classes Frontiers adds (VIWndController,
+// (read off their SNR1 export tables); the classes Frontiers adds (VIWndController,
 // VIWndLanguage, VIWndPresents) are named by their RTTI strings.  Layouts are
 // what the written functions measure, and each constructor's member roll-call.
 //

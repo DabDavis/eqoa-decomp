@@ -6,7 +6,7 @@
 # the function asserts from there (a fact), `File.cpp~` it sits between two
 # that do (inferred), `old:<label>` the old claude-eqoa-iso map's guess.
 # 16 assert-anchored, 12 by span, 601 old labels (4 moved up to the real start, 315 jump-table labels dropped).
-# 2026-10-16: 628 entries named from the 2002 betas' OWN export tables (decomp-builds/names/STATION.candidates.txt,
+# 2026-10-16: 628 entries named from the 2002 betas' OWN export tables (an offline candidates list,
 # copies=1 only: body identical with relocations masked and unique in both builds). Marked `beta-export`;
 # measured on SUPPORT's real names, about 1% of such names are a renamed or sibling function.  Trust a name once your object matches.
 0x002B6B80  [CODE]  station_main__FPcT0

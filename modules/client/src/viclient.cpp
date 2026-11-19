@@ -12337,7 +12337,7 @@ void VIClient::SendMsg(int op, int v, unsigned char b)
 void VIClient::Msg0010(VIMemStream &s)
 {
     unsigned char disp, b, c;
-    int id VI_HOST_ONLY(= m_p2BB68);    // Sandstorm's reply (261 bytes) stops before the token: the read fails, and the console compares a stale stack word.  The port takes it as answered
+    int id VI_HOST_ONLY(= m_p2BB68);    // A live server's reply (261 bytes) stops before the token: the read fails, and the console compares a stale stack word.  The port takes it as answered
     s >> disp >> b >> c;
     s.Read(m_p4FCA8, 2, 64);
     s.Read(m_p4FC28, 2, 64);

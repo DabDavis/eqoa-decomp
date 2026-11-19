@@ -6,9 +6,8 @@ a candidate build. **No compiler is required for anything in this directory** �
 it is offline tooling, and it is useful for ordinary RE work whether or not the
 decomp goes ahead.
 
-**A native PC port** of this source lives in its own repository,
-[eqoa-port](https://github.com/DabDavis/eqoa-port), which takes this one as a
-submodule. Its only footprint here is `src/viport.h`: the switches expand to
+**A native PC port** of this source lives in its own repository, which takes
+this one as a submodule. Its only footprint here is `src/viport.h`: the switches expand to
 the original tokens on the PS2, so the matching build sees no difference.
 
 ```bash
@@ -159,8 +158,8 @@ port compiles the same source as its sound server.
     STATION, 0 disagree), though the masked bodies never compared call targets.
   - **The `old:` vtable labels on those rows contradict the new names. The labels
     are the wrong ones.**
-  - The tools and the candidates are in `decomp-builds/`, an offline comparison
-    tree beside this one.
+  - The tools and the candidates are kept in a separate, offline comparison
+    tree (no disc data is published).
 - **The sweep that seeds it is checked on the one real map.**
   - A function ends at `jr ra`, or at a tail `j` to another function, plus the delay
     slot, unless a branch inside it reaches further.
@@ -6858,3 +6857,9 @@ seven was a source shape, not a compiler tie. Long form:
   - `DownloadToMemory`, 25;
   - `DownloadFile`, 172.
 
+
+## Standing harness rules
+
+Moved here 2026-11-10 from the root index of the working tree (`CLAUDE.md`), word for word:
+
+**Three standing harness rules:** grep for an existing stub or `extern` in `vi.h` before adding a class or free function (a collision fails the whole TU and reads as a mass regression — phase 53 hit it a third time, with `viarray.cpp`'s `VICSpritePartEmitter`); **never run two scorers at once** — `_q.py` and any `eqcheck.py`, filtered or not, backgrounded or not, share `decomp/build` and a parallel run invents regressions; and in a LINE-PADDED file (`connection.cpp`, `drdp.cpp`) work **collapse → edit → repad**, one edit per script — a pattern that spans a padded gap never matches, and a failed `assert` in a multi-edit script throws away the edits that already succeeded.

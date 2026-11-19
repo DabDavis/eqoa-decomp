@@ -92,7 +92,7 @@ copies it later, check the return type of the NEXT call in the block.
 
 ## Method notes
 
-- **Scratch tools live in `~/.cache/setup-ties/`**, not in the repository: `/tmp` is full.
+- **Scratch tools live outside the repository** (`/tmp` is full):
   - `rtl.sh` writes one TU's RTL dumps.
   - `fn.sh` cuts one function out of a dump.
   - `tryfn.py` compiles a function variant and scores it. `--hdr` puts a modified header

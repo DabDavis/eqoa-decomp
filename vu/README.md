@@ -107,21 +107,21 @@ finite vertex.
 ### Making a capture
 
 ```
-pcsx2-eqoa-re/run.sh -nocheats -dns sandstorm -symbols claude-eqoa-iso/decrypted_modules \
-    -savestate savestates/inworld-sandstorm.ps2savestate -elf eqoa-boot/out/EQOASAND.ELF <iso> &
+<tracer> -nocheats -dns <server> -symbols <decrypted_modules> \
+    -savestate <in-world savestate> -elf <boot ELF> <iso> &
 # within a second of the socket answering:  vu1dump memory-dumps/vu1/inworld.bin 3000
 ```
 
-The resumed session renders for about a second before it wedges (see `savestates/README.md`),
+The resumed session renders for about a second before it wedges,
 which is plenty: 3,000 launches in 100 MB. **`memory-dumps/vu1/inworld.bin` (2026-10-17)** is
 the one the numbers above come from.
 
 **A finished `vu1dump` does not re-arm.** Arming again reports `VU1 dump armed`, but the count
 stays at 0 until you send `vu1dumpstop` first.
 
-**The second set (2026-10-17, evening)** came from a cold boot of Sandstorm's own image
-(`-display ~/.cache/ss_prod.iso`, no `-elf`). `EQOASAND.ELF` now goes black after login
-against the live S2 (`savestates/README.md`). The set was taken live, in this order:
+**The second set (2026-10-17, evening)** came from a cold boot of the reference server's
+own disc image (`-display <its iso>`, no `-elf`); the boot ELF now goes black after login
+against that server's current patch. The set was taken live, in this order:
 
 | File | Scene | Launches | What it adds |
 |---|---|---|---|

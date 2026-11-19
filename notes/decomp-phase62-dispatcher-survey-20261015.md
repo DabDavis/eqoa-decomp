@@ -678,7 +678,7 @@ call). Then the dispatcher.
 8. **Two cases forward the opcode itself:** 0x1250/51/53 reload it (`lhu 32(sp)`),
    0x1003/04/05 rely on `a1` still holding it from the tree (no load). Expect the source
    to pass `opcode` in both; the difference is codegen.
-9. **Sandstorm patches inside this function**: per the FrontiersForge note, the S2
+9. **A live server's patch writes inside this function**: per the FrontiersForge note, its
    payload replaces case 0x00DB's first two compare words (`lw a1,0x8DC(sp)` at
-   0x00BD2DA4 and the `lw v0,0x71F8(s4)` after it) with `jal` + `nop`. A live Sandstorm
-   dump will not match the image there; the image is the oracle.
+   0x00BD2DA4 and the `lw v0,0x71F8(s4)` after it) with `jal` + `nop`. A dump from that
+   server will not match the image there; the image is the oracle.
